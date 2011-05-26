@@ -1436,9 +1436,7 @@ gint MainLoop(gpointer data){
     if(gdraw.shiplist==TRUE){
       DrawPlayerList(pixmap,actual_player,&listheadplayer,cv,loadsw || !(GetTime()%20));
     }
-    else{
-      DrawInfo(pixmap,cv);
-    }
+    DrawInfo(pixmap,cv);
   }/* if(paused==0) */
 
     if(gdraw.stats==TRUE){
@@ -1460,7 +1458,7 @@ gint MainLoop(gpointer data){
     cv0=cv;     /* coordinates center */
 
     Shell(0,pixmap,gfont,penGreen,&listheadobjs,players,&keys,&cv);
-
+    if(keys.o==FALSE)gdraw.order=FALSE;
     if(cv!=NULL){
       if(cv->state==-1){ /* Object just selled*/
 	cv=SelectObjInObj(&listheadplayer,cv->in->id,cv->player);

@@ -3600,7 +3600,6 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
   }
   shipcounter++;
   if(shipcounter==20){
-    printf("counting obj...\n");
     ne=CountObjs(hlp,player,SHIP,EXPLORER);
     nf=CountObjs(hlp,player,SHIP,FIGHTER); 
     nt=CountObjs(hlp,player,SHIP,TOWER); 

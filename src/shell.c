@@ -374,7 +374,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   Object *obj,*obj0;
   
 #if DEBUG
-  printf("Shell()\n");
+  printf("Shell()level: %d\n",level);
 #endif
   
   

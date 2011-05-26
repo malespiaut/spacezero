@@ -1,0 +1,378 @@
+SpaceZero TODO
+==============
+
+
+Libs to compile:
+================
+
+make
+libgtk2.0_dev
+libalut_dev
+libopenal_dev
+
+
+
+bugs:(last:110)
+====
+
+-[26] (010910) al pasar al modo manual siempre dispara. (posible disparo a EXPLOSION, objnext no eliminado)
+-[41] (011010) Desfase de un frame en los misiles (y tiros?) entre el cliente y el servidor.
+-[54] (021110) (in human play)if send to someplace send, dont wait to good state. save04
+-[65] (071210) Debug Warning 2 SetModified()PLANET:trying to change mode (3) 42 to 40
+      	       ERROR :setttl0() mode 42 unknown, obj type: 3
+-[71](221210) Ships shooting in planet to unexisting ship.Save and load fix it.
+-[72](271210)Debug Warning 2 SetModified()PLANET:trying to change mode (1) 43 to 41
+	     Debug Warning 2 SetModified()PLANET:trying to change mode (1) 43 to 41
+	     Debug Warning 2 SetModified()PLANET:trying to change mode (1) 43 to 34
+	     ERROR :setttl0() mode 43 unknown, obj type: 3
+-[75](220111) setttl0(): ERROR 2:setttl0() mode 43 unknown, obj type: 3
+-[94](120411)despues de vender todo sigue dando mensajes de las naves
+-[95](130411)Checking game after load...done
+             ERROR ReadObjsfromBuffer(SENDOBJKILL) id: 2176 doesnt exists (saven1)client
+-[96](150411)ERROR 2 :setttl0() mode 43 unknown, obj type: 3 player: 1 id: 15 pid: 15
+-[97](150411) torre modificada a SENDOBJALL en distinto procesador
+      CheckModifiedPre(): PROC: 0 obj 1782 (159) player: 4 type 1 stype 6 mod: 37 time: 182007
+-[100](060511)enemy state bar greater than 100 (with very close planets, in net game, maybe unknown state)
+-[101](105011)32/64 bits Gdk-WARNING **: GdkWindow 0x2e00005 unexpectedly destroyed ??(after ubuntu update, no more)
+-!![105](200511) Queen autopilot: still crash the ship while landing.
+-!![107](200511) Towers always aim the enemy even if out of range.
+-[110](240511) Explorers dont STOP. save03
+
+Version 0.6: (since 0707)
+============
+
+Version 0.7 (since 060910)
+===========
+
+Version 0.8 (since 10May2011)
+===========
+
+-!!Initial menu game options: sound volume, resolution, etc.
+-!!New order: "do not takeoff" = ID: 3305066 (STOP when landed.)
+-!!Rewrite NearestObjAll(), call less times.
+-!!Reordenar, jerarquizar codigo, ficheros.
+-!!Disminuir numero de variables extern (97),58,72,76 grep extern src/*.c include/*h |grep ";" |wc
+-!!Disminuir los HERE (74)84,68  grep HERE src/*c include/*h|wc
+-Game statistics.
+-Create charge list (lista de carga).
+-!!toroidal Universe as option.
+
+-math function tables.
+-Objects with sons(shots are sons of the ships).
+-nav_mode in every ship, object propierty(?)
+-Check CreatePlayerList() in MainLoop() (dont create in paused mode);
+-!change MISSILE to type SHIP
+-frames/s when save/load.
+-?Use same struct for planets and known sectors in struct Player.
+-!!Damage in collision depends on mass and velocity. Elastic shocks. 
+-!!Change ksectorslist for a three elements list: id,x,y.
+-!!Review GetInformation()
+-!!In terminal, messages repite so much.
+-!!Send ships info to allies.
+-!!In pause mode consumes CPU, redraw every 5 steps..
+-Size of font.
+-Dont createlists in execload()
+-Explosions: add ship parts
+-!!Merge UpdateShip() y UpdateAsteroid() ??
+-!!Improve CreateContainerList()
+-!!Improve IsRisk()
+-send drawmissile in DrawObjs() to DrawShip()
+-!!not enought money
+-include CELLON code 
+
+mouse:
+=====
+-!!double click: GOTO with selected ship(s).
+-Single click: select ship. In map view and inside a planet.
+
+Ships:
+======
+
+-Destroyed ships leave weapon and gold.
+-Interchange of ammunition between ships.
+-Ships can  carry satelites. Transport objets.
+-Artificial defense satellite.
+-Add mining.
+-Invisibility. Ships partially visible to radar.
+-new arm for towers: laser beam as in "missile command"
+
+AI:    
+===
+
+-Orbit in automatic mode(Take off).
+-When parent dies, send orders to object sons.
+-Aterrizado al pasar a automatico, no despegar y volver a aterrizar.
+-evasion maneuver.
+-Avoid enemy shots.
+-Las ordenes dependen de unos objetivos a cumplir.
+-Add flee.
+-!!Fast ship pursuing a slow one: improve ,adjust velocity.
+-Improve EXPLORE.
+-ChooseOrder to matrix form.
+	     -send TAKEOFF to ATTACK and GOTO.
+-!!Send to asteroids from ControlCenter().
+-Improve attack. loop attack. save3
+-!!few planets, a lot of gold => buy ships and conquer. save9
+-!!Merge  ccdata to  player struct.
+-!! Review buy() and upgrade()
+-!A planet with to many ships, redistribute ships.
+-!!Check IsRisk() for towers.
+-!!if asteroids are near a planet continous take off and return to planet for figthers.
+-!!check rules in ally planet. If is empty: conquer.
+
+Comm:
+====
+-in Object: Change int by boolean (to improve comm)
+-!Compress data.
+
+Save
+====
+
+
+Command shell:
+==============
+-Add help in menu.
+-!!ENEMIESKNOWN as game option.
+-!Save several games.
+-?Dont change order if the recipient are the same. ie. ship 44 order
+ goto 44 must not take effect.
+-Add select 0 0
+
+Planets:
+=======
+
+Version 0.9
+===========
+-Dynamic Universe.
+-Add transports, comerce.
+-Missions.=> Missions script files. (XML?)
+-Keep ships(pilots) between games.
+-Create pilots, survive to ship destruction, they are the experience. survival ships.
+-Increase planet terrain. As in "Defender"
+-Avoid shocks whith ships.(See earlier ai() version).
+
+
+Version 1.0
+===========
+
+-Multiplayer. (+ of two players)
+-3D world interaction.
+-Bitmaps??
+
+/*********************************************************************************/
+DONE:Version 0.80 (since 10 May. 2011)
+=====================================
+
+X-(140511)order goto 123 , dont change weapon.
+X-(140511) filter added in order mode. Dont show not allowed characters in order mode.
+X-(140511) the keys: TAB, PageUp, PageDown and HOME get out also of order mode.
+X-(170511)!!call shell() with NULL, for reseting.
+X-(160511)?Posibilidad de no instalar sonido: buscar sonido en dat.
+X-(200511)!!Save info of enemy planets.
+X-(230511)!!Show status as a number = ID: 3305080
+X-(230511)!!feature: F5 show a per ship type counter on top = ID: 3305056
+X-(230511)!!F5  planet window: show more info. show planet production.
+X-(240511)!!Add ESC to automatic mode.
+X-(200511)!!warning and errors to stderr
+X-(260111)!!Show objects inside a planet (o>s>splanet=>select an object in planet)
+
+
+BUGS version 0.80
+=================
+
+X-(220511)!![102](210611)different geom doesnt work inside a planet(net game). Add factor.(saven01)
+X-(220511)[103](200511) You can open each option only once if popup closed with "x"
+X-(220511)[106](200511) If order is "write", m key shouldn't toggle the map
+X-(230511)!![108](220511)select with mouse doesnt work in free space.
+X-(230511)!![109](230511) In map arrow moves ship.
+X-(240511)!![104](200511) When going somewhere in the space, ships use too energy
+
+
+
+/********************************************************************************/
+DONE:Version 0.78 (since 10 Jan. 2011)
+=====================================
+
+X-(140111)Mismo team se ven los planetas en mapa.
+X-(140111)No cambiar de dueño planeta si son del mismo equipo.
+X-(150111)No poder comprar en planetas que no pertenecen.
+X-(160111)!!Modo cooperativo. Equipos de aliados.
+X-(170111)!!player names.
+X-(170111)!!GOTO Asteroids.
+X-(180111)!!En la lista de planetas indicar donde hay naves. Incluir planetas del mismo equipo.
+X-(180111)!!Al aterrizar en un planeta vacio: conquistar.
+X-(200111)!!Al morir no pasar cv a explosion.
+X-(200111)!!terreno terminar como empieza(mismo nivel)
+X-(200111)!!aterrizaje circular.(revisar)
+X-(310111)Added message when a ship is destroyed.
+X-(310111)Queen mode added.
+X-(310111)!! Add local path sound files
+X-(010211)!!Al caer un asteroide en planeta dar oro. Enviar oro cuando choca asteroide contra planeta savengold.
+X-(010211)!!Al explotar una nave en planeta dar 20% del precio al planeta.
+X-(010211)!!Silent music when game is paused.
+X-(020211)!! nopirates option
+X-(030211)SelectionBox(). Select several ship with mouse.
+X-(040211)Al salir de planeta se marca una cruz en mapa. Revisar.
+X-(040211)GAME OVER added.
+X-(040211)observe other players when game over added.
+X-(100211)added forbidden orders in execorder()
+X-(120211)se repite varias veces ERROR 1 in Nerarestobjall() player 0 id 10885 type:4 stype:3 mod:39 PROC:0 time: 1106431
+X-(120211)!!With selectionbox() map goes too fast.
+X-(120211)!!CAPS
+X-(120211)Revisar fuerza de gravedad. Demasiado baja?
+X-(130211)Añadir asteroides dependiendo del tamaño de universo
+X-(160211)!!al salvar cerrar ventana.
+X-(180211)!!must work with font=NULL
+X-(180211)!!Move messages to the left
+X-(180211)!!Text size
+X-(100211)!!Size of galaxies
+X-(220111)Assignation of team numbers corrected.
+X-(220211)!!Reescribir Collission(), revisar, reestructurar.
+X-(030311)Move land zone to the right 150 px
+X-(030311)!!Entrada en planeta de poca masa.
+X-(103011)!!Quitar decimales a GOLD. disminuir su longitud.
+X-(110311)mucho dinero, no compra, no actualiza. save10
+X-(110311)!!?Deja planetas vacios save8
+X-(170311)!! order goto n ,space,  dont change view mode
+X-(180311)!GOTO F1,...
+X-(200311)!!malloc, realloc ccdata
+X-(290311)!! feedback when give orders.
+X-(010411)!!Introducir diferentes modos de ataque:
+    X-(100311)Aleatorio.
+    X-(100311)Mas cercano.
+    X-(200311)Mas fuerte mas cercano
+X-(010411)!!increase number of attack ships depending on enemy strenght. save12
+X-(020411)!!color of messages and ordered by priority. 
+X-(030411)!!revisar INSTALL
+X-(040411)distance between objs corrected
+X-(170411)Sound and music control.
+X-(010511)Mirar mensajes planet under attack, no salen a tiempo. save13
+X-(130511)!!En opciones mostrear las reales del juego actual.
+
+
+
+BUGS version 0.78
+=================
+X-(180111)[73](150111)Computer no compra. saveB
+X-(210111)[74](200111)(spacezero:8348): GLib-GObject WARNING **: IA__g_object_weak_unref: couldn't find weak ref 0xb6df4490(0x916e418)
+X-(010211)[76](010211) Dont send always gold in net.
+X-(030211)[77](030211) al pulsar o cambia zoom del mapa
+X-(030211)[78](030211) naves van hacia asteroides fuera del radar. save9
+X-(040211)[79](030211) A veces nada seleccionado
+X-(070211)[80](040211) Dont assign the order to all the selected. save10
+X-(110211)[81](110211)planet 6 gold: 938,107910 price:17,500000
+		    ERROR in GetPrice() ship id:23
+X-(240211)[83]!!(230211)planet appear in radar but not in map. save6
+X-(260211)[85]!!(240211)Pirates too strong.know all planets
+X-(030311)[82]!!(180211)No aterrizan save5
+X-(110311)[81]!!(150211)no sabe volver save2
+X-(160311)[86]!!(150311)en radar aparecen muchas naves no existentes, en mapa no. zona 0,0. save12
+X-(170311)[88]!(160311)al aumentar y geom naves aterrizadas fuera de posicion.
+X-(180311)[84]!!(240211)Asteroid, continue take off, dont see in radar. save11
+X-(190311)[90]!!(180311)No despega save12
+X-(210311)[91]ccdata in ExecLoad()
+X-(310311)[92](303011) segunda vez select planet de deseleciona.
+X-(310311)[93](310311) towers trying to speed up.
+X-(240411)[98](030511) Dont send pointers any more. communication between 64 and 32 machines fixed. 
+X-(060511)[98](060511)En red 32/64 al cargar partida weapon=0 no recarga saven01 en sara
+
+/********************************************************************************/
+Version 0.76 (since 060910)
+============
+
+X-(230910) Created proyect spacezero at sourceforge.
+X-(230910) Change proyect name to spacezero
+X-(080910) Added about menu.
+X-(280910) Sum of kill and deaths differ. Revisar GetPoints.
+X-(061010) Hacer mas larga la lista de planetas.
+X-(111010) Quitar espacio en shell.
+X-(121010) Renumeracion de los objetos.
+X-(151010) Added ASTEROIDS in single game. (for fun).
+X-(151010) Added ASTEROIDS in net game. (for more fun).
+X-(181010) Explorer no sabe detenerse.
+X-(221010)!!Naves dentro de radar han de aparecer en modo mapa.
+X-(251010) Added four types of ASTEROIDS.
+X-(191110) Poder mover el mapa aunque cv=NULL.
+X-(031210)!!Revisar CopyObj2Buffer().
+X-(031210)Dont show enemy numbers in map.
+X-(031210)dont show enemy id in enemy info
+X-(091210)!!Single and net save file.
+X-(101210)!!Reescribir Getpoints(), reestructurar.
+X-(111210)!!Salida limpia.
+X-(211210)!!revisar coste de las naves.
+X-(221210)!!Quitar variables innecesarias en objects.
+X-(170311)[87]!!(160311)planetas con geom < 250 no llegan al final.=> tamaño minimo de ventana impuesto por el tamaño del menu.
+
+Ships:
+======
+
+X-(081010) Naves adquieren experiencia por proximidad.	
+X-(081010) GetGold() updated.
+
+AI:
+===
+
+X-(051010)!!Computador de a bordo. Pasar NearestObjAll() al computador.
+X-(051010)!!Al encontrar planeta vacio aterrizar en el. (GOTO n).
+X-(261010) Solo exploran los explorer.
+X-(261010)Si la energia es menor del 20% volver a casa.
+X-(021110)No dejar planetas vacios GOTO ellos. save3
+X-(021110)Relacion maxima explorer/fighter 1
+X-(021110)Relacion maxima naves/tower 3
+X-(041110)!!Solo enviar una nave a planetas vacios.
+X-(111110)!!Modificar la potencia en funcion de la masa del planeta.
+X-(161110)!!Crear comandos. Atacar en grupo planetas dificiles.
+X-(181110)Solo atacan planetas los figther.
+X-(181110)Computer ships can upgrade.
+
+Comm:
+====
+X-(281110)!!Hacer bien la comunicacion: solo envio de datos en el thread, doble buffer
+X-(291110)!!Add player id in SENDSECTORLIST SENDPLANETLIST
+X-(011210)Crear buffer dinamico mas pequeño.
+X-(071210)Send planet to client.
+X-(181210)Rewrite send and receive. Read until SENDEND is found. One cicle.
+X-(191210)!!Send kills and deaths to client. Send player periodically.
+
+Save
+====
+X-(181110)Save ccdata
+
+Command Shell:
+==============
+
+X-(151010)!!Add trainning of ships to shell
+
+Planets:
+=======
+
+
+BUGS
+====
+
+X-(051010)[46]fscanf: Recurso no disponible temporalmente. al cargar una partida de menos jugadores.
+X-(111010)[47]. when loading a game displaying DrawPlayerList()
+X-(211010)[50] SHIPS with low energy cant return. save0
+X-(221010)[51] ships without weapon goes to nearest planet with other orders. save1
+X-(221010)[52] ships dont go home when fuel reach 200. save2
+X-(2610110)[40] ??(a veces)al seleccionar planet con solo torres no se selecciona ninguna.
+X-(261010)[53] SELECT planet must be a ship and same player. 
+X-(101110)[56] (101110) GOTO near doesnt work to inexplore when is
+	       damage or low amunnittion.
+X-(121110)[55] (091110) ERROR ReadObjsfromBuffer(BOBJKILL) id: 216  doesnt exists (prob 216 is an asteroid)
+X-(121110)[57] (121110)Ghost ships in map.
+X-(161110)[58] in nav nothing. save7
+X-(291110)[59] (231110)Al cargar partida poner todo el teclado por defecto
+X-(291110)[48] (201010)when save: infinite planet gold.
+X-(301110)[60] (301110)Minor Bug in Updateship() in net game.
+X-(031210)[62] (021210)Ships dont appear in radar.save5
+X-(031210)[61] (021210)explorer dont attack asteroids. save3
+X-(081210)[66] (081210)ERROR in AreEnemy id: 908
+X-(091210)[70] (091210) Asteroid entrando en planeta: signal n 11 received (SEGFAULT)
+X-()[64] (061210) puntos en red.asteroides no puntuan. saven8 
+X-(101210)[68]!!(081210) al recibir un impacto de misil no quita state en remoto.
+X-(101210)[69] (091210) Problems with asteroids and missiles (save7)
+X-(141210)[63] (021210) tintineo, salvar y cargar lo elimina.al recibir un tiro tambien.
+X-()[67] map zones are not drawed. not a bug, is ok.
+
+

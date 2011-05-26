@@ -1,0 +1,4022 @@
+ /*****************************************************************************
+ **  This is part of the SpaceZero program
+ **  Copyright(C) 2006-2011  M.Revenga
+ **
+ **  This program is free software; you can redistribute it and/or modify
+ **  it under the terms of the GNU General Public License (version 3), or
+ **  (at your option) any later version, as published by the Free Software 
+ **  Foundation.
+ **
+ **  This program is distributed in the hope that it will be useful,
+ **  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ **  GNU General Public License for more details.
+ **
+ **  You should have received a copy of the GNU General Public License
+ **  along with this program; if not, write to the Free Software
+ **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ ******************************************************************************/
+
+/*************  SpaceZero  M.R.H. 2006-2011 ***1**************
+		Author: M.Revenga
+		E-mail: mrevenga at users.sourceforge.net
+		version 0.80 May 2011
+****/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <glib.h>
+#include <gtk/gtk.h>
+
+#include "general.h"
+#include "objects.h"
+#include "graphics.h"
+#include "ai.h"
+#include "fonts.h"
+#include "functions.h"
+#include "shell.h"
+#include "sound.h"
+#include "menu.h"
+
+extern struct Player *players;
+extern int g_memused;
+extern struct HeadObjList listheadnearobjs;   /* list of near enemies objects of actual player */
+
+#if DEBUG
+int debugoptions=1;
+#endif
+
+GtkWidget *win_main;
+GtkWidget *win_mainmenu;
+GtkWidget *winoptions;
+GtkWidget *winabout;
+
+GtkWidget *options1;
+GtkWidget *options2;
+GtkWidget *options3;
+GtkWidget *options4;
+GtkWidget *options5;
+GtkWidget *options6;
+GtkWidget *options7;
+GtkWidget *options8;
+GtkWidget *options9;
+GtkWidget *options10;
+GtkWidget *options11;
+GtkWidget *options12;
+GtkWidget *options13;
+GtkWidget *options14;
+GtkWidget *options15;
+GtkWidget *options16;
+GtkWidget *about1;
+GtkWidget *about2;
+
+
+GdkFont *gfont;
+GdkPixmap *pixmap=NULL;
+
+GdkGC *gcolors[MAXNUMPLAYERS+3];
+GdkGC *penRed=NULL;
+GdkGC *penLightGreen=NULL;
+GdkGC *penGreen=NULL;
+GdkGC *penBlue=NULL;
+GdkGC *penYellow=NULL;
+GdkGC *penWhite=NULL;
+GdkGC *penBlack=NULL;
+GdkGC *penOrange=NULL;
+GdkGC *penViolet=NULL;
+GdkGC *penPink=NULL;
+GdkGC *penCyan=NULL;
+GdkGC *penSoftRed=NULL;
+
+Point mouse_pos;
+struct Keys keys;
+
+
+
+
+GtkWidget *InitGraphics(char *title,char *optfile,int w,int h){
+
+  GtkWidget *d_a;
+
+  GtkWidget *vbox;
+  GtkWidget *menubar;
+  GtkWidget *menuitemsave;
+  GtkWidget *menuitemload;
+  GtkWidget *menuitemoptions;
+  GtkWidget *menuitemabout;
+
+  GtkWidget *vbox2;
+  GtkWidget *vbox3;
+  GtkWidget *hbox1;
+  GtkWidget *hbox2;
+  GtkWidget *hbox3;
+  GtkWidget *hbox4;
+
+
+  char label[164];
+
+  GtkTooltips *tooltips;
+
+  win_main=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(win_main),title);
+
+#ifndef GTK12  
+  gtk_window_set_resizable(GTK_WINDOW(win_main),FALSE);
+#endif
+
+
+  /* fullscreen */
+  /* gtk_widget_realize (win_main);   */
+  /* gtk_window_fullscreen((GtkWindow *)win_main);    */
+  /* --fullscreen */
+
+
+  vbox=gtk_vbox_new(FALSE,0);
+
+  d_a=gtk_drawing_area_new();
+  gtk_drawing_area_size(GTK_DRAWING_AREA(d_a),w,h);
+  
+  menubar=gtk_menu_bar_new();
+
+  /* events we need to detect */
+  gtk_widget_set_events(win_main,GDK_EXPOSURE_MASK
+			|GDK_LEAVE_NOTIFY_MASK
+			|GDK_KEY_PRESS_MASK
+			|GDK_KEY_RELEASE_MASK);
+  /*			|GDK_POINTER_MOTION_MASK */
+  /*			|GDK_BUTTON_PRESS_MASK */
+  /*			|GDK_BUTTON_RELEASE_MASK */
+  /*  			|GDK_POINTER_MOTION_HINT_MASK); */
+
+  gtk_widget_set_events(d_a,GDK_EXPOSURE_MASK
+			|GDK_LEAVE_NOTIFY_MASK
+			|GDK_KEY_PRESS_MASK
+			|GDK_KEY_RELEASE_MASK
+			|GDK_POINTER_MOTION_MASK
+			|GDK_BUTTON_PRESS_MASK
+			|GDK_BUTTON_RELEASE_MASK
+			|GDK_POINTER_MOTION_HINT_MASK);
+
+
+  
+
+  menuitemsave=gtk_menu_item_new_with_label("SAVE");
+  gtk_signal_connect(GTK_OBJECT (menuitemsave),"activate",
+		     GTK_SIGNAL_FUNC(Save),NULL);
+  gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemsave);
+  
+  menuitemload=gtk_menu_item_new_with_label("LOAD");
+  gtk_signal_connect(GTK_OBJECT (menuitemload),"activate",
+		     GTK_SIGNAL_FUNC(Load),NULL);
+  gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemload);
+
+
+  /* options menu */
+
+  winoptions=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(winoptions),"Options");
+  gtk_window_set_position(GTK_WINDOW(winoptions),GTK_WIN_POS_MOUSE);
+#ifndef GTK12  
+  gtk_window_set_deletable(GTK_WINDOW(winoptions),FALSE);
+#endif
+  menuitemoptions=gtk_menu_item_new_with_label("Options");
+  gtk_signal_connect(GTK_OBJECT (menuitemoptions),"activate",
+		     GTK_SIGNAL_FUNC(ShowWindowOptions),optfile);
+  gtk_signal_connect(GTK_OBJECT (winoptions),"destroy",
+		     GTK_SIGNAL_FUNC(QuitWindowOptions),"quit window");
+  gtk_signal_connect(GTK_OBJECT (winoptions),"delete_event",
+		     GTK_SIGNAL_FUNC(QuitWindowOptions),"quit window");
+ 
+ gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemoptions);
+
+
+  /* About menu */
+  winabout=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(winabout),"About SpaceZero");
+  gtk_window_set_position(GTK_WINDOW(winabout),GTK_WIN_POS_MOUSE);
+#ifndef GTK12  
+  gtk_window_set_deletable(GTK_WINDOW(winabout),FALSE);
+#endif
+  menuitemabout=gtk_menu_item_new_with_label("About");
+  gtk_signal_connect(GTK_OBJECT (menuitemabout),"activate",
+		     GTK_SIGNAL_FUNC(ShowWindowAbout),NULL);
+  gtk_signal_connect(GTK_OBJECT (winabout),"destroy",
+		     GTK_SIGNAL_FUNC(QuitWindowAbout),"quit window");
+  gtk_signal_connect(GTK_OBJECT (winabout),"delete_event",
+		     GTK_SIGNAL_FUNC(QuitWindowAbout),"delete_event window");
+  
+ 
+ gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemabout);
+
+
+  vbox2=gtk_vbox_new(FALSE,10);
+  hbox1=gtk_hbox_new(FALSE,10);
+  hbox2=gtk_hbox_new(FALSE,10);
+  hbox3=gtk_hbox_new(FALSE,10);
+  hbox4=gtk_hbox_new(FALSE,10);
+  vbox3=gtk_vbox_new(FALSE,10);
+ 
+  gtk_container_add(GTK_CONTAINER(winoptions),vbox2);
+  gtk_container_add(GTK_CONTAINER(winabout),vbox3);
+
+
+  snprintf(label,128," num. of planets: (%d,%d)",MINNUMPLANETS,MAXNUMPLANETS);
+  options4=gtk_label_new(label);
+  gtk_widget_show(options4);
+/*   options5=gtk_entry_new(); */
+/*   gtk_entry_set_text(GTK_ENTRY(options5),"30"); */
+/*   gtk_entry_set_width_chars(GTK_ENTRY(options5),4); */
+/*   gtk_widget_show(options5); */
+
+  options1=gtk_check_button_new_with_label("Known Universe");
+  gtk_widget_show(options1);
+  gtk_signal_connect(GTK_OBJECT (options1),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option1"); 
+
+
+  options2=gtk_check_button_new_with_label("Music OFF");
+  gtk_widget_show(options2);
+  gtk_signal_connect(GTK_OBJECT (options2),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option2"); 
+
+  options3=gtk_check_button_new_with_label("Sound OFF");
+  gtk_widget_show(options3);
+  gtk_signal_connect(GTK_OBJECT (options3),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option3"); 
+  
+  snprintf(label,128," num. of planets: (%d,%d)",MINNUMPLANETS,MAXNUMPLANETS);
+  options4=gtk_label_new(label);
+  gtk_widget_show(options4);
+  options5=gtk_entry_new();
+  gtk_entry_set_text(GTK_ENTRY(options5),"20");
+#ifndef GTK12  
+  gtk_entry_set_width_chars(GTK_ENTRY(options5),4);
+#endif  
+  gtk_widget_show(options5);
+
+  snprintf(label,128," num. of players: (%d,%d)",MINNUMPLAYERS,MAXNUMPLAYERS);
+  options6=gtk_label_new(label);
+  gtk_widget_show(options6);
+  options7=gtk_entry_new();
+#ifndef GTK12  
+  gtk_entry_set_width_chars(GTK_ENTRY(options7),4);
+#endif 
+  gtk_entry_set_text(GTK_ENTRY(options7),"2");
+  gtk_widget_show(options7);
+
+
+  snprintf(label,128," Universe Size: (%d,%d)",MINULX,MAXULX);
+  options8=gtk_label_new(label);
+  gtk_widget_show(options8);
+  options9=gtk_entry_new();
+#ifndef GTK12  
+    gtk_entry_set_width_chars(GTK_ENTRY(options9),8);
+#endif
+  gtk_entry_set_text(GTK_ENTRY(options9),"100000");
+  gtk_widget_show(options9);
+
+
+  options10=gtk_button_new_with_label(" Set Default");
+  gtk_widget_show(options10);
+  gtk_signal_connect(GTK_OBJECT (options10),"clicked",
+		     GTK_SIGNAL_FUNC(SetDefaultOptions),"set default");
+
+  options11=gtk_button_new_with_label(" Save and Close");
+  gtk_widget_show(options11);
+  gtk_signal_connect(GTK_OBJECT (options11),"clicked",
+		     GTK_SIGNAL_FUNC(SaveOptions),optfile);
+
+  options12=gtk_button_new_with_label(" Close Window");
+  gtk_widget_show(options12);
+  gtk_signal_connect(GTK_OBJECT (options12),"clicked",
+		     GTK_SIGNAL_FUNC(QuitWindowOptions),"quit window");
+
+
+  snprintf(label,128," Changes will take effect after rerun spacezero.\n (sound and music when save)");
+  options13=gtk_label_new(label);
+  gtk_widget_show(options13);
+
+
+  options14=gtk_check_button_new_with_label("Cooperative mode");
+  gtk_widget_show(options14);
+  gtk_signal_connect(GTK_OBJECT (options14),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option14"); 
+
+  options15=gtk_check_button_new_with_label("Computer cooperative mode");
+  gtk_widget_show(options15);
+  gtk_signal_connect(GTK_OBJECT (options15),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option15"); 
+
+  options16=gtk_check_button_new_with_label("Queen mode");
+  gtk_widget_show(options16);
+  gtk_signal_connect(GTK_OBJECT (options16),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option16"); 
+
+
+
+  snprintf(label,150,"\t SpaceZero 0.80.00\t\n\t May 2011\t\n\n\n  Copyrigth mrevenga.  \n  <mrevenga@users.sourforge.net>  \n  homepage:  http://spacezero.sourceforge.net/   ");
+  about1=gtk_label_new(label);
+  gtk_widget_show(about1);
+
+  about2=gtk_button_new_with_label(" Quit Window");
+  gtk_widget_show(about2);
+  gtk_signal_connect(GTK_OBJECT (about2),"clicked",
+		     GTK_SIGNAL_FUNC(QuitWindowAbout),"quit window");
+
+
+  gtk_box_pack_start(GTK_BOX(vbox2),options13,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),options1,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),options2,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),options3,FALSE,FALSE,0);
+
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox1,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox2,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox3,FALSE,FALSE,0);
+/*   gtk_box_pack_start(GTK_BOX(vbox2),options14,FALSE,FALSE,0); */
+
+
+  gtk_box_pack_start(GTK_BOX(vbox2),options14,FALSE,FALSE,0);
+/*   gtk_box_pack_start(GTK_BOX(vbox2),options17,FALSE,FALSE,0); */
+  gtk_box_pack_start(GTK_BOX(vbox2),options15,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),options16,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox4,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox1),options4,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox1),options5,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox2),options6,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox2),options7,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox3),options8,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox3),options9,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox4),options11,FALSE,FALSE,0);/*save */
+  gtk_box_pack_start(GTK_BOX(hbox4),options10,FALSE,FALSE,0);/*load */
+  gtk_box_pack_start(GTK_BOX(hbox4),options12,FALSE,FALSE,0);/*quit options*/
+  //    gtk_box_pack_start(GTK_BOX(vbox2),vbox3,FALSE,FALSE,0);/* about menu */ /* HERE why must be commented*/
+  gtk_box_pack_start(GTK_BOX(vbox3),about1,FALSE,FALSE,0); /* about text*/
+  gtk_box_pack_start(GTK_BOX(vbox3),about2,FALSE,FALSE,0);/*quit about */
+  /* -- options menu */
+
+
+
+  gtk_container_add(GTK_CONTAINER(win_main),vbox);
+  /*  gtk_box_pack_start(GTK_BOX(vbox),vbox2,FALSE,TRUE,0); */
+
+  gtk_signal_connect(GTK_OBJECT(win_main),"destroy",
+		     GTK_SIGNAL_FUNC(QuitGraphics),NULL);
+  
+  gtk_signal_connect(GTK_OBJECT(d_a),"expose_event",
+		     GTK_SIGNAL_FUNC(expose_event),NULL);
+  gtk_signal_connect(GTK_OBJECT(d_a),"configure_event",
+		     GTK_SIGNAL_FUNC(configure_event),NULL);
+  
+  gtk_signal_connect(GTK_OBJECT (win_main),"key_press_event",
+		     GTK_SIGNAL_FUNC(key_press),NULL);
+  
+  gtk_signal_connect(GTK_OBJECT (win_main),"key_release_event",
+		     GTK_SIGNAL_FUNC(key_release),NULL);
+  
+  gtk_signal_connect(GTK_OBJECT (win_main),"focus_in_event",
+		     GTK_SIGNAL_FUNC(GotFocus),NULL);
+  gtk_signal_connect(GTK_OBJECT (win_main),"focus_out_event",
+		     GTK_SIGNAL_FUNC(LostFocus),NULL);
+
+  /* mouse */
+  gtk_signal_connect(GTK_OBJECT (d_a),"motion_notify_event", 
+ 		     GTK_SIGNAL_FUNC(motion_notify),NULL); 
+  gtk_signal_connect(GTK_OBJECT (d_a),"button_press_event",
+		     GTK_SIGNAL_FUNC(button_press),NULL);
+  gtk_signal_connect(GTK_OBJECT (d_a),"button_release_event",
+		     GTK_SIGNAL_FUNC(button_release),NULL);
+
+  gtk_box_pack_start(GTK_BOX(vbox),menubar,FALSE,TRUE,0);
+  gtk_box_pack_start(GTK_BOX(vbox),d_a,TRUE,TRUE,0);
+  
+  gtk_widget_show(menubar);
+  gtk_widget_show(menuitemsave);
+  gtk_widget_show(menuitemload);
+  gtk_widget_show(menuitemoptions);
+  gtk_widget_show(menuitemabout);
+  gtk_widget_show(d_a);
+  gtk_widget_show(win_main);
+  /*  gtk_widget_show(winoptions); */
+  gtk_widget_show(vbox);
+  gtk_widget_show(vbox2);
+  gtk_widget_show(hbox1);
+  gtk_widget_show(hbox2);
+  gtk_widget_show(hbox3);
+  gtk_widget_show(hbox4);
+  gtk_widget_show(vbox3);
+
+  /* tooltips */
+  tooltips = gtk_tooltips_new ();
+  gtk_tooltips_set_tip (tooltips, options1, "All The Universe is known by all players.", NULL);
+
+  tooltips = gtk_tooltips_new ();
+  gtk_tooltips_set_tip (tooltips, options14, "All human players belongs to the same team.", NULL);
+
+  tooltips = gtk_tooltips_new ();
+  gtk_tooltips_set_tip (tooltips, options15, "All computer players belongs to the same team.", NULL);
+
+  tooltips = gtk_tooltips_new ();
+  gtk_tooltips_set_tip (tooltips, options16, "If the Queen ship is destroyed, all player ships are destroyed. GAME OVER.", NULL);
+
+
+  /* --tooltips */
+
+
+  /* colors */
+  penRed= GetPen(NewColor(65535,0,0),pixmap);
+  penGreen= GetPen(NewColor(0,65535,0),pixmap);
+  penLightGreen= GetPen(NewColor(40000,65535,40000),pixmap);
+  penBlue= GetPen(NewColor(0,29325,65535),pixmap);
+  penYellow= GetPen(NewColor(65535,65535,0),pixmap);
+  penWhite= GetPen(NewColor(65535,65535,65535),pixmap);
+  penBlack= GetPen(NewColor(0,0,0),pixmap);
+  
+  /*255 165   0 */
+  penOrange= GetPen(NewColor(65535,42405,0),pixmap);
+  /*238 130 238 */
+  penViolet= GetPen(NewColor(61166,33410,61166),pixmap);
+  /*255 192 203 */
+  penPink= GetPen(NewColor(65535,49344,52171),pixmap);
+  penCyan= GetPen(NewColor(0,65535,65535),pixmap);
+  penSoftRed= GetPen(NewColor(20000,0,0),pixmap);
+  /* --colors */
+
+  return(d_a);
+}
+
+
+
+GtkWidget *InitMenuGraphics(char *title,char *optfile,int w,int h){
+
+  GtkWidget *d_a;
+
+  GtkWidget *vbox;
+  GtkWidget *menubar;
+  GtkWidget *menuitemoptions;
+
+  GtkWidget *vbox2;
+  GtkWidget *vbox3;
+  GtkWidget *hbox1;
+  GtkWidget *hbox2;
+  GtkWidget *hbox3;
+  GtkWidget *hbox4;
+
+
+  char label[164];
+
+  GtkTooltips *tooltips;
+
+  win_mainmenu=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(win_mainmenu),title);
+
+#ifndef GTK12  
+  gtk_window_set_resizable(GTK_WINDOW(win_mainmenu),FALSE);
+#endif
+
+
+  vbox=gtk_vbox_new(FALSE,0);
+
+  d_a=gtk_drawing_area_new();
+  gtk_drawing_area_size(GTK_DRAWING_AREA(d_a),w,h);
+  
+  menubar=gtk_menu_bar_new();
+
+  /* events we need to detect */
+  gtk_widget_set_events(win_mainmenu,GDK_EXPOSURE_MASK
+			|GDK_LEAVE_NOTIFY_MASK
+			|GDK_KEY_PRESS_MASK
+			|GDK_KEY_RELEASE_MASK);
+  /*			|GDK_POINTER_MOTION_MASK */
+  /*			|GDK_BUTTON_PRESS_MASK */
+  /*			|GDK_BUTTON_RELEASE_MASK */
+  /*  			|GDK_POINTER_MOTION_HINT_MASK); */
+
+  gtk_widget_set_events(d_a,GDK_EXPOSURE_MASK
+			|GDK_LEAVE_NOTIFY_MASK
+			|GDK_KEY_PRESS_MASK
+			|GDK_KEY_RELEASE_MASK
+			|GDK_POINTER_MOTION_MASK
+			|GDK_BUTTON_PRESS_MASK
+			|GDK_BUTTON_RELEASE_MASK
+			|GDK_POINTER_MOTION_HINT_MASK);
+
+
+  
+
+
+  /* options menu */
+
+  winoptions=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(winoptions),"Options");
+  gtk_window_set_position(GTK_WINDOW(winoptions),GTK_WIN_POS_MOUSE);
+#ifndef GTK12  
+  gtk_window_set_deletable(GTK_WINDOW(winoptions),FALSE);
+#endif
+  menuitemoptions=gtk_menu_item_new_with_label("Options");
+  gtk_signal_connect(GTK_OBJECT (menuitemoptions),"activate",
+		     GTK_SIGNAL_FUNC(ShowWindowOptions),optfile);
+  gtk_signal_connect(GTK_OBJECT (winoptions),"destroy",
+		     GTK_SIGNAL_FUNC(QuitWindowOptions),"quit window");
+  gtk_signal_connect(GTK_OBJECT (winoptions),"delete_event",
+		     GTK_SIGNAL_FUNC(QuitWindowOptions),"quit window");
+ 
+  gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemoptions);
+
+
+
+  vbox2=gtk_vbox_new(FALSE,10);
+  hbox1=gtk_hbox_new(FALSE,10);
+  hbox2=gtk_hbox_new(FALSE,10);
+  hbox3=gtk_hbox_new(FALSE,10);
+  hbox4=gtk_hbox_new(FALSE,10);
+  vbox3=gtk_vbox_new(FALSE,10);
+ 
+  gtk_container_add(GTK_CONTAINER(winoptions),vbox2);
+  gtk_container_add(GTK_CONTAINER(winabout),vbox3);
+
+
+  snprintf(label,128," num. of planets: (%d,%d)",MINNUMPLANETS,MAXNUMPLANETS);
+  options4=gtk_label_new(label);
+  gtk_widget_show(options4);
+
+  options1=gtk_check_button_new_with_label("Known Universe");
+  gtk_widget_show(options1);
+  gtk_signal_connect(GTK_OBJECT (options1),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option1"); 
+
+
+  options2=gtk_check_button_new_with_label("Music OFF");
+  gtk_widget_show(options2);
+  gtk_signal_connect(GTK_OBJECT (options2),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option2"); 
+
+  options3=gtk_check_button_new_with_label("Sound OFF");
+  gtk_widget_show(options3);
+  gtk_signal_connect(GTK_OBJECT (options3),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option3"); 
+  
+  snprintf(label,128," num. of planets: (%d,%d)",MINNUMPLANETS,MAXNUMPLANETS);
+  options4=gtk_label_new(label);
+  gtk_widget_show(options4);
+  options5=gtk_entry_new();
+  gtk_entry_set_text(GTK_ENTRY(options5),"20");
+#ifndef GTK12  
+  gtk_entry_set_width_chars(GTK_ENTRY(options5),4);
+#endif  
+  gtk_widget_show(options5);
+
+  snprintf(label,128," num. of players: (%d,%d)",MINNUMPLAYERS,MAXNUMPLAYERS);
+  options6=gtk_label_new(label);
+  gtk_widget_show(options6);
+  options7=gtk_entry_new();
+#ifndef GTK12  
+  gtk_entry_set_width_chars(GTK_ENTRY(options7),4);
+#endif 
+  gtk_entry_set_text(GTK_ENTRY(options7),"2");
+  gtk_widget_show(options7);
+
+
+  snprintf(label,128," Universe Size: (%d,%d)",MINULX,MAXULX);
+  options8=gtk_label_new(label);
+  gtk_widget_show(options8);
+  options9=gtk_entry_new();
+#ifndef GTK12  
+    gtk_entry_set_width_chars(GTK_ENTRY(options9),8);
+#endif
+  gtk_entry_set_text(GTK_ENTRY(options9),"100000");
+  gtk_widget_show(options9);
+
+
+  options10=gtk_button_new_with_label(" Set Default");
+  gtk_widget_show(options10);
+  gtk_signal_connect(GTK_OBJECT (options10),"clicked",
+		     GTK_SIGNAL_FUNC(SetDefaultOptions),"set default");
+
+  options11=gtk_button_new_with_label(" Save and Close");
+  gtk_widget_show(options11);
+  gtk_signal_connect(GTK_OBJECT (options11),"clicked",
+		     GTK_SIGNAL_FUNC(SaveOptions),optfile);
+
+  options12=gtk_button_new_with_label(" Close Window");
+  gtk_widget_show(options12);
+  gtk_signal_connect(GTK_OBJECT (options12),"clicked",
+		     GTK_SIGNAL_FUNC(QuitWindowOptions),"quit window");
+
+
+  snprintf(label,128," Changes will take effect after rerun spacezero.\n (sound and music when save)");
+  options13=gtk_label_new(label);
+  gtk_widget_show(options13);
+
+
+  options14=gtk_check_button_new_with_label("Cooperative mode");
+  gtk_widget_show(options14);
+  gtk_signal_connect(GTK_OBJECT (options14),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option14"); 
+
+  options15=gtk_check_button_new_with_label("Computer cooperative mode");
+  gtk_widget_show(options15);
+  gtk_signal_connect(GTK_OBJECT (options15),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option15"); 
+
+  options16=gtk_check_button_new_with_label("Queen mode");
+  gtk_widget_show(options16);
+  gtk_signal_connect(GTK_OBJECT (options16),"toggled",
+ 		     GTK_SIGNAL_FUNC(PrintMessage),"option16"); 
+
+
+
+  snprintf(label,150,"\t SpaceZero 0.80.00\t\n\t May 2011\t\n\n\n  Copyrigth mrevenga.  \n  <mrevenga@users.sourforge.net>  \n  homepage:  http://spacezero.sourceforge.net/   ");
+
+
+  gtk_box_pack_start(GTK_BOX(vbox2),options13,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),options1,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),options2,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),options3,FALSE,FALSE,0);
+
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox1,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox2,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox3,FALSE,FALSE,0);
+/*   gtk_box_pack_start(GTK_BOX(vbox2),options14,FALSE,FALSE,0); */
+
+
+  gtk_box_pack_start(GTK_BOX(vbox2),options14,FALSE,FALSE,0);
+/*   gtk_box_pack_start(GTK_BOX(vbox2),options17,FALSE,FALSE,0); */
+  gtk_box_pack_start(GTK_BOX(vbox2),options15,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),options16,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox4,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox1),options4,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox1),options5,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox2),options6,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox2),options7,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox3),options8,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox3),options9,FALSE,FALSE,0);
+  gtk_box_pack_start(GTK_BOX(hbox4),options11,FALSE,FALSE,0);/*save */
+  gtk_box_pack_start(GTK_BOX(hbox4),options10,FALSE,FALSE,0);/*load */
+  gtk_box_pack_start(GTK_BOX(hbox4),options12,FALSE,FALSE,0);/*quit options*/
+
+
+  /* -- options menu */
+
+
+
+  gtk_container_add(GTK_CONTAINER(win_mainmenu),vbox);
+  /*  gtk_box_pack_start(GTK_BOX(vbox),vbox2,FALSE,TRUE,0); */
+
+  gtk_signal_connect(GTK_OBJECT(win_mainmenu),"destroy",
+		     GTK_SIGNAL_FUNC(QuitGraphics),NULL);
+  
+  gtk_signal_connect(GTK_OBJECT(d_a),"expose_event",
+		     GTK_SIGNAL_FUNC(expose_event),NULL);
+  gtk_signal_connect(GTK_OBJECT(d_a),"configure_event",
+		     GTK_SIGNAL_FUNC(configure_event),NULL);
+  
+  gtk_signal_connect(GTK_OBJECT (win_mainmenu),"key_press_event",
+		     GTK_SIGNAL_FUNC(key_press),NULL);
+  
+  gtk_signal_connect(GTK_OBJECT (win_mainmenu),"key_release_event",
+		     GTK_SIGNAL_FUNC(key_release),NULL);
+  
+  gtk_signal_connect(GTK_OBJECT (win_mainmenu),"focus_in_event",
+		     GTK_SIGNAL_FUNC(GotFocus),NULL);
+  gtk_signal_connect(GTK_OBJECT (win_mainmenu),"focus_out_event",
+		     GTK_SIGNAL_FUNC(LostFocus),NULL);
+
+  /* mouse */
+  gtk_signal_connect(GTK_OBJECT (d_a),"motion_notify_event", 
+ 		     GTK_SIGNAL_FUNC(motion_notify),NULL); 
+  gtk_signal_connect(GTK_OBJECT (d_a),"button_press_event",
+		     GTK_SIGNAL_FUNC(button_press),NULL);
+  gtk_signal_connect(GTK_OBJECT (d_a),"button_release_event",
+		     GTK_SIGNAL_FUNC(button_release),NULL);
+
+  gtk_box_pack_start(GTK_BOX(vbox),menubar,FALSE,TRUE,0);
+  gtk_box_pack_start(GTK_BOX(vbox),d_a,TRUE,TRUE,0);
+  
+  gtk_widget_show(menubar);
+  gtk_widget_show(menuitemoptions);
+  gtk_widget_show(d_a);
+  gtk_widget_show(win_mainmenu);
+  /*  gtk_widget_show(winoptions); */
+  gtk_widget_show(vbox);
+  gtk_widget_show(vbox2);
+  gtk_widget_show(hbox1);
+  gtk_widget_show(hbox2);
+  gtk_widget_show(hbox3);
+  gtk_widget_show(hbox4);
+  gtk_widget_show(vbox3);
+
+  /* tooltips */
+  tooltips = gtk_tooltips_new ();
+  gtk_tooltips_set_tip (tooltips, options1, "All The Universe is known by all players.", NULL);
+
+  tooltips = gtk_tooltips_new ();
+  gtk_tooltips_set_tip (tooltips, options14, "All human players belongs to the same team.", NULL);
+
+  tooltips = gtk_tooltips_new ();
+  gtk_tooltips_set_tip (tooltips, options15, "All computer players belongs to the same team.", NULL);
+
+  tooltips = gtk_tooltips_new ();
+  gtk_tooltips_set_tip (tooltips, options16, "If the Queen ship is destroyed, all player ships are destroyed. GAME OVER.", NULL);
+
+
+  /* --tooltips */
+
+
+  /* colors */
+  penRed= GetPen(NewColor(65535,0,0),pixmap);
+  penGreen= GetPen(NewColor(0,65535,0),pixmap);
+  penLightGreen= GetPen(NewColor(40000,65535,40000),pixmap);
+  penBlue= GetPen(NewColor(0,29325,65535),pixmap);
+  penYellow= GetPen(NewColor(65535,65535,0),pixmap);
+  penWhite= GetPen(NewColor(65535,65535,65535),pixmap);
+  penBlack= GetPen(NewColor(0,0,0),pixmap);
+  
+  /*255 165   0 */
+  penOrange= GetPen(NewColor(65535,42405,0),pixmap);
+  /*238 130 238 */
+  penViolet= GetPen(NewColor(61166,33410,61166),pixmap);
+  /*255 192 203 */
+  penPink= GetPen(NewColor(65535,49344,52171),pixmap);
+  penCyan= GetPen(NewColor(0,65535,65535),pixmap);
+  penSoftRed= GetPen(NewColor(20000,0,0),pixmap);
+  /* --colors */
+
+  return(d_a);
+}
+
+
+
+
+gint QuitGraphics(GtkWidget *widget,gpointer gdata){
+
+  gtk_main_quit();
+  
+  return FALSE;
+}
+
+
+#ifndef GTK12
+
+gint expose_event(GtkWidget *widget, GdkEventExpose *event){
+  /* version 01 06Feb2011*/
+
+  GdkRectangle *rects;
+  int n_rects;
+  int i;
+
+  static int cont=0; 
+
+  gdk_region_get_rectangles (event->region, &rects, &n_rects);
+  //  printf("espose event %d %d, %d %d \n",cont,n_rects,event->area.width,event->area.height);
+
+  for (i = 0; i < n_rects; i++)
+    {
+      /* Repaint rectangle: (rects[i].x, rects[i].y), 
+      *                    (rects[i].width, rects[i].height)
+       */
+
+      //      printf("\t %d %d %d \n",i,rects[i].width,rects[i].height);
+      gdk_draw_pixmap(widget->window,
+		      widget->style->fg_gc[GTK_WIDGET_STATE(widget)],
+		      pixmap,
+		      rects[i].x,rects[i].y,
+		      rects[i].x,rects[i].y,
+		      rects[i].width,rects[i].height);
+
+    }
+
+  g_free (rects);
+  cont++;
+  return FALSE;
+}
+
+#else
+gint expose_event(GtkWidget *widget, GdkEventExpose *event){
+  /* version 00 */ 
+  static int cont=0; 
+
+/*   printf("espose event %d %d, %d %d \n",GetTime(),cont,event->area.width,event->area.height); */
+
+  gdk_draw_pixmap(widget->window,
+		  widget->style->fg_gc[GTK_WIDGET_STATE(widget)],
+		  pixmap,
+		  event->area.x,event->area.y,
+		  event->area.x,event->area.y,
+		  -1,-1);//event->area.width,event->area.height);
+  
+  cont++;
+  return FALSE;
+}
+#endif
+
+
+
+gint configure_event(GtkWidget *widget, GdkEventConfigure *event){
+  /* The window has been resized */  
+
+
+  if(pixmap){
+    gdk_pixmap_unref(pixmap);
+  }
+  pixmap=gdk_pixmap_new(widget->window,
+			widget->allocation.width,
+			widget->allocation.height,
+			-1);
+  return TRUE;
+}
+
+
+gint GotFocus(GtkWidget *widget,gpointer data){
+  keys.ctrl=FALSE;
+  return(0);
+}
+
+gint LostFocus(GtkWidget *widget,gpointer data){
+/*   SetDefaultKeyValues(&keys); */
+  keys.ctrl=FALSE;
+  return(0);
+}
+
+gint button_press(GtkWidget *widget,GdkEventButton *event){
+  /* printf("mouse press\n");  */
+  keys.mleft=TRUE;
+  return(0);
+}
+
+gint button_release(GtkWidget *widget,GdkEventButton *event){
+  static int lasttime=0;
+  int time;
+
+/*   printf("mouse release\n");  */
+  time=GetTime();
+  if(time-lasttime<6){
+    keys.mdclick=TRUE;
+  }
+  lasttime=time;
+
+  keys.mleft=FALSE;
+  return(0);
+}
+
+gint motion_notify(GtkWidget *widget,GdkEventMotion *event){
+  int x,y;
+  GdkModifierType state;
+ 
+  if(event->is_hint){
+    gdk_window_get_pointer(event->window,&x,&y,&state);
+
+  } 
+  else{
+    x=event->x;
+    y=event->y;
+    state=event->state;
+  }
+  
+  mouse_pos.x=x;
+  mouse_pos.y=y;
+  /*  printf("mouse move: x= %d, y= %d\n",x,y); */
+  return(TRUE);
+}
+
+
+void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
+  
+  //  g_print("%d, %s, %u\n",event->keyval,event->string,gdk_keyval_to_unicode(event->keyval));   
+  //  g_print("%d, %s\n",event->keyval,event->string);   
+  CountKey(1);
+
+/*   if(GameParametres(GET,GPAUSED,0)==TRUE){ */
+/*     switch (event->keyval){ */
+/*     case 112:  /\*p *\/ */
+/* /\*       GameParametres(SET,GPAUSED,FALSE); *\/ */
+/* /\*       keys.p=FALSE; *\/ */
+/*       break; */
+/*     default: */
+/*       break; */
+/*     } */
+/*     //    return; */
+/*   } */
+
+  if(event->keyval>31 && event->keyval < 256  ){
+    Keystrokes(ADD,(char *)&(event->keyval));
+  }
+  else{
+    /* recodified for access to 2 byte keys using 1 byte TODO ??*/
+    switch(event->keyval){
+    case 65470: /* F1 key */
+      Keystrokes(ADD,"F");
+      Keystrokes(ADD,"1");
+      break;
+    case 65471: /* F2 key */
+      Keystrokes(ADD,"F");
+      Keystrokes(ADD,"2");
+      break;
+    case 65472: /* F3 key */
+      Keystrokes(ADD,"F");
+      Keystrokes(ADD,"3");
+      break;
+    case 65473: /* F4 key */
+      Keystrokes(ADD,"F");
+      Keystrokes(ADD,"4");
+      break;
+    default:
+      break;
+    }
+  }
+  switch (event->keyval){
+  case 65360:
+    keys.home=TRUE;
+    break;
+  case 65366:
+    keys.Pagedown=TRUE;
+    break;
+  case 65365:
+    keys.Pageup=TRUE;
+    break;
+  case 65288:
+    keys.back=TRUE;
+    break;
+  case 65289:
+    keys.tab=TRUE;
+    break;
+  case 65293:
+    keys.enter=TRUE;
+    break;
+  case 65361:
+    keys.left=TRUE;
+    break;
+  case 65362:
+    keys.up=TRUE;
+    //    printf("up press\n");
+    break;
+  case 65363:
+    keys.right=TRUE;
+    break;
+  case 65364:
+    keys.down=TRUE;
+    break;
+  case 65307:
+    keys.esc=TRUE;
+    break;
+  case 65470:
+    keys.f1=TRUE;
+    break;
+  case 65471:
+    keys.f2=TRUE;
+    break;
+  case 65472:
+    keys.f3=TRUE;
+    break;
+  case 65473:
+    keys.f4=TRUE;
+    break;
+  case 65474:
+    if(keys.f5==TRUE)
+      keys.f5=FALSE;
+    else
+      keys.f5=TRUE;
+    break;
+  case 65475:
+    if(keys.f6==TRUE)
+      keys.f6=FALSE;
+    else
+      keys.f6=TRUE;
+    break;
+  case 65476:
+    keys.f7=TRUE;
+    break;
+  case 65477:
+    keys.f8=TRUE;
+    break;
+  case 65505:
+  case 65506:
+    keys.may=TRUE;
+    break;
+  case 65507:
+  case 65508:
+    keys.ctrl=TRUE;
+    break;
+  case 32:
+    keys.space=TRUE;
+    break;
+  case 48:
+    keys.number[0]=TRUE;
+    break;
+  case 49:
+    keys.number[1]=TRUE;
+    break;
+  case 50:
+    keys.number[2]=TRUE;
+    break;
+  case 51:
+    keys.number[3]=TRUE;
+    break;
+  case 52:
+    keys.number[4]=TRUE;
+    break;
+  case 53:
+    keys.number[5]=TRUE;
+    break;
+  case 54:
+    keys.number[6]=TRUE;
+    break;
+  case 55:
+    keys.number[7]=TRUE;
+    break;
+  case 56:
+    keys.number[8]=TRUE;
+    break;
+  case 57:
+    keys.number[9]=TRUE;
+    break;
+  case 65:
+  case 97:
+    keys.a=TRUE;
+    break;
+  case 66:
+  case 98:
+    if(keys.o==TRUE)
+      keys.b=TRUE;
+    break;
+  case 68:
+  case 100:
+    if(keys.d==TRUE)
+      keys.d=FALSE;
+    else
+      keys.d=TRUE;
+    break;
+  case 69:
+  case 101: /*e */
+    keys.e=TRUE;
+    break;
+  case 71:
+  case 103:
+    keys.g=TRUE;
+    break;
+  case 104:
+    break;
+  case 73:
+  case 105:
+    keys.i=TRUE;
+    break;
+  case 76:
+  case 108:
+    keys.l=TRUE;
+    break;
+  case 77:
+  case 109:
+    keys.m=TRUE;
+    break;
+  case 78:
+  case 110:
+    keys.n=TRUE;
+    break;
+  case 79:
+  case 111: /*o */
+    keys.o=TRUE;
+    keys.g=FALSE;
+    keys.s=FALSE;
+    keys.p=FALSE;
+    keys.t=FALSE;
+    keys.b=FALSE;
+    keys.r=FALSE;
+    break;
+  case 80:
+  case 112:
+    if(keys.p==TRUE)
+      keys.p=FALSE;
+    else
+      keys.p=TRUE;
+    break;
+  case 81:
+  case 113:
+    keys.q=TRUE;
+    break;
+  case 82:
+  case 114:
+    keys.r=TRUE;
+    break;
+  case 83:
+  case 115:
+    keys.s=TRUE;
+    break;
+  case 84:
+  case 116:
+    if(keys.o==TRUE){
+      keys.t=TRUE;
+    }else{
+      if(keys.trace==TRUE)
+	keys.trace=FALSE;
+      else
+	keys.trace=TRUE;
+    }
+    break;
+  case 85:
+  case 117:
+    keys.u=TRUE;
+    break;
+  case 87:
+  case 119:
+    keys.w=TRUE;
+    break;
+  case 88:
+  case 120:
+    keys.x=TRUE;
+    break;
+  case 89:
+  case 121:
+    keys.y=TRUE;
+    break;
+
+  case 90:  /* z Z */
+  case 122:
+    keys.z=TRUE;
+    break;
+  default:
+    break;
+  }
+  if(keys.o==FALSE){
+    /* keys.enter=FALSE; */
+    keys.b=FALSE;
+  }
+}
+
+
+void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data){
+  
+  switch (event->keyval){
+  case 65360:
+    keys.home=FALSE;
+    break;
+  case 65366:
+    keys.Pagedown=FALSE;
+    break;
+  case 65365:
+    keys.Pageup=FALSE;
+    break;
+
+  case 65288:
+    keys.back=FALSE;
+    break;
+  case 65307:
+    keys.esc=FALSE;
+    break;
+  case 65289:
+    keys.tab=FALSE;
+    break;
+  case 65362:
+    keys.up=FALSE;
+    break;
+  case 65364:
+    keys.down=FALSE;
+    break;
+  case 65363:
+    keys.right=FALSE;
+    break;
+  case 65361:
+    keys.left=FALSE;
+    break;
+  case 65505:
+  case 65506:
+    keys.may=FALSE;
+    break;
+  case 65470:
+    keys.f1=FALSE;
+    break;
+  case 65471:
+    keys.f2=FALSE;
+    break;
+  case 65472:
+    keys.f3=FALSE;
+    break;
+  case 65473:
+    keys.f4=FALSE;
+    break;
+  case 65476:
+    keys.f7=FALSE;
+    break;
+  case 65477:
+    keys.f8=FALSE;
+    break;
+  case 65507:
+  case 65508:
+    keys.ctrl=FALSE;
+    break;
+  case 32:
+    keys.space=FALSE;
+    break;
+  case 65:
+  case 97:
+    keys.a=FALSE;
+    break;
+  case 90:
+  case 122:
+    keys.z=FALSE;
+    break;
+  case 73:
+  case 105:
+    keys.i=FALSE;
+    break;
+  case 76:
+  case 108:
+    keys.l=FALSE;
+    break;
+  case 77:
+  case 109:
+    keys.m=FALSE;
+    break;
+  case 78:
+  case 110:
+    keys.n=FALSE;
+    break;
+  case 81:
+  case 113:
+    keys.q=FALSE;
+    break;
+  case 83:
+  case 115:
+    keys.s=FALSE;
+    break;
+  case 88:
+  case 120:
+    keys.x=FALSE;
+    break;
+  case 89:
+  case 121:
+    keys.y=FALSE;
+    break;
+
+  default:
+    break;
+  }
+}
+
+
+GdkColor *NewColor(int red,int green,int blue){
+  
+  GdkColor *c=(GdkColor *)malloc(sizeof(GdkColor));
+  g_memused+=sizeof(GdkColor);
+  if(c==NULL){
+    fprintf(stderr,"ERROR in malloc Newcolor()\n");
+    exit(-1);
+  }
+  
+  c->red=red;
+  c->green=green;
+  c->blue=blue;
+  gdk_color_alloc(gdk_colormap_get_system(),c);
+  
+  return(c);
+  
+}
+
+GdkGC *GetPen(GdkColor *c,GdkPixmap *pixmap){
+  
+  GdkGC *gc;
+  
+  gc=gdk_gc_new(pixmap);
+  gdk_gc_set_foreground(gc,c);
+  
+  return(gc);
+}
+
+
+void WriteCad(GdkPixmap *pixmap,char *cad,int x,int y,GdkGC *color){
+  char point[32];
+
+  strncpy(point,cad,32);
+  DrawString(pixmap,gfont,color,x,y,point);
+}
+
+
+int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Object *cv,Vector r_rel){
+  /*
+    version 0.1
+    Draw all visible objects in pixmap
+    returns:
+    the number of object drawed.
+   */  
+  GdkGC *gc;
+  GdkGC *gcexp;
+  struct ObjList *ls;
+  struct HeadObjList hol;
+  Object *lobj=NULL;
+  int x,y,r;
+  int i,n=0;
+  float x0,y0,x1,y1,a;
+  float x_0,y_0,x_1,y_1;
+  float rcosa,rsina;
+
+  /* last to draw (cv)*/
+  int lx=0,ly=0;
+  float la=0,lr=0;
+  int lstate=0,lsubtype=0;
+  int lsw=0;
+  int cont=0;
+  int gwidth,gheight;
+  float xr,yr;
+  float sx,sy;
+  /*  DrawShip(pixmap,gc,x,y,a,r,ls->obj->state,ls->obj->subtype); */
+
+  float s[]={6,
+	     3,0,
+	     2,-1,
+	     -2,-1,
+	     -2,1,
+	     2,1,
+	     3,0};
+  
+  
+#if DEBUG
+  printf("DrawObjs()\n");
+#endif
+  
+  if(cv==NULL)return(0);  
+
+  if(0){
+    if(cv->in==NULL)n=0;
+    else{
+      n=(cv->in->id);
+    }
+    /* check */
+    
+    if(n<0||n>GameParametres(GET,GNPLANETS,0)){
+      fprintf(stderr,"ERROR in DrawObjs() n=%d\n",n);
+      exit(-1);
+    }
+    
+    hol=lhc[n];
+    
+    if(hol.n==0){
+      return(cont);
+    }
+  }
+
+  gwidth=GameParametres(GET,GWIDTH,0);
+  gheight=GameParametres(GET,GHEIGHT,0);
+
+  sx=(float)gwidth/LXFACTOR;
+  sy=(float)gheight/LYFACTOR;
+
+  gc=penWhite;
+  gcexp=penRed;
+
+  xr=r_rel.x-gwidth/2;
+  yr=r_rel.y-gheight/2;
+
+  ls=lhc->next;
+  
+
+  while (ls!=NULL){
+    if(ls->obj->type==SHIP && ls->obj->ttl<MINTTL){ls=ls->next;continue;}
+    if(ls->obj->state<=0){ls=ls->next;continue;}
+    if(ls->obj->habitat!=habitat.type){ls=ls->next;continue;}
+    if(cv!=NULL){
+      if(cv->in!=ls->obj->in){ls=ls->next;continue;}
+    }
+    x=ls->obj->x;
+    y=ls->obj->y;
+    
+    if(ls->obj->habitat==H_PLANET){
+      x*=sx;
+      y*=sy;
+      if(ls->obj->type==SHIP){
+	y+=ls->obj->radio+1;
+      }
+    }
+
+
+    if(ls->obj->habitat==H_SPACE){
+      x-=xr;
+      y-=yr;
+    }
+    r=ls->obj->radio;
+
+    if(x+r<0 || y+r<0 || x-r>gwidth || y-r>gheight){ 
+      ls=ls->next;
+      continue;
+    } 
+    a=ls->obj->a;    
+
+    
+    /*    printf("type: %d id:%d\n",ls->obj->type,ls->obj->id); */
+    if(ls->obj->player > MAXNUMPLAYERS+2){
+      fprintf(stderr,"ERROR in DrawObjs(): Too much players\n");
+      fprintf(stderr,"\tid: %d player: %d\n",ls->obj->id,ls->obj->player);
+      exit(-1);
+    }
+    
+    cont++;
+    switch(ls->obj->type){
+    case PROJECTILE:
+      switch(ls->obj->subtype){
+      case SHOT1:
+	gdk_draw_point(pixmap,penWhite,x+1,gheight-y);
+	gdk_draw_point(pixmap,penWhite,x-1,gheight-y);
+	gdk_draw_point(pixmap,penWhite,x,gheight-(y+1));
+	gdk_draw_point(pixmap,penWhite,x,gheight-(y-1));
+	/*	g_print("tiro:%f %f\n",ls->obj->x,ls->obj->y); */
+	break;
+      case MISSILE:/*SHOT3: */
+	gc=gcolors[players[ls->obj->player].color];
+
+	rcosa=r*cos(a);
+	rsina=r*sin(a);
+		
+	n=s[0];
+	for(i=0;i<s[0]-1;i++){
+	  x0=s[2*i+1];
+	  y0=s[2*i+2];
+	  x1=s[2*i+3];
+	  y1=s[2*i+4];
+	  
+	  x_0=x0*rcosa-y0*rsina;
+	  y_0=x0*rsina+y0*rcosa;
+	  
+	  x_1=x1*rcosa-y1*rsina;
+	  y_1=x1*rsina+y1*rcosa;
+	  
+	  gdk_draw_line(pixmap,gc,
+			x+x_0,gheight-(y+y_0),
+			x+x_1,gheight-(y+y_1));
+	  
+	}
+
+	break;
+      case LASER:/*SHOT4: */
+
+	rcosa=r*cos(a);
+	rsina=r*sin(a);
+	
+	x0=x-rcosa;
+	x1=x+rcosa;
+	y0=y-rsina;
+	y1=y+rsina;
+
+	gdk_draw_line(pixmap,penBlue,
+		      x0,gheight-(y0),
+		      x1,gheight-(y1));
+	/*	printf("%d %f %f %d\n",x,x0,x1,r); */
+	break;
+      case EXPLOSION:
+	//	gcexp=gcolors[-(ls->obj->id)%10];
+	//	gdk_draw_point(pixmap,gcexp,x,gheight-y);
+	gdk_draw_rectangle(pixmap,gcexp,TRUE,x-2,gheight-y-2,4,4);
+	break;
+      default:
+	fprintf(stderr,"ERROR: DrawObjs() not known\n");
+	break;
+      }
+      break;
+      
+    case SHIP:
+      switch(ls->obj->subtype){
+      case SHIP1:
+      case SHIP2:
+      case SHIP3:
+      case SHIP4:
+      case SATELLITE:
+      case TOWER:	
+	if(ls->obj->habitat==H_PLANET && ls->obj==cv && ls->obj->selected==TRUE){
+	  lx=x;
+	  ly=y;
+	  la=a;
+	  lr=r;
+	  lstate=ls->obj->state;
+	  lsubtype=ls->obj->subtype;
+	  lobj=ls->obj;
+	  lsw=1;
+	}
+	else{
+	  gc=gcolors[players[ls->obj->player].color];
+	  if(ls->obj->selected==TRUE && ls->obj!=cv)gc=penWhite;
+	  DrawShip(pixmap,gc,x,y,ls->obj);
+	}
+	
+	break;
+      default:
+	g_print("ERROR DrawObjs(1) %d %d %d\n",ls->obj->id,ls->obj->type,ls->obj->subtype);
+	exit(-1);
+	break;
+      }
+      break;
+      
+    case ASTEROID:
+      DrawAsteroid(pixmap,x,y,ls->obj);
+      break;
+    case PLANET:
+
+      DrawPlanet(pixmap,x,y,ls->obj->radio);
+
+      break;
+    case TRACKPOINT:
+      break;
+    case TRACE:
+      gdk_draw_point(pixmap,penWhite,x,gheight-y);
+      break;
+    default:
+      g_print("ERROR DrawObjs(2)%d %d %d %d %d\n",ls->obj->id,ls->obj->type,ls->obj->subtype,ls->obj->player,n);
+      //      exit(-1);
+      break;
+    }   
+    ls=ls->next;
+  }
+
+  if(lsw){
+    DrawShip(pixmap,penWhite,lx,ly,lobj);
+  }
+
+ return(cont);
+}
+
+
+void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
+  /*
+    Draw a ship with the position and parameters gived in arguments.
+  */  
+
+  GdkGC *gc2;
+  int sw=0,color;
+  int gheight;
+  float x0,y0,x1,y1;
+  float x_0,y_0,x_1,y_1;
+  float rcosa,rsina;
+  static float s1[]={3,-1,-0.6,1,0,-1,0.6};  /*SHIP1 EXPLORER*/
+  static float s2[]={5,-0.2,0,-1,-0.6,1,0,-1,0.6,-0.2,0}; /* SHIP2 */
+  static float s3[]={12,            /* number of points    SHIP3 FIGHTER */
+		     0.866,0.5,     /* pair of points */
+		     0.5,0.866,
+		     -0.5,0.866,
+		     -0.866,0.5,
+		     0,0,
+		     -0.866,-0.5,
+		     -0.5,-0.866,
+		     0,-0.866,
+		     0,0.866,
+		     0,-0.866,
+		     0.5,-0.866,
+		     0.866,-0.5};
+  static float s4[]={12,                 /* SHIP4 QUEEN */
+		     1,0,
+		     -0.5,0.5,
+		     -1,0.5,
+		     -0.5,0.25,
+		     -0.5,-0.25,
+		     -1,-0.5,
+		     -0.5,-0.5,
+		     1,0,
+		     0.55,0,
+		     -0.25,0.25,
+		     -0.25,-0.25,
+		     0.55,0};
+  /*  static float s5[]={6, */
+  /* 	      0.625,0, */
+  /* 	      0.375,-0.1875, */
+  /* 	      -0.375,-0.1875, */
+  /* 	      -0.375,0.1875, */
+  /* 	      0.375,0.1875, */
+  /* 	      0.625,0}; */
+  
+  static float s6[]={5, /* SHIP6 TOWER */
+		     1.,0,
+		     1.,-0.5,
+		     1.5,0,
+		     1.,0.5,
+		     1.,0};
+
+	      
+  float *s;
+  int i;
+  static GdkGC  *gcobj[3];
+  
+  if(sw==0){
+    sw=1;
+    gcobj[0]=penRed;
+    gcobj[1]=penYellow;
+    gcobj[2]=penGreen;
+  }
+
+  gheight=GameParametres(GET,GHEIGHT,0);
+    
+  color=2;
+  if(obj->state < 50)color=1;
+  if(obj->state < 25)color=0;
+  gc2=gcobj[color];
+
+  switch(obj->subtype){
+  case SHIP1:
+    s=s1;
+    break;
+  case SHIP2:
+    s=s2;
+    break;
+  case SHIP3:
+    s=s3;
+    break;
+  case SHIP4:
+    s=s4;
+    break;
+  case TOWER:
+    s=s6;
+    break;
+  default:
+    s=s1;
+    break;
+  }
+  switch(obj->subtype){
+
+  case SHIP1:
+  case SHIP2:
+  case SHIP3:
+  case SHIP4:
+
+    rcosa=obj->radio*cos(obj->a);
+    rsina=obj->radio*sin(obj->a);
+    
+    for(i=0;i<s[0]-1;i++){
+      x0=s[2*i+1];
+      y0=s[2*i+2];
+      x1=s[2*i+3];
+      y1=s[2*i+4];
+      
+      x_0=x0*rcosa-y0*rsina;
+      y_0=x0*rsina+y0*rcosa;
+
+      x_1=x1*rcosa-y1*rsina;
+      y_1=x1*rsina+y1*rcosa;
+      
+      gdk_draw_line(pixmap,gc,
+		    x+x_0,gheight-(y+y_0),
+		    x+x_1,gheight-(y+y_1));
+      
+    }
+    gdk_draw_rectangle(pixmap,gc2,TRUE,
+		       x-1,gheight-y-1,3,3);
+
+
+    break;
+
+  case SATELLITE:	
+    gdk_draw_arc(pixmap,gc,FALSE,
+		 x-obj->radio,gheight-y-obj->radio,
+		 2*obj->radio,2*obj->radio,0,23040);
+    break;
+
+   case TOWER: 
+
+     rcosa=obj->radio*cos(obj->a);
+     rsina=obj->radio*sin(obj->a);
+
+     gdk_draw_rectangle(pixmap,gc,FALSE, 
+			x-.5*obj->radio,gheight-y-obj->radio, 
+			obj->radio,2*obj->radio); 
+     for(i=0;i<s[0]-1;i++){
+       x0=s[2*i+1];
+       y0=s[2*i+2];
+       x1=s[2*i+3];
+       y1=s[2*i+4];
+       
+       x_0=x0*rcosa-y0*rsina;
+       y_0=x0*rsina+y0*rcosa;
+       
+       x_1=x1*rcosa-y1*rsina;
+       y_1=x1*rsina+y1*rcosa;
+       
+       gdk_draw_line(pixmap,gc,
+		     x+x_0,gheight-(y+y_0),
+		     x+x_1,gheight-(y+y_1));
+     }
+     
+     
+     gdk_draw_rectangle(pixmap,gc2,TRUE, 
+			x-1,gheight-y-1,3,3);     
+     break; 
+  default:
+    fprintf(stderr,"ERROR in DrawShip()\n");
+    exit(-1);
+    break;
+  }
+}
+
+void DrawPlanet(GdkPixmap *pixmap,int x,int y, int r){
+  /*
+    Draw a planet in outer space.
+
+   */
+  int i,j;
+  int dx,dxl,dy;
+  static int desp=0,despr=0,despl=0;
+  float inc;
+  float coef;
+  float radio2;
+  int gheight;
+  int rcoef;
+
+  gheight=GameParametres(GET,GHEIGHT,0);
+
+  gdk_draw_arc(pixmap,penBlue,TRUE,x-r,gheight-y-r,
+	       2*r,2*r,0,23040);
+  
+  rcoef=(int)Random(-2);
+  Random(r);
+  coef=2.0*r;
+  radio2=r*r;
+  inc=r/10.;
+  
+  for(i=0;i<200;i++){
+    dx=(coef*Random(-1)-r);
+    dy=(coef*Random(-1)-r)/10.;/**(10.0*Random(-1)); */
+    dxl=dx;
+    for(j=0;j<3;j++){
+      switch(j){
+      case 0:
+	despr=.5*desp;
+	despl=-.5*desp;
+	break;
+      case 1:
+	despr=.6*desp;
+	despl=-.6*desp;
+	break;
+      case 2:
+	despr=.7*desp;
+	despl=-.7*desp;
+	break;
+      default:
+	despr=desp;
+	despl=desp;
+	break;
+      }
+      dy+=inc*(2+j);
+      
+      dx+=3*j*inc+despr;
+      dxl+=3*j*inc-despr;
+      
+      if(dx>=r) 
+	dx-=2*r; 
+      if(dxl>=r) 
+	dxl-=2*r; 
+      if(dxl<-r) 
+	dxl+=2*r; 
+      
+      if(dx*dx+dy*dy<radio2){
+	gdk_draw_point(pixmap,penWhite,x+dx,gheight-y-(dy));
+	/*	    gdk_draw_point(pixmap,penWhite,x+dxl,GameParametres(GET,GHEIGHT,0)-y+(dy)); */
+	
+      }
+      if(dxl*dxl+dy*dy<radio2){
+	/*	    gdk_draw_point(pixmap,penWhite,x+dx,GameParametres(GET,GHEIGHT,0)-y-(dy)); */
+	gdk_draw_point(pixmap,penWhite,x+dxl,gheight-y+(dy));
+      }
+    }
+  }
+  desp++;
+  if(desp>2*r)desp=0;
+
+  Random(rcoef);
+
+}
+
+void DrawStars(GdkPixmap *pixmap,int mode,float rx,float ry){
+  /*
+    fixed stars
+   */
+
+  int i;
+  float x,y;
+  static GdkGC *pen[20];
+  static struct Stars stars;
+  static int xs[NUMSTARS],ys[NUMSTARS];
+  static int color[NUMSTARS];
+  static int sw=0;
+  static int sw2=0;
+  static int numstars;
+  int rrelxw,rrelyh;
+  int gwidth,gheight;
+
+
+  gwidth=GameParametres(GET,GWIDTH,0);
+  gheight=GameParametres(GET,GHEIGHT,0);
+
+  if(sw==0){
+    unsigned int col;
+    numstars=NUMSTARS;
+    if(SLOWMACHINE){
+      numstars/=4;
+    }
+
+    for(i=0;i<20;i++){
+      col=40000*Random(-1)+20000;
+      col=20000+i*2000;
+      pen[i]=GetPen(NewColor(col,col,col),pixmap);
+    }
+    for(i=0;i<numstars;i++){
+      xs[i]=gwidth*Random(-1);
+      ys[i]=gheight*Random(-1);
+      color[i]=(int)(20*Random(-1));
+    }
+    stars.x=xs;
+    stars.y=ys;
+    stars.color=color;
+    sw=1;
+  }
+
+  if(mode==RELATIVE){
+    rrelxw=(int)(rx)%gwidth;
+    rrelyh=(int)(ry)%gheight;
+    for(i=0;i<numstars;i++){
+      x=stars.x[i]-rrelxw;
+      y=stars.y[i]-rrelyh;
+
+      gdk_draw_point(pixmap,pen[stars.color[i]],
+		     x+gwidth*((x<0)-(x>gwidth)),
+		     gheight*(1-((y<0)-(y>gheight)))-y);
+    }
+  }
+  else{
+    for(i=0;i<numstars;i++){
+      gdk_draw_point(pixmap,pen[stars.color[i]],stars.x[i],gheight-stars.y[i]);
+    }
+  }
+  sw2++;
+  if(!(sw2%4)){ /* the stars twinckle */
+    for(i=0;i<numstars/10;i++){
+      stars.color[i]++;
+      if(stars.color[i]>19){
+	stars.color[i]=0;
+      }
+    }
+    sw2=0;
+  }
+}
+
+void DrawPlanetSurface(GdkPixmap *pixmap,struct Planet *planet,  GdkGC *color){
+  /*
+    Draw the planet surface
+   */  
+
+  Segment *s;
+  GdkGC *gc;
+  int height,width;
+  float sx,sy; /* factor sizes */ 
+
+  height=GameParametres(GET,GHEIGHT,0);
+  width=GameParametres(GET,GWIDTH,0);
+  sx=(float)width/LXFACTOR;
+  sy=(float)height/LYFACTOR;
+  /* printf("%f %f %d %d\n",sx,sy,width,height); */
+
+  s=planet->segment;
+  
+  while(s!=NULL){
+    
+    if(s->type==TERRAIN){
+      gc=penWhite;
+    }
+    else{
+      gc=color;
+    }
+    gdk_draw_line(pixmap,gc,
+		  sx*s->x0,height-sy*s->y0,
+		  sx*s->x1,height-sy*s->y1);
+
+    if(s->type==LANDZONE){
+      gdk_draw_line(pixmap,gc,
+		    sx*s->x0,height-sy*s->y0+1,
+		    sx*s->x1,height-sy*s->y1+1);
+      gdk_draw_line(pixmap,gc,
+		    sx*s->x0,height-sy*s->y0+2,
+		    sx*s->x1,height-sy*s->y1+2);
+    }
+    s=s->next;
+  }
+}
+
+int DrawRadar(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc){
+  /*
+    Draw the ship radar with all near ships.
+    returns:
+    the number of objects(ships and planets) drawed in radar.
+  */
+
+  struct HeadObjList hol; 
+  struct ObjList *ls;
+  GdkGC *gc;
+  int x,y,x0,y0;
+  float rx,ry;
+  int d;
+  int n=0;
+  int gheight;
+
+
+  if(obj==NULL)return(0);
+
+  /* if(obj->in==NULL)n=0; */
+  /* else{ */
+  /*   n=(obj->in->id); */
+  /* } */
+
+  n=0;
+  /* check */
+  if(n<0||n>GameParametres(GET,GNPLANETS,0)){
+    fprintf(stderr,"ERROR in DrawRadar() n=%d\n",n);
+    exit(-1);
+  }
+  
+  hol=lhc[n];
+
+  gheight=GameParametres(GET,GHEIGHT,0);
+  d=30;
+
+  /*  gc=penWhite; */
+  gc=penRed;
+  
+  x0=GameParametres(GET,GWIDTH,0)/2;
+  y0=GameParametres(GET,GHEIGHT,0)/2;
+  
+  gdk_draw_arc(pixmap,gc,FALSE,x0-d,gheight-y0-d,2*d,2*d,0,23040); 
+  
+  x=x0;y=y0;
+  gdk_draw_point(pixmap,gc,x,gheight-y);
+
+  ls=hol.next;
+
+  while (ls!=NULL){
+
+    if(ls->obj->habitat!=H_SPACE){ls=ls->next;continue;}
+    if(ls->obj->type==SHIP && ls->obj->ttl<MINTTL){ls=ls->next;continue;}
+    if(ls->obj==obj){ls=ls->next;continue;}
+
+    rx=(ls->obj->x - obj->x);
+    ry=(ls->obj->y - obj->y);
+
+    if((rx*rx+ry*ry) > (float)obj->radar*(float)obj->radar){
+      ls=ls->next;
+      continue;
+    }
+
+    x=rx*d/(obj->radar)+x0;
+    y=ry*d/(obj->radar)+y0;
+
+    switch(ls->obj->type){
+    case SHIP:
+
+      if(ls->obj->player==obj->player){
+	gc=penWhite;
+      }
+      else{
+	if(players[ls->obj->player].team==players[obj->player].team){
+	  gc=penBlue;
+	}
+	else{
+	  gc=penRed;
+	}
+      }
+      gdk_draw_point(pixmap,gc,x,gheight-y);
+      gdk_draw_point(pixmap,gc,x+1,gheight-y);
+      gdk_draw_point(pixmap,gc,x,gheight-y+1);
+      gdk_draw_point(pixmap,gc,x+1,gheight-y+1);
+      n++;
+      break;
+    case PLANET:
+      gc=penBlue;
+      gc=gcolors[players[ls->obj->player].color];
+
+      gdk_draw_rectangle(pixmap, 
+ 		     gc, 
+ 		     TRUE, 
+			 x-1,gheight-y-1, 
+ 		     3,3);
+      n++;
+      break;
+    case ASTEROID:
+      gc=penRed;
+      gdk_draw_point(pixmap,gc,x,gheight-y);
+
+      break;
+    default:
+      ls=ls->next;continue;
+      break;
+    }
+    ls=ls->next;
+   }
+  return(n);
+}
+
+int DrawRadar_01(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lh){
+  /*
+    version 01 22Feb2011
+    Draw the ship radar with all near ships.
+    returns:
+    the number of objects(ships and planets) drawed in radar.
+  */
+
+  struct ObjList *ls;
+  GdkGC *gc;
+  int x,y,x0,y0;
+  float rx,ry;
+  int d;
+  int n=0;
+  int gheight;
+
+
+  if(obj==NULL)return(0);
+
+
+  gheight=GameParametres(GET,GHEIGHT,0);
+
+  d=30;
+
+  /*  gc=penWhite; */
+  gc=penRed;
+  
+  x0=GameParametres(GET,GWIDTH,0)/2;
+  y0=GameParametres(GET,GHEIGHT,0)/2;
+  
+  gdk_draw_arc(pixmap,gc,FALSE,x0-d,gheight-y0-d,2*d,2*d,0,23040); 
+  
+  x=x0;y=y0;
+  gdk_draw_point(pixmap,gc,x,gheight-y);
+
+  ls=lh->next;
+
+  while (ls!=NULL){
+
+    if(ls->obj->in!=NULL){ls=ls->next;continue;}
+    if(ls->obj->type==SHIP && ls->obj->ttl<MINTTL){ls=ls->next;continue;}
+    if(ls->obj==obj){ls=ls->next;continue;}
+
+    rx=(ls->obj->x - obj->x);
+    ry=(ls->obj->y - obj->y);
+
+    if((rx*rx+ry*ry) > (float)obj->radar*(float)obj->radar){
+      ls=ls->next;
+      continue;
+    }
+
+    x=rx*d/(obj->radar)+x0;
+    y=ry*d/(obj->radar)+y0;
+
+    switch(ls->obj->type){
+    case SHIP:
+
+      if(ls->obj->player==obj->player){
+	gc=penWhite;
+      }
+      else{
+	if(players[ls->obj->player].team==players[obj->player].team){
+	  gc=penBlue;
+	}
+	else{
+	  gc=penRed;
+	}
+      }
+      gdk_draw_point(pixmap,gc,x,gheight-y);
+      gdk_draw_point(pixmap,gc,x+1,gheight-y);
+      gdk_draw_point(pixmap,gc,x,gheight-y+1);
+      gdk_draw_point(pixmap,gc,x+1,gheight-y+1);
+      n++;
+      break;
+    case PLANET:
+      gc=penBlue;
+      gc=gcolors[players[ls->obj->player].color];
+
+      gdk_draw_rectangle(pixmap, 
+			 gc, 
+			 TRUE, 
+			 x-1,gheight-y-1, 
+			 3,3);
+      n++;
+      break;
+    case ASTEROID:
+      gc=penRed;
+      gdk_draw_point(pixmap,gc,x,gheight-y);
+
+      break;
+    default:
+      ls=ls->next;continue;
+      break;
+    }
+    ls=ls->next;
+   }
+  return(n);
+}
+
+void DrawAsteroid(GdkPixmap *pixmap,int x,int y,Object *obj){
+  /*
+    version 01 25Oct10
+    Draw an asteroid
+  */
+  static int sw;
+  static float mat_d[4][16];
+
+  GdkGC *gc;
+  int i,j;
+  float a;
+  float factor=12;
+  float angfac;
+  GdkPoint pts[16];
+  int gheight;
+
+  gheight=GameParametres(GET,GHEIGHT,0);
+  gc=penWhite;
+  
+  if(sw==0){
+    
+    for(j=0;j<4;j++){    
+      for(i=0;i<16;i++){
+	mat_d[j][i]=1*Random(-1);
+      }
+    }
+  
+    sw=1;  /* local */
+  }
+  angfac=2*PI/16;
+
+
+  if(obj->subtype==ASTEROID1)
+    factor=12;
+  if(obj->subtype==ASTEROID2)
+    factor=6;
+  if(obj->subtype==ASTEROID3)
+      factor=3;
+
+
+  for(i=0;i<16;i++){
+    a=i*angfac+obj->a;
+    pts[i].x=(mat_d[obj->id%4][i]+2)*factor*cos(a)+x;
+    pts[i].y=(mat_d[obj->id%4][i]+2)*factor*sin(a)+gheight-y;
+  }
+
+  gdk_draw_polygon(pixmap,gc,
+		   FALSE,
+		   pts,16);
+}
+
+void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int ulx){
+  /*
+    version 01
+    Draw an space map with the known universe.
+
+   */  
+  struct ObjList *ls;
+  struct IntList *ks;
+
+  GdkGC *gc;
+  int x,y,x0,y0;
+  int d,sd;
+  int a,b;
+  static int label=3;
+  float zoom=1;
+  float cvx=0,cvy=0;
+  static float objx=0,objy=0;
+  float factor,ifactor;
+  char point[100];
+  int i,j;
+  int gwidth,gheight;
+  int gnet,proc;
+
+  gwidth=GameParametres(GET,GWIDTH,0);
+  gheight=GameParametres(GET,GHEIGHT,0);
+
+#if DEBUG 
+  printf("DrawMap()\n");
+#endif
+
+  if(keys.o==FALSE){
+    DrawString(pixmap,gfont,penRed,10,gheight+GameParametres(GET,GPANEL,0)/2+4, 
+ 		    "O: Introduce command"); 
+    if(cv!=NULL){
+      if(cv->habitat==H_PLANET){
+	objx=cv->in->planet->x;
+	objy=cv->in->planet->y;
+      }
+      else{
+	objx=cv->x;
+	objy=cv->y;
+      }
+    }
+   
+    if(keys.l==TRUE){
+      label++;
+      if(label>3)
+	label=0;
+      keys.l=FALSE;
+    }
+  }
+  
+  x0=0.5*gwidth;
+  y0=0.5*gheight;
+ 
+  Shift(ulx,cv,&zoom,&cvx,&cvy,SET);
+  factor=gwidth*(float)zoom/ulx;
+  ifactor=ulx/(gwidth*(float)zoom);
+  sd=SECTORSIZE*factor;
+
+ /*  objx=(-objx+cvx)*factor;  */
+/*   objy=(-objy+cvy)*factor;  */
+
+  /* sectors */
+  if(GameParametres(GET,GKPLANETS,0)==FALSE){
+    gc=penSoftRed;
+    
+    if(label&2){
+      ks=players[player].ksectors.list;
+      
+      while(ks!=NULL){
+	InvCuadrante(ks->id,&a,&b);
+	a*=SECTORSIZE;
+	b*=SECTORSIZE;
+
+	x=x0+(a - objx + cvx)*factor;
+	if(x<0 || x>gwidth){ks=ks->next;continue;}
+	y=y0+(b - objy + cvy)*factor;
+	if(y>gheight || y<0 ){ks=ks->next;continue;}
+
+	if(sd>3){
+	  gdk_draw_line(pixmap,  
+			gc,
+			x,gheight-(y),
+			x+sd,gheight-(y+sd));
+	  
+	  gdk_draw_line(pixmap,  
+			gc,
+			x,gheight-(y+sd),
+			x+sd,gheight-(y));
+	}
+	else{
+	  gdk_draw_point(pixmap,  
+			 gc,
+			 x,gheight-(y));
+	}
+	
+	if(0){
+	  if(sd>3){
+	    gdk_draw_rectangle(pixmap,  
+			       gc,
+			       TRUE,  
+			       x,gheight-(y),  
+			       sd,sd); 
+	  }
+	  else{
+	    if(sd>1){
+	      gdk_draw_rectangle(pixmap,  
+				 gc,
+				 FALSE,  
+				 x,gheight-(y),  
+				 sd,sd); 
+	    }
+	    else{
+	      gdk_draw_point(pixmap,  
+			     gc,
+			     x,gheight-(y));
+	    }
+	  }
+	}
+	ks=ks->next;
+      }
+    }
+  }
+  /* --sectors */
+
+  /* enemy ships */
+
+  gc=penRed;
+
+  gnet=GameParametres(GET,GNET,0);
+  proc=GetProc();
+  
+  ls=listheadnearobjs.next;
+
+  while (ls!=NULL){
+
+    if(ls->obj->habitat!=H_SPACE){ls=ls->next;continue;}
+    x=x0+(ls->obj->x-objx+cvx)*factor;
+    if(x<0||x>gwidth){ls=ls->next;continue;}
+
+    y=y0+(ls->obj->y-objy+cvy)*factor;
+    if(y>gheight || y<0 ){ls=ls->next;continue;}
+
+    switch(ls->obj->type){
+    case PLANET:
+      break;
+    case SHIP:
+
+      if(gnet==TRUE){
+	if(proc!=players[ls->obj->player].proc){
+	  if(ls->obj->ttl<MINTTL){ls=ls->next;continue;}
+	}
+      }
+      
+      gc=gcolors[players[ls->obj->player].color];
+      gdk_draw_line(pixmap,gc,
+		    x,gheight-y-2,
+		    x,gheight-y+2);
+      gdk_draw_line(pixmap,gc,
+		    x-2,gheight-y,
+		    x+2,gheight-y);
+      if(0&&label&1){
+	sprintf(point,"%d",ls->obj->pid);
+	DrawString(pixmap,gfont,gc,x+5,gheight-y,point);
+      }
+      break;
+    case ASTEROID:      
+      break;
+
+    default:
+      break;
+    }
+    ls=ls->next;
+  }
+  
+
+  /* --enemy ships */
+
+
+  /* planets and ships */
+  gc=penRed;
+  
+  ls=hol.next;
+
+  while (ls!=NULL){
+    switch(ls->obj->type){
+    case SHIP:
+      if(ls->obj->habitat!=H_SPACE){ls=ls->next;continue;}
+      if(!ENEMIESKNOWN){
+	if(players[ls->obj->player].team!=players[player].team){
+	  ls=ls->next;continue;
+	}
+      }
+
+      break;
+    case PLANET:
+      if(IsInIntList((players[player].kplanets),ls->obj->id)==0){
+	ls=ls->next;continue;
+      }
+      break;
+    case ASTEROID:
+      break;
+    default:
+      ls=ls->next;continue;
+      break;
+    }
+
+    x=x0+(ls->obj->x-objx+cvx)*factor;
+    if(x<0||x>gwidth){ls=ls->next;continue;}
+    y=y0+(ls->obj->y-objy+cvy)*factor;
+    if(y>gheight || y<0 ){ls=ls->next;continue;}
+
+    switch(ls->obj->type){
+    case PLANET:
+      gc=gcolors[players[ls->obj->player].color];
+
+      gdk_draw_rectangle(pixmap, 
+			 gc, 
+			 TRUE, 
+			 x-1,gheight-y-1,
+			 3,3);
+
+      if(label&1){
+	if(strcmp(ls->obj->name,"x")!=0)
+	  sprintf(point,"%d  %s",ls->obj->id,ls->obj->name);
+	else{
+	  sprintf(point,"%d",ls->obj->id);
+	}
+	/*	DrawString(pixmap,gfont,penRed,x+5,game.height-y,point); */
+	DrawString(pixmap,gfont,gc,x+5,gheight-y,point);
+      }
+
+      break;
+    case SHIP:
+     gc=gcolors[players[ls->obj->player].color];
+      gdk_draw_line(pixmap,gc,
+		    x,gheight-y-2,
+		    x,gheight-y+2);
+      gdk_draw_line(pixmap,gc,
+		    x-2,gheight-y,
+		    x+2,gheight-y);
+      if(label&1){
+	sprintf(point,"%d",ls->obj->pid);
+	DrawString(pixmap,gfont,gc,x+5,gheight-y,point);
+      }
+      break;
+    case ASTEROID:      
+      gdk_draw_line(pixmap,penWhite,
+		    x,gheight-y-2,
+		    x,gheight-y+2);
+      gdk_draw_line(pixmap,penWhite,
+		    x-2,gheight-y,
+		    x+2,gheight-y);
+      break;
+
+    default:
+      break;
+    }
+    ls=ls->next;
+  }
+  /* --planets and ships */
+
+
+  /* scale */
+
+  x0=gwidth-50;
+  y0=gheight-20;
+  d=70;
+  sprintf(point,"%.1f",(float)d/(SECTORSIZE*factor));
+  DrawString(pixmap,gfont,penGreen,x0+10,y0+5,point);
+  gdk_draw_line(pixmap,penGreen,
+		x0-d,y0,
+		x0,y0);
+  gdk_draw_line(pixmap,penGreen,
+		x0-d,y0-2,
+		x0-d,y0+2);
+  gdk_draw_line(pixmap,penGreen,
+		x0,y0-2,
+		x0,y0+2);
+  /* --scale */
+
+  /* mouse position */
+
+  x0=gwidth/2;
+  y0=gheight/2;
+  
+  x=mouse_pos.x;
+  y=gheight - mouse_pos.y;
+  
+  a=(x-x0)*ifactor-cvx+objx;
+  b=(y-y0)*ifactor-cvy+objy;
+  
+
+  i=a/SECTORSIZE-(a<0);
+  j=b/SECTORSIZE-(b<0);
+
+  //  sprintf(point,"%d %d",mouse_pos.x,mouse_pos.y);
+  sprintf(point,"%d %d",i,j);
+  //  sprintf(point,"%d %d  %d %d",i,j,a,b);
+  DrawString(pixmap,gfont,penGreen,mouse_pos.x,mouse_pos.y,point);
+  /* --mouse position */
+}
+
+
+int DrawPlayerInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct Player *player,int x0,int y0){
+  /*
+    Show info about the player
+    returns:
+    the y vertical position of the last word writed.
+   */
+  char point[128];
+  int y;
+  static int n=0;
+  static float gold0;
+  static float incgold=0;
+  static float incgold0=0;
+  static int texth=12;
+  int incy;
+
+  if(font==NULL)return(y0);
+
+  incgold+=player->gold-gold0;
+  gold0=player->gold;
+  n++;
+  if(n>=20){
+    incgold0=incgold;
+    incgold=0;
+    n=0;
+  }
+  y=y0;
+
+  texth=gdk_text_height(gfont,"Lp",2);
+
+  incy=texth;
+
+  sprintf(point,"PLAYER   %d:",player->id); 
+  DrawString(pixmap,font,color,x0,y,point); 
+  y+=incy; 
+  sprintf(point,"GOLD:  %.0f (%.1f) %.1f",player->gold,incgold0,20*player->balance);
+  DrawString(pixmap,font,color,x0,y,point);
+  y+=incy;
+  sprintf(point,"NPLANETS:  %d",player->nplanets);
+  DrawString(pixmap,font,color,x0,y,point);
+  y+=incy;
+  sprintf(point,"NSHIPS:  %d",player->nships);
+  DrawString(pixmap,font,color,x0,y,point);
+  y+=incy;
+  sprintf(point,"Kills:  %d",player->nkills);
+  DrawString(pixmap,font,color,x0,y,point);
+  y+=incy;
+  sprintf(point,"Deaths:  %d",player->ndeaths);
+  DrawString(pixmap,font,color,x0,y,point);
+  y+=incy;
+  sprintf(point,"Points: %d",player->points);
+  DrawString(pixmap,font,color,x0,y,point);
+  y+=incy;
+  return(y);
+}
+
+int DrawPlanetInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *planet,int x0,int y0){
+  /*
+    Show info about the planet
+    returns:
+    the y vertical position of the last word writed.
+   */
+
+  char point[128];
+  int y=y0;
+  static int texth=12;
+  int incy;
+
+  if(font==NULL)return(0);
+
+  
+  texth=gdk_text_height(gfont,"Lp",2);
+
+  incy=texth;
+
+  sprintf(point,"PLANET id: %d",planet->id);
+  DrawString(pixmap,font,color,x0,y,point);
+  y+=incy;
+
+  sprintf(point,"GOLD: %.0f",planet->planet->gold);
+  DrawString(pixmap,font,color,x0,y,point);
+  y+=incy;
+
+  sprintf(point,"RESOURCES: %.1f",planet->planet->A/0.015);
+  DrawString(pixmap,font,color,x0,y,point);
+  y+=incy;
+
+  sprintf(point,"MASS: %d",planet->mass);
+  DrawString(pixmap,font,color,x0,y,point);
+  y+=incy;
+
+  return(y);
+
+}
+
+int DrawEnemyShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0,int y0){
+  /*
+    Show info about the object obj
+    returns:
+    the vertical position, y,  of the last word writed.
+   */
+  
+  GdkGC *gc;
+  char cad[20];
+  int n;
+  int x,y;
+  int sx=60;
+  static int textw=12;
+  static int texth=12;
+  static int sw=0;
+  int incy;
+
+  if(obj==NULL)return(-1);
+
+  if(sw==0){
+    if(font!=NULL){
+      texth=gdk_text_height(font,"Lp",2);
+      textw=gdk_text_width(font,"ENERGY",6);
+      sw++;
+    }
+  }
+  x=x0-textw-sx-20;
+  y=y0+texth;
+  incy=texth+1;
+
+  if(font!=NULL){
+    y=y0+texth;
+
+    DrawString(pixmap,font,color,x,y+texth,"ENERGY");
+    y+=incy;
+    DrawString(pixmap,font,color,x,y+texth,"STATE");
+    y+=incy;
+    /* production */
+    //    sprintf(cad,"%d  L : %d",obj->id,obj->level);
+    sprintf(cad,"L : %d",obj->level);
+    DrawString(pixmap,font,color,x,y+texth,cad);
+    y+=incy;
+  }
+
+  gc=penGreen;
+  y=y0+texth;  
+  /*  obj */
+
+  /* energy */
+  if(obj->gas_max==0)n=0;
+  else{
+    n=sx*obj->gas/obj->gas_max;
+  }
+  if(n>100)n=100;
+  if(n<0)n=0;
+  if(n>50)gc=penGreen;
+  else{  
+    if(n<15)gc=penRed;
+    else
+      gc=penYellow;
+  }
+
+  gdk_draw_rectangle(pixmap,gc,TRUE,x+textw+10+1,y+1,n,texth-2);
+  gdk_draw_rectangle(pixmap,color,FALSE,x+textw+10,y,sx,texth-1);
+  y+=incy;
+
+  /* state */
+  n=sx*obj->state/100.;
+  gc=penGreen;
+  if(n>100)n=100;
+  if(n<0)n=0;
+  if(n<50)gc=penYellow;
+  if(n<25)gc=penRed;
+  gdk_draw_rectangle(pixmap,gc,TRUE,x+textw+10+1,y+1,n,texth-2);
+  gdk_draw_rectangle(pixmap,color,FALSE,x+textw+10,y,sx,texth-1);
+  y+=incy;
+  return(y);
+}
+
+
+int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0,int y0){
+  /*
+    Show info about the ship obj
+    returns:
+    the y vertical position of the last word writed.
+   */
+
+  static GdkGC *gc=NULL;
+  GdkGC *wgc;
+  struct Order *ord=NULL;
+  char point[128];
+  char mode=' ';
+  int x,y;
+  float ox,oy;
+  int n;
+  float a;
+  float v=0;
+  float dx,dy,d; /* distance between ship and dest */
+  int sx=60;
+  static int textw=12;
+  static int texth=12;
+  int incy;
+
+
+  d=0;
+  gc=color;
+  x=x0+10;
+  if(obj->ai!=0)mode='A';
+  if(obj->ai==0)mode='M';
+  if(font!=NULL){
+    texth=gdk_text_height(font,"Lp",2);
+    textw=gdk_text_width(font,"O",1);
+  }
+  y=y0+texth;
+  incy=texth+1;
+  
+  
+  /* accel */
+
+  if(obj->engine.a_max==0)n=0;
+  else{
+      n=sx*obj->accel/obj->engine.a_max;
+  }
+  gdk_draw_rectangle(pixmap,color,TRUE,x+1,y+1,n,texth-2);
+  gdk_draw_rectangle(pixmap,color,FALSE,x,y,sx,texth-1);
+  DrawString(pixmap,font,color,x+sx+10,y+texth,"ACCEL");
+
+  y+=incy;
+
+  /* gas */
+  if(obj->gas_max==0)n=0;
+  else{
+    n=sx*obj->gas/obj->gas_max;
+  }
+
+  if(n<25)gc=penRed;
+  else{
+    if(n<50)gc=penYellow;
+  }
+  gdk_draw_rectangle(pixmap,gc,TRUE,x+1,y+1,n,texth-2);
+  gdk_draw_rectangle(pixmap,color,FALSE,x,y,sx,texth-1);
+  sprintf(point,"ENERGY %.0f",obj->gas);
+  DrawString(pixmap,font,color,x+sx+10,y+texth,point);
+  //  DrawString(pixmap,font,color,x0+sx+10,y+texth,"ENERGY");	
+  y+=incy;
+
+  /* state */
+  n=sx*obj->state/100.;
+  gc=color;
+
+  if(n<25)gc=penRed;
+  else{
+    if(n<50)gc=penYellow;
+  }
+  gdk_draw_rectangle(pixmap,gc,TRUE,x+1,y+1,n,texth-2);
+  gdk_draw_rectangle(pixmap,color,FALSE,x,y,sx,texth-1);
+  sprintf(point,"STATE %.1f",obj->shield);
+  DrawString(pixmap,font,color,x+sx+10,y+texth,point);
+  y+=incy;
+  
+  /* experience */
+  a=obj->experience/(100*pow(2,obj->level));
+  gc=color;
+  gdk_draw_rectangle(pixmap,gc,TRUE,x+1,y+1,sx*a,texth-2);
+  gdk_draw_rectangle(pixmap,color,FALSE,x,y,sx,texth-1);
+  sprintf(point,"EXPERIENCE %.0f/%d",obj->experience,(int)(100*pow(2,obj->level)));
+  DrawString(pixmap,font,color,x+sx+10,y+texth,point);
+  //  DrawString(pixmap,font,color,x0+sx+10,y+texth,"EXPERIENCE");
+  y+=incy;
+
+
+  /* no more graphics */
+  if(font==NULL)  return(y+texth);
+
+  //    obj->id=GetNProc()*g_objid+GetProc();    /* identifier */
+
+  //  sprintf(point,"SHIP(%c) id: %d (%d) %c  L : %d",Type(obj),obj->pid,obj->id,mode,obj->level);  
+  sprintf(point,"SHIP(%c) id: %d %c  L : %d",Type(obj),obj->pid,mode,obj->level);  
+  DrawString(pixmap,font,color,x0+x,y+texth,point);
+  y+=incy;
+  /* weapon */
+
+  if(obj->weapon==NULL){
+    fprintf(stderr,"Warning: weapon NULL in DrawShipInfo()\n");
+    obj->weapon=&obj->weapon0;
+  }
+  sprintf(point,"Weapon:(%d D:%d)",obj->weapon->n,obj->weapon->projectile.damage);
+  DrawString(pixmap,font,color,x0+x,y+texth,point);
+  if(font!=NULL){
+    x+=gdk_text_width(font,point,strlen(point))+textw;
+  }
+
+  wgc=color;
+  if(obj->weapon==&obj->weapon0){
+    wgc=penWhite;
+  }
+  if(obj->weapon0.n==0)wgc=penRed;
+  if(obj->weapon0.type==CANNON0)wgc=penRed;
+  if(obj->weapon0.cont1)wgc=penRed;
+  DrawString(pixmap,font,wgc,x0+x,y+texth,"1");
+
+  x+=1.5*textw;
+  wgc=color;
+  if(obj->weapon==&obj->weapon1){
+    wgc=penWhite;
+  }
+  if(obj->weapon1.n==0)wgc=penRed;
+  if(obj->weapon1.type==CANNON0)wgc=penRed;
+  if(obj->weapon1.cont1)wgc=penRed;
+  DrawString(pixmap,font,wgc,x0+x,y+texth,"2");
+
+  x+=1.5*textw;
+  wgc=color;
+  if(obj->weapon==&obj->weapon2){
+    wgc=penWhite;
+  }
+  if(obj->weapon2.n==0)wgc=penRed;
+  if(obj->weapon2.type==CANNON0)wgc=penRed;
+  if(obj->weapon2.cont1)wgc=penRed;
+  DrawString(pixmap,font,wgc,x0+x,y+texth,"3");
+
+  y+=incy;
+  x=x0+10;
+
+
+
+  /* sector */
+
+  if(obj->habitat==H_PLANET){
+    ox=obj->in->x;
+    oy=obj->in->y;
+  }
+  else{
+    ox=obj->x;
+    oy=obj->y;
+  }
+
+  v=sqrt(obj->vx*obj->vx + obj->vy*obj->vy);
+  
+  sprintf(point,"Sector: %d   %d",
+	  (int)(ox/SECTORSIZE)-(ox<0),
+	  (int)(oy/SECTORSIZE)-(oy<0));
+  DrawString(pixmap,font,color,x0+x,y+texth,point);
+  y+=incy;
+
+  if(0){
+    sprintf(point,"VX %.1f",obj->vx);
+    DrawString(pixmap,font,color,x0+x,y+texth,point);
+    y+=incy;
+    sprintf(point,"VY %.1f",obj->vy);
+    DrawString(pixmap,font,color,x0+x,y+texth,point);
+    y+=incy;
+  }
+  sprintf(point,"V=%.1f",v);
+  DrawString(pixmap,font,color,x0+x,y+texth,point);
+  y+=incy;
+  if(0){
+    sprintf(point,"A  %.1f  %f ",180*obj->a/PI,obj->a);
+    DrawString(pixmap,font,color,x0+x,y+texth,point);
+    y+=incy;
+  }
+
+  sprintf(point,"kills: %d",obj->kills);
+  DrawString(pixmap,font,color,x0+x,y+texth,point);
+  y+=incy;
+
+  /* order */
+  ord=ReadOrder(NULL,obj,MACRO);
+  if(ord!=NULL){
+    /*    strcpy(tmpcad,""); */
+    switch(ord->id){
+    case GOTO:
+      
+      if(ord->c!=-1){
+	/*	snprintf(tmpcad,32,"GOTO: %d",(int)ord->c); */
+	//	snprintf(point,128,"ORDER GOTO: %d(%d)",(int)ord->e,(int)ord->c); // HERE ord->c
+	snprintf(point,128,"ORDER GOTO: %d",(int)ord->e); // HERE ord->c
+	dx=ox-ord->a;
+	dy=oy-ord->b;
+	d=sqrt(dx*dx+dy*dy)/SECTORSIZE;
+	
+      }
+      else{
+	snprintf(point,128,"ORDER GOTO: (%d,%d)", 
+		 (int)(ord->a/SECTORSIZE)-(ord->a<0),
+		 (int)(ord->b/SECTORSIZE)-(ord->b<0));
+	dx=ox-ord->a;
+	dy=oy-ord->b;
+	d=sqrt(dx*dx+dy*dy)/SECTORSIZE;
+      }
+      break;
+    case TAKEOFF:
+      snprintf(point,128,"ORDER: TAKE OFF");
+      break;
+    case NOTHING:
+      snprintf(point,128,"ORDER: NOTHING");
+      break;
+    case STOP:
+      snprintf(point,128,"ORDER: STOP");
+      break;
+    case EXPLORE:
+      snprintf(point,128,"ORDER: EXPLORE");
+      break;
+    default:
+      snprintf(point,128,"ORDER id: %d",ord->id);
+      break;
+      
+    }
+    /*    snprintf(point,128,"ORDER id: %s",tmpcad); */
+    DrawString(pixmap,font,color,x0+x,y+texth,point);
+    y+=incy;
+  }
+  else{
+    snprintf(point,128,"ORDER --");
+    DrawString(pixmap,font,color,x0+x,y+texth,point);
+    y+=incy;
+  }
+
+  snprintf(point,128,"Distance: %.1f sectors",d);
+  DrawString(pixmap,font,color,x0+x,y+texth,point);
+  y+=incy;
+
+  if(v>2){
+    snprintf(point,128,"Time: %.0f s.",d*SECTORSIZE/(20*DT*v));
+  }
+  else{
+    snprintf(point,128,"Time: --");
+  }
+    DrawString(pixmap,font,color,x0+x,y+texth,point);
+    y+=incy;
+
+    if(0){
+      snprintf(point,128,"NORDER:  %d",obj->norder);
+      DrawString(pixmap,font,color,x0+x,y+texth,point);
+      y+=incy;
+    }
+  return(y+texth);
+}
+
+int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,struct TextList *head,int x0,int y0,int width,int height){
+  /* 
+     print the text list head in pixmap at the position x0, y0.
+  */
+  struct TextList *lh;
+  int x,y,scroll; 
+  GdkGC *gc;
+  int i,m,n,w,h;
+  int sw;
+  static int charw=12;
+  static int charh=12;
+  int textw0,textw;
+  int incy;
+
+
+  if(font==NULL)return(0);
+
+  charh=gdk_text_height(font,"Lp",2);
+  charw=gdk_text_width(font,"O",1);
+  
+  incy=charh+2;
+
+  h=height/incy;
+  w=(float)width/charw;
+
+  n=CountTextList(head);
+  m=PosTextList(head,1);
+  scroll=0;
+  if(m>h/2 &&n>h){
+    scroll=m-h/2;
+  }
+  gc=penGreen;
+
+  x=x0+7;
+  y=y0+incy;
+
+  sw=0;
+  textw=0;
+  lh=head->next;
+
+  for(i=0;i<n;i++){ /* HERE double loop */
+    switch(lh->color){
+    case 1:
+      gc=penWhite;
+      break;
+    case 2:
+      gc=penYellow;
+      break;
+    case 3:
+      gc=penRed;
+      break;
+    case 4:
+      gc=penBlue;
+      break;
+    default:
+      gc=penGreen;
+      break;
+    }
+
+    if(y-scroll*incy>y0){
+      DrawString(pixmap,font,gc,x,y-scroll*incy,lh->text);
+      //      printf("XPrintTextList(): %s %d\n",lh->text,GetTime());
+      textw0=gdk_text_width(font,lh->text,strlen(lh->text));
+      if(textw0>textw){
+	textw=textw0;
+      }
+    }
+    else{
+      i--;
+    }
+    lh=lh->next;
+    y+=incy;
+    if(y-scroll*incy>h*incy+y0-5)break;
+    if(lh==NULL)lh=head->next;
+  }
+  gdk_draw_rectangle(pixmap,penGreen,FALSE,
+		     x0,y0,textw+charw+10,height);
+
+  return(0);
+}
+
+
+int XPrintMenuList(GdkPixmap *pixmap,GdkFont *font,struct MenuList *head,int x0,int y0){
+  /* 
+     print the text list head in pixmap at the position x0, y0.
+  */
+  struct MenuList *lh;
+  int x,y,scroll; 
+  GdkGC *gc;
+  static int charw=12;
+  static int charh=12;
+  static int sw=0;
+  int incy;
+
+
+  if(font==NULL)return(0);
+
+  if(sw==0){
+    charh=gdk_text_height(font,"Lp",2);
+    charw=gdk_text_width(font,"O",1);
+    sw++;
+  }
+
+  incy=charh+2;
+
+  gc=penGreen;
+
+  x=x0+7;
+  y=y0+incy;
+  scroll=1;
+
+
+  lh=head->next;
+  while(lh!=NULL){
+    DrawString(pixmap,font,gc,x,y-scroll*incy,lh->item.text);
+    lh=lh->next;
+    y+=incy;
+  }
+  
+
+  return(0);
+}
+
+
+
+gint Load(GtkWidget *widget,gpointer gdata){
+
+  keys.load=TRUE;
+  if(GameParametres(GET,GMODE,0)==CLIENT)
+    keys.load=FALSE;
+  return(0);
+}
+ 
+gint Save(GtkWidget *widget,gpointer gdata){
+  keys.save=TRUE;
+  if(GameParametres(GET,GMODE,0)==CLIENT)
+    keys.save=FALSE;
+  return(0);
+}
+
+gint Options(GtkWidget *widget,gpointer gdata){
+  return(0);
+}
+
+int CountKey(int mode){
+  static int n_keystrokes=0;
+  if(mode==0)
+    n_keystrokes=0;
+  if(mode==1)
+    n_keystrokes++;
+
+  return(n_keystrokes);
+}
+
+GdkFont *InitFonts(char *fname){
+  /*
+    Try to found an available font in the system
+
+   */
+  int i;
+  char fontname[128];
+  GdkFont *font=NULL;
+
+/*   int nfonts; */
+/*     char **fontsystemnames; */
+/*     int MAX_FONTS=30000; */
+/*     fontsystemnames=XListFonts(GDK_DISPLAY(),"*",MAX_FONTS,&nfonts);  */
+/*     if(nfonts==MAX_FONTS){  */
+/*       printf("demasiadas fuentes. No mostramos ninguna\n");  */
+/*       return(NULL);  */
+/*     }  */
+/*     printf("Numero de tipos de letra: %d\n",nfonts);  */
+/*     for(i=0;i<nfonts;i++){  */
+/*       printf("%s\n",fontsystemnames[i]);  */
+/*     }  */
+/*     XFreeFontNames(fontsystemnames);  */
+  
+
+/* command line font type */
+
+  strncpy(fontname,fname,128);
+  font=gdk_font_load(fontname);
+
+  /* default font type */
+
+  if(font==NULL){
+    for(i=0;i<NUMFONTNAMES;i++){
+      strncpy(fontname,fontnames[i],128);
+      font=gdk_font_load(fontname);
+      if(font!=NULL){
+	break;
+      }
+      else{
+	printf("font %s not found\n",fontname); 
+      }
+    }
+    if(font==NULL){
+      fprintf(stderr,"Error: no fonts found in your system\n");
+      exit(-1);
+    }
+  }
+  printf("using font: %s\n",fontname);
+
+  return(font);
+}
+
+
+/* options window */
+
+GtkWidget *CreateSubMenu(GtkWidget *menu,char *szName){
+
+  GtkWidget *menuitem;
+  GtkWidget *submenu;
+
+  menuitem=gtk_menu_item_new_with_label(szName);
+  gtk_menu_append(GTK_MENU(menu),menuitem);
+  gtk_widget_show(menuitem);
+  submenu=gtk_menu_new();
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(menuitem),submenu);
+ 
+ return(submenu);
+
+}
+
+gint SaveOptions(GtkWidget *widget,gpointer gdata){
+  gboolean state,status;
+  const gchar *text;
+  FILE *fp;
+  int value;
+  int nplayers;
+  int nplanets;
+
+#if DEBUG
+  if(debugoptions){
+    g_print("GDATA:%s\n",(char *) gdata);
+    printf("configuration file: %s\n",(char *) gdata);
+  }
+#endif
+
+  if((fp=fopen((char *) gdata,"wt"))==NULL){
+    fprintf(stdout,"SaveOptions(): No puede abrirse el archivo: %s",(char *) gdata);
+    exit(-1);
+  }
+
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options1);
+  if((int)state!=FALSE && (int)state!=TRUE)state=FALSE;
+#if DEBUG
+  if(debugoptions)printf("\tstate Known Universe: %d\n",state);
+#endif  
+  fprintf(fp,"%d ",(int)state);
+
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options2);
+  if((int)state!=FALSE && (int)state!=TRUE)state=TRUE;
+#if DEBUG
+  if(debugoptions)printf("\tstate music: %d\n",state);
+#endif
+  GameParametres(SET,GMUSIC,!state);
+  fprintf(fp,"%d ",(int)state);
+
+
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
+  if((int)state!=FALSE && (int)state!=TRUE)state=FALSE;
+#if DEBUG
+  if(debugoptions)printf("\tstate sound: %d\n",state);
+#endif
+  GameParametres(SET,GSOUND,!state);
+  fprintf(fp,"%d ",(int)state);
+
+
+   if(GameParametres(GET,GSOUND,0)==TRUE && GameParametres(GET,GMUSIC,0)==TRUE){
+     status=Sound(SPLAY,MUSIC);
+#if DEBUG
+     if(debugoptions)printf("play music %d\n",status);
+#endif
+   }
+   else{
+     status=Sound(SSTOP,MUSIC);
+#if DEBUG
+     if(debugoptions)printf("stop music %d\n",status);
+#endif
+   }  
+
+
+   text=gtk_entry_get_text((GtkEntry *)options5); 
+   value=atol(text);
+   if(value<MINNUMPLANETS)value=MINNUMPLANETS;
+   if(value>MAXNUMPLANETS)value=MAXNUMPLANETS;
+   nplanets=value;
+
+   text=gtk_entry_get_text((GtkEntry *)options7); 
+   nplayers=atol(text);
+
+   if(nplayers<MINNUMPLAYERS)nplayers=MINNUMPLAYERS;
+   if(nplayers>MAXNUMPLAYERS)nplayers=MAXNUMPLAYERS;
+   if(nplanets<nplayers)nplanets=nplayers;
+#if DEBUG
+   if(debugoptions)printf("\tplanets: %d\n",nplanets); 
+#endif
+   fprintf(fp,"%d ",nplanets); 
+#if DEBUG
+   if(debugoptions)printf("\tplayers: %d\n",nplayers); 
+#endif
+   fprintf(fp,"%d ",nplayers); 
+
+
+   text=gtk_entry_get_text((GtkEntry *)options9); 
+   value=atol(text);
+   if(value<MINULX)value=MINULX;
+   if(value>MAXULX)value=MAXULX;
+#if DEBUG
+   if(debugoptions)printf("\tUniverse size: %d\n",value); 
+#endif
+   fprintf(fp,"%d ",value); 
+
+
+   state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
+   if((int)state!=FALSE && (int)state!=TRUE)state=FALSE;
+#if DEBUG
+   if(debugoptions)printf("\tstate cooperative: %d\n",state);
+#endif
+   fprintf(fp,"%d ",(int)state);
+
+
+   state=gtk_toggle_button_get_active((GtkToggleButton *)options15);
+   if((int)state!=FALSE && (int)state!=TRUE)state=FALSE;
+#if DEBUG
+   if(debugoptions)printf("\tstate computer cooperative: %d\n",state);
+#endif
+   fprintf(fp,"%d ",(int)state);
+
+
+   state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
+   if((int)state!=FALSE && (int)state!=TRUE)state=FALSE;
+#if DEBUG
+   if(debugoptions)printf("\tstate Queen mode: %d\n",state);
+#endif
+   fprintf(fp,"%d ",(int)state);
+
+   fprintf(fp,"\n");
+   fclose(fp);
+   gtk_widget_hide(winoptions);
+   return 0;
+ }
+
+
+ gint SetDefaultOptions(GtkWidget *widget,gpointer gdata){
+   gboolean state;
+  const gchar *text;
+  char cad[128];
+
+  g_print("%s\n",(char *) gdata);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options1,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options1);
+  printf("\tstate Known Universe: %d\n",state);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options2,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options2);
+  printf("\tstate music: %d\n",state);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options3,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
+  printf("\tstate sound: %d\n",state);
+
+  snprintf(cad,128,"%d",NUMPLANETS);
+  gtk_entry_set_text((GtkEntry *)options5,cad);
+  text=gtk_entry_get_text((GtkEntry *)options5);
+  printf("\tplanets: %s\n",text);
+
+  snprintf(cad,128,"%d",NUMPLAYERS);
+  gtk_entry_set_text((GtkEntry *)options7,cad);
+  text=gtk_entry_get_text((GtkEntry *)options7);
+  printf("\tplayers: %s\n",text);
+
+  snprintf(cad,128,"%d",ULX);
+  gtk_entry_set_text((GtkEntry *)options9,cad);
+  text=gtk_entry_get_text((GtkEntry *)options9);
+  printf("\tUniverse size: %s\n",text);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options14,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
+  printf("\tstate cooperative: %d\n",state);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options15,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options15);
+  printf("\tstate computer cooperative: %d\n",state);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options16,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
+  printf("\tstate Queen mode: %d\n",state);
+
+  return(0);
+}
+
+gint PrintMessage(GtkWidget *widget,gpointer gdata){
+  /* production */
+  return(0);
+  g_print("%s\n",(char *) gdata);
+  return 0;
+}
+
+gint ShowWindowOptions(GtkWidget *widget,gpointer gdata){
+  /*
+    version 01 12May11
+  */
+  FILE *fp;
+  gboolean state;
+  const gchar *text;
+  int value;
+  char cad[128];
+  int sw=0;
+  int show=0;
+
+#if DEBUG
+  if(debugoptions)g_print("Reading options from file: %s\n",(char *) gdata);
+#endif
+  /* load options from file */
+  if((fp=fopen((char *) gdata,"rt"))==NULL){
+    fprintf(stdout,"ShowWindow():No puede abrirse el archivo: %s", (char *) gdata);
+    exit(-1);
+  }
+
+  if(GameParametres(GET,GNET,0)==TRUE){
+
+    if(GameParametres(GET,GMODE,0)==TRUE){ 
+      show=1; // HERE what show 
+    }   
+  }
+
+  show=1;
+
+  if(show==0){
+    if(fscanf(fp,"%d",&value)!=1){
+      sw=1;
+    }
+    gtk_toggle_button_set_active((GtkToggleButton *)options1,value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options1);
+#if DEBUG
+    if(debugoptions)printf("\tstate Known Universe: %d\n",state);
+#endif    
+    if(fscanf(fp,"%d",&value)!=1){
+      sw=1;
+    }
+    gtk_toggle_button_set_active((GtkToggleButton *)options2,value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options2);
+#if DEBUG
+    if(debugoptions)printf("\tstate music: %d\n",state);
+#endif    
+    if(fscanf(fp,"%d",&value)!=1){
+      sw=1;
+    }
+    gtk_toggle_button_set_active((GtkToggleButton *)options3,value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
+#if DEBUG
+    if(debugoptions)  printf("\tstate sound: %d\n",state);
+#endif    
+    if(fscanf(fp,"%d",&value)!=1){
+      sw=1;
+    }
+    snprintf(cad,128,"%d",value);
+    gtk_entry_set_text((GtkEntry *)options5,cad);
+    text=gtk_entry_get_text((GtkEntry *)options5);
+#if DEBUG
+    if(debugoptions)  printf("\tplanets: %s\n",text);
+#endif    
+    if(fscanf(fp,"%d",&value)!=1){
+      sw=1;
+    }
+    snprintf(cad,128,"%d",value);
+    gtk_entry_set_text((GtkEntry *)options7,cad);
+    text=gtk_entry_get_text((GtkEntry *)options7);
+#if DEBUG
+    if(debugoptions)  printf("\tplayers: %s\n",text);
+#endif    
+    if(fscanf(fp,"%d",&value)!=1){
+      sw=1;
+    }
+    snprintf(cad,128,"%d",value);
+    gtk_entry_set_text((GtkEntry *)options9,cad);
+    text=gtk_entry_get_text((GtkEntry *)options9);
+#if DEBUG
+    if(debugoptions)  printf("\tUniverse size: %s\n",text);
+#endif    
+    
+    if(fscanf(fp,"%d",&value)!=1){
+      sw=1;
+    }
+    gtk_toggle_button_set_active((GtkToggleButton *)options14,value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
+#if DEBUG
+    if(debugoptions) printf("\tCooperative mode: %d\n",state);
+#endif    
+    if(fscanf(fp,"%d",&value)!=1){
+      sw=1;
+    }
+    gtk_toggle_button_set_active((GtkToggleButton *)options15,value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options15);
+#if DEBUG
+    if(debugoptions)  printf("\tComputer cooperative mode: %d\n",state);
+#endif    
+    
+    if(fscanf(fp,"%d",&value)!=1){
+      sw=1;
+    }
+    gtk_toggle_button_set_active((GtkToggleButton *)options16,value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
+#if DEBUG
+    if(debugoptions)  printf("\tQueen mode: %d\n",state);
+#endif
+  }
+
+  if(show==1){
+    value=GameParametres(GET,GKPLANETS,0);
+    gtk_toggle_button_set_active((GtkToggleButton *)options1,value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options1);
+#if DEBUG
+    if(debugoptions)printf("\tstate Known Universe: %d\n",state);
+#endif    
+    value=GameParametres(GET,GMUSIC,0);
+    gtk_toggle_button_set_active((GtkToggleButton *)options2,!value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options2);
+#if DEBUG
+    if(debugoptions)printf("\tstate music: %d\n",state);
+#endif    
+    value=GameParametres(GET,GSOUND,0);
+    gtk_toggle_button_set_active((GtkToggleButton *)options3,!value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
+#if DEBUG
+    if(debugoptions)  printf("\tstate sound: %d\n",state);
+#endif    
+    value=GameParametres(GET,GNPLANETS,0);
+    snprintf(cad,128,"%d",value);
+    gtk_entry_set_text((GtkEntry *)options5,cad);
+    text=gtk_entry_get_text((GtkEntry *)options5);
+#if DEBUG
+    if(debugoptions)  printf("\tplanets: %s\n",text);
+#endif    
+    value=GameParametres(GET,GNPLAYERS,0);
+    snprintf(cad,128,"%d",value);
+    gtk_entry_set_text((GtkEntry *)options7,cad);
+    text=gtk_entry_get_text((GtkEntry *)options7);
+#if DEBUG
+    if(debugoptions)  printf("\tplayers: %s\n",text);
+#endif    
+    value=GameParametres(GET,GULX,0);
+    snprintf(cad,128,"%d",value);
+    gtk_entry_set_text((GtkEntry *)options9,cad);
+    text=gtk_entry_get_text((GtkEntry *)options9);
+#if DEBUG
+    if(debugoptions)  printf("\tUniverse size: %s\n",text);
+#endif    
+    
+    value=GameParametres(GET,GCOOPERATIVE,0);
+    gtk_toggle_button_set_active((GtkToggleButton *)options14,value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
+#if DEBUG
+    if(debugoptions) printf("\tCooperative mode: %d\n",state);
+#endif    
+    value=GameParametres(GET,GCOMPCOOPERATIVE,0);
+    gtk_toggle_button_set_active((GtkToggleButton *)options15,value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options15);
+#if DEBUG
+    if(debugoptions)  printf("\tComputer cooperative mode: %d\n",state);
+#endif    
+    value=GameParametres(GET,GQUEEN,0);
+    gtk_toggle_button_set_active((GtkToggleButton *)options16,value);
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
+#if DEBUG
+    if(debugoptions)  printf("\tQueen mode: %d\n",state);
+#endif
+    }
+
+  fclose(fp);
+  if(sw){
+    fprintf(stderr,"ERROR reading configuration file\n");
+    fprintf(stderr,"setting default values\n");
+    SetDefaultOptions(widget,gdata);
+  }
+
+
+  /* show window */
+  gtk_widget_show(winoptions);
+  return 0;
+}
+
+
+gint QuitWindowOptions(GtkWidget *widget,gpointer gdata){
+
+  //  g_print("%s\n",(char *) gdata);
+  gtk_widget_hide(winoptions);
+  return TRUE;
+}
+/* --options window */
+
+gint ShowWindowAbout(GtkWidget *widget,gpointer gdata){
+
+  /* show window */
+  gtk_widget_show(winabout);
+  return TRUE;
+}
+
+
+
+gint QuitWindowAbout(GtkWidget *widget,gpointer gdata){
+
+  g_print("%s\n",(char *) gdata);
+  gtk_widget_hide(winabout);
+  return TRUE;
+}
+
+
+
+GtkWidget *CreateMenuItem(GtkWidget *menu,
+			  char *Name,char *Accel,char *Tip,
+			  GtkSignalFunc func,
+			  gpointer data){
+
+  GtkWidget *menuitem;
+  if(Name && strlen(Name)){
+    menuitem=gtk_menu_item_new_with_label(Name);
+    /*    g_print("CMI menu: %s  arg: %s  \n",Name,(char *)data); */
+    gtk_signal_connect(GTK_OBJECT (menuitem),"activate",
+		       GTK_SIGNAL_FUNC(func),data);
+  }else{
+    menuitem=gtk_menu_item_new();
+  }
+
+  gtk_menu_append(GTK_MENU(menu),menuitem);
+  gtk_widget_show(menuitem);
+
+
+  return(menuitem);
+
+}
+
+GtkWidget *CreateBarSubMenu(GtkWidget *menu,char *szName){
+
+  GtkWidget *menuitem;
+  GtkWidget *submenu;
+
+  menuitem=gtk_menu_item_new_with_label(szName);
+  gtk_menu_bar_append(GTK_MENU_BAR(menu),menuitem);
+  gtk_widget_show(menuitem);
+  submenu=gtk_menu_new();
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(menuitem),submenu);
+ 
+ return(submenu);
+
+}
+
+void SetDefaultKeyValues(struct Keys *key,int action){
+  int i;
+
+  key->load=key->save=FALSE;
+  key->up=key->down=key->right=key->left=key->back=FALSE;
+  key->space=key->trace=key->tab=key->enter=FALSE;
+  key->o=key->s=key->n=key->l=FALSE;
+  key->i=key->h=key->e=key->y=key->u=FALSE;
+  key->f1=key->f2=key->f3=key->f4=key->f7=key->f8=FALSE;
+  key->p=FALSE;
+  key->d=FALSE;
+  key->home=key->Pagedown=key->Pageup=key->may=key->ctrl=FALSE;
+  for(i=0;i<10;i++)key->number[i]=FALSE;
+
+  /* dont reset this values when load a game */
+  if(action){
+    key->m=FALSE;
+    key->f5=key->f6=FALSE;
+  }
+}
+
+
+
+void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object *cvobj,int act){
+  /*
+    Build and draw two text list:  
+    A list with player ships and a list with player planets. 
+   */
+
+  struct ObjList *ls;
+  Object *obj;
+  char cad[TEXTMENMAXLEN]="";
+  char tmpcad[TEXTMENMAXLEN]="";
+  static int sw=0;
+  char mode=' ';
+  struct Order *ord=NULL;
+  int pid;
+  static struct TextList shiplist;
+  static struct TextList planetlist;
+  static Object *last_cv=NULL;
+  static int textpw=1,textsw=1;
+  static int charw=12;
+  static int nt,ne,nf,nq;
+  static int shipcounter=0;
+  int color; /* 0 green, 1 white, 2 yellow, 3 red */
+  int textw=0;
+  
+  if(gfont==NULL)return;
+
+  if(sw==0){ /* variable initialization  */
+    shiplist.next=NULL;
+    planetlist.next=NULL;
+    charw=gdk_text_width(gfont,"O",1);
+    shipcounter=0;
+    nt=ne=nf=nq=0;
+    sw=1;
+  }
+  shipcounter++;
+  if(shipcounter==20){
+    printf("counting obj...\n");
+    ne=CountObjs(hlp,player,SHIP,EXPLORER);
+    nf=CountObjs(hlp,player,SHIP,FIGHTER); 
+    nt=CountObjs(hlp,player,SHIP,TOWER); 
+    nq=CountObjs(hlp,player,SHIP,QUEEN); 
+    shipcounter=0;
+  }
+  if(cvobj!=last_cv || act){
+    last_cv=cvobj;
+    
+    DestroyTextList(&shiplist);
+    DestroyTextList(&planetlist);
+    snprintf(tmpcad,TEXTMENMAXLEN,"SHIPS: E:%d F:%d T:%d Q:%d",ne,nf,nt,nq);
+    /* Add2TextList(&shiplist,"SHIPS:",0); */
+    Add2TextList(&shiplist,tmpcad,0);
+    Add2TextList(&planetlist,"PLANETS:",0);
+    textpw=gdk_text_width(gfont,"PLANETS:",strlen("PLANETS:"));
+    textsw=gdk_text_width(gfont,"SHIPS:",strlen("SHIPS:"));
+
+    textw=gdk_text_width(gfont,cad,strlen(cad));
+    if(textw>textpw)textpw=textw;
+    
+    ls=hlp->next;
+    while(ls!=NULL){
+      obj=ls->obj;
+      color=0;
+      if(obj->type==SHIP){
+	mode=Type(obj);
+	if(obj->ai==0)mode='M';
+	
+	if(obj->state<50 || obj->gas<0.5*obj->gas_max){color=2;}
+	if(obj->state<25 || obj->gas<0.25*obj->gas_max){color=3;}
+	
+	if(obj==cvobj){color=1;}
+	if(obj->selected==TRUE){color=1;}
+	//	snprintf(cad,TEXTMENMAXLEN,"%c L%d id: %d (%d) ",mode,obj->level,obj->pid,obj->id);
+	snprintf(cad,TEXTMENMAXLEN,"%c L%d id: %d ",mode,obj->level,obj->pid);
+	
+	if(obj->state<100){
+	  strncpy(tmpcad,cad,TEXTMENMAXLEN);
+	  snprintf(cad,TEXTMENMAXLEN,"%s s:%.0f",tmpcad,obj->state);
+	}
+	if(obj->gas<obj->gas_max){
+	  strncpy(tmpcad,cad,TEXTMENMAXLEN);
+	  snprintf(cad,TEXTMENMAXLEN,"%s e:%d",tmpcad,(int)(100*obj->gas/obj->gas_max));
+	}
+	ord=ReadOrder(NULL,obj,MACRO);
+	if(ord!=NULL){
+	  strncpy(tmpcad,cad,TEXTMENMAXLEN);
+	  switch(ord->id){
+   
+	  case GOTO:
+	    if(ord->c!=-1){
+	      snprintf(cad,TEXTMENMAXLEN,"%s GT:%d",tmpcad,(int)ord->e);
+	    }
+	    else{
+	      strncpy(tmpcad,cad,TEXTMENMAXLEN);
+	      snprintf(cad,TEXTMENMAXLEN,"%s GT:(%d,%d)",
+		       tmpcad,
+		       (int)(ord->a/SECTORSIZE)-(ord->a<0),
+		       (int)(ord->b/SECTORSIZE)-(ord->b<0));
+	    }
+	    break;
+	  case EXPLORE:
+	    snprintf(cad,TEXTMENMAXLEN,"%s EXP.",tmpcad);
+	    break;
+	    
+	  default:
+	    break;
+	  }
+	}
+	pid=0;
+	if(obj->in!=NULL){
+	  pid=obj->in->id;
+	}
+	strncpy(tmpcad,cad,TEXTMENMAXLEN);
+	snprintf(cad,TEXTMENMAXLEN,"%s IN:%d",tmpcad,pid);
+	textw=gdk_text_width(gfont,cad,strlen(cad));
+	if(textw>textsw)textsw=textw;
+	Add2TextList(&shiplist,cad,color);
+      }/*ship */
+      
+      if(obj->type==PLANET){
+	color=0;
+
+	if(cvobj!=NULL){
+	  if(cvobj->player!=obj->player)color=4;
+	  if(cvobj->in==obj)color=1;
+	}
+
+	snprintf(cad,TEXTMENMAXLEN,"id: %d g:%.0f  %d",
+		 obj->id,obj->planet->gold,CountShipsInPlanet(hlp,obj->id,SHIP,-1,0));
+	textw=gdk_text_width(gfont,cad,strlen(cad));
+	if(textw>textpw)textpw=textw;
+	Add2TextList(&planetlist,cad,color);
+      }
+      ls=ls->next;
+    }
+  }
+ 
+  /* XPrintTextList(pixmap,gfont,&shiplist,10,15,40*gdk_char_measure(gfont,'A'),GameParametres(GET,GHEIGHT,0)-50); */
+  /* XPrintTextList(pixmap,gfont,&planetlist,GameParametres(GET,GWIDTH,0)-widthp-20,15,widthp,GameParametres(GET,GHEIGHT,0)-50); */
+
+  XPrintTextList(pixmap,gfont,&shiplist,10,15,textsw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
+  XPrintTextList(pixmap,gfont,&planetlist,GameParametres(GET,GWIDTH,0)-textpw-20,15,textpw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
+
+  return;
+}
+
+void Shift(int ulx,Object *cv,float *z,float *x,float *y,int action){
+  static float cvx=0,cvy=0;
+  static float zoom=1;
+  static int id=0;
+
+
+  if(cv!=NULL){
+    if(id!=cv->id){ 
+      cvx=cvy=0;
+    }
+    id=cv->id;
+  }
+
+  if(action==GET){
+    *z=zoom;
+    *x=cvx;
+    *y=cvy;
+    return;
+  }
+
+
+  if(keys.z==TRUE){
+    if(keys.may==FALSE){
+      zoom/=1.05;
+      if(zoom<.1)zoom=.1;
+    }
+    else{
+      zoom*=1.05;
+      if(zoom>64)zoom=64;
+    }
+  }
+  
+  if(keys.space==TRUE && keys.o==FALSE){
+    cvx=cvy=0;
+  }
+  /* if(keys.space==TRUE){ */
+  /*   cvx=cvy=0; */
+  /* } */
+  if(keys.right==TRUE){
+    cvx-=.02*ulx/zoom;
+  }
+  if(keys.left==TRUE){
+    cvx+=.02*ulx/zoom;
+  }
+  if(keys.up==TRUE){
+    cvy-=.02*ulx/zoom;
+  }
+  if(keys.down==TRUE){
+    cvy+=.02*ulx/zoom;
+  }
+
+  *z=zoom;
+  *x=cvx;
+  *y=cvy;
+}
+
+
+void Window2Real(Object *cv, int wx,int wy,int *rx,int *ry){
+
+  float zoom;
+  float cvx,cvy;
+  int objx=0,objy=0;
+  int ulx;
+  int gwidth,gheight;
+  int x,y,x0,y0;
+  float ifactor;
+
+  ulx=GameParametres(GET,GULX,0);
+  gwidth=GameParametres(GET,GWIDTH,0);
+  gheight=GameParametres(GET,GHEIGHT,0);
+
+  if(cv!=NULL){
+    if(cv->habitat==H_PLANET){
+      objx=cv->in->planet->x;
+      objy=cv->in->planet->y;
+    }
+    else{
+      objx=cv->x;
+      objy=cv->y;
+    }
+  }
+  
+  Shift(ulx,cv,&zoom,&cvx,&cvy,GET);
+  
+  x0=0.5*gwidth;
+  y0=0.5*gheight;
+
+  x=wx;
+  y=gheight-wy;
+
+  ifactor=ulx/(gwidth*(float)zoom);
+  
+  *rx=(x-x0)*ifactor-cvx+objx;
+  *ry=(y-y0)*ifactor-cvy+objy;
+  
+}
+
+void Real2Window(Object *cv,int rx,int ry,int *wx,int *wy){
+
+
+  float zoom;
+  float cvx,cvy;
+  int objx=0,objy=0;
+  int ulx;
+  int gwidth,gheight;
+  int x0,y0;
+  float factor;
+
+  ulx=GameParametres(GET,GULX,0);
+  gwidth=GameParametres(GET,GWIDTH,0);
+  gheight=GameParametres(GET,GHEIGHT,0);
+
+
+  if(cv!=NULL){
+    if(cv->habitat==H_PLANET){
+      objx=cv->in->planet->x;
+      objy=cv->in->planet->y;
+    }
+    else{
+      objx=cv->x;
+      objy=cv->y;
+    }
+  }
+
+  Shift(ulx,cv,&zoom,&cvx,&cvy,GET);
+
+  x0=0.5*gwidth;
+  y0=0.5*gheight;
+  
+  factor=gwidth*(float)zoom/ulx;
+  
+  *wx=x0+(rx-objx+cvx)*factor;
+  *wy=gheight-y0-(ry-objy+cvy)*factor;
+}
+
+void DrawRegionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv){
+  Rectangle rect;
+
+  int x0,y0,x1,y1;
+
+
+  if(reg.habitat<0)return;
+
+  rect.x=reg.rect.x;
+  rect.y=reg.rect.y;
+  rect.width=reg.rect.width;
+  rect.height=reg.rect.height;
+
+/*   printf("DrawRegionBox(real): %d %d %d %d\n", */
+/* 	 rect.x,rect.y,rect.width,rect.height);   */
+
+
+  if(reg.habitat==0 && keys.mleft==FALSE){
+
+
+    Real2Window(cv,rect.x,rect.y,&x0,&y0);
+    Real2Window(cv,rect.x+rect.width,rect.y+rect.height,&x1,&y1);
+    
+    rect.x=x0;
+    rect.y=y0;
+    rect.width=x1-x0;
+    rect.height=y1-y0;
+  }
+
+  if(reg.habitat>0 && keys.mleft==FALSE){
+    rect.y=GameParametres(GET,GHEIGHT,0)-rect.y;
+  }
+
+  if(rect.width<0){
+    rect.x+=rect.width;
+    rect.width*=-1;
+  }
+  
+  if(rect.height<0){
+    rect.y+=rect.height;
+    rect.height*=-1;
+  }
+  
+/*   printf("DrawRegionBox(window) %d %d %d %d\n",rect.x,rect.y,rect.width,rect.height); */
+  gdk_draw_rectangle(pixmap,penGreen,FALSE,rect.x,rect.y,rect.width,rect.height);
+  //  printf("Drawregion: %d %d\n",GetTime(),rect.x);
+}
+
+
+void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
+  /*
+    Show general game statistics
+   */
+
+  int nplayers;
+  int i=0;
+  int x,y;
+  int gwidth,gheight;
+  char cad[128];
+  static int len0=0;
+  static int textwidth=0;
+  static int textheight=0;
+  int len;
+
+  if(gfont==NULL)return;
+  nplayers=GameParametres(GET,GNPLAYERS,0)+2;
+  gwidth=GameParametres(GET,GWIDTH,0);
+  gheight=GameParametres(GET,GHEIGHT,0);
+
+  //  printf("LEN:%d %d %d\n",len0,textwidth,textheight);
+
+  x=gwidth/2-textwidth/2;
+  y=3*gheight/4-nplayers*8;
+  y=2;
+
+  gdk_draw_rectangle(pixmap,    
+		     penBlack,
+		     TRUE,   
+		     x-10,
+		     y,
+		     textwidth+20,
+		     textheight*(nplayers)+4);
+
+  gdk_draw_rectangle(pixmap,    
+		     penGreen,
+		     FALSE,   
+		     x-10,
+		     y,
+		     textwidth+20,
+		     textheight*(nplayers)+4);
+
+
+  snprintf(cad,128,"Game statistics:");
+  DrawString(pixmap,gfont,penWhite,x,y+textheight,cad);
+
+  /* HERE: send kills and deaths to client */
+
+  for(i=1;i<nplayers;i++){
+    snprintf(cad,128,"player: %s , ships: %d (%d), planets: %d , kills: %d , deaths: %d.",
+	     pl[i].playername,pl[i].nships,pl[i].nbuildships,pl[i].nplanets,pl[i].nkills,pl[i].ndeaths);
+    len=strlen(cad);
+    if(len>len0){
+      len0=len;
+      textwidth=gdk_text_width(gfont,cad,len0);
+      textheight=gdk_text_height(gfont,cad,len0);
+    }
+    DrawString(pixmap,gfont,gcolors[players[i].color],x,y+(i+1)*textheight,cad);
+  }
+}
+
+
+void DrawString(GdkDrawable *pixmap,GdkFont *font,GdkGC *gc,gint x,gint y,const gchar *string){
+  /*
+    
+    
+   */
+  if(font==NULL)return;
+
+  gdk_draw_string(pixmap,gfont,gc,x,y,string);
+}
+
+
+
+void DrawMessageBox(GtkWidget *d_area,GdkPixmap *pixmap,GdkFont *font,char *cad,int x0,int y0,int type){
+  /*
+    draw a text message centered at x0,y0
+*/
+  GdkRectangle update_rect;
+  int textw,texth;
+
+  if(font!=NULL){
+    textw=gdk_text_width(gfont,cad,strlen(cad));
+    texth=gdk_text_height(gfont,cad,strlen(cad));
+  }
+  else{
+    texth=12;
+    textw=12;
+  }
+  update_rect.width=textw+2*texth;
+  update_rect.height=2*texth;
+
+  update_rect.x=x0-update_rect.width/2;
+  update_rect.y=y0-update_rect.height/2;
+
+  
+  gdk_draw_rectangle(pixmap,    
+		     d_area->style->black_gc,    
+		     TRUE,   
+		     update_rect.x,
+		     update_rect.y,
+		     update_rect.width,
+		     update_rect.height);
+  switch(type){
+  case MBOXDEFAULT:
+    break;
+  case MBOXBORDER:
+    gdk_draw_rectangle(pixmap,    
+		       penGreen,
+		       FALSE,   
+		       update_rect.x,
+		       update_rect.y,
+		       update_rect.width,
+		       update_rect.height);
+    break;
+  default:
+    break;
+
+  }  
+
+
+  DrawString(pixmap,gfont,penGreen,update_rect.x+texth,update_rect.y+1.5*texth,cad);
+  gtk_widget_queue_draw_area(d_area,update_rect.x,update_rect.y,
+			     update_rect.width+1,update_rect.height+1);
+  
+}
+

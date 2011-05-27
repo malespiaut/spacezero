@@ -369,14 +369,13 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
 
   int i;
   int player=1;
+  int gameorder;
   struct ObjList *ls;
   Object *cv;
-  Object *obj,*obj0;
-  
-#if DEBUG
-  printf("Shell()level: %d\n",level);
-#endif
-  
+  Object *obj=NULL,*obj0;
+  Object *firstselobj=NULL;
+  int sw=0;
+
   
   switch(command){
   case 0:
@@ -399,7 +398,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     return(0);
   }  
 
-  if(*pcv==NULL){
+  if(0&&*pcv==NULL){
     printf("There are no ship selected!!\n");
     key->o=FALSE;
     level=0;
@@ -415,17 +414,17 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   }
   cv0=cv;
 
-  player=cv->player;
+  player=ps->id;
 
-  if(GetPlayerProc(ps,cv->player)!=GetProc()){
-    fprintf(stderr,"WARNING proc %d %d \n",GetProc(),GetPlayerProc(ps,cv->player));
+  if(ps->proc!=GetProc()){
+    fprintf(stderr,"WARNING proc %d %d \n",GetProc(),ps->proc);
     key->o=FALSE;
     level=0;
     key->esc=FALSE;
     return(0);
   }
 
-  if(GetControl(ps,cv->player)!=HUMAN){
+  if(ps->control!=HUMAN){
     fprintf(stderr,"ERROR: computer controlled ship\n");
     key->o=FALSE;
     level=0;
@@ -450,7 +449,13 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   }
   
   if(level==1){
-     strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPITE   B: BUY   U: UPGRADE   W: WRITE   E: SELL",128); 
+    if(*pcv!=NULL){
+      strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPITE   B: BUY   U: UPGRADE   W: WRITE   E: SELL",128); 
+    }
+    else{
+      strncpy(cad,"S: SELECT   W: WRITE",128); 
+      key->g=key->x=key->p=key->t=key->r=key->b=key->u=key->e=FALSE;
+    }
 //    strncpy(cad,shells[0].menu,128);
     
     if(key->g==TRUE){
@@ -533,10 +538,8 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
       strcpy(cad,"");
       strcat(cad,ord);
 
-      //      printf("Shell(): cad:(%s)\n",cad);
-      //      printf("Shell(): par0:(%s)\n",par);
       DelCharFromCad(par,"1234567890,- fnFN");
-      //      printf("Shell(): par1:(%s)\n",par);
+
       strcat(cad,par);
       break;
     case BUY:
@@ -565,10 +568,8 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
 	      (int)(0.5*GetPrice(cv,0,0,0)),"   (Esc to cancel)");
       break;
     case WRITE:
-      //DEBUG      printf("Shell(): %s\n",cad); 
       strcpy(par,"");
       Keystrokes(LOAD,par);
-      /*      printf("\n"); */
 
       strcpy(cad,"");
       strcat(cad,ord);
@@ -629,23 +630,31 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
       key->i=TRUE;
     }
 
+    /* game orders */
 
-    ls=lhead->next;
-    {
+    switch(order){
+    case SELECT:
+    case WRITE:
+      gameorder=TRUE;
+      break;
+    default:
+      gameorder=FALSE;
+      break;
+    }
+    
+    /* --game orders */
+
+    /* ships orders */
+
+    if(gameorder==FALSE){
+      
       /* first selected goes to cv */
-      Object *firstselobj=NULL;
-      int sw=0;
+      ls=lhead->next;
       while(ls!=NULL){  //HERE create a selected list
 	if(ls->obj->selected==TRUE){
 	  if(ls->obj->player!=player){ls=ls->next;continue;}
 	  obj=ls->obj;
-#if DEBUG
-	  if(debugshell){
-	    printf("\t%d %d %d %d\n",obj->id,obj->pid,player,ls->obj->player);
-	    printf("message: order: %d par: (%s)\n",order,par); 
-	  }
-#endif
-	  obj0=ExecOrder(lhead,obj,order,par);
+	  obj0=ExecOrder(lhead,obj,obj->player,order,par);
 	  if(sw==0){
 	    if(obj0!=NULL){
 	      firstselobj=obj0;
@@ -655,16 +664,29 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
 	}
 	ls=ls->next;
       }
-      if(sw){
-	if(firstselobj!=cv && firstselobj!=NULL){
-	  *pcv=firstselobj;
-	  if(*pcv!=NULL){
-	    DrawSelectionBox(pcv,1);
-	    (*pcv)->selected=TRUE;
-	  }
+      
+    }
+    else{
+      obj0=ExecOrder(lhead,*pcv,player,order,par);
+      if(sw==0){
+	if(obj0!=NULL){
+	  firstselobj=obj0;
+	  sw++;
 	}
       }
     }
+    if(sw){
+      if(firstselobj!=cv && firstselobj!=NULL){
+	*pcv=firstselobj;
+	if(*pcv!=NULL){
+	  DrawSelectionBox(pcv,1);
+	  (*pcv)->selected=TRUE;
+	}
+      }
+    }
+    
+    /* --ships orders */
+
     lastorder=order;
     strcpy(lastpar,"");
     strncpy(lastpar,par,16);
@@ -691,7 +713,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   return(0);
 }
 
-Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int order,char *par){
+Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,char *par){
   /*
     version 01 18March11
     Add the order given in the shell to ships orders list
@@ -714,10 +736,18 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int order,char *par){
   int nargs;
   char arg1[100],arg2[100];
 
-
+  /* game orders */
   ret=obj;
 
-  if(obj==NULL)return(NULL);
+  switch(order){
+  case SELECT:
+  case WRITE:
+    break;
+  default:
+    if(obj==NULL)return(NULL);
+    break;
+  }
+  /* -- game orders */
 
   /* forbidden orders */
 
@@ -918,21 +948,20 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int order,char *par){
 
 	id1=strtol(arg1,NULL,10);
 	if(id1!=0){
-	  obj_dest=SelectpObj(lhead,id1,obj->player);
+	  obj_dest=SelectpObj(lhead,id1,player);
 	}
 	break;
     }
 
-    
     if(obj_dest!=NULL){
       if(obj_dest->type==PLANET){
-	obj_dest=SelectpObjInObj(lhead,obj_dest->id,obj->player);
+	obj_dest=SelectpObjInObj(lhead,obj_dest->id,player);
       }
       if(obj_dest!=NULL){
-	obj->selected=FALSE;
+	if(obj!=NULL)obj->selected=FALSE;
 	obj_dest->selected=TRUE;
 	ret=obj_dest;
-	printf("(%c %d) selected.\n",Type(obj),ret->pid);
+	printf("(%c %d) selected.\n",Type(obj_dest),obj_dest->pid);
       }
     }
     

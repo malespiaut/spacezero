@@ -1243,19 +1243,24 @@ int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int type,int stype,in
   
   ls=lh->next;
   while(ls!=NULL){
-    if(ls->obj->habitat==H_PLANET){
-
-      if(type!=-1){
-	if(ls->obj->type!=type){ls=ls->next;continue;}
-	if(stype!=-1){
-	  if(ls->obj->subtype!=stype){ls=ls->next;continue;}
-	}
-      }
-      if(ls->obj->in->id==planetid)n++;
-      if(max>0){
-	if(n>=max)return(max);
+    if(type!=-1){
+      if(ls->obj->type!=type){ls=ls->next;continue;}
+      if(stype!=-1){
+	if(ls->obj->subtype!=stype){ls=ls->next;continue;}
       }
     }
+    
+    if(ls->obj->habitat==H_PLANET){
+      if(ls->obj->in->id==planetid)n++;
+    }
+    else{
+      if(planetid==0)n++;
+    }
+
+    if(max>0){
+      if(n>=max)return(max);
+    }
+    
     ls=ls->next;
   }
   return(n);

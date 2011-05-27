@@ -41,7 +41,7 @@
 
 void initshell(void);
 int Shell(int command,GdkPixmap *pixmap,GdkFont *,GdkGC *,struct HeadObjList *hl,struct Player *players,struct Keys *,Object **cv);
-Object *ExecOrder(struct HeadObjList *hl,Object *obj,int order,char *par);
+Object *ExecOrder(struct HeadObjList *hl,Object *obj,int player,int order,char *par);
 void DrawSelectionBox(Object **,int);
 int Keystrokes(int mode,char *c);
 

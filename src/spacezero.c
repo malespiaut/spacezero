@@ -94,7 +94,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.08"};
+char version[64]={"0.81.09"};
 //char copyleft[]="Copyright XaY";
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
@@ -1457,7 +1457,7 @@ gint MainLoop(gpointer data){
     
     cv0=cv;     /* coordinates center */
 
-    Shell(0,pixmap,gfont,penGreen,&listheadobjs,players,&keys,&cv);
+    Shell(0,pixmap,gfont,penGreen,&listheadobjs,&players[actual_player],&keys,&cv);
     if(keys.o==FALSE)gdraw.order=FALSE;
     if(cv!=NULL){
       if(cv->state==-1){ /* Object just selled*/

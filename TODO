@@ -82,7 +82,7 @@ Version 0.8 (since 10May2011)
 -send drawmissile in DrawObjs() to DrawShip()
 -!!not enought money
 -include CELLON code 
--!!orders like select or write should work also without anything selected.
+
 
 mouse:
 =====
@@ -179,7 +179,7 @@ X-(230511)!!F5  planet window: show more info. show planet production.
 X-(240511)!!Add ESC to automatic mode.
 X-(200511)!!warning and errors to stderr
 X-(260111)!!Show objects inside a planet (o>s>splanet=>select an object in planet)
-X-(270511)Add to planet list ships in free space.
+X-(270511)Added ships in free space to planet list.
 
 BUGS version 0.80
 =================
@@ -191,6 +191,8 @@ X-(230511)!![108](220511)select with mouse doesnt work in free space.
 X-(230511)!![109](230511) In map arrow moves ship.
 X-(240511)!![104](200511) When going somewhere in the space, ships use too energy
 X-(260511)[112]- ID: 3307761. PAGup doesn't select objects inside an enemy planet.
+X-(270511)!!- ID: 3305339. orders like select or write should work also without anything selected. 
+X-(270511)- ID: 3308005. o->write is repeated for each selected element 
 
 
 /********************************************************************************/

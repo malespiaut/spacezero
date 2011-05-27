@@ -1088,9 +1088,10 @@ void DrawSelectionBox(Object **pcv,int reset){
       if(keys.mleft==FALSE){
 	if(sw){ /* mouse release */
 	  /* region 0: space & map, >0 planet*/
+#if DEBUG
  	  printf("BOX 0: %d %d w:%d h:%d\n",region.rect.x,region.rect.y, 
  		 region.rect.width,region.rect.height); 
-
+#endif
 	  if(region.rect.width==0 || region.rect.height==0){
 	    /*reset*/
 	    region.rect.width=region.rect.height=0;
@@ -1116,10 +1117,10 @@ void DrawSelectionBox(Object **pcv,int reset){
 	    
 	    if(region.habitat==0){ /* free space */
 	      /* window to real coordinates */
-
+#if DEBUG
 	      printf("BOX0: %d %d w:%d h:%d\n",region.rect.x,region.rect.y, 
 		     region.rect.width,region.rect.height);  /* window coordinates */
-      
+#endif
 	      Window2Real(cv,region.rect.x,region.rect.y,&x0,&y0);
 	      Window2Real(cv,region.rect.x+region.rect.width,
 			  region.rect.y+region.rect.height,
@@ -1134,10 +1135,10 @@ void DrawSelectionBox(Object **pcv,int reset){
 	    if(region.habitat>0){
 	      region.rect.y=GameParametres(GET,GHEIGHT,0)-region.rect.y;
 	    }
-	    
+#if DEBUG	    
  	    printf("BOX: %d %d w:%d h:%d\n",region.rect.x,region.rect.y, 
  		   region.rect.width,region.rect.height);  /* window coordinates */
-	    
+#endif	    
 	    if(region.habitat>=0){
 	      cv0=MarkObjs(&listheadobjs,region);
 

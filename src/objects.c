@@ -2585,58 +2585,46 @@ Object *FirstShip(struct HeadObjList *lh,Object *cv0,int pid){
   return(cv0);
 }
 
-
-Object *PrevPlanetCv(struct HeadObjList *lh,Object *cv0,int pid){
+Object *PrevPlanetCv(struct HeadObjList *lh,Object *cv0,int playerid){
   /*
+    version 01
     returns:
     if cv0 is NULL a pointer to the first planet
-    if cv0 != NULL a pointer to the next planet in the list
+    if cv0 != NULL a pointer to the previous planet in the list
   */
   
   struct ObjList *ls;
-  Object *obj,*pobj;
-  int planetp=0,planet0=0;
-
+  Object *pobj=NULL;
+  int pplanet=-1;
+  int planet0=-1; 
+  int planet;
   
-  obj=pobj=NULL;
-
   ls=lh->next;
   if(ls==NULL){
     printf("There are no ship selected!!\n");
     return(NULL);
   }
-
-  if(cv0!=NULL && cv0->habitat==H_PLANET){
-    planet0=cv0->in->id;
+  if(cv0!=NULL){
+    planet0=cv0->habitat==H_PLANET ? cv0->in->id : 0;
   }
 
   while(ls!=NULL){
 
-    if(ls->obj->player!=pid){ls=ls->next;continue;}
+    if(ls->obj->player!=playerid){ls=ls->next;continue;}
     if(ls->obj->type!=SHIP){ls=ls->next;continue;}
-    obj=ls->obj;
+    if(cv0==NULL)return(ls->obj);
 
-    if(obj->habitat==H_PLANET){
-      if(obj->in->id!=planetp){
-	planetp=obj->in->id;
+    planet=ls->obj->habitat==H_PLANET ? ls->obj->in->id : 0;
+    if(planet==planet0){
+      if(pobj!=NULL)return(pobj);
+      else{
+	ls=ls->next;continue;
       }
     }
-    if(cv0==NULL)return(obj); /* first found */
     else{
-      if(obj!=cv0 && obj->habitat==H_PLANET){
-	if(obj->in->id!=planet0){
-	  if(pobj!=NULL){
-	    if(pobj->in!=obj->in){
-	      pobj=obj;
-	    }
-	  }
-	  else{
-	    pobj=obj;
-	  }
-	}
-      }
-      if(obj==cv0){
-	if(pobj!=NULL)return(pobj);
+      if(pplanet!=planet){
+	pobj=ls->obj;
+	pplanet=planet;
       }
     }
     ls=ls->next;
@@ -2646,11 +2634,11 @@ Object *PrevPlanetCv(struct HeadObjList *lh,Object *cv0,int pid){
 }
 
 
-Object *NextPlanetCv(struct HeadObjList *lh,Object *cv0,int pid){
+Object *NextPlanetCv(struct HeadObjList *lh,Object *cv0,int playerid){
   /*
     returns:
-    if cv0 is NULL a pointer to the first planet
-    if cv0 != NULL a pointer to the previous planet in the list
+    if cv0 is NULL a pointer to the first ship 
+    if cv0 != NULL a pointer to the first ship in next planet in the list
   */
   
   struct ObjList *ls;
@@ -2674,7 +2662,7 @@ Object *NextPlanetCv(struct HeadObjList *lh,Object *cv0,int pid){
   }
   
   while(ls!=NULL){   /* find the actual cv */
-    if(ls->obj->player==pid && ls->obj->type==SHIP){
+    if(ls->obj->player==playerid && ls->obj->type==SHIP){
       if(!sw1){
 	if((cv0==NULL || planet0==0) && ls->obj->habitat==H_PLANET){
 	  return(ls->obj); /* first found */
@@ -2703,7 +2691,6 @@ Object *NextPlanetCv(struct HeadObjList *lh,Object *cv0,int pid){
   /*   printf("obj(2):%p\n",obj1); */
   return(obj1);
 }
-
 
 
 int CountObjList(struct HeadObjList *hlist){

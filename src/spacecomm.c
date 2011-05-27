@@ -343,7 +343,7 @@ int OpenComm(int mode,struct Parametres par){
     /* sending game options to server */
     
     printf("buf1 %p\n",buf1);
-    printf("HOLA CLIENT %p\n",clientname);
+    printf("HELLO CLIENT %p\n",clientname);
     
     printf("sending client parametres:\n\tnplayers:%d\n\tname: %s\n",
 	   param.nplayers,param.playername);

@@ -1244,7 +1244,7 @@ gint MainLoop(gpointer data){
       loadsw=1;
       p_time=GetTime();
       gameover=FALSE;
-
+      observeenemies=FALSE;
       CreatePlanetList(listheadobjs,&listheadplanets);
       //      Density();
       

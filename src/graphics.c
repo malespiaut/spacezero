@@ -3563,7 +3563,6 @@ void SetDefaultKeyValues(struct Keys *key,int action){
 }
 
 
-
 void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object *cvobj,int act){
   /*
     Build and draw two text list:  
@@ -3620,6 +3619,19 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 
     textw=gdk_text_width(gfont,cad,strlen(cad));
     if(textw>textpw)textpw=textw;
+
+
+    color=0;
+    if(cvobj!=NULL){
+      if(cvobj->in==NULL)color=1;
+    }
+    snprintf(cad,TEXTMENMAXLEN,"out: %d",
+	     CountShipsInPlanet(hlp,0,SHIP,-1,0));
+    textw=gdk_text_width(gfont,cad,strlen(cad));
+    if(textw>textpw)textpw=textw;
+    Add2TextList(&planetlist,cad,color);
+    
+
     
     ls=hlp->next;
     while(ls!=NULL){
@@ -3695,13 +3707,12 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 	if(textw>textpw)textpw=textw;
 	Add2TextList(&planetlist,cad,color);
       }
+      else{
+      }
       ls=ls->next;
     }
   }
  
-  /* XPrintTextList(pixmap,gfont,&shiplist,10,15,40*gdk_char_measure(gfont,'A'),GameParametres(GET,GHEIGHT,0)-50); */
-  /* XPrintTextList(pixmap,gfont,&planetlist,GameParametres(GET,GWIDTH,0)-widthp-20,15,widthp,GameParametres(GET,GHEIGHT,0)-50); */
-
   XPrintTextList(pixmap,gfont,&shiplist,10,15,textsw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
   XPrintTextList(pixmap,gfont,&planetlist,GameParametres(GET,GWIDTH,0)-textpw-20,15,textpw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
 

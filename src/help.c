@@ -109,7 +109,8 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 
   par->server=FALSE;
   par->client=FALSE;
-  par->IP=DEFAULT_IP;
+  //  par->IP=DEFAULT_IP;
+  strncpy(par->IP,DEFAULT_IP,32);
   par->port=DEFAULT_PORT;
   par->port2=DEFAULT_PORT+1;
   strcpy(par->playername,"");
@@ -407,7 +408,8 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 	break;
       case ARG_ip:/*'ip': ip of the server */
 	if(i+1<argc){
-	  par->IP=(argv[i+1]);
+	  //	  par->IP=(argv[i+1]);
+	  strncpy(par->IP,argv[i+1],32);
 	  i++;
 	}
 	else{
@@ -724,7 +726,7 @@ void PrintWarnings(char *version){
   fprintf(stderr,"WARNING: This is the development version of SpaceZero (version %s)\nIt can contain bugs.\nNet and saved games can be incompatible with the official release.\nMaybe SpaceZero doesnt work properly.\n", version);
 
   if(sizeof(int)!=4){
-    fprintf(stderr,"\nWARNING: size of int %d bytes\n, maybe SpaceZero doesnt work properly\n",sizeof(int));//HERE warning: format '%d' expects type 'int', but argument 3 has type 'long unsigned int'
+    fprintf(stderr,"\nWARNING: size of int %d bytes\n, maybe SpaceZero doesnt work properly\n",(int)sizeof(int));//HERE warning: format '%d' expects type 'int', but argument 3 has type 'long unsigned int'
   }
   fprintf(stderr,"\nWARNING: Communication between 64 and 32 bits machines not so tested,\nmaybe SpaceZero doesnt work properly.\n");
 

@@ -63,7 +63,7 @@ struct Parametres{
   int pirates;
   int server;
   int client;
-  char *IP;
+  char IP[32];
   int port;
   int port2;
   char playername[32];

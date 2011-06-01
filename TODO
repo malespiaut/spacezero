@@ -195,6 +195,7 @@ X-(260511)[112]- ID: 3307761. PAGup doesn't select objects inside an enemy plane
 X-(270511)!!- ID: 3305339. orders like select or write should work also without anything selected. 
 X-(270511)[111]- ID: 3308005. o->write is repeated for each selected element 
 X-(270511)[114] if write a p the game is paused.
+X-(010611)- ID: 3308044. [32-64 bit] Client nickname is truncated to the last part. 
 
 /********************************************************************************/
 DONE:Version 0.78 (since 10 Jan. 2011)

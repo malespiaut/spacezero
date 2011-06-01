@@ -173,6 +173,70 @@ int main(int argc,char *argv[]){
 
   srand(time(NULL));
 
+
+  /* tests */
+
+
+#if TEST
+  if(1){
+  /*  64 bits machine                   32 bits :  
+    Sizeof char: 1                      Sizeof char: 1		     
+    Sizeof short: 2			Sizeof short: 2		     
+    Sizeof int: 4			Sizeof int: 4		     
+    Sizeof int32: 4			Sizeof int32: 4		     
+    Sizeof int64: 8			Sizeof int64: 8		     
+    Sizeof long int: 8			Sizeof long int: 4	     
+    Sizeof int *: 8			Sizeof int *: 4		     
+    Sizeof char *: 8			Sizeof char *: 4	     
+    Sizeof float: 4			Sizeof float: 4		     
+    Sizeof double: 8			Sizeof double: 8	     
+    								     
+    Sizeof Object: 512			Sizeof Object: 476	     
+    Sizeof ObjNew 76			Sizeof ObjNew 76	     
+    Sizeof ObjectAAll: 68		Sizeof ObjectAAll: 68	     
+    Sizeof Object dynamic: 56		Sizeof Object dynamic: 56    
+    Sizeof Object pos: 12		Sizeof Object pos: 12	     
+    Sizeof Weapon: 60			Sizeof Weapon: 60	     
+    Sizeof Player: 288			Sizeof Player: 196	     
+    Sizeof PlayerMod: 20		Sizeof PlayerMod: 20	     
+    Sizeof Parametres: 288		Sizeof Parametres: 288	     
+   */
+
+    printf("Sizeof char: %d\n",sizeof(char));
+    printf("Sizeof short: %d\n",sizeof(short));
+    printf("Sizeof int: %d\n",sizeof(int));
+    printf("Sizeof int32: %d\n",sizeof(int32_t));
+    printf("Sizeof int64: %d\n",sizeof(int64_t));
+    printf("Sizeof long int: %d\n",sizeof(long int));
+    printf("Sizeof int *: %d\n",sizeof(int *));
+    printf("Sizeof char *: %d\n",sizeof(char *));
+    printf("Sizeof float: %d\n",sizeof(float));
+    printf("Sizeof double: %d\n\n",sizeof(double));
+    printf("Sizeof Object: %d\n",sizeof(Object));
+    printf("Sizeof ObjNew %d\n",sizeof(struct ObjectNew));
+    printf("Sizeof ObjectAAll: %d\n",sizeof(struct ObjectAAll));
+    printf("Sizeof Object dynamic: %d\n",sizeof(struct Objectdynamic));
+    printf("Sizeof Object pos: %d\n",sizeof(struct Objectpos));
+    printf("Sizeof Weapon: %d\n",sizeof(Weapon));
+    printf("Sizeof Player: %d\n",sizeof(struct Player));
+    printf("Sizeof PlayerMod: %d\n",sizeof(struct PlayerMod));
+    printf("Sizeof Parametres: %d\n",sizeof(struct Parametres));
+    printf("buffersize: %d\n",BUFFERSIZE);
+    printf("EOF: %d\n",EOF);
+    
+    printf("(int) 0.1= %d\n",(int)0.1);
+    printf("(int) -0.1= %d\n",(int)(-0.1));
+    printf("(int) -1.1= %d\n",(int)(-1.1));
+    
+
+  }
+  /* -- tests */
+#endif
+
+
+
+
+
   for(i=0;i<15;i++)contabilidad[i]=0;
   Keystrokes(RESET,NULL);
 

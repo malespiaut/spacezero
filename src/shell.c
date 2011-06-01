@@ -49,9 +49,9 @@ struct Shell{
   char name[16];
   char menu[128];
   char par[128];
-  char options[10];
+  char options[16];
   int noptions;
-  int orders[10];
+  int orders[16];
   int order; 
 };
 
@@ -79,7 +79,7 @@ void initshell(void){
   strncpy(shells[0].name,"main",16);
   strncpy(shells[0].menu,
 	  "G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPITE   B: BUY   U: UPGRADE   W: WRITE   E: SELL",128);
-  strcpy(shells[0].options,"gxsptrbuwe");
+  strncpy(shells[0].options,"gxsptrbuwe",16);
   shells[0].noptions=10;
   shells[0].orders[0]=GOTO;
   shells[0].orders[1]=EXPLORE;

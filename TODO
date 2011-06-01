@@ -12,7 +12,7 @@ libopenal_dev
 
 
 
-bugs:(last:113)
+bugs:(last:114)
 ====
 
 -[26] (010910) al pasar al modo manual siempre dispara. (posible disparo a EXPLOSION, objnext no eliminado)
@@ -34,11 +34,9 @@ bugs:(last:113)
       CheckModifiedPre(): PROC: 0 obj 1782 (159) player: 4 type 1 stype 6 mod: 37 time: 182007
 -[100](060511)enemy state bar greater than 100 (with very close planets, in net game, maybe unknown state)
 -[101](105011)32/64 bits Gdk-WARNING **: GdkWindow 0x2e00005 unexpectedly destroyed ??(after ubuntu update, no more)
--!![105](200511) Queen autopilot: still crash the ship while landing.
+-!![105](200511) Queen autopilot: still crash the ship while landing. (Improve ExecLand())
 -!![107](200511) Towers always aim the enemy even if out of range.
 -[110](240511) Explorers dont STOP. save03
-[111](250511)o->write is repeated for each selected element
-
 
 
 Version 0.6: (since 0707)
@@ -180,6 +178,9 @@ X-(240511)!!Add ESC to automatic mode.
 X-(200511)!!warning and errors to stderr
 X-(260111)!!Show objects inside a planet (o>s>splanet=>select an object in planet)
 X-(270511)Added ships in free space to planet list.
+X-(010611)Fix: count ships in free space in planet list. 
+X-(010611)Fix: select ships with mouse for different window geometries.
+X-(010611)Fix: pause when order write.
 
 BUGS version 0.80
 =================
@@ -192,8 +193,8 @@ X-(230511)!![109](230511) In map arrow moves ship.
 X-(240511)!![104](200511) When going somewhere in the space, ships use too energy
 X-(260511)[112]- ID: 3307761. PAGup doesn't select objects inside an enemy planet.
 X-(270511)!!- ID: 3305339. orders like select or write should work also without anything selected. 
-X-(270511)- ID: 3308005. o->write is repeated for each selected element 
-
+X-(270511)[111]- ID: 3308005. o->write is repeated for each selected element 
+X-(270511)[114] if write a p the game is paused.
 
 /********************************************************************************/
 DONE:Version 0.78 (since 10 Jan. 2011)

@@ -1328,10 +1328,6 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
 	     3,0};
   
   
-#if DEBUG
-  printf("DrawObjs()\n");
-#endif
-  
   if(cv==NULL)return(0);  
 
   if(0){
@@ -2178,10 +2174,6 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 
   gwidth=GameParametres(GET,GWIDTH,0);
   gheight=GameParametres(GET,GHEIGHT,0);
-
-#if DEBUG 
-  printf("DrawMap()\n");
-#endif
 
   if(keys.o==FALSE){
     DrawString(pixmap,gfont,penRed,10,gheight+GameParametres(GET,GPANEL,0)/2+4, 
@@ -3774,10 +3766,8 @@ void Shift(int ulx,Object *cv,float *z,float *x,float *y,int action){
   *x=cvx;
   *y=cvy;
 }
-
-
-void Window2Real(Object *cv, int wx,int wy,int *rx,int *ry){
-
+void Window2Real(Object *cv,int habitat, int wx,int wy,int *rx,int *ry){
+  /* version 01 */
   float zoom;
   float cvx,cvy;
   int objx=0,objy=0;
@@ -3785,6 +3775,8 @@ void Window2Real(Object *cv, int wx,int wy,int *rx,int *ry){
   int gwidth,gheight;
   int x,y,x0,y0;
   float ifactor;
+  float sx,sy;
+
 
   ulx=GameParametres(GET,GULX,0);
   gwidth=GameParametres(GET,GWIDTH,0);
@@ -3800,32 +3792,40 @@ void Window2Real(Object *cv, int wx,int wy,int *rx,int *ry){
       objy=cv->y;
     }
   }
-  
-  Shift(ulx,cv,&zoom,&cvx,&cvy,GET);
-  
-  x0=0.5*gwidth;
-  y0=0.5*gheight;
-
-  x=wx;
-  y=gheight-wy;
-
-  ifactor=ulx/(gwidth*(float)zoom);
-  
-  *rx=(x-x0)*ifactor-cvx+objx;
-  *ry=(y-y0)*ifactor-cvy+objy;
-  
+  if(habitat==0){  /* free space */
+    Shift(ulx,cv,&zoom,&cvx,&cvy,GET);
+    
+    x0=0.5*gwidth;
+    y0=0.5*gheight;
+    
+    x=wx;
+    y=gheight-wy;
+    
+    ifactor=ulx/(gwidth*(float)zoom);
+    
+    *rx=(x-x0)*ifactor-cvx+objx;
+    *ry=(y-y0)*ifactor-cvy+objy;
+  }
+  else{
+    sx=(float)gwidth/LXFACTOR;
+    sy=(float)gheight/LYFACTOR;
+    *rx=((float)wx/sx+0.5);
+    *ry=((float)wy/sy+0.5);
+  }
 }
 
-void Real2Window(Object *cv,int rx,int ry,int *wx,int *wy){
 
+void Real2Window(Object *cv,int habitat,int rx,int ry,int *wx,int *wy){
+  /* version 01 */
 
   float zoom;
   float cvx,cvy;
   int objx=0,objy=0;
   int ulx;
   int gwidth,gheight;
-  int x0,y0;
+  float x0,y0;
   float factor;
+  float sx,sy;
 
   ulx=GameParametres(GET,GULX,0);
   gwidth=GameParametres(GET,GWIDTH,0);
@@ -3842,19 +3842,28 @@ void Real2Window(Object *cv,int rx,int ry,int *wx,int *wy){
       objy=cv->y;
     }
   }
+  if(habitat==0){ /* free space */
+    Shift(ulx,cv,&zoom,&cvx,&cvy,GET);
+    
+    x0=0.5*gwidth;
+    y0=0.5*gheight;
+    
+    factor=gwidth*(float)zoom/ulx;
+    
+    *wx=x0+(rx-objx+cvx)*factor + 0.5;
+    *wy=gheight-y0-(ry-objy+cvy)*factor + 0.5;
+  }
+  else{
 
-  Shift(ulx,cv,&zoom,&cvx,&cvy,GET);
-
-  x0=0.5*gwidth;
-  y0=0.5*gheight;
-  
-  factor=gwidth*(float)zoom/ulx;
-  
-  *wx=x0+(rx-objx+cvx)*factor;
-  *wy=gheight-y0-(ry-objy+cvy)*factor;
+    sx=(float)gwidth/LXFACTOR;
+    sy=(float)gheight/LYFACTOR;
+    *wx=(float)rx*sx + 0.5;
+    *wy=(float)ry*sy + 0.5;
+  }
 }
 
-void DrawRegionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv){
+
+void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv){
   Rectangle rect;
 
   int x0,y0,x1,y1;
@@ -3867,15 +3876,11 @@ void DrawRegionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv){
   rect.width=reg.rect.width;
   rect.height=reg.rect.height;
 
-/*   printf("DrawRegionBox(real): %d %d %d %d\n", */
-/* 	 rect.x,rect.y,rect.width,rect.height);   */
-
-
   if(reg.habitat==0 && keys.mleft==FALSE){
 
 
-    Real2Window(cv,rect.x,rect.y,&x0,&y0);
-    Real2Window(cv,rect.x+rect.width,rect.y+rect.height,&x1,&y1);
+    Real2Window(cv,reg.habitat,rect.x,rect.y,&x0,&y0);
+    Real2Window(cv,reg.habitat,rect.x+rect.width,rect.y+rect.height,&x1,&y1);
     
     rect.x=x0;
     rect.y=y0;
@@ -3884,6 +3889,14 @@ void DrawRegionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv){
   }
 
   if(reg.habitat>0 && keys.mleft==FALSE){
+    Real2Window(cv,reg.habitat,rect.x,rect.y,&x0,&y0);
+    Real2Window(cv,reg.habitat,rect.x+rect.width,rect.y+rect.height,&x1,&y1);
+    
+    rect.x=x0;
+    rect.y=y0;
+    rect.width=x1-x0;
+    rect.height=y1-y0;
+    
     rect.y=GameParametres(GET,GHEIGHT,0)-rect.y;
   }
 
@@ -3897,10 +3910,9 @@ void DrawRegionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv){
     rect.height*=-1;
   }
   
-/*   printf("DrawRegionBox(window) %d %d %d %d\n",rect.x,rect.y,rect.width,rect.height); */
   gdk_draw_rectangle(pixmap,penGreen,FALSE,rect.x,rect.y,rect.width,rect.height);
-  //  printf("Drawregion: %d %d\n",GetTime(),rect.x);
 }
+
 
 
 void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){

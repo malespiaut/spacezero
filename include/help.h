@@ -79,7 +79,6 @@ struct Validargum{
 void PrintWarnings(char *version);
 void PrintArguments(struct Parametres param,char *title);
 int SearchArg(char *target,struct Validargum *v);
-int BuscarCad(char *target ,char *cad[],int n);
 void Usage(char *ver,char *l_rev);
 int Arguments(int argc,char *argv[],struct Parametres *,char *optfile);
 int CheckArgs(struct Parametres p);

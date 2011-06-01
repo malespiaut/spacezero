@@ -23,7 +23,6 @@
 		version 0.80 May 2011
 ****/
 
-#include <gtk/gtk.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -489,19 +488,6 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   return(0);
 }  /* --Arguments()  */
 
-int BuscarCad(char *target ,char *cad[],int n){
-  int i;
-  int status;
-  status=-1;
-  for(i=0;i<n;i++){
-    if(strncmp(target,cad[i],24)==0){
-      return(i);
-    }
-  }
-  return(-1);
-}
-
-
 void Usage(char *ver,char *l_rev){
      
   /*
@@ -693,27 +679,28 @@ int GetGeom(char *geom,int *w,int *h){
     -1,-2 if there are some error in the structure of the cad geom.
    */
 
-  char str[24],str0[24];
+  char str[24];
   int sw;
   int len;
   char *pointer;
   char *endptr=NULL;
 
-  if(strlen(geom)==0){
+  //  printf("GetGeom(): %s\n",geom);
+  len=strlen(geom);
+  if(len==0 || len>9){
     *w=DEFAULTWIDTH;
     *h=DEFAULTHEIGHT;
-    return(0);
+    return(-1);
   }
   sw=0;
-  strncpy(str0,geom,24);
-  strncpy(&str0[23],"\0",(size_t)1);
-  pointer=strchr(str0,'x');
+  pointer=strchr(geom,'x');
 
-  if(pointer==NULL)
-    pointer=strchr(str0,':');
- 
+  if(pointer==NULL){
+    pointer=strchr(geom,':');
+  }
+
   if(pointer){
-    len=strlen(str0)-strlen(pointer);
+    len=strlen(geom)-strlen(pointer);
     strncpy(str,geom,len);
     *w=(int)strtol(str,&endptr,10);
     if(*w==0 && str==endptr){
@@ -725,9 +712,9 @@ int GetGeom(char *geom,int *w,int *h){
     }
   }
   else{
-    return(-1);
+    return(-2);
   }
-  if(sw)return(-2);
+  if(sw)return(-3);
   return(0);  
 }
 

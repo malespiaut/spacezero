@@ -2816,9 +2816,6 @@ int CreatePlayerList(struct HeadObjList hlist1,struct HeadObjList *hlist2,int pl
   int id1,id2;
   int n=0;
 
-#if DEBUG
-  printf("CreateList()\n");
-#endif
 
   if(hlist2->next!=NULL){
     fprintf(stderr,"WARNING CPL not NULL %p %d\n",hlist2->next,hlist2->n);

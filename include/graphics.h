@@ -111,9 +111,9 @@ void SetDefaultKeyValues(struct Keys *key,int action);
 void Shift(int ulx,Object *cv,float *z,float *x,float *y,int action);
 
 
-void DrawRegionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv);
-void Real2Window(Object *,int rx,int ry,int *wx,int *wy);
-void Window2Real(Object *,int wx,int wy,int *rx,int *ry);
+void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv);
+void Real2Window(Object *,int habitat,int rx,int ry,int *wx,int *wy);
+void Window2Real(Object *,int habitat,int wx,int wy,int *rx,int *ry);
 
 int XPrintMenuList(GdkPixmap *pixmap,GdkFont *font,struct MenuList *head,int x0,int y0);
 

@@ -94,11 +94,11 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.09"};
+char version[64]={"0.81.10"};
 //char copyleft[]="Copyright XaY";
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"May 2011"};
+char last_revision[]={"Jun. 2011"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -377,8 +377,16 @@ int main(int argc,char *argv[]){
     fprintf(stderr,"Warning: -geom option bad formed. Using default values.\n");
   }
   else{
-    GameParametres(SET,GWIDTH,width);
-    GameParametres(SET,GHEIGHT,height);
+    printf("GEOM %d %d\n",width,height);
+    if(width>0 && width<9999 && height>0 && height<9999){
+      GameParametres(SET,GWIDTH,width);
+      GameParametres(SET,GHEIGHT,height);
+      printf("GEOM\n");
+    }
+    else{
+      fprintf(stderr,"Warning: -geom option bad formed. Using default values.\n");
+    }
+    printf("GEOM1\n");
   }
 
   printf("Width: %d Height: %d\n",width,height);
@@ -965,6 +973,7 @@ gint MainLoop(gpointer data){
   char point[128];
   char pointmess[128];
   int loadsw =0;
+  static int sw=0;
 
   if(gdraw.menu==TRUE)return(TRUE);
 
@@ -977,6 +986,22 @@ gint MainLoop(gpointer data){
   if(time0==0){
     time0=time(NULL);
   }
+
+  /* firsttime */
+  if(0&&!sw){
+    GameParametres(SET,GWIDTH,850);
+    GameParametres(SET,GHEIGHT,450);
+    
+    gwidth=GameParametres(GET,GWIDTH,0);
+    gheight=GameParametres(GET,GHEIGHT,0);
+    
+    
+    gtk_window_resize(GTK_WINDOW(win_main),gwidth,gheight);
+    gtk_drawing_area_size(GTK_DRAWING_AREA(drawing_area),gwidth,gheight);
+    
+    sw++;
+  }
+
   
   
   ulx=GameParametres(GET,GULX,0);
@@ -1245,6 +1270,9 @@ gint MainLoop(gpointer data){
       p_time=GetTime();
       gameover=FALSE;
       observeenemies=FALSE;
+#if TEST
+      observeenemies=TRUE;
+#endif
       CreatePlanetList(listheadobjs,&listheadplanets);
       //      Density();
       
@@ -1495,9 +1523,9 @@ gint MainLoop(gpointer data){
   /* --Draw Shell */
 
 
-  /* Draw selection box */
-  DrawSelectionBox(&cv,0);
-  /* --Draw selection box */
+  /*Selection box */
+  SelectionBox(&cv,0);
+  /* --Selection box */
 
 
 
@@ -1595,7 +1623,6 @@ gint Quit(GtkWidget *widget,gpointer gdata){
 #if DEBUG
   if(debuginit){
     Object *obj;
-    int i;
 
     printf("****************** Statistics ************************\n");
     obj=NewObj(&listheadobjs,SHIP,SHIP1,
@@ -1626,6 +1653,7 @@ gint Quit(GtkWidget *widget,gpointer gdata){
   }    
 #endif
 #if DEBUG
+  int i;
   if(debuginit){
     printf("Contabilidad collision:\n");
     for(i=0;i<15;i++)printf("\t(%d) %u\n",i,contabilidad[i]);
@@ -1651,7 +1679,7 @@ gint Quit(GtkWidget *widget,gpointer gdata){
   QuitGraphics(widget,gdata);
   printf("Graphics Closed\n");
 #if DEBUG
-  if(debuginit)printf("MEM:%d\n",g_memused);
+  //  if(debuginit)printf("MEM:%d\n",g_memused);
 #endif
   return FALSE;
 }
@@ -1672,10 +1700,6 @@ void key_eval(struct Keys *key){
   Object *nobj;
   float x0,y0;
   char text[TEXTMENMAXLEN];
-#endif
-
-#if DEBUG
-  printf("key_eval()\n");
 #endif
 
   if(key->enter==TRUE && gdraw.menu==TRUE){
@@ -1781,7 +1805,7 @@ void key_eval(struct Keys *key){
 	  cv=obj;
 	  habitat.type=cv->habitat;
 	  habitat.obj=cv->in;
-	  DrawSelectionBox(&cv,1);
+	  SelectionBox(&cv,1);
 	  cv->selected=TRUE;
 	}
       }
@@ -1825,7 +1849,7 @@ void key_eval(struct Keys *key){
 	if(cv!=NULL){
 	  habitat.type=cv->habitat;
 	  habitat.obj=cv->in;
-	  DrawSelectionBox(&cv,1);
+	  SelectionBox(&cv,1);
 	}
       }
     }
@@ -2021,7 +2045,7 @@ void key_eval(struct Keys *key){
     if(cv!=NULL){
       habitat.type=cv->habitat;
       habitat.obj=cv->in;
-      DrawSelectionBox(&cv,1);
+      SelectionBox(&cv,1);
       cv->selected=TRUE;
       
       if(nav_mode==ABSOLUTE){
@@ -2087,10 +2111,6 @@ void UpdateShip(Object *obj){
 
   int proc,gwidth;
 
-
-#if DEBUG
-  /*  printf("UpdateShip()\n"); */
-#endif
 
   proc=GetProc();
 
@@ -2362,17 +2382,6 @@ void UpdateShip(Object *obj){
     }
   }
   
-#if DEBUG
-  if(!(GetTime()%50))
-    printf("Ec:%f U:%f E:%f\n",.5*obj->mass*(vx*vx+vy*vy),
-	   U,.5*obj->mass*(vx*vx+vy*vy)+U);
-#endif
-
-
-#if DEBUG
-  /*  printf("--UpdateShip()\n"); */
-#endif
-
   return;
 }
 
@@ -2394,10 +2403,6 @@ void UpdateAsteroid(Object *obj){
   float U;
   int proc,gwidth;
 
-
-#if DEBUG
-  /*  printf("UpdateAsteroid()\n"); */
-#endif
 
   if(obj->type!=ASTEROID)return;
 
@@ -2509,16 +2514,6 @@ void UpdateAsteroid(Object *obj){
     }
   }
   
-#if DEBUG
-  if(!(GetTime()%50))
-    printf("Ec:%f U:%f E:%f\n",.5*obj->mass*(vx*vx+vy*vy),
-	   U,.5*obj->mass*(vx*vx+vy*vy)+U);
-#endif
-
-#if DEBUG
-  /*  printf("--UpdateAsteroid()\n"); */
-#endif
-
   return;
 }
 
@@ -2548,10 +2543,6 @@ void Collision(struct HeadObjList *lh){
   int crashsw=0;
   static int cont=0;
 
-
-#if DEBUG
-  printf("Collision()\n");
-#endif
 
   gwidth=GameParametres(GET,GWIDTH,0);
   gheight=GameParametres(GET,GHEIGHT,0);
@@ -3178,9 +3169,7 @@ int UpdateObjs(void){
   guly=GameParametres(GET,GULY,0);
 
 #endif
-#if DEBUG
-  printf("UpdateObjs()\n");
-#endif
+
   
   gnet=GameParametres(GET,GNET,0);
   proc=GetProc();
@@ -3531,10 +3520,6 @@ float PlanetAtraction(float *fx,float *fy,float x,float y,float m){
   *fy*=m;
   U*=m;
 
-#if DEBUG
-  if(!(GetTime()%50))  
-    printf("fx:%f fy:%f f:%f\n",*fx,*fy,sqrt(*fx*(*fx)+*fy*(*fy)));
-#endif 
   return(U);
 }
 
@@ -3856,10 +3841,6 @@ int CheckGame(char *cad){
 
   /* Checking Orders */
 
-#if DEBUG
-  printf("CheckGame()\n");
-#endif
-
   for(i=0;i<20;i++){
     types[i]=0;
   }
@@ -4086,9 +4067,6 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   int gwidth,gwidth2,gheight;
   int incy;
 
-#if DEBUG
-  printf("DrawInfo()\n");
-#endif
 
   if(sw==0){
     gc=penGreen;
@@ -4325,10 +4303,6 @@ void GetGold(void){
   float inctower;
   float levelfactor;
  
-#if DEBUG
-  printf("GetGold()\n");
-#endif
-
   proc=GetProc();
   nplayers=GameParametres(GET,GNPLAYERS,0);
 
@@ -4447,10 +4421,6 @@ void GetPoints(struct HeadObjList hol,int proc,struct Player *p){
   int sw=0;
   int gnet;
   
-#if DEBUG
-  printf("GetPoints()\n");
-#endif
-
   ls=hol.next;
   gnet=GameParametres(GET,GNET,0);
 

@@ -127,6 +127,7 @@ char *CreateSaveFile(int server,int client){
 
 char *CreateRecordFile(void){
   char *file;
+  FILE *fprecord;
 
   file=malloc(128*sizeof(char));
   if(file==NULL){
@@ -140,6 +141,30 @@ char *CreateRecordFile(void){
   fprintf(stdout,"HOME: %s\n",file);
   strcat(file,SAVEDIR);
   strcat(file,RECORDFILE);
+
+
+  if((fprecord=fopen(file,"rt"))==NULL){
+
+    if((fprecord=fopen(file,"wt"))==NULL){
+      fprintf(stdout,"No puede abrirse el archivo: %s",file);
+      exit(-1);
+    }
+    fprintf(fprecord,"%d\n",0);
+    fclose(fprecord);
+
+    if((fprecord=fopen(file,"rt"))==NULL){
+      fprintf(stdout,"No puede abrirse el archivo: %s", file);
+      exit(-1);
+    }
+  }
+
+  if(fscanf(fprecord,"%d",&record)!=1){
+    fprintf(stderr,"Setting record to 0\n");
+    record=0;
+  }
+
+  fclose(fprecord);
+  printf("Record: %d\n",record);
 
   return(file);
 }
@@ -797,25 +822,7 @@ int ExecLoad(char *nom){
   printf("\tLoading the objects...");
   for(i=0;i<num_objs;i++){
     FscanfObj(fp,&obj,&tbl[i]);
-      switch(obj.habitat){
-      case H_PLANET:
-	/* obj.x*=GameParametres(GET,GWIDTH,0); */
-	/* obj.y*=GameParametres(GET,GHEIGHT,0); */
-	/* obj.x0*=GameParametres(GET,GWIDTH,0); */
-	/* obj.y0*=GameParametres(GET,GHEIGHT,0); */
-	break;
-      case H_SPACE:
-	/* obj.x*=width; */
-	/* obj.y*=height; */
-	/* obj.x0*=width; */
-	/* obj.y0*=height; */
-	break;
-      default:
-	fprintf(stderr,"ERROR in ExecLoad(). habitat unknown\n");
-	exit(-1);
-	break;
-      }
-    
+ 
     id=g_objid;
     projid=g_projid;
     nobj=NewObj(&listheadobjs,SHIP,SHIP0,
@@ -828,8 +835,6 @@ int ExecLoad(char *nom){
     g_objid=id;
     g_projid=projid;
     
-    /*    printf("%d ",obj.id); */
-
     data=nobj->cdata;
     CopyObject(nobj,&obj);
     if(nobj->type!=SHIP){

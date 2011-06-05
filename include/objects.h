@@ -314,10 +314,10 @@ struct _Object{
   struct Planet *planet;
   struct ListOrder *lorder;
 
-  Weapon *weapon;     /*weapon selected 0 1 2*/
-  Weapon weapon0;     /* actual weapon */
-  Weapon weapon1;     /* actual weapon */
-  Weapon weapon2;     /* actual weapon */
+  Weapon *weapon;     /* weapon selected 0 1 2*/
+  Weapon weapon0;     /* shots */
+  Weapon weapon1;     /* missile */
+  Weapon weapon2;     /* laser beam */
   Engine engine;      /* motor */
   Data *cdata;         /* data base */
 };

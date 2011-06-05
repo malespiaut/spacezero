@@ -345,7 +345,7 @@ void Shell_02(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadObjList lh
 
 int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadObjList *lhead,struct Player *ps,struct Keys *key,Object **pcv){
   /*
-    version 01
+    version 02
   */
   static char cad[128]="";
   static char ord[16]="";

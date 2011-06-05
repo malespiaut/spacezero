@@ -12,7 +12,7 @@ libopenal_dev
 
 
 
-bugs:(last:114)
+bugs:(last:115)
 ====
 
 -[26] (010910) al pasar al modo manual siempre dispara. (posible disparo a EXPLOSION, objnext no eliminado)
@@ -34,10 +34,9 @@ bugs:(last:114)
       CheckModifiedPre(): PROC: 0 obj 1782 (159) player: 4 type 1 stype 6 mod: 37 time: 182007
 -[100](060511)enemy state bar greater than 100 (with very close planets, in net game, maybe unknown state)
 -[101](105011)32/64 bits Gdk-WARNING **: GdkWindow 0x2e00005 unexpectedly destroyed ??(after ubuntu update, no more)
--!![105](200511) Queen autopilot: still crash the ship while landing. (Improve ExecLand())
--!![107](200511) Towers always aim the enemy even if out of range.
 -[110](240511) Explorers dont STOP. save03
-
+-[115]-geom 1000x-12 check all arguments...
+	    -geom -name hola
 
 Version 0.6: (since 0707)
 ============
@@ -49,7 +48,6 @@ Version 0.8 (since 10May2011)
 ===========
 
 -!!Initial menu game options: sound volume, resolution, etc.
--!!New order: "do not takeoff" = ID: 3305066 (STOP when landed.)
 -!!Rewrite NearestObjAll(), call less times.
 -!!Reordenar, jerarquizar codigo, ficheros.
 -!!Disminuir numero de variables extern (97),58,72,76 grep extern src/*.c include/*h |grep ";" |wc
@@ -57,7 +55,6 @@ Version 0.8 (since 10May2011)
 -Game statistics.
 -Create charge list (lista de carga).
 -!!toroidal Universe as option.
-
 -math function tables.
 -Objects with sons(shots are sons of the ships).
 -nav_mode in every ship, object propierty(?)
@@ -101,6 +98,7 @@ Ships:
 AI:    
 ===
 
+-!!New order: "do not takeoff" = ID: 3305066 (STOP when landed.)
 -Orbit in automatic mode(Take off).
 -When parent dies, send orders to object sons.
 -Aterrizado al pasar a automatico, no despegar y volver a aterrizar.
@@ -129,6 +127,7 @@ Comm:
 
 Save
 ====
+-!!Save obj->cdata
 
 
 Command shell:
@@ -181,6 +180,8 @@ X-(270511)Added ships in free space to planet list.
 X-(010611)Fix: count ships in free space in planet list. 
 X-(010611)Fix: select ships with mouse for different window geometries.
 X-(010611)Fix: pause when order write.
+X-(030611)!!dont takeoff until better state (save05) no danger, GOTO , TAKEOFF
+
 
 BUGS version 0.80
 =================
@@ -196,6 +197,9 @@ X-(270511)!!- ID: 3305339. orders like select or write should work also without 
 X-(270511)[111]- ID: 3308005. o->write is repeated for each selected element 
 X-(270511)[114] if write a p the game is paused.
 X-(010611)- ID: 3308044. [32-64 bit] Client nickname is truncated to the last part. 
+X-(030611)!![107](200511) Towers always aim the enemy even if out of range.(save06)
+X-(030611)!![105](200511) Queen autopilot: still crash the ship while landing. (Improve ExecLand())
+
 
 /********************************************************************************/
 DONE:Version 0.78 (since 10 Jan. 2011)

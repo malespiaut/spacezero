@@ -55,6 +55,7 @@ int TESTSAVESTEP=1000;
 int debugcrash=0;
 int debugmouse=0;
 int debuginit=0;
+int debugmem=0;
 #endif
 
 extern int g_objid;  /* id of the objects */
@@ -94,7 +95,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.10"};
+char version[64]={"0.81.11"};
 //char copyleft[]="Copyright XaY";
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
@@ -233,10 +234,6 @@ int main(int argc,char *argv[]){
   /* -- tests */
 #endif
 
-
-
-
-
   for(i=0;i<15;i++)contabilidad[i]=0;
   Keystrokes(RESET,NULL);
 
@@ -247,6 +244,7 @@ int main(int argc,char *argv[]){
   PrintWarnings(version);
   optionsfile=CreateOptionsFile();
 
+  /*********** checking command line options *************/
   state=Arguments(argc,argv,&param,optionsfile);
   if(state){
     /* printf("status:%d\n",state); */
@@ -265,14 +263,13 @@ int main(int argc,char *argv[]){
       param.nplayers=1;
     }
   }
-
+  /****** checking file options *********/
   if(CheckArgs(param)){
     fprintf(stderr,"ERROR in arguments, exiting...\n");
     exit(-1);
   }
 
   PrintArguments(param,"Game arguments:");
-
 
 
 #if TESTSAVE
@@ -288,27 +285,6 @@ int main(int argc,char *argv[]){
   
 
   sw=0;
-  if((fprecord=fopen(recordfile,"rt"))==NULL){
-
-    if((fprecord=fopen(recordfile,"wt"))==NULL){
-      fprintf(stdout,"No puede abrirse el archivo: %s", recordfile);
-      exit(-1);
-    }
-    fprintf(fprecord,"%d\n",0);
-    fclose(fprecord);
-
-    if((fprecord=fopen(recordfile,"rt"))==NULL){
-      fprintf(stdout,"No puede abrirse el archivo: %s", recordfile);
-      exit(-1);
-    }
-  }
-  if(fscanf(fprecord,"%d",&record)!=1){
-    fprintf(stderr,"Setting record to 0\n");
-    record=0;
-  }
-
-  fclose(fprecord);
-  printf("Record: %d\n",record);
 
   GameParametres(SET,DEFAULT,0);   /* defaults game values */
 
@@ -433,35 +409,24 @@ int main(int argc,char *argv[]){
 
   gtk_init(&argc,&argv);
 
-
+  /********* window geometry *********************/
   GameParametres(SET,GWIDTH,DEFAULTWIDTH);
   GameParametres(SET,GHEIGHT,DEFAULTHEIGHT);
 
-  if(GetGeom(param.geom,&width,&height)<0){
-    fprintf(stderr,"Warning: -geom option bad formed. Using default values.\n");
-  }
-  else{
-    printf("GEOM %d %d\n",width,height);
-    if(width>0 && width<9999 && height>0 && height<9999){
-      GameParametres(SET,GWIDTH,width);
-      GameParametres(SET,GHEIGHT,height);
-      printf("GEOM\n");
-    }
-    else{
-      fprintf(stderr,"Warning: -geom option bad formed. Using default values.\n");
-    }
-    printf("GEOM1\n");
-  }
+  GetGeom(param.geom,&width,&height);
+
+  GameParametres(SET,GWIDTH,width);
+  GameParametres(SET,GHEIGHT,height);
+  
+  //  width=GameParametres(GET,GWIDTH,0);
+  //height=GameParametres(GET,GHEIGHT,0);
 
   printf("Width: %d Height: %d\n",width,height);
-
-  //  drawing_area=InitGraphics(title,optionsfile,game.width,game.height);
+  /**************************************/
 
   gfont=InitFonts(param.font);
 
-  drawing_area=InitGraphics(title,optionsfile,
-			    GameParametres(GET,GWIDTH,0),
-			    GameParametres(GET,GHEIGHT,0));
+  drawing_area=InitGraphics(title,optionsfile,width,height);
 
 #if DEBUG
   if(debuginit){
@@ -1041,11 +1006,13 @@ gint MainLoop(gpointer data){
 
   if(gdraw.menu==TRUE)return(TRUE);
 
-  if(DEBUG){
+#if DEBUG
+  if(debugmem){
     if(!(cont%100)){
       printf("mem used:%d\n",g_memused);
     }
   }
+#endif
 
   if(time0==0){
     time0=time(NULL);
@@ -3699,7 +3666,6 @@ void CreateShips(struct HeadObjList *lheadobjs){
   Object *obj,*planet;
   Segment *s;
   int i;
-
   
   for(i=1;i<=GameParametres(GET,GNPLAYERS,0);i++){
     planet=ChooseInitPlanet(*lheadobjs);
@@ -3713,24 +3679,21 @@ void CreateShips(struct HeadObjList *lheadobjs){
       exit(-1);
     }
 
-    //    for(n=0;n<10;n++){
     obj=NewObj(lheadobjs,SHIP,QUEEN,
 	       0,0,0,0,
 	       CANNON5,ENGINE5,i,NULL,planet);
-    obj->x=obj->x0=(.5*(s->x0+s->x1));
-    /* obj->y=obj->y0=(s->y0)+(obj->radio+1.0); */
+
+    obj->x=s->x0+(s->x1-s->x0)*(Random(-1));
+
     obj->y=obj->y0=(s->y0);
     obj->a=PI/2;
-    //    obj->player=i;
     obj->ai=1;
     obj->habitat=H_PLANET;
     obj->mode=LANDED;
 
-
-      
     Add2ObjList(lheadobjs,obj);
     players[obj->player].nbuildships++;
-    //    }
+
     planet->player=obj->player;
 
     if(GameParametres(GET,GNET,0)==TRUE){

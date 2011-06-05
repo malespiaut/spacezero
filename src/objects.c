@@ -403,7 +403,7 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
 
 
   /* data base */
-  if(obj->type==SHIP){ // HERE COMPUTER, only ships
+  if(obj->type==SHIP){ // HERE TODO SHIP COMPUTER, only ships
     obj->cdata=malloc(sizeof(Data));
     g_memused+=sizeof(Data);
     if(obj->cdata==NULL){
@@ -418,10 +418,10 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
     obj->cdata->mlevel=0;
     obj->cdata->tmlevel=0;
     obj->cdata->a=0;
+    obj->cdata->b=0;
   }
-
   return(obj);
-}
+} /* --Newobj() */
 
 int Add2ObjList(struct HeadObjList *lhead,Object *obj){
   /* 
@@ -656,7 +656,7 @@ void NewEngine(Engine *eng,int type){
     eng->a=55;
     eng->a_max=1200;
     eng->v_max=25;/* VELMAX; 30; */
-    eng->ang_a=0.04;// 0.04
+    eng->ang_a=0.04;
     eng->gascost=.16;
     eng->mass=60;
     break;

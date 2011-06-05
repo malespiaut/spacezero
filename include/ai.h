@@ -136,7 +136,7 @@ void Play(Object *obj,int sid,float vol);
 
 /* int SetModifiedAll20(struct HeadObjList lh,int proc); */
 
-int IsRisk(struct HeadObjList *lhobjs,Object *obj,int *order_id);
+int Risk(struct HeadObjList *lhobjs,Object *obj,int *order_id);
 void DelAllOrder(Object *obj);
 void DelFirstOrder(Object *obj);
 struct Order *ReadOrder(struct Order *,Object *obj,int);

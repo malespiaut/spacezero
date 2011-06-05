@@ -46,6 +46,7 @@ int debugwar=FALSE;
 int debugshop=FALSE;
 int debug=FALSE;
 int debugai=FALSE;
+int debugrisk=FALSE;
 #endif
 
 int MAXnf2a=15;
@@ -99,7 +100,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   control=players[obj->player].control;
 
 #if DEBUG
-  if(debug&&obj==cv){printf("time:%d %d\n",obj->cdata->td2[0],obj->cdata->a);}
+  if(debugai&&obj==cv){printf("time:%d %d\n",obj->cdata->td2[0],obj->cdata->a);}
 #endif
 
   if(obj->cdata->obj[0]!=NULL || (time - obj->cdata->td2[0]) > 10){
@@ -112,9 +113,12 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     NearestObjAll(listheadcontainer,obj,nobjs); // HERE double loop
 
     d2min=obj->radar*obj->radar;
-    if(obj->habitat==H_PLANET)d2min*=2; /* HERE size of window */
     
     if(nobjs[0].obj!=NULL){
+      if(nobjs[0].obj->type==SHIP ){ /* take off to intercept */
+	d2min*=2;
+      }
+
       if(nobjs[0].obj->type==ASTEROID && control==COMPUTER){ //HERE send to asteroids from ControlCenter()
 	d2min=25*obj->radar*obj->radar;
       }
@@ -170,13 +174,13 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 
     /* select the order */
 
-  danger=IsRisk(lhobjs,obj,&order.id); /* Checking for danger */
+  danger=Risk(lhobjs,obj,&order.id); /* Checking for danger */
 
 #if DEBUG
-  if(debug && cv==obj){ 
+  if(debugai && cv==obj){ 
     printf("DANGER:%d order: %d\n",danger,order.id); 
   } 
-  if(0||debug){
+  if(debugai){
     if(cv==obj){
       if(obj->dest!=NULL)
 	printf("(%d) CHOICE: %d %d\n",obj->id,order.id,obj->dest->id);
@@ -185,7 +189,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     }
   }
 
-  if(debug&&obj==cv){printf("actorder:%d\n",obj->actorder.id);}
+  if(debugai&&obj==cv){printf("actorder:%d\n",obj->actorder.id);}
 #endif
 
   if(obj->actorder.id==-1 && obj->norder<10){ /*  */
@@ -351,7 +355,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       } /*  if(macroord!=NULL) */
       else{
 #if DEBUG
-	if(debug&&cv==obj)printf("macro=NULL actorder : %d\n",obj->actorder.id);
+	if(debugai&&cv==obj)printf("macro=NULL actorder : %d\n",obj->actorder.id);
 #endif
 
 	if(obj->mode==NAV){
@@ -403,18 +407,15 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	}
       }
     } /*  if(danger==0) */
+
     if(0&&order.id==GOTO){
       if(obj->mode==LANDED){
 	order.id=TAKEOFF;	
       }
     }
 #if DEBUG
-    if(0 ||debug)printf("ADD:(%d) %d\n",obj->id,order.id);
+    if(cv==obj && debugai)printf("ADD:(%d) %d\n",obj->id,order.id);
 #endif
-    /*     if(obj->subtype==TOWER){ */
-    /*       printf("ADD: %d\n",order.id); */
-    /*     } */
-
 
     /* 
      * Add the order 
@@ -462,7 +463,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	order.c=segment->y0;                  /* high of land zone */
 	order.d=HigherPoint(obj->in->planet); /* higher point of planet */
 	order.e=GameParametres(GET,GWIDTH,0)/2;
-	order.f=order.d+50+obj->in->mass/10000;
+	order.f=order.d+50+obj->in->mass/10000; /* work high */
 
 /* 	if(0&&obj==cv){ */
 /* 	  printf("order LAND: f=%f  d=%f: \n",order.f,order.d); */
@@ -513,12 +514,12 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     case EXPLORE:
     case GOTO:
 #if DEBUG
-      if(debug)printf("(%d): GOTO  time:%d\n",obj->id,time);
+      if(cv==obj && debugai)printf("(%d): GOTO  time:%d\n",obj->id,time);
 #endif
       if(obj->habitat==H_PLANET){
 
 #if DEBUG
-	if(debug && obj->dest!=NULL){
+	if(debugai && obj->dest!=NULL){
 	  printf("(%c %d): ARRIVED TO %d\n",Type(obj),obj->id,obj->dest->id);
 	}
 #endif
@@ -526,7 +527,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	return;
       }
 #if DEBUG
-      if(debug)printf("GOTO ord:%p\n",macroord);
+      if(cv==obj && debugai)printf("GOTO ord:%p\n",macroord);
 #endif
       if(macroord==NULL){
 	if(obj->dest==NULL){
@@ -579,7 +580,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     execord=&(obj->actorder);
 
 #if DEBUG
-    if(debug && cv==obj)printf("Executing ordid:%d time: %d\n",execord->id,time);
+    if(debugai && cv==obj)printf("Executing ordid:%d time: %d\n",execord->id,time);
 #endif    
     /*     if(obj->subtype==TOWER){ */
     /*       printf("Executing ordid:%d time: %d\n",ord->id,time); */
@@ -622,7 +623,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       case NOTHING:
 
 #if DEBUG
-	if(debug && cv==obj)printf("ai(): NOTHING %d\n",execord->time);
+	if(debugai && cv==obj)printf("ai(): NOTHING %d\n",execord->time);
 #endif
 
 	if(obj->mode==LANDED && fabs(obj->a-PI/2)>0.05){
@@ -642,7 +643,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	break;
       case TURNACCEL:
 #if DEBUG
-	if(debug && cv==obj)printf("TURNACCEL %d\n",execord->time);
+	if(debugai && cv==obj)printf("TURNACCEL %d\n",execord->time);
 #endif
 	if(obj->gas>0){
 	  obj->accel+=obj->engine.a;
@@ -657,21 +658,21 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	    if(v2>0.8*obj->engine.v2_max ){ 
 	      obj->accel=0; 
 #if DEBUG
-	      if(debug && cv==obj)printf("v2 mayor:%f\n",v2);
+	      if(debugai && cv==obj)printf("v2 mayor:%f\n",v2);
 #endif
 	    }
 	    else{
 #if DEBUG
-	      if(debug && cv==obj)printf("v2:%f\n",v2);
+	      if(debugai && cv==obj)printf("v2:%f\n",v2);
 #endif
 	    }
 #if DEBUG
-	    if(debug && cv==obj)printf("iang (1):%f  %f\n",fabs(b-execord->a),execord->b);
+	    if(debugai && cv==obj)printf("iang (1):%f  %f\n",fabs(b-execord->a),execord->b);
 #endif
 	  }
 	  else{
 #if DEBUG
-	    if(debug && cv==obj)printf("iang (2):%f  %f\n",fabs(b-execord->a),execord->b);
+	    if(debugai && cv==obj)printf("iang (2):%f  %f\n",fabs(b-execord->a),execord->b);
 #endif
 	  }
 	}
@@ -679,7 +680,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	break;
       case TURN:
 #if DEBUG
-	if(debug && cv==obj)printf("TURN %d\n",execord->time);
+	if(debugai && cv==obj)printf("TURN %d\n",execord->time);
 #endif
 	obj->accel=0;
 	ExecTurn(obj,execord->a);
@@ -690,20 +691,20 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	
       case STOP:
 #if DEBUG
-	if(debug && cv==obj)printf("STOP %d\n",execord->time);
+	if(debugai && cv==obj)printf("STOP %d\n",execord->time);
 #endif
 	ExecStop(obj,0);
 	break;
       case ATTACK:
 #if DEBUG
-	if(0||(cv==obj &&debug))printf("ATTACK %d\n",execord->time);
+	if(0||(cv==obj &&debugai))printf("ATTACK %d\n",execord->time);
 #endif
 	ExecAttack(lhobjs,obj,execord,d2_enemy);
 	break;	
 
       case LAND:
 #if DEBUG
-	if(debug && cv==obj)printf("LAND %d\n",execord->time);
+	if(debugai && cv==obj)printf("LAND %d\n",execord->time);
 #endif
 	ExecLand(obj,execord);
 	break;
@@ -914,7 +915,7 @@ void ExecLand(Object *obj,struct Order *ord){
 
   ang_min=0;
   ang_max=PI;
-  b=PI/2;
+  b=PI/6; /* max ang */
 
   if(obj->habitat!=H_PLANET){ /* obsolete order */
     ord->time=0; 
@@ -1030,10 +1031,8 @@ void ExecLand(Object *obj,struct Order *ord){
 
   swa=0;
   /*  if(ia>0.5*obj->engine.ang_a*DT*DT*(100./obj->mass)){ */
-  if(fabs(ia)>.15){
+  if(fabs(ia)>.07){
 
-    if(ia>0 && obj->ang_a>0)obj->ang_a=0;
-    if(ia<0 && obj->ang_a<0)obj->ang_a=0;
 
 
     if(obj->a<PI/2-b)ia=-1;
@@ -1050,6 +1049,10 @@ void ExecLand(Object *obj,struct Order *ord){
     if(obj->ang_a < -obj->engine.ang_a_max)
       obj->ang_a=-obj->engine.ang_a_max; 
 
+    if(ia>0 && obj->ang_a>0)obj->ang_a=0;
+    if(ia<0 && obj->ang_a<0)obj->ang_a=0;
+
+
   }
   else{
     obj->ang_a=0;
@@ -1063,10 +1066,16 @@ void ExecLand(Object *obj,struct Order *ord){
       if(obj->a>0 && obj->a<PI)swa=1;
     }
   }
+  if((obj->vy > 0) && (obj->y > ord->f)){
+    swa=0;
+  }
 
   /* accelerate */ 
 /*   if(d && obj==cv) */
 /*     printf("swvx=%d swvy=%d swa=%d dx=%.1f vxm=%.1f\n",swvx,swvy,swa,dx,vxmax); */
+
+//  if(obj==cv)printf("vy:%f y: %f\n",obj->vy,obj->y);
+
 
   if(swa&&(swvx||swvy)){
     pmass=obj->in->mass;
@@ -1074,10 +1083,8 @@ void ExecLand(Object *obj,struct Order *ord){
 
     fa=(fabs(fabs(obj->vx)-vxmax)+fabs(fabs(obj->vy)-vymax))/10-0.1;
     fa+=0.4*pmass/MAXPLANETMASS;
-    if(fa<.3)fa=.3;
-    if(fa>1.1)fa=1.1;
-/*     if(d&&obj==cv) */
-/*       printf("fa=%f vymax=%.1f dy=%.1f\n",fa,vymax,dy); */
+    if(fa<.3)fa=.3; 
+    if(fa>1.1)fa=1.1; 
 
     if(obj->gas>0){
       obj->accel+=fa*obj->engine.a;
@@ -1108,6 +1115,7 @@ void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,float d
   }
 
   if(obj->dest==NULL)return;
+  if(obj->dest->in!=obj->in && obj->mode==LANDED)return;
 
   rx=obj->dest->x - obj->x;
   ry=obj->dest->y - obj->y;
@@ -1267,7 +1275,6 @@ void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,float d
       if(fabs(id)>.1){
 	swaccel=1;
       }
-      
     }
 
     if(swaccel){
@@ -2195,7 +2202,7 @@ Object *Coordinates(struct HeadObjList *lhobjs,int id,float *x,float *y){
 }
 
 
-int IsRisk(struct HeadObjList *lhobjs,Object *obj,int *orderid){
+int Risk(struct HeadObjList *lhobjs,Object *obj,int *orderid){
   /* 
      version 07 11Mar2011
      check if there are enemies, low fuel, ship is very damned or low ammunition
@@ -2214,13 +2221,13 @@ int IsRisk(struct HeadObjList *lhobjs,Object *obj,int *orderid){
 
   int i;
   int num_actions=3;
-  float action[3]={1,1,1};/* NOTHING, ATTACK, GOTO */
+  float action[3]={1,1,1};/* NOTHING, ATTACK, GOTO nearest*/
   int max_action;
   int ret=0;
 
 
   if(obj->cdata==NULL){
-    fprintf(stderr,"ERROR: IsRisk(): obj %d type: %d cdata is NULL\n",
+    fprintf(stderr,"ERROR: Risk(): obj %d type: %d cdata is NULL\n",
 	    obj->id,obj->type);
     exit(-1);
   }
@@ -2229,6 +2236,19 @@ int IsRisk(struct HeadObjList *lhobjs,Object *obj,int *orderid){
 
   ship_enemy=obj->cdata->obj[0];
   obj->dest=ship_enemy;
+
+  /******** no danger *************/
+  if(ship_enemy == NULL && 
+     obj->gas>.75*obj->gas_max &&
+     obj->state>50 &&
+     (float)obj->weapon0.n/obj->weapon0.max_n > .25){
+
+    if(obj->gas>.75*obj->gas_max){
+      obj->cdata->a=0;
+    }
+    return(ret);
+  }     
+  /********************************/
 
   planet_enemy=obj->cdata->obj[1];
   d2_enemy=obj->cdata->d2[1];
@@ -2246,6 +2266,9 @@ int IsRisk(struct HeadObjList *lhobjs,Object *obj,int *orderid){
       printf("se:%d %d n:%d\n",ship_enemy->id,obj->id,obj->weapon0.n+obj->weapon1.n+obj->weapon2.n);
     }
 
+    action[0]*=.5;action[2]*=.5;
+    action[1]*=1.1;
+
     if(obj->subtype==TOWER){
       if(ship_enemy->in==obj->in){
 	*orderid=ATTACK;
@@ -2258,63 +2281,91 @@ int IsRisk(struct HeadObjList *lhobjs,Object *obj,int *orderid){
       return(ret);
     }
 
-    action[0]*=.5;action[2]*=.5;
-    action[1]*=1.1;
-    if(ship_enemy->type==ASTEROID){
+    if(ship_enemy->type==ASTEROID && ship_enemy->habitat==H_SPACE){
       if(obj->weapon0.n==0){action[1]*=0;}
     }
+
+    if(obj->mode==LANDED){
+      if( (obj->state<50||obj->gas<.75*obj->gas_max)){
+	if(ship_enemy->habitat==H_SPACE){
+	  action[0]*=0;
+	  action[1]*=0;
+	  action[2]*=1.5;
+	}
+      }
+      if(ship_enemy->in==obj->in){
+	action[0]*=0;
+	action[1]=1;
+	action[2]*=0;
+      }
+    }
+  }
+  else{
+    action[1]*=0;
   }
 
-  if(ship_enemy==NULL){action[1]*=0;}
-
-
+  /*** if no weapon go to nearest ****/
   if(obj->weapon0.n+obj->weapon1.n+obj->weapon2.n==0){
     action[1]*=0;action[2]*=1.1;
   }
+  /*********************/
 
-  if(obj->gas>.75*obj->gas_max){
-    obj->cdata->a=0;
-  }
-  
   if(obj->cdata->a){
     action[1]*=.5;action[2]*=1.2;
   }
 
-  if(obj->habitat==H_PLANET){
+
+  switch(obj->habitat){
+  case H_PLANET:
     if(obj->gas<.25*obj->gas_max){
       action[1]*=.5;
       action[2]*=1.2;
     }
-    if(obj->mode==LANDED && obj->weapon0.n<.75*obj->weapon0.max_n){
-      action[1]*=.5;
-      action[2]*=1.1;       /* wait for ammunition */
+    if(obj->mode==LANDED){
+      if(obj->weapon0.n<.75*obj->weapon0.max_n){
+	action[0]*=0;
+	action[2]*=1.1;       /* wait for ammunition */
+      }
+      if(obj->gas<.75*obj->gas_max){
+	action[0]*=0;
+	action[2]*=1.5; /* wait for gas */
+      }
     }
-
-    if(obj->mode==LANDED && obj->gas<.75*obj->gas_max){
-      action[0]*=0;
-      action[2]*=1.5;
-    }
-  }
-  if(obj->habitat==H_SPACE){
+    break;
+  case H_SPACE:
     if(obj->gas<.25*obj->gas_max && obj->cdata->a==0){
       action[1]*=.5;action[2]*=1.2;
       if(obj->gas<.15*obj->gas_max){action[1]*=.5;action[2]*=1.2;} //.15
     }
+
+    break;
+  default:
+    break;
   }
 
-  if(obj->weapon0.n+obj->weapon1.n+obj->weapon2.n<20){action[1]*=.5;}
-  if(obj->state<25 && obj->mode!=LANDED){action[1]=0;action[2]*=1.2;}
+  if(obj->weapon0.n+obj->weapon1.n+obj->weapon2.n<20){action[2]*=1.2;}
+  if(obj->state<25){
+    action[2]*=1.2;
+    if(obj->mode!=LANDED){
+      action[1]=0;
+    }
+  }
+
 
   max_action=0;
   for(i=0;i<num_actions;i++){
 #if DEBUG
-    if((0||debug)&&cv==obj)printf("%f ",action[i]);
+    if((0||debugrisk)&&cv==obj)printf("%f ",action[i]);
 #endif
     if(action[i]>action[max_action])max_action=i;
   }
 
 #if DEBUG
-  if((0||debug)&&cv==obj){printf("max=%d mode:%d\n",max_action,obj->mode);}
+  if((debugrisk)&&cv==obj){
+    printf("maxaction=%d mode:%d\n",max_action,obj->mode);
+    printf("state %f\n",obj->state);
+    printf("gas %f\n",obj->gas);
+  }
 #endif
 
   switch(max_action){
@@ -2325,13 +2376,14 @@ int IsRisk(struct HeadObjList *lhobjs,Object *obj,int *orderid){
     *orderid=ATTACK;
     ret=1;
     if(obj->habitat==H_PLANET){
-      if(obj->gas<.75*obj->gas_max || obj->state<25){
+      if(obj->gas<.25*obj->gas_max || obj->state<25){
 	if(obj->in->player==obj->player){
+	  if(obj->mode!=LANDED){
 	  *orderid=LAND;
-	}
-	else{
+	  }
 	}
       }
+
       if(ship_enemy->habitat==H_SPACE){
 	if(obj->weapon0.n>0.75*obj->weapon0.max_n && obj->gas>.50*obj->gas_max && obj->state>50){
 	  *orderid=TAKEOFF; //HERE no for towers
@@ -2401,8 +2453,8 @@ int IsRisk(struct HeadObjList *lhobjs,Object *obj,int *orderid){
        If ship is without gas => STOP 
     */
 #if DEBUG
-    if(debug && obj==cv){ 
-      printf("IsRisk(0) cdata: %d  %d\n",obj->cdata->a,*orderid); 
+    if(debugrisk && obj==cv){ 
+      printf("Risk(0) cdata: %d  %d\n",obj->cdata->a,*orderid); 
     } 
 #endif
 
@@ -2414,8 +2466,8 @@ int IsRisk(struct HeadObjList *lhobjs,Object *obj,int *orderid){
       }
       if(obj->cdata){
 #if DEBUG
-	if(debug && obj==cv){ 
-	  printf("IsRisk(-) cdata: %d  %d\n",obj->cdata->a,*orderid); 
+	if(debugrisk && obj==cv){ 
+	  printf("Risk(-) cdata: %d  %d\n",obj->cdata->a,*orderid); 
 	} 
 #endif	
 	if(obj->gas<.03*obj->gas_max){
@@ -2451,22 +2503,22 @@ int IsRisk(struct HeadObjList *lhobjs,Object *obj,int *orderid){
       }
     }
 #if DEBUG
-    if(debug && obj==cv){ 
-      printf("IsRisk(1) cdata: %d  %d\n",obj->cdata->a,*orderid); 
+    if(debugrisk && obj==cv){ 
+      printf("Risk(1) cdata: %d  %d\n",obj->cdata->a,*orderid); 
     } 
 #endif
 
     break;
   default:
-    fprintf(stderr,"ERROR in IsRisk\n");
+    fprintf(stderr,"ERROR in Risk()\n");
     exit(-1);
     break;
   } /*--switch max_action */
 
 #if DEBUG  
-  if(debug){
+  if(debugrisk){
     if(obj==cv && obj->dest!=NULL){
-      printf("IsRisk() (%d)CHOOSE: %d  %d\n",obj->pid,*orderid,obj->dest->id);
+      printf("Risk() (%d)CHOOSE: %d  %d\n",obj->pid,*orderid,obj->dest->id);
     }
     if(obj==cv)printf("ret: %d\n",ret);
   }
@@ -3097,14 +3149,15 @@ int AddOrder(Object *obj,struct Order *order){
   /* checking norders */
 
   if(obj->norder>10)printf("ship %d has %d orders\n",obj->id,obj->norder);
-
-  if(0){
-    printf("add order\n");
+#if DEBUG
+  if(debugai && obj==cv){
+    printf("AddOrder()\n");
     PrintOrder(order);
-    printf("..........\n");
+    printf("------------\n");
     PrintOrder(&(obj->lorder->order));
     printf("------------\n");
   }
+#endif
   return(0);
 }
 

@@ -110,7 +110,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   par->server=FALSE;
   par->client=FALSE;
   //  par->IP=DEFAULT_IP;
-  strncpy(par->IP,DEFAULT_IP,32);
+  strncpy(par->IP,DEFAULT_IP,32);strncpy(&par->IP[31],"\0",1);
   par->port=DEFAULT_PORT;
   par->port2=DEFAULT_PORT+1;
   strcpy(par->playername,"");
@@ -343,10 +343,10 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   /* reading options file values */
 
 
-  /* command line values */
+  /*************** command line values ******************/
   for(i=0;i<argc;i++){
     if(*argv[i]=='-'){
-      strncpy(arg,&argv[i][1],24);
+      strncpy(arg,&argv[i][1],25);strncpy(&arg[24],"\0",1);
       narg=SearchArg(arg,&validarg[0]);
       if(narg<0){ 
  	printf("\ninvalid option -%s\n",arg); 
@@ -409,7 +409,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       case ARG_ip:/*'ip': ip of the server */
 	if(i+1<argc){
 	  //	  par->IP=(argv[i+1]);
-	  strncpy(par->IP,argv[i+1],32);
+	  strncpy(par->IP,argv[i+1],32);strncpy(&par->IP[31],"\0",1);
 	  i++;
 	}
 	else{
@@ -429,6 +429,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       case ARG_name: /* name:  player name */
  	if(i+1<argc){
 	  strncpy(par->playername,argv[i+1],32);
+	  strncpy(&par->playername[31],"\0",1);
 	  i++;
 	}
 	else{
@@ -449,6 +450,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       case ARG_font: /* font type  */
  	if(i+1<argc){
 	  strncpy(par->font,argv[i+1],128);
+	  strncpy(&par->font[127],"\0",1);
 	  i++;
 	}
 	else{
@@ -458,6 +460,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       case ARG_geom: /* window geometry */
  	if(i+1<argc){
 	  strncpy(par->geom,argv[i+1],32);
+	  strncpy(&par->geom[31],"\0",1);
 	  i++;
 	}
 	else{
@@ -688,10 +691,16 @@ int GetGeom(char *geom,int *w,int *h){
   char *endptr=NULL;
 
   //  printf("GetGeom(): %s\n",geom);
+  *w=DEFAULTWIDTH;
+  *h=DEFAULTHEIGHT;
   len=strlen(geom);
-  if(len==0 || len>9){
-    *w=DEFAULTWIDTH;
-    *h=DEFAULTHEIGHT;
+
+  if(len==0){
+    return(0);
+  }
+
+  if(len>9){
+    fprintf(stderr,"WARNING: invalid option geom. Too high. Settting geometry to default: %dx%d.\n",DEFAULTWIDTH,DEFAULTHEIGHT);
     return(-1);
   }
   sw=0;
@@ -714,9 +723,23 @@ int GetGeom(char *geom,int *w,int *h){
     }
   }
   else{
-    return(-2);
+    sw++;
   }
-  if(sw)return(-3);
+
+  if(sw){
+    fprintf(stderr,"WARNING: -geom option bad formed. Using default values.\n");
+    *w=DEFAULTWIDTH;
+    *h=DEFAULTHEIGHT;
+  }
+
+  if(*w<640 || *w>1680 || *h<312 || *h>1050){
+    if(*w<640)*w=640;
+    if(*w>1680)*w=1680;
+    if(*h<312)*h=312;
+    if(*h>1050)*h=1050;
+    fprintf(stderr,"WARNING: geom values reach their limit. Setting geometry to limit values:(640,1680)x(312,1050).\n");
+      return(0);
+  }
   return(0);  
 }
 

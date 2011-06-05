@@ -1535,8 +1535,8 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
   GdkGC *gc2;
   int sw=0,color;
   int gheight;
-  float x0,y0,x1,y1;
-  float x_0,y_0,x_1,y_1;
+  float x0,y0,x1,y1,x2,y2;
+  float x_0,y_0,x_1,y_1,x_2,y_2;
   float rcosa,rsina;
   static float s1[]={3,-1,-0.6,1,0,-1,0.6};  /*SHIP1 EXPLORER*/
   static float s2[]={5,-0.2,0,-1,-0.6,1,0,-1,0.6,-0.2,0}; /* SHIP2 */
@@ -1649,8 +1649,34 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
     }
     gdk_draw_rectangle(pixmap,gc2,TRUE,
 		       x-1,gheight-y-1,3,3);
+    /********** engine flares *************/
+    if(obj->accel>0){ 
+      x0=-.6;//-.04*obj->radio;
+      x0=-.04*obj->radio;
+      y0=.2;
+      x1=x0;
+      y1=-.2;
+      x2=x0-3*obj->accel/obj->gas_max;
+      y2=0;
 
 
+      x_0=x0*rcosa-y0*rsina;
+      y_0=x0*rsina+y0*rcosa;
+
+      x_1=x1*rcosa-y1*rsina;
+      y_1=x1*rsina+y1*rcosa;
+
+      x_2=x2*rcosa-y2*rsina;
+      y_2=x2*rsina+y2*rcosa;
+
+      gdk_draw_line(pixmap,penCyan,
+		    x+x_0,gheight-(y+y_0),
+		    x+x_2,gheight-(y+y_2));
+      gdk_draw_line(pixmap,penCyan,
+		    x+x_1,gheight-(y+y_1),
+		    x+x_2,gheight-(y+y_2));
+    } 
+    /********** --fire *************/
     break;
 
   case SATELLITE:	
@@ -2663,15 +2689,15 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   
   /* accel */
 
-  if(obj->engine.a_max==0)n=0;
-  else{
-      n=sx*obj->accel/obj->engine.a_max;
-  }
-  gdk_draw_rectangle(pixmap,color,TRUE,x+1,y+1,n,texth-2);
-  gdk_draw_rectangle(pixmap,color,FALSE,x,y,sx,texth-1);
-  DrawString(pixmap,font,color,x+sx+10,y+texth,"ACCEL");
+  /* if(obj->engine.a_max==0)n=0; */
+  /* else{ */
+  /*     n=sx*obj->accel/obj->engine.a_max; */
+  /* } */
+  /* gdk_draw_rectangle(pixmap,color,TRUE,x+1,y+1,n,texth-2); */
+  /* gdk_draw_rectangle(pixmap,color,FALSE,x,y,sx,texth-1); */
+  /* DrawString(pixmap,font,color,x+sx+10,y+texth,"ACCEL"); */
 
-  y+=incy;
+  /* y+=incy; */
 
   /* gas */
   if(obj->gas_max==0)n=0;
@@ -2700,7 +2726,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   }
   gdk_draw_rectangle(pixmap,gc,TRUE,x+1,y+1,n,texth-2);
   gdk_draw_rectangle(pixmap,color,FALSE,x,y,sx,texth-1);
-  sprintf(point,"STATE %.1f",obj->shield);
+  sprintf(point,"STATE (Sh:%.1f)",obj->shield);
   DrawString(pixmap,font,color,x+sx+10,y+texth,point);
   y+=incy;
   
@@ -2730,7 +2756,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
     fprintf(stderr,"Warning: weapon NULL in DrawShipInfo()\n");
     obj->weapon=&obj->weapon0;
   }
-  sprintf(point,"Weapon:(%d D:%d)",obj->weapon->n,obj->weapon->projectile.damage);
+  sprintf(point,"Weapon: %d (D:%d)",obj->weapon->n,obj->weapon->projectile.damage);
   DrawString(pixmap,font,color,x0+x,y+texth,point);
   if(font!=NULL){
     x+=gdk_text_width(font,point,strlen(point))+textw;
@@ -2883,7 +2909,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   return(y+texth);
 }
 
-int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,struct TextList *head,int x0,int y0,int width,int height){
+int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *head,int x0,int y0,int width,int height){
   /* 
      print the text list head in pixmap at the position x0, y0.
   */
@@ -2923,6 +2949,14 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,struct TextList *head,int x0,
   textw=0;
   lh=head->next;
 
+  DrawString(pixmap,font,penBlue,x,y,title);
+  textw0=gdk_text_width(font,title,strlen(title));
+  if(textw0>textw){
+    textw=textw0;
+  }
+
+  //  y+=incy;
+
   for(i=0;i<n;i++){ /* HERE double loop */
     switch(lh->color){
     case 1:
@@ -2943,7 +2977,7 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,struct TextList *head,int x0,
     }
 
     if(y-scroll*incy>y0){
-      DrawString(pixmap,font,gc,x,y-scroll*incy,lh->text);
+      DrawString(pixmap,font,gc,x,y+incy-scroll*incy,lh->text);
       //      printf("XPrintTextList(): %s %d\n",lh->text,GetTime());
       textw0=gdk_text_width(font,lh->text,strlen(lh->text));
       if(textw0>textw){
@@ -3565,6 +3599,7 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
   Object *obj;
   char cad[TEXTMENMAXLEN]="";
   char tmpcad[TEXTMENMAXLEN]="";
+  char titleships[TEXTMENMAXLEN]="";
   static int sw=0;
   char mode=' ';
   struct Order *ord=NULL;
@@ -3597,15 +3632,18 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
     nq=CountObjs(hlp,player,SHIP,QUEEN); 
     shipcounter=0;
   }
+  snprintf(titleships,TEXTMENMAXLEN,"SHIPS: E:%d F:%d T:%d Q:%d",ne,nf,nt,nq);
+
   if(cvobj!=last_cv || act){
     last_cv=cvobj;
     
     DestroyTextList(&shiplist);
     DestroyTextList(&planetlist);
-    snprintf(tmpcad,TEXTMENMAXLEN,"SHIPS: E:%d F:%d T:%d Q:%d",ne,nf,nt,nq);
+
     /* Add2TextList(&shiplist,"SHIPS:",0); */
-    Add2TextList(&shiplist,tmpcad,0);
-    Add2TextList(&planetlist,"PLANETS:",0);
+    //    Add2TextList(&shiplist,tmpcad,0);
+    //Add2TextList(&planetlist,"PLANETS:",0);
+
     textpw=gdk_text_width(gfont,"PLANETS:",strlen("PLANETS:"));
     textsw=gdk_text_width(gfont,"SHIPS:",strlen("SHIPS:"));
 
@@ -3638,7 +3676,7 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 	
 	if(obj==cvobj){color=1;}
 	if(obj->selected==TRUE){color=1;}
-	//	snprintf(cad,TEXTMENMAXLEN,"%c L%d id: %d (%d) ",mode,obj->level,obj->pid,obj->id);
+
 	snprintf(cad,TEXTMENMAXLEN,"%c L%d id: %d ",mode,obj->level,obj->pid);
 	
 	if(obj->state<100){
@@ -3705,8 +3743,9 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
     }
   }
  
-  XPrintTextList(pixmap,gfont,&shiplist,10,15,textsw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
-  XPrintTextList(pixmap,gfont,&planetlist,GameParametres(GET,GWIDTH,0)-textpw-20,15,textpw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
+   XPrintTextList(pixmap,gfont,titleships,&shiplist,10,15,textsw+charw+10,GameParametres(GET,GHEIGHT,0)-50); 
+
+  XPrintTextList(pixmap,gfont,"PLANETS:",&planetlist,GameParametres(GET,GWIDTH,0)-textpw-20,15,textpw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
 
   return;
 }

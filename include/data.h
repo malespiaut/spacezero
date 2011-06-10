@@ -26,6 +26,8 @@
 #ifndef _DATA_
 #define _DATA_ 
 
+#include <stdio.h>
+
 #define NINDEXILIST 20  // number of indexes
 #define NINDEXCALC 100  // recalc indexes when this number of items are added
 
@@ -60,7 +62,7 @@ struct IntList* Add2IntList(struct IntList *list,int id);
 int IsInIntList(struct IntList *list,int id);
 int CountIntList(struct IntList *list);
 int DelFirstIntList(struct IntList *list);
-int DelIntList(struct IntList *list );
+int DelIntList(struct IntList *list);
 int FPrintIntList(FILE *fp,struct IntList *list);
 
 int Add2IntOList(struct IntList *list,int id);

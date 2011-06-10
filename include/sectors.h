@@ -23,33 +23,19 @@
 		version 0.80 May 2011
 ****/
 
-#ifndef _MENU_
-#define _MENU_
+#ifndef _SECTORS_
+#define _SECTORS_
 
-#define MAXMENULEN 16
+#include "general.h"
+#include "data.h"
+#include "functions.h"
+#include "objects.h"
 
-/* menu item types */
-#define MENUITEMTEXT 0
-#define MENUITEMCHECKBOX 1
-#define MENUITEMENTRY 2
-
-struct MenuItem{
-  int type;
-  char text[MAXMENULEN];
-};
-
-struct MenuList{
-  struct MenuItem item;
-  struct MenuList *next;
-};
-
-struct HeadMenuList{
-  int level;
-  int n;
-};
-
-struct MenuList *Add2MenuList(struct MenuList *list0,struct MenuItem *item0);
-void PrintMenuList(struct MenuList *list0);
-struct MenuItem *GetMenuItem(struct MenuList *list0,int n);
-
+int SelectSector(struct HeadIntIList *hlist,Object *obj,int *a,int *b);
+int Quadrant(float x, float y);
+void InvQuadrant(int n,int *x, int *y);
+int NearestSector(struct HeadIntIList *head,float a,float b,int n);
+int NearestSector_03(struct HeadIntIList *head,float a,float b,int n);
+int NearRandomSector(struct HeadIntIList *head,float a,float b,int n);
+int  IsInUniverse(float a,float b);
 #endif

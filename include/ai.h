@@ -30,7 +30,6 @@
 
 #include "objects.h"
 
-
 #define CCDATAPRINT 0
 #define CCDATANSHIPS 1
 #define CCDATANEXPLORER 2
@@ -38,6 +37,32 @@
 #define CCDATANTOWER 4
 #define CCDATANQUEEN 5
 
+#define MAXPRIORITY 1
+#define MACRO 2
+#define FIRST 3
+
+/* order ids */
+
+#define NOTHING 0
+#define TURN 1
+#define ACCEL 2
+#define BRAKE 3
+#define STOP 4
+#define ATTACK 5
+#define LAND 6
+#define TAKEOFF 7
+#define TURNACCEL 8
+#define FIRE 9
+#define GOTO 10
+#define EXPLORE 11
+#define SELECT 12
+#define REPITE 13
+#define BUY 14
+#define SELL 15
+#define UPGRADE 16
+#define WRITE 17
+#define PATROL 18
+#define RUNAWAY 19
 
 
 struct PlanetInfo{
@@ -71,46 +96,13 @@ struct CCDATA{
   int sw;           /* not used */
   int war;          /* war phase */
 
-  /* struct PlanetInfo *planetlowdefense;  */
-  /* struct PlanetInfo *planetweak;  */
-
   Object *planetlowdefense; 
   Object *planetweak;
 
   Object *planet2meet;
   Object *planet2attack;
-
 };
 
-
-
-#define MAXPRIORITY 1
-#define MACRO 2
-#define FIRST 3
-
-
-/* order ids */
-
-#define NOTHING 0
-#define TURN 1
-#define ACCEL 2
-#define BRAKE 3
-#define STOP 4
-#define ATTACK 5
-#define LAND 6
-#define TAKEOFF 7
-#define TURNACCEL 8
-#define FIRE 9
-#define GOTO 10
-#define EXPLORE 11
-#define SELECT 12
-#define REPITE 13
-#define BUY 14
-#define SELL 15
-#define UPGRADE 16
-#define WRITE 17
-#define PATROL 18
-#define RUNAWAY 19
 
 
 void ai(struct HeadObjList *lhobjs,Object *obj,int actual_player);

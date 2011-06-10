@@ -29,7 +29,9 @@
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include "objects.h"
-
+#include "help.h"
+#include "ai.h"
+#include "functions.h"
 
 #define SIGNAL0 SIGRTMIN
 
@@ -69,6 +71,14 @@ void Density(void);
 void GetUniverse(void);
 void NetComm(void);
 
+void SetGameParametres(struct Parametres param);
+void MakeTitle(struct Parametres param, char *title);
+void CreateTeams(struct Player *players,struct Parametres param);
+void CreatePlayers(struct Player **players,struct CCDATA **ccdatap);
+void PrintTeams(struct Player *players);
+void SaveRecord(char *file,struct Player *players,int record);
+
+void AddPlanets2List(struct HeadObjList *listheadobjs,struct Player *players);
 
 
 #endif

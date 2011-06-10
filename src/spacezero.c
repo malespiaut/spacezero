@@ -45,6 +45,7 @@
 #include "graphics.h"
 #include "functions.h"
 #include "menu.h"
+#include "sectors.h"
 
 #define TESTSAVE FALSE
 #define DEBUGFAST FALSE
@@ -95,7 +96,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.11"};
+char version[64]={"0.81.12"};
 //char copyleft[]="Copyright XaY";
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
@@ -109,7 +110,7 @@ sem_t sem_barrier,sem_barrier1;
 
 
 int g_cont;
-time_t time0,time1;
+time_t gtime0;
 
 int order2thread;
 
@@ -151,32 +152,62 @@ void signal_handler(int ,siginfo_t *,void *);
 void int_handler(int);
 void segfault_handler(int);
 
-
 char *savefile;
 char *recordfile;
 
 
 int main(int argc,char *argv[]){
+  /*
+    version 2
+    TODO reorganized this
+  */
 
   GtkWidget *drawing_area;
   FILE *fprecord;
 
   char title[64]="";
   int i,j;
-  int sw;
   int state;
   struct sigaction sa;
   sigset_t wait_response; 
-  int width,height;
-  int npcs,npcc;
-  int nteam=1;
   char *optionsfile;
 
   srand(time(NULL));
 
+  /******** signals ***********/
+
+  sigemptyset(&wait_response);
+  sa.sa_sigaction=signal_handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags=SA_SIGINFO;
+  if(sigaction(SIGNAL0,&sa,NULL)){
+    perror("sigaction");
+    exit(-1);
+  }
+
+  sa.sa_handler=int_handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags=0;
+  if(sigaction(SIGINT,&sa,NULL)){
+    perror("sigaction");
+    exit(-1);
+  }
+
+  sa.sa_handler=segfault_handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags=0;
+  if(sigaction(SIGSEGV,&sa,NULL)){
+    perror("sigaction");
+    exit(-1);
+  }
+
+  /******** --signals ***********/
+
+  sem_init(&sem_barrier,1,0);
+  sem_init(&sem_barrier1,1,0);
+
 
   /* tests */
-
 
 #if TEST
   if(1){
@@ -252,17 +283,6 @@ int main(int argc,char *argv[]){
     exit(-1);
   }
 
-  if(param.nplayers==-1){
-    if(param.server==FALSE && param.client==FALSE){
-      param.nplayers=NUMPLAYERS;
-    }
-    if(param.server==TRUE){
-      param.nplayers=NUMPLAYERS;
-    }
-    if(param.client==TRUE){
-      param.nplayers=1;
-    }
-  }
   /****** checking file options *********/
   if(CheckArgs(param)){
     fprintf(stderr,"ERROR in arguments, exiting...\n");
@@ -284,182 +304,52 @@ int main(int argc,char *argv[]){
   fprintf(stdout,"options file: %s\n",optionsfile);
   
 
-  sw=0;
+  SetGameParametres(param);
 
-  GameParametres(SET,DEFAULT,0);   /* defaults game values */
-
-  if(param.server==TRUE||param.client==TRUE){
-    GameParametres(SET,GNET,TRUE);
-  }
-
-  if(param.server==TRUE){
-    GameParametres(SET,GMODE,SERVER);
-  }
-  if(param.client==TRUE){
-    GameParametres(SET,GMODE,CLIENT);
-  }
-
-
-  /* process identifier */
-
-  SetProc(0);
-  SetNProc(1);
-
-  if(GameParametres(GET,GMODE,0)==CLIENT){
-    SetProc(1);
-  }
-  if(GameParametres(GET,GNET,0)==TRUE){
-    SetNProc(2);
-  }
-
-  /* --process identifier */
-
-
-  listheadobjs.next=NULL;
-  listheadobjs.n=0;
-  listheadplanets.next=NULL;
-  listheadplanets.n=0;
-
-  listheadtext.next=NULL;
-  listheadtext.info.n=0;
-
-  listheadnearobjs.next=NULL;
-  listheadnearobjs.n=0;
-
-  GameParametres(SET,GNGALAXIES,param.ngalaxies);
-  GameParametres(SET,GNPLANETS,param.nplanets);
-  GameParametres(SET,GNPLAYERS,param.nplayers);  /*+1 system +1 pirates */
-
-  if(param.kplanets==TRUE){
-    GameParametres(SET,GKPLANETS,TRUE);
-  }
-#if DEBUG
-  if(debuginit){
-    printf("\tpirates: %d\n",param.pirates);
-  }
-#endif
-  if(param.pirates==FALSE){
-    GameParametres(SET,GPIRATES,FALSE);
-  }
-#if DEBUG
-  if(debuginit){
-    printf("\tpirates: %d %d\n",param.pirates,GameParametres(GET,GPIRATES,0));
-  }
-#endif
-  GameParametres(SET,GULX,param.ul);
-  GameParametres(SET,GULY,param.ul);
-
-  GameParametres(SET,GCOOPERATIVE,param.cooperative);
-  GameParametres(SET,GCOMPCOOPERATIVE,param.compcooperative);
-
-
-  SetDefaultKeyValues(&keys,1);
-
-  for(i=0;i<4;i++)fobj[i]=0;
-  
-  strcat(title,TITLE);
-  if(param.server==TRUE)
-    strcat(title,"(server)  ");
-  if(param.client==TRUE)
-    strcat(title,"(client)  ");
-  strcat(title,version);
-  strcat(title,"  ");
-  strcat(title,copyleft);
-  /* strcat(title,"  "); */
-  /* strcat(title,last_revision); */
-  
-
-
-  time0=0;
-  sem_init(&sem_barrier,1,0);
-  sem_init(&sem_barrier1,1,0);
-
-
-  sigemptyset(&wait_response);
-  sa.sa_sigaction=signal_handler;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags=SA_SIGINFO;
-  if(sigaction(SIGNAL0,&sa,NULL)){
-    perror("sigaction");
-    exit(-1);
-  }
-
-  sa.sa_handler=int_handler;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags=0;
-  if(sigaction(SIGINT,&sa,NULL)){
-    perror("sigaction");
-    exit(-1);
-  }
-
-  sa.sa_handler=segfault_handler;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags=0;
-  if(sigaction(SIGSEGV,&sa,NULL)){
-    perror("sigaction");
-    exit(-1);
-  }
-
-  npcc=0;
-  npcs=GameParametres(GET,GNPLAYERS,0);
-
-
-  /* Graphics initialization */
-
+  /********** Graphics initialization **********/
 
   gtk_init(&argc,&argv);
-
-  /********* window geometry *********************/
-  GameParametres(SET,GWIDTH,DEFAULTWIDTH);
-  GameParametres(SET,GHEIGHT,DEFAULTHEIGHT);
-
-  GetGeom(param.geom,&width,&height);
-
-  GameParametres(SET,GWIDTH,width);
-  GameParametres(SET,GHEIGHT,height);
-  
-  //  width=GameParametres(GET,GWIDTH,0);
-  //height=GameParametres(GET,GHEIGHT,0);
-
-  printf("Width: %d Height: %d\n",width,height);
-  /**************************************/
-
-  gfont=InitFonts(param.font);
-
-  drawing_area=InitGraphics(title,optionsfile,width,height);
-
+  MakeTitle(param,title);
+  drawing_area=InitGraphics(title,optionsfile,
+			    GameParametres(GET,GWIDTH,0),
+			    GameParametres(GET,GHEIGHT,0),param);
 #if DEBUG
   if(debuginit){
     printf("W: %d H: %d \n", drawing_area->allocation.width,   
 	   drawing_area->allocation.height);
   }
 #endif
+  SetDefaultKeyValues(&keys,1);
+  
+  /********** --Graphics initialization *********/
 
-  if(gfont==NULL){
-    GameParametres(SET,GPANEL,PANEL_HEIGHT);
+#if SOUND
+  /********* sound initialization *********/ 
+  soundenabled=TRUE;
+  if(InitSound()!=0){
+    fprintf(stderr,"Error initializing sound, sound disabled Error id:%d\n",state);
+    soundenabled=FALSE;
+    param.sound=FALSE;
+    param.music=FALSE;
+    GameParametres(SET,GMUSIC,param.sound);
+    GameParametres(SET,GSOUND,param.music);
+    Play(NULL,-1,0); /* disable sound */
   }
-  else{
-    GameParametres(SET,GPANEL,2*gdk_text_height(gfont,"pL",2));
+
+  if(soundenabled==TRUE){
+    PlaySound(MUSIC,SLOOP,0.75);
+    if(param.music){
+      printf("Music is on (%d)\n",param.music);
+    }
+    else{
+      Sound(SSTOP,MUSIC);
+      printf("Music is off\n");
+    }
   }
+  /********* --sound initialization *********/ 
+#endif
 
-
-  GameParametres(SET,GHEIGHT,height-GameParametres(GET,GPANEL,0));
-
-
-  /* --Graphics initialization */
-
-  gcolors[0]=penWhite;
-  gcolors[1]=penYellow;
-  gcolors[2]=penRed;
-  gcolors[3]=penGreen;
-  gcolors[4]=penBlue;
-  gcolors[5]=penOrange;
-  gcolors[6]=penViolet;
-  gcolors[7]=penPink;
-  gcolors[8]=penCyan;
-  gcolors[9]=penLightGreen; /* penWhite */
-  gcolors[10]=penSoftRed;
-
+  /****** start server and client *********/
 
   if(GameParametres(GET,GNET,0)==TRUE){
     if(param.server==TRUE){
@@ -475,159 +365,37 @@ int main(int argc,char *argv[]){
     /* synchronization with comm threads  */
     sem_wait(&sem_barrier);
   }
+  /****** --start server and client *********/
+
+  /*****************************************************************/
+  /* client and server now known all the game options              */
+  /*****************************************************************/
+
+  listheadobjs.next=NULL;
+  listheadobjs.n=0;
+  listheadplanets.next=NULL;
+  listheadplanets.n=0;
+  listheadtext.next=NULL;
+  listheadtext.info.n=0;
+  listheadnearobjs.next=NULL;
+  listheadnearobjs.n=0;
+  for(i=0;i<4;i++)fobj[i]=0;
+  gtime0=0;
+
+  /********** players ***********/
+  CreatePlayers(&players,&ccdatap);
+  /********** --players ***********/
   
-  printf("MAIN:\n nplayers: %d\n",GameParametres(GET,GNPLAYERS,0));
-  printf("nproc: %d  proc: %d\n",GetNProc(),GetProc());
-
-  players=malloc((GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct Player)); /* +1 system +1 pirates*/ 
-  if(players==NULL){ 
-    fprintf(stderr,"ERROR in malloc (players)\n"); 
-    exit(-1); 
-  } 
-  g_memused+=(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct Player);
-
-  ccdatap=malloc((GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct CCDATA)); /* +1 system +1 pirates*/
-  if(ccdatap==NULL){ 
-    fprintf(stderr,"ERROR in malloc (ccdatap)\n"); 
-    exit(-1); 
-  } 
-  g_memused+=(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct CCDATA);
-
-
-
-  for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    snprintf(players[i].playername,PLAYERNAMEMAXLEN,"player%d",i);
-    players[i].id=i;
-    players[i].pid=GameParametres(GET,GNPLANETS,0)+1;
-    players[i].proc=0;
-    players[i].control=COMPUTER;
-    players[i].team=i+1;
-    players[i].profile=PLAYERPROFDEFAULT;
-    players[i].strategy=PLAYERSTRATRANDOM;
-    /* strategy is random weight choosed at WarCCPlanets() */
-    players[i].strategy=(int)(NUMPLAYERSTRAT*Random(-1));
-    players[i].maxlevel=0;
-    players[i].cv=0;
-    players[i].color=i;
-    players[i].nplanets=0;
-    players[i].nships=0;
-    players[i].nbuildships=0;
-    players[i].gold=10000*RESOURCEFACTOR;
-    players[i].lastaction=0;
-    players[i].ndeaths=0;
-    players[i].nkills=0;
-    players[i].points=0;
-    players[i].ttl=2000;
-    players[i].modified=SENDOBJUNMOD;
-    players[i].kplanets=NULL;
-    players[i].ksectors.n=0;
-    players[i].ksectors.n0=0;
-    players[i].ksectors.list=NULL;
-    for(j=0;j<NINDEXILIST;j++){
-      players[i].ksectors.index[j]=NULL;
-    }
-
-    /* player control and assigment of processors */
-    players[i].control=COMPUTER;
-    players[i].proc=0;
-    if(i==1){
-      players[i].control=HUMAN;
-    }
-    if(GameParametres(GET,GNET,0)==TRUE){
-      if(i==1){
-	players[i].proc=1;
-	if(strlen(clientname)>0){
-	  snprintf(players[i].playername,PLAYERNAMEMAXLEN,"%s",clientname);	
-	}
-      }
-      if(i==2){
-	players[i].control=HUMAN;
-	if(strlen(param.playername)>0){
-	  snprintf(players[i].playername,PLAYERNAMEMAXLEN,"%s",param.playername);
-	}
-      }
-    }
-    else{
-      if(i==1){
-	players[i].control=HUMAN;
-	if(strlen(param.playername)>0){
-	  snprintf(players[i].playername,PLAYERNAMEMAXLEN,"%s",param.playername);
-	}
-      }
-    }
-  }
-  snprintf(players[GameParametres(GET,GNPLAYERS,0)+1].playername,PLAYERNAMEMAXLEN,"%s","pirates");
-
-  for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){ /* HERE TODO include ccdata in player*/
-    ccdatap[i].player=i;
-    ccdatap[i].planetinfo=NULL;
-    ccdatap[i].nkplanets=0;
-    ccdatap[i].nplanets=0;
-    ccdatap[i].time=0;
-    ccdatap[i].ninexplore=0;
-    ccdatap[i].nenemy=0;
-    
-    ccdatap[i].nexplorer=0;
-    ccdatap[i].nfighter=0;
-    ccdatap[i].ntower=0;
-    ccdatap[i].ncargo=0;
-    
-    ccdatap[i].sw=0;
-    ccdatap[i].war=0;
-    
-    ccdatap[i].planetlowdefense=NULL;
-    ccdatap[i].planetweak=NULL;
-    ccdatap[i].planet2meet=NULL;
-    ccdatap[i].planet2attack=NULL;
-  }
-  
-  /* teams */
-  players[0].team=1;   /* Universe objects */
-
-  /* default mode:  All against all */
-  
-  for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    players[i].team=i+1; 
-  }
-  nteam=2; 
-
-  /* human players */
-  for(i=1;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    if(players[i].control==HUMAN){
-      players[i].team=nteam;
-      if(param.cooperative==FALSE){
-	nteam++;
-      }
-    }
-  }
-  if(param.cooperative==TRUE){
-    nteam++;
-  }
-
-  /* computer players */
-  for(i=1;i<GameParametres(GET,GNPLAYERS,0)+1;i++){
-    if(players[i].control==COMPUTER){
-      players[i].team=nteam;
-      if(param.compcooperative==FALSE){
-	nteam++;
-      }
-    }
-  }
-  if(param.compcooperative==TRUE){
-    nteam++;
-  }
-
-  /* pirate player*/
-  i=GameParametres(GET,GNPLAYERS,0)+1;
-  players[i].team=nteam;
-
-  /* --teams */
+  /********** teams ***********/
+  CreateTeams(players,param);
+  /********** --teams **********/
 
   if(param.queen){
     printf("WARNING: Queen mode set to ON.\n");
     GameParametres(SET,GQUEEN,TRUE);
   }
 
+  /******** Create Universe **************/
   if(param.client==FALSE){
     printf("CreateUniverse()...");
     CreateUniverse(GameParametres(GET,GULX,0),GameParametres(GET,GULY,0),&listheadobjs,planetnames);
@@ -636,10 +404,9 @@ int main(int argc,char *argv[]){
     printf("CreateShips()..."); 
     CreateShips(&listheadobjs); 
     //    CreateTestShips(&listheadobjs);
-
     printf("...done\n"); 
   }
-
+  /******** -- Create Universe **************/
 
   listheadcontainer=malloc((GameParametres(GET,GNPLANETS,0)+1)*sizeof(struct HeadObjList));
   g_memused+=(GameParametres(GET,GNPLANETS,0)+1)*sizeof(struct HeadObjList);
@@ -663,11 +430,9 @@ int main(int argc,char *argv[]){
     listheadkplanets[i].n=0;
   }
 
-  /************************************************************/
+  /********* sending and receiving Universe *****************/
 
   if(param.server==TRUE){
-    //    sprintf(players[2].playername,"%s",param.playername);
-    
     if(ExecSave(listheadobjs,SAVETMPFILE)!=0){
       fprintf(stderr,"Error in main(): I cant open %s\n",SAVETMPFILE);
       exit(-1);
@@ -681,18 +446,15 @@ int main(int argc,char *argv[]){
     sem_post(&sem_barrier1);
     sem_wait(&sem_barrier);
   }
-
+  
   if(param.client==TRUE){
-
+    
     printf("BEF GU:  gid:%d\n",g_objid);
     printf("gid loc:%d\n",glocal.g_objid);
     printf("gid rem:%d\n",gremote.g_objid);
-
+    
     //    sprintf(players[1].playername,"%s",param.playername);
-
     GetUniverse();
-
-
     printf("AFTER GU:  gid:%d\n",g_objid);
     printf("gid loc:%d\n",glocal.g_objid);
     printf("gid rem:%d\n",gremote.g_objid);
@@ -701,6 +463,7 @@ int main(int argc,char *argv[]){
     SetModifiedAll(&listheadobjs,ALLOBJS,SENDOBJUNMOD,TRUE);
     CreatePlanetList(listheadobjs,&listheadplanets);
   }
+  /********* --sending and receiving Universe *****************/
 
   actual_player=1;
   if(GameParametres(GET,GMODE,0)==SERVER){ /* only two human players, by now*/ 
@@ -731,60 +494,9 @@ int main(int argc,char *argv[]){
     habitat.obj=cv->in;
     cv->selected=TRUE;
   }
-  
-   
-  {     /* Adding planets to players list */
-    struct ObjList *ls;
-    ls=listheadobjs.next;
-    while(ls!=NULL){
-      if(ls->obj->type==PLANET){      
-	/* pirates known some planets */
-	/* players[GameParametres(GET,GNPLAYERS,0)+1].kplanets= */
-	/*   Add2IntList((players[GameParametres(GET,GNPLAYERS,0)+1].kplanets),ls->obj->id); */
-	/* rest of players */
-	for(i=0;i<GameParametres(GET,GNPLAYERS,0)+1;i++){
-	  if(GameParametres(GET,GKPLANETS,0)==TRUE ||
-	     players[ls->obj->player].team==players[i].team ||
-	     (ENEMIESKNOWN==TRUE && players[ls->obj->player].team > 1) ){
-	    players[i].kplanets=Add2IntList((players[i].kplanets),ls->obj->id);
-	  }
-	}
-      }
-      ls=ls->next;
-    }
-  }
 
-#if SOUND
-  /* sound initialization*/ 
-  
-  GameParametres(SET,GMUSIC,param.music);
-  GameParametres(SET,GSOUND,param.sound);
-  state=InitSound();
-  if(state!=0){
-    fprintf(stderr,"Error initializing sound, sound disabled Error id:%d\n",state);
-    soundenabled=FALSE;
-    param.sound=FALSE;
-    param.music=FALSE;
-    GameParametres(SET,GMUSIC,param.sound);
-    GameParametres(SET,GSOUND,param.music);
-    Play(NULL,-1,0); /* disable sound */
-  }
-
-  if(soundenabled==TRUE){
-    PlaySound(MUSIC,SLOOP,0.75);
-    if(param.music){
-      printf("Music is on (%d)\n",param.music);
-    }
-    else{
-      Sound(SSTOP,MUSIC);
-      printf("Music is off\n");
-    }
-  }
-
-
-  /*--sound initialization*/ 
-#endif
-
+  /* Adding planets to players list */
+  AddPlanets2List(&listheadobjs,players);   
 
   /* pruebas verlet list */
   if(0){
@@ -806,15 +518,8 @@ int main(int argc,char *argv[]){
   /* --pruebas verlet list */
 
 
-  /* printf teams */
-
-  for(i=1;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    printf("PLAYER %d TEAM %d ",i,players[i].team);
-    if(players[i].control==HUMAN)printf("HUMAN");
-    if(players[i].control==COMPUTER)printf("COMPUTER");
-    printf(" name: \"%s\"",players[i].playername);
-    printf("\n");
-  }
+  /* print teams */
+  PrintTeams(players);
 
 #if CELLON
   {
@@ -842,7 +547,7 @@ int main(int argc,char *argv[]){
   gtk_timeout_add((int)(DT*100),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
 #endif
   
-  /* what stuff draw */
+  /******** what stuff draw *********/
   gdraw.menu=TRUE;
   gdraw.map=FALSE;
   gdraw.shiplist=FALSE;
@@ -857,33 +562,32 @@ int main(int argc,char *argv[]){
   gdraw.menu=FALSE;
 #endif
 
-
   gtk_main();
 
   printf("\ntotal points: %d record: %d\n",players[1].points,record);
-
-
-
   printf("******************************************************\n");
-  g_print("%sversion %s  %s\n",TITLE,version,last_revision);
-  g_print("Please, send bugs and suggestions to: mrevenga at users dot sourceforge dot net\n");
-  g_print("Homepage:  http://spacezero.sourceforge.net/\n");
+  printf("%sversion %s  %s\n",TITLE,version,last_revision);
+  printf("Please, send bugs and suggestions to: mrevenga at users dot sourceforge dot net\n");
+  printf("Homepage:  http://spacezero.sourceforge.net/\n");
 
 
   j=-1;
-  for(i=0;i<GameParametres(GET,GNPLAYERS,0);i++){
+  SaveRecord(recordfile,players,record);
+  if(0){
+    for(i=0;i<GameParametres(GET,GNPLAYERS,0);i++){
     if(players[i].points>=record){
       j=i;
       record=players[i].points;
     }
-  }
-  if(j!=-1){
-    if((fprecord=fopen(recordfile,"wt"))==NULL){
-      fprintf(stdout,"No puede abrirse el archivo: %s", recordfile);
-      exit(-1);
     }
-    fprintf(fprecord,"%d",record);
-    fclose(fprecord);
+    if(j!=-1){
+      if((fprecord=fopen(recordfile,"wt"))==NULL){
+	fprintf(stdout,"No puede abrirse el archivo: %s", recordfile);
+	exit(-1);
+      }
+      fprintf(fprecord,"%d",record);
+      fclose(fprecord);
+    }
   }
 
   return 0;
@@ -978,6 +682,8 @@ gint MenuLoop(gpointer data){
   return(TRUE);
 }
 
+
+
 gint MainLoop(gpointer data){
   /*
     Main gtk loop. executed 24 times by second.
@@ -1014,8 +720,8 @@ gint MainLoop(gpointer data){
   }
 #endif
 
-  if(time0==0){
-    time0=time(NULL);
+  if(gtime0==0){
+    gtime0=time(NULL);
   }
 
   /* firsttime */
@@ -1473,12 +1179,10 @@ gint MainLoop(gpointer data){
     }
     else{  
       if(habitat.type==H_SPACE && cv!=NULL)DrawStars(pixmap,nav_mode,r_rel.x,r_rel.y);
-      {int n;
-      n=DrawObjs(pixmap,&listheadobjs,habitat,cv,r_rel); 
-      //      printf("obj drawed: %d\n",n);
-      }
+
+      DrawObjs(pixmap,&listheadobjs,habitat,cv,r_rel); 
+
       if(cv!=NULL && (habitat.type==H_SPACE)){
-	//	DrawRadar(pixmap,cv,listheadcontainer);
 	DrawRadar(pixmap,cv,&listheadobjs);
       }
       
@@ -1671,7 +1375,7 @@ gint Quit(GtkWidget *widget,gpointer gdata){
       }
     }
     g_print("Quitting...   frames:%d \n",GetTime()-p_time);
-    g_print("frames/s:%f\n",(float)(GetTime()-p_time)/(time(NULL)-time0));
+    g_print("frames/s:%f\n",(float)(GetTime()-p_time)/(time(NULL)-gtime0));
     g_print("key strokes:%d \n",CountKey(2));
     g_print("n. total obj. : %d\n",CountObjs(&listheadobjs,-1,-1,-1));
     g_print("n. total obj. sended: %d shots: %d\n",g_nobjsend,g_nshotsend);
@@ -3442,30 +3146,30 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
   float rg;
   Object *obj;
   int n,np=0;
-  int nplanetpergalaxie=1;
+  int nplanetpergalaxy=1;
   int nplanets;
   int ngalaxies=1;
 
 
-  //HERE check this equation. galaxie size
+  //HERE check this equation. galaxy size
 
   ngalaxies=GameParametres(GET,GNGALAXIES,0);
 
   rg=ulx/ngalaxies;
 
   nplanets=GameParametres(GET,GNPLANETS,0);
-  nplanetpergalaxie=(int)((float)nplanets/ngalaxies+0.5);
+  nplanetpergalaxy=(int)((float)nplanets/ngalaxies+0.5);
 
-  //  rg=sqrt(nplanetpergalaxie/1E-9);
-  //  printf("galaxie radius: %f\n",rg);
+  //  rg=sqrt(nplanetpergalaxy/1E-9);
+  //  printf("galaxy radius: %f\n",rg);
 
-  if(nplanetpergalaxie/(rg*rg) < 3E-9){
-    //HERE    rg=sqrt(nplanetpergalaxie/3E-9);
+  if(nplanetpergalaxy/(rg*rg) < 3E-9){
+    //HERE    rg=sqrt(nplanetpergalaxy/3E-9);
   }
 
   printf("\n\tnumber of galaxies: %d\n",ngalaxies);
-  printf("\tnumber of planets per galaxie: %d\n",nplanetpergalaxie);
-  printf("\tgalaxie radius: %.0f\n",rg);
+  printf("\tnumber of planets per galaxy: %d\n",nplanetpergalaxy);
+  printf("\tgalaxy radius: %.0f\n",rg);
 
   for(j=0;j<ngalaxies;j++){
     if(np>=nplanets)break;
@@ -3475,7 +3179,7 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
       x0=0;
       y0=0;
     }
-    for(i=0;i<nplanetpergalaxie;i++){
+    for(i=0;i<nplanetpergalaxy;i++){
       if(np>=nplanets)break;
       n=0;
       do{
@@ -3713,7 +3417,7 @@ void CreateShips(struct HeadObjList *lheadobjs){
 	for(k=-2;k<3;k++){
 	  if(j*j+k*k<8){  
 	    Add2IntIList(&(players[obj->player].ksectors),
-			 Cuadrante(planet->x+j*SECTORSIZE,planet->y+k*SECTORSIZE));
+			 Quadrant(planet->x+j*SECTORSIZE,planet->y+k*SECTORSIZE));
 	  }
 	}
       }
@@ -4550,12 +4254,333 @@ void PrintGameOptions(void){
   if(GameParametres(GET,GKPLANETS,0)==TRUE){
     printf("\tPlanets are known by all the players.\n");
   }
-  printf("\tknown planets: %d\n",GameParametres(GET,GKPLANETS,0));
-  printf("\tcooperative mode: %d\n",GameParametres(GET,GCOOPERATIVE,0));
-  printf("\tcomputer cooperative mode: %d\n",GameParametres(GET,GCOMPCOOPERATIVE,0));
-  printf("\tQueen mode: %d\n",GameParametres(GET,GQUEEN,0));
-  printf("\tpirates: %d\n",GameParametres(GET,GPIRATES,0));
+  if(GameParametres(GET,GKPLANETS,0))
+    printf("\tknown planets: yes\n");
+  else
+    printf("\tknown planets: no\n");
+
+  if(GameParametres(GET,GCOOPERATIVE,0))
+    printf("\tcooperative mode: yes\n");
+  else
+    printf("\tcooperative mode: no\n");
+
+  if(GameParametres(GET,GCOMPCOOPERATIVE,0))
+    printf("\tcomputer cooperative mode: yes\n");
+  else
+    printf("\tcomputer cooperative mode: no\n");
+
+  if(GameParametres(GET,GQUEEN,0))
+    printf("\tQueen mode: yes\n");
+  else
+    printf("\tQueen mode: no\n");
+
+  if(GameParametres(GET,GPIRATES,0))
+    printf("\tpirates: yes\n");
+  else
+    printf("\tpirates: no\n");
   
   printf("\tUniverse size: %d\n",GameParametres(GET,GULX,0));
 
+}
+
+
+void SetGameParametres(struct Parametres param){
+  int width,height;
+
+  GameParametres(SET,DEFAULT,0);   /* defaults game values */
+
+  if(param.server==TRUE||param.client==TRUE){
+    GameParametres(SET,GNET,TRUE);
+  }
+
+  if(param.server==TRUE){
+    GameParametres(SET,GMODE,SERVER);
+  }
+  if(param.client==TRUE){
+    GameParametres(SET,GMODE,CLIENT);
+  }
+
+
+  GameParametres(SET,GNGALAXIES,param.ngalaxies);
+  GameParametres(SET,GNPLANETS,param.nplanets);
+  GameParametres(SET,GNPLAYERS,param.nplayers);  /*+1 system +1 pirates */
+
+  if(param.kplanets==TRUE){
+    GameParametres(SET,GKPLANETS,TRUE);
+  }
+#if DEBUG
+  if(debuginit){
+    printf("\tpirates: %d\n",param.pirates);
+  }
+#endif
+  if(param.pirates==FALSE){
+    GameParametres(SET,GPIRATES,FALSE);
+  }
+#if DEBUG
+  if(debuginit){
+    printf("\tpirates: %d %d\n",param.pirates,GameParametres(GET,GPIRATES,0));
+  }
+#endif
+  GameParametres(SET,GULX,param.ul);
+  GameParametres(SET,GULY,param.ul);
+
+  GameParametres(SET,GCOOPERATIVE,param.cooperative);
+  GameParametres(SET,GCOMPCOOPERATIVE,param.compcooperative);
+
+  GameParametres(SET,GMUSIC,param.music);
+  GameParametres(SET,GSOUND,param.sound);
+
+  GameParametres(SET,GWIDTH,DEFAULTWIDTH);
+  GameParametres(SET,GHEIGHT,DEFAULTHEIGHT);
+  GetGeom(param.geom,&width,&height);
+  GameParametres(SET,GWIDTH,width);
+  GameParametres(SET,GHEIGHT,height);
+
+  /*********** process identifier ***********/
+
+  SetProc(0);
+  SetNProc(1);
+
+  if(GameParametres(GET,GMODE,0)==CLIENT){
+    SetProc(1);
+  }
+  if(GameParametres(GET,GNET,0)==TRUE){
+    SetNProc(2);
+  }
+
+  /********** --process identifier ***********/
+
+}
+
+void MakeTitle(struct Parametres param, char *title){
+  strcat(title,TITLE);
+  if(param.server==TRUE)
+    strcat(title,"(server)  ");
+  if(param.client==TRUE)
+    strcat(title,"(client)  ");
+  strcat(title,version);
+  strcat(title,"  ");
+  strcat(title,copyleft);
+  /* strcat(title,"  "); */
+  /* strcat(title,last_revision); */
+}
+
+void CreateTeams(struct Player *players,struct Parametres param){
+
+  int i,nteam=1;
+  players[0].team=1;   /* Universe objects */
+
+  /* default mode:  All against all */
+  
+  for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+    players[i].team=i+1; 
+  }
+  nteam=2; 
+
+  /* human players */
+  for(i=1;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+    if(players[i].control==HUMAN){
+      players[i].team=nteam;
+      if(param.cooperative==FALSE){
+	nteam++;
+      }
+    }
+  }
+  if(param.cooperative==TRUE){
+    nteam++;
+  }
+
+  /* computer players */
+  for(i=1;i<GameParametres(GET,GNPLAYERS,0)+1;i++){
+    if(players[i].control==COMPUTER){
+      players[i].team=nteam;
+      if(param.compcooperative==FALSE){
+	nteam++;
+      }
+    }
+  }
+  if(param.compcooperative==TRUE){
+    nteam++;
+  }
+
+  /* pirate player*/
+  i=GameParametres(GET,GNPLAYERS,0)+1;
+  players[i].team=nteam;
+
+
+}
+
+void CreatePlayers(struct Player **p,struct CCDATA **cc){
+  int i,j;
+  struct Player *players;
+  struct CCDATA *ccdatap;
+
+#if DEBUG
+  printf("MAIN:\n nplayers: %d\n",GameParametres(GET,GNPLAYERS,0));
+  printf("nproc: %d  proc: %d\n",GetNProc(),GetProc());
+#endif
+
+  players=malloc((GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct Player)); /* +1 system +1 pirates*/ 
+  if(players==NULL){ 
+    fprintf(stderr,"ERROR in malloc (players)\n"); 
+    exit(-1); 
+  } 
+  g_memused+=(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct Player);
+
+  ccdatap=malloc((GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct CCDATA)); /* +1 system +1 pirates*/
+  if(ccdatap==NULL){ 
+    fprintf(stderr,"ERROR in malloc (ccdatap)\n"); 
+    exit(-1); 
+  } 
+  g_memused+=(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct CCDATA);
+
+  *p=players;
+  *cc=ccdatap;
+
+  for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+    snprintf(players[i].playername,PLAYERNAMEMAXLEN,"player%d",i);
+    players[i].id=i;
+    players[i].pid=GameParametres(GET,GNPLANETS,0)+1;
+    players[i].proc=0;
+    players[i].control=COMPUTER;
+    players[i].team=i+1;
+    players[i].profile=PLAYERPROFDEFAULT;
+    players[i].strategy=PLAYERSTRATRANDOM;
+    /* strategy is random weight choosed at WarCCPlanets() */
+    players[i].strategy=(int)(NUMPLAYERSTRAT*Random(-1));
+    players[i].maxlevel=0;
+    players[i].cv=0;
+    players[i].color=i;
+    players[i].nplanets=0;
+    players[i].nships=0;
+    players[i].nbuildships=0;
+    players[i].gold=10000*RESOURCEFACTOR;
+    players[i].lastaction=0;
+    players[i].ndeaths=0;
+    players[i].nkills=0;
+    players[i].points=0;
+    players[i].ttl=2000;
+    players[i].modified=SENDOBJUNMOD;
+    players[i].kplanets=NULL;
+    players[i].ksectors.n=0;
+    players[i].ksectors.n0=0;
+    players[i].ksectors.list=NULL;
+    for(j=0;j<NINDEXILIST;j++){
+      players[i].ksectors.index[j]=NULL;
+    }
+
+    /* player control and assigment of processors */
+    players[i].control=COMPUTER;
+    players[i].proc=0;
+    if(i==1){
+      players[i].control=HUMAN;
+    }
+    if(GameParametres(GET,GNET,0)==TRUE){
+      if(i==1){
+	players[i].proc=1;
+	if(strlen(clientname)>0){
+	  snprintf(players[i].playername,PLAYERNAMEMAXLEN,"%s",clientname);	
+	}
+      }
+      if(i==2){
+	players[i].control=HUMAN;
+	if(strlen(param.playername)>0){
+	  snprintf(players[i].playername,PLAYERNAMEMAXLEN,"%s",param.playername);
+	}
+      }
+    }
+    else{
+      if(i==1){
+	players[i].control=HUMAN;
+	if(strlen(param.playername)>0){
+	  snprintf(players[i].playername,PLAYERNAMEMAXLEN,"%s",param.playername);
+	}
+      }
+    }
+  }
+
+  snprintf(players[GameParametres(GET,GNPLAYERS,0)+1].playername,PLAYERNAMEMAXLEN,"%s","pirates");
+
+  for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){ /* HERE TODO include ccdata in player*/
+    ccdatap[i].player=i;
+    ccdatap[i].planetinfo=NULL;
+    ccdatap[i].nkplanets=0;
+    ccdatap[i].nplanets=0;
+    ccdatap[i].time=0;
+    ccdatap[i].ninexplore=0;
+    ccdatap[i].nenemy=0;
+    
+    ccdatap[i].nexplorer=0;
+    ccdatap[i].nfighter=0;
+    ccdatap[i].ntower=0;
+    ccdatap[i].ncargo=0;
+    
+    ccdatap[i].sw=0;
+    ccdatap[i].war=0;
+    
+    ccdatap[i].planetlowdefense=NULL;
+    ccdatap[i].planetweak=NULL;
+    ccdatap[i].planet2meet=NULL;
+    ccdatap[i].planet2attack=NULL;
+  }
+}
+
+void AddPlanets2List(struct HeadObjList *listheadobjs,struct Player *players){
+  /* 
+     Add known planets to players list 
+  */
+  struct ObjList *ls;
+  int i;
+
+  if(listheadobjs==NULL || players==NULL){
+    fprintf(stderr,"ERROR in AddPlanet2List()\n");
+    exit(-1);
+  }
+
+  ls=listheadobjs->next;
+  while(ls!=NULL){
+    if(ls->obj->type==PLANET){      
+      for(i=0;i<GameParametres(GET,GNPLAYERS,0)+1;i++){
+	if(GameParametres(GET,GKPLANETS,0)==TRUE ||
+	   players[ls->obj->player].team==players[i].team ||
+	   (ENEMIESKNOWN==TRUE && players[ls->obj->player].team > 1) ){
+	  players[i].kplanets=Add2IntList((players[i].kplanets),ls->obj->id);
+	}
+      }
+    }
+    ls=ls->next;
+  }
+}
+
+void PrintTeams(struct Player *players){
+  int i;
+  for(i=1;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+    printf("PLAYER %d TEAM %d ",i,players[i].team);
+    if(players[i].control==HUMAN)printf("HUMAN");
+    if(players[i].control==COMPUTER)printf("COMPUTER");
+    printf(" name: \"%s\"",players[i].playername);
+    printf("\n");
+  }
+}
+
+
+void SaveRecord(char *file,struct Player *players,int record){
+  int i,j;
+  FILE *fp;
+
+  j=-1;
+  for(i=0;i<GameParametres(GET,GNPLAYERS,0);i++){
+    if(players[i].points>=record){
+      j=i;
+      record=players[i].points;
+    }
+  }
+  if(j!=-1){
+    if((fp=fopen(file,"wt"))==NULL){
+      fprintf(stdout,"No puede abrirse el archivo: %s",file);
+      exit(-1);
+    }
+    fprintf(fp,"%d",record);
+    fclose(fp);
+  }
 }

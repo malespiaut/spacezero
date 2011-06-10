@@ -38,6 +38,7 @@
 #include "shell.h"
 #include "sound.h"
 #include "menu.h"
+#include "sectors.h"
 
 extern struct Player *players;
 extern int g_memused;
@@ -95,7 +96,7 @@ struct Keys keys;
 
 
 
-GtkWidget *InitGraphics(char *title,char *optfile,int w,int h){
+GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres param){
 
   GtkWidget *d_a;
 
@@ -282,12 +283,12 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h){
   gtk_signal_connect(GTK_OBJECT (options10),"clicked",
 		     GTK_SIGNAL_FUNC(SetDefaultOptions),"set default");
 
-  options11=gtk_button_new_with_label(" Save and Close");
+  options11=gtk_button_new_with_label(" Save ");
   gtk_widget_show(options11);
   gtk_signal_connect(GTK_OBJECT (options11),"clicked",
 		     GTK_SIGNAL_FUNC(SaveOptions),optfile);
 
-  options12=gtk_button_new_with_label(" Close Window");
+  options12=gtk_button_new_with_label(" Cancel ");
   gtk_widget_show(options12);
   gtk_signal_connect(GTK_OBJECT (options12),"clicked",
 		     GTK_SIGNAL_FUNC(QuitWindowOptions),"quit window");
@@ -423,7 +424,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h){
   /* --tooltips */
 
 
-  /* colors */
+  /******** colors **********/
   penRed= GetPen(NewColor(65535,0,0),pixmap);
   penGreen= GetPen(NewColor(0,65535,0),pixmap);
   penLightGreen= GetPen(NewColor(40000,65535,40000),pixmap);
@@ -440,7 +441,35 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h){
   penPink= GetPen(NewColor(65535,49344,52171),pixmap);
   penCyan= GetPen(NewColor(0,65535,65535),pixmap);
   penSoftRed= GetPen(NewColor(20000,0,0),pixmap);
-  /* --colors */
+
+  gcolors[0]=penWhite;
+  gcolors[1]=penYellow;
+  gcolors[2]=penRed;
+  gcolors[3]=penGreen;
+  gcolors[4]=penBlue;
+  gcolors[5]=penOrange;
+  gcolors[6]=penViolet;
+  gcolors[7]=penPink;
+  gcolors[8]=penCyan;
+  gcolors[9]=penLightGreen; /* penWhite */
+  gcolors[10]=penSoftRed;
+
+  /********* --colors *********/
+
+  /********* fonts **********/
+
+  gfont=InitFonts(param.font);
+  if(gfont==NULL){
+    GameParametres(SET,GPANEL,PANEL_HEIGHT);
+  }
+  else{
+    GameParametres(SET,GPANEL,2*gdk_text_height(gfont,"pL",2));
+  }
+  GameParametres(SET,GHEIGHT,GameParametres(GET,GHEIGHT,0)-GameParametres(GET,GPANEL,0));
+
+  /********* --fonts **********/
+
+
 
   return(d_a);
 }
@@ -2242,7 +2271,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
       ks=players[player].ksectors.list;
       
       while(ks!=NULL){
-	InvCuadrante(ks->id,&a,&b);
+	InvQuadrant(ks->id,&a,&b);
 	a*=SECTORSIZE;
 	b*=SECTORSIZE;
 

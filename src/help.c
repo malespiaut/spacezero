@@ -118,7 +118,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   strcpy(par->geom,"");
 
 
-  /* reading options file values */
+  /*******  options file values ******/
 #if DEBUG
   if(debug)printf("reading options file\n");
 #endif
@@ -339,8 +339,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       par->music=FALSE;
     }
   }
-
-  /* reading options file values */
+  /*******  --options file values ******/
 
 
   /*************** command line values ******************/
@@ -461,6 +460,11 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
  	if(i+1<argc){
 	  strncpy(par->geom,argv[i+1],32);
 	  strncpy(&par->geom[31],"\0",1);
+	  //HERE check param values.
+	  
+
+
+
 	  i++;
 	}
 	else{
@@ -490,6 +494,19 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       }
     }
   }
+  if(par->nplayers==-1){
+    if(par->server==FALSE && par->client==FALSE){
+      par->nplayers=NUMPLAYERS;
+    }
+    if(par->server==TRUE){
+      par->nplayers=NUMPLAYERS;
+    }
+    if(par->client==TRUE){
+      par->nplayers=1;
+    }
+  }
+
+
   return(0);
 }  /* --Arguments()  */
 
@@ -681,7 +698,7 @@ int GetGeom(char *geom,int *w,int *h){
     returns:
     In the pointers w and h the value of the window geometry from the cad geom.
     0 if there are no error
-    -1,-2 if there are some error in the structure of the cad geom.
+    >0 if therea are some error in the structure of the cad geom.
    */
 
   char str[24];
@@ -696,12 +713,13 @@ int GetGeom(char *geom,int *w,int *h){
   len=strlen(geom);
 
   if(len==0){
-    return(0);
+    /* no option given */
+    return(1);
   }
 
   if(len>9){
     fprintf(stderr,"WARNING: invalid option geom. Too high. Settting geometry to default: %dx%d.\n",DEFAULTWIDTH,DEFAULTHEIGHT);
-    return(-1);
+    return(2);
   }
   sw=0;
   pointer=strchr(geom,'x');
@@ -738,7 +756,7 @@ int GetGeom(char *geom,int *w,int *h){
     if(*h<312)*h=312;
     if(*h>1050)*h=1050;
     fprintf(stderr,"WARNING: geom values reach their limit. Setting geometry to limit values:(640,1680)x(312,1050).\n");
-      return(0);
+      return(1);
   }
   return(0);  
 }

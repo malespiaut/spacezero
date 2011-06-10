@@ -23,7 +23,11 @@
 		version 0.80 May 2011
 ****/
 
+#ifndef _FUNCTIONS_
+#define _FUNCTIONS_ 
+
 #include "objects.h"
+
 
 #define GET 0
 #define SET 1
@@ -51,3 +55,6 @@ void SetTime(int t);
 void IncTime(void);
 
 void DelCharFromCad(char *cad,char *filter);
+
+
+#endif

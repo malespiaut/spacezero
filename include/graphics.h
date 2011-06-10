@@ -30,6 +30,7 @@
 #define MBOXDEFAULT 0
 #define MBOXBORDER 1
 #include "menu.h"
+#include "help.h"
 
 struct Stars{
   int *color;
@@ -47,7 +48,7 @@ struct Draw{
 };
 
 
-GtkWidget *InitGraphics(char *title,char *optfile,int,int);
+GtkWidget *InitGraphics(char *title,char *optfile,int,int,struct Parametres param);
 GdkFont *InitFonts(char *fontname);
 gint QuitGraphics(GtkWidget *widget,gpointer gdata);
 gint configure_event(GtkWidget *widget, GdkEventConfigure *event);

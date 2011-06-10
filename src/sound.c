@@ -76,7 +76,6 @@ int InitSound(void){
 
   int i,j;
   int error;
-  int ret=0;
   char *datadir;
   FILE *fp;
   ALenum format; 
@@ -113,12 +112,10 @@ int InitSound(void){
     if((fp=fopen(filesoundnames[0],"rb"))==NULL){
       fprintf(stdout,"No puede abrirse el archivo: %s\n", filesoundnames[0]);
       Ssoundenabled=FALSE;  
-      return(-1);
+      return(1);
     }
   }
   /* --checking file sound directory */
-
-
 
 
   /* Clear Error Code (so we can catch any new errors) */
@@ -138,7 +135,8 @@ int InitSound(void){
   alGenBuffers(NUM_BUFFERS, buffers);
   if ((error = alGetError()) != AL_NO_ERROR){
     printf("alGenBuffers : %d", error);
-    return(1);
+    Ssoundenabled=FALSE;
+    return(2);
   }
 
 #if SOUNDDEBUG
@@ -154,7 +152,8 @@ int InitSound(void){
   if ((error = alGetError()) != AL_NO_ERROR){
     printf("alGenSources : %d", error);
     reportError ();
-    return(2);
+    Ssoundenabled=FALSE;
+    return(3);
   }
 
   for(i=0;i<NUM_SOURCES;i++){
@@ -192,7 +191,8 @@ int InitSound(void){
     data=alutLoadMemoryFromFile(filesoundnames[i],&format,&size,&frequency);
     if(data==NULL){
       printf("Warning: file not found or corrupted: %s\n",filesoundnames[i]); 
-      ret=3;
+      Ssoundenabled=FALSE;
+      return(4);
     }
     if(data!=NULL){
       alBufferData(buffers[j],format,data,size,frequency);
@@ -212,11 +212,8 @@ int InitSound(void){
 #endif
     }
   }
-  if(ret!=0)Ssoundenabled=FALSE;  
-
-
   printf("InitSound(): soundenabled: %d \n",Ssoundenabled);
-  return(ret);
+  return(0);
 }
 
 

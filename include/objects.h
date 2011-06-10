@@ -34,7 +34,6 @@
 #include "general.h"
 #include "data.h"
 
-
 #define VELMAX 60
 #define VELMAX2 VELMAX*VELMAX
 #define ACELMAX 600
@@ -192,7 +191,6 @@ struct Planet{
   float reggold;     /* index of gold regeneration */
   //  int nships;        /* number of ships in planet */
   float A,B;         /* local, tmp variables */
-
 };
 
 struct Order{
@@ -685,11 +683,6 @@ int PosTextList(struct TextList *head,int m);
 int CountTextList(struct TextList *head);
 char Type(Object *obj);
 
-
-int Cuadrante(float x, float y);
-void InvCuadrante(int n,int *x, int *y);
-int NearestSector(struct HeadIntIList *head,float a,float b);
-int NearRandomSector(struct HeadIntIList *head,float a,float b);
 
 int UpdateSectors(struct HeadObjList lh);
 int GetPrice(Object *obj,int sid,int eng,int weapon);

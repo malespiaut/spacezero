@@ -30,6 +30,9 @@
 #include "ai.h"
 #include "data.h"
 #include "sound.h"
+#include "sectors.h"
+
+
 #define DL (2*RADAR_RANGE)
 //#define DL 3000
 
@@ -1823,8 +1826,6 @@ void DestroyAllPlayerObjs(struct HeadObjList *lh,int player){
 }
 
 
-
-
 void DestroyObj(Object *obj){
 
   if(obj==NULL)return;
@@ -1964,97 +1965,6 @@ int CopyBuf2Planet(char *buf,struct Planet *planet){
 }
 
 
-int Cuadrante(float x, float y){
-  /* 
-     x,y real position of an object
-     return the cuadrante id
-  */
-
-  int i,j;
-  int r,r0;
-  int d,s;
-  int n;
-
-
-  i=x/SECTORSIZE-(x<0);
-  j=y/SECTORSIZE-(y<0);
-
-  r=MODI(i) > MODI(j) ? MODI(i) : MODI(j);
-
-  r0=0;
-  if(r!=0)r0=4*r*(r-1)+1; /* (2*r-1)*(2*r-1); */
-  d=2*r-i-j;
-
-  if(d!=0){
-    s=0;
-    if(i<=j)s=-1;
-    
-    n=r0+2*d+s;
-  }
-  else{
-    n=r0;
-  }
-  return(n);
-}
-
-void InvCuadrante(int n,int *x, int *y){
-  /* 
-     version 00
-     input n: cuadrante id
-     output: the real position in x, y
-     HEREOPT use a sqrt table.
-  */
-
-  int i,j;
-  int r;
-  int d;
-#if DEBUG
-  static int max=0;
-  static int min =0;
-  if(n>max){max=n;printf("MAX=%d\n",max);}
-  if(n<min){min=n;printf("MIN=%d\n",min);}
-#endif
-  r=(int)((sqrt(n)+1.0)*0.5);
-
-  if(r==0){
-    /* r0=0; */
-    d=(int)((n+1)*0.5);
-  }
-  else{
-    /*    r0=4*r*(r-1)+1;  (2*r-1)*(2*r-1); */
-    d=(int)(0.5*(n-4*r*(r-1)));
-  }
-
-  if(!(n%2)){ /*   n es par */
-    i=r-d;
-    if(MODI(i)>r){
-      j=r-(MODI(i)-r);
-      i=-r;
-    }
-    else{
-      j=2*r-i-d;
-    }
-  }
-  else{ /*  n es impar */
-    j=r-d;
-    if(MODI(j)>r){
-      i=r-(MODI(j)-r);
-      j=-r;
-    }
-    else{
-      i=2*r-j-d;
-    }
-
-
-  }
-  /*   if(i<0)i++; */
-  /*   if(j<0)j++; */
-  *x=i;
-  *y=j;
-  return;
-}
-
-
 int UpdateSectors(struct HeadObjList lh){
   /*
     add the actual sector to his own player list
@@ -2097,14 +2007,14 @@ int UpdateSectors(struct HeadObjList lh){
 	    for(j=-k;j<k+1;j++){
 	      if(i2+j*j<=k2){
 		Add2IntIList(&(players[ls->obj->player].ksectors),
-			    Cuadrante(ls->obj->x+is,ls->obj->y+j*SECTORSIZE));
+			    Quadrant(ls->obj->x+is,ls->obj->y+j*SECTORSIZE));
 	      }
 	    }
 	  }
 	  break;
 	default:
 	  Add2IntIList(&(players[ls->obj->player].ksectors),
-		       Cuadrante(ls->obj->x,ls->obj->y));
+		       Quadrant(ls->obj->x,ls->obj->y));
 	  break;
 	}
 
@@ -2271,54 +2181,6 @@ int PosTextList(struct TextList *head,int m){
   }
   return(-1);
 }
-
-int NearestSector(struct HeadIntIList *hlist,float a,float b){
-  /*
-    version 02
-    returns the nearest unknown id sector to the sector (a,b)
-    looks far 5 sectors 
-    returns 0 if all are known.
-  */
-  int i,j;
-  int id;
-  int rid=0;
-  int d=25;
-
-  for(i=-5;i<6;i++){
-    for(j=-5;j<6;j++){
-      id=Cuadrante(a+i*SECTORSIZE,b+j*SECTORSIZE);
-      if(!IsInIntIList(hlist,id)){
-	if(i*i+j*j<d){
-	  rid=id;
-	  d=i*i+j*j;
-	}
-      }
-    }
-  }
-
-  return(rid);
-}
-
-int NearRandomSector(struct HeadIntIList *hlist,float a,float b){
-  /*
-    returns random sector near position a,b
-    looks far 10 sectors 
-    if sector is known return 0
-  */
-  int i,j;
-  int id;
-
-  i=(int)(21*(Random(-1))-10);
-  j=(int)(21*(Random(-1))-10);
-
-  id=Cuadrante(a+i*SECTORSIZE,b+j*SECTORSIZE);
-  if(!IsInIntIList(hlist,id)){
-    return(id);
-  }
-  return(0);
-}
-
-
 int GetPrice(Object *obj,int stype,int eng,int weapon){
   /*
     return:

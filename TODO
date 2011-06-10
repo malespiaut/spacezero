@@ -33,10 +33,11 @@ bugs:(last:115)
 -[97](150411) torre modificada a SENDOBJALL en distinto procesador
       CheckModifiedPre(): PROC: 0 obj 1782 (159) player: 4 type 1 stype 6 mod: 37 time: 182007
 -[100](060511)enemy state bar greater than 100 (with very close planets, in net game, maybe unknown state)
--[101](105011)32/64 bits Gdk-WARNING **: GdkWindow 0x2e00005 unexpectedly destroyed ??(after ubuntu update, no more)
--[110](240511) Explorers dont STOP. save03
+-[101](105011)32/64 bits Gdk-WARNING **: GdkWindow 0x2e00005 unexpectedly destroyed ??(after ubuntu update, no more)(it continues)(happens after screensaver)
 -[115]-geom 1000x-12 check all arguments...
 	    -geom -name hola
+-[]why dont explore (save08)(the last ship, no unknown planets)
+
 
 Version 0.6: (since 0707)
 ============
@@ -64,7 +65,6 @@ Version 0.8 (since 10May2011)
 -?Use same struct for planets and known sectors in struct Player.
 -!!Damage in collision depends on mass and velocity. Elastic shocks. 
 -!!Change ksectorslist for a three elements list: id,x,y.
--!!Review GetInformation()
 -!!In terminal, messages repite so much.
 -!!Send ships info to allies.
 -!!In pause mode consumes CPU, redraw every 5 steps..
@@ -73,7 +73,7 @@ Version 0.8 (since 10May2011)
 -Explosions: add ship parts
 -!!Merge UpdateShip() y UpdateAsteroid() ??
 -!!Improve CreateContainerList()
--!!Improve IsRisk()
+-!!Improve Risk()
 -send drawmissile in DrawObjs() to DrawShip()
 -!!not enought money
 -include CELLON code 
@@ -98,6 +98,7 @@ Ships:
 AI:    
 ===
 
+-towers movement consumes too energy.
 -!!New order: "do not takeoff" = ID: 3305066 (STOP when landed.)
 -Orbit in automatic mode(Take off).
 -When parent dies, send orders to object sons.
@@ -107,7 +108,6 @@ AI:
 -Las ordenes dependen de unos objetivos a cumplir.
 -Add flee.
 -!!Fast ship pursuing a slow one: improve ,adjust velocity.
--Improve EXPLORE.
 -ChooseOrder to matrix form.
 	     -send TAKEOFF to ATTACK and GOTO.
 -!!Send to asteroids from ControlCenter().
@@ -116,9 +116,10 @@ AI:
 -!!Merge  ccdata to  player struct.
 -!! Review buy() and upgrade()
 -!A planet with to many ships, redistribute ships.
--!!Check IsRisk() for towers.
 -!!if asteroids are near a planet continous take off and return to planet for figthers.
 -!!check rules in ally planet. If is empty: conquer.
+-When an enemy ship is near a planet send only the necessary ships.
+-Add a different way to attack planets. 
 
 Comm:
 ====
@@ -135,7 +136,7 @@ Command shell:
 -Add help in menu.
 -!!ENEMIESKNOWN as game option.
 -!Save several games.
--?Dont change order if the recipient are the same. ie. ship 44 order
+-Ignore order GOTO if the recipient are the same. ie. ship 44 order
  goto 44 must not take effect.
 -Add select x y
 
@@ -180,7 +181,11 @@ X-(270511)Added ships in free space to planet list.
 X-(010611)Fix: count ships in free space in planet list. 
 X-(010611)Fix: select ships with mouse for different window geometries.
 X-(010611)Fix: pause when order write.
+X-(030611)!!Check Risk() for towers.
 X-(030611)!!dont takeoff until better state (save05) no danger, GOTO , TAKEOFF
+X-(0706011)!!Review GetInformation()
+X-(070611)Set limits to window geometry: (640,1680)x(312,1050)
+X-(100611)Improve EXPLORE.
 
 
 BUGS version 0.80
@@ -199,6 +204,7 @@ X-(270511)[114] if write a p the game is paused.
 X-(010611)- ID: 3308044. [32-64 bit] Client nickname is truncated to the last part. 
 X-(030611)!![107](200511) Towers always aim the enemy even if out of range.(save06)
 X-(030611)!![105](200511) Queen autopilot: still crash the ship while landing. (Improve ExecLand())
+X-(070611)[110](240511) Explorers dont STOP. save03 (Improved ExecStop())
 
 
 /********************************************************************************/

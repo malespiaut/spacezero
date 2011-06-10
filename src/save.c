@@ -138,7 +138,6 @@ char *CreateRecordFile(void){
   strcpy(file,"");
   strcat(file,getenv("HOME"));
   strcat(file,"/");
-  fprintf(stdout,"HOME: %s\n",file);
   strcat(file,SAVEDIR);
   strcat(file,RECORDFILE);
 

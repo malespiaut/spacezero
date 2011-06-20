@@ -350,8 +350,8 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   static char cad[128]="";
   static char ord[16]="";
   static char par[TEXTMENMAXLEN]="";
-  static char lastpar[16]="";
-  static char par0[16]="";
+  static char lastpar[TEXTMENMAXLEN]="";
+  static char par0[TEXTMENMAXLEN]="";
   static int level=0;
   static int order=0;
   static int nn=0;
@@ -436,6 +436,12 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
 
   if(level==0){
     key->g=key->s=key->p=key->t=key->r=key->b=key->w=key->e=FALSE;
+    //aqui 
+    strcpy(cad,"");
+    strcpy(ord,"");
+    strcpy(par,"");
+    strcpy(par0,"");
+    
     for(i=0;i<10;i++){
       key->number[i]=FALSE;
     }
@@ -530,11 +536,11 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
       strcpy(par,""); 
       Keystrokes(LOAD,par);
       strcpy(cad,"");
-      strcat(cad,ord);
+      strncat(cad,ord,128);
 
       DelCharFromCad(par,"1234567890,- fnFN");
 
-      strcat(cad,par);
+      strncat(cad,par,128);
       break;
     case BUY:
       strcpy(cad,"");
@@ -546,7 +552,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
       break;
     case UPGRADE:
       strcpy(cad,"");
-      sprintf(cad,"%s %s  %d %s",ord,par,
+      snprintf(cad,128,"%s %s  %d %s",ord,par,
 	      (int)(GetPrice(cv,0,0,0)),"   (Esc to cancel)");
       break;
     case EXPLORE:
@@ -554,11 +560,11 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     case TAKEOFF:
     case REPITE:
       strcpy(cad,"");
-      sprintf(cad,"%s %s",ord,par);
+      snprintf(cad,128,"%s %s",ord,par);
       break;
     case SELL:
       strcpy(cad,"");
-      sprintf(cad,"%s %s  %d %s",ord,par,
+      snprintf(cad,128,"%s %s  %d %s",ord,par,
 	      (int)(0.5*GetPrice(cv,0,0,0)),"   (Esc to cancel)");
       break;
     case WRITE:
@@ -566,8 +572,8 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
       Keystrokes(LOAD,par);
 
       strcpy(cad,"");
-      strcat(cad,ord);
-      strcat(cad,par);
+      strncat(cad,ord,128);
+      strncat(cad,par,128);
       break;
       
     default:

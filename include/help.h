@@ -39,13 +39,13 @@
 #define ARG_ip 9
 #define ARG_port 10
 #define ARG_name 11
-#define ARG_nosound 12
-#define ARG_nomusic 13
+#define ARG_sound 12
+#define ARG_music 13
 #define ARG_k 14
 #define ARG_cooperative 15
 #define ARG_compcooperative 16
 #define ARG_queen 17
-#define ARG_nopirates 18
+#define ARG_pirates 18
 #define ARG_font 19
 #define ARG_geom 20
 

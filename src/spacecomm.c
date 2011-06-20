@@ -53,7 +53,6 @@ SENDOBJUNMOD0
 #include "functions.h"
 
 #define SENDORDERS 1
-
 #define COMMDEBUG 0
 
 #if DEBUG
@@ -85,15 +84,10 @@ extern Object *cv;              /* coordenates center */
 
 extern char clientname[PLAYERNAMEMAXLEN];
 
-
 struct TextMessage textmen0;  /* send message here */
 struct TextMessage textmen1;  /* recv message here */
-
-
 struct Buffer buffer1,buffer2; /* buffers used in comm. */
-
 struct Global gclient;
-
 
 
 int OpenComm(int mode,struct Parametres par){
@@ -238,12 +232,12 @@ int OpenComm(int mode,struct Parametres par){
 
     break;
   case 1: /* client */
-    //  **** Resolving Hostname **********************
+    /*  **** Resolving Hostname **********************/
     if ((he = gethostbyname(par.IP)) == NULL){
         perror("gethostbyname");
         exit(-1);
     }
-    // ************************************************
+    /* ************************************************/
     printf("Connecting with server: %s:%d\n",par.IP,par.port);
 
     /* Apertura de un conector del tipo STREAM de la familia AF_INET */
@@ -336,7 +330,6 @@ int OpenComm(int mode,struct Parametres par){
     break;
   case 1: /* client */
 
-
     buf1=buffer1.data;
     buf2=buffer2.data;
     
@@ -377,13 +370,9 @@ int OpenComm(int mode,struct Parametres par){
   default:
     break;
   }
-
-
   sleep(1);
-
   return(0);
 }
-
 
 
 void *CommServer(struct Thread_arg *args){
@@ -3657,9 +3646,6 @@ int AddObjOrders2Buffer(struct Buffer *buffer,Object *obj){
   
   return(tbytes);
 }
-
-
-/* old functions*/
 
 
 

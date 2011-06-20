@@ -38,7 +38,7 @@
 /*  compile options: */
 #define SOUND 1  // compile with sound
 #define DEBUG 0
-#define TEST 1  // test stuff
+#define TEST 0  // test stuff
 /*  --compile options: */
 
 #define MODI(a) ((a) > 0 ? (a) : (-a))
@@ -50,14 +50,14 @@
 #define PLAYERNAMEMAXLEN 32
 /* window properties */
 #define DEFAULTWIDTH 1024//900//1024//800//1024//1152
-#define DEFAULTHEIGHT 500//600 //500 //550//700//768
+#define DEFAULTHEIGHT 550//600 //500 //550//700//768
 #define LXFACTOR 1024  /* normalization factor for surface planets */
-#define LYFACTOR 500   /* normalization factor for surface planets */
+#define LYFACTOR 550   /* normalization factor for surface planets */
 #define PANEL_HEIGHT 20
 
 #define CLOSEDUNIVERSE 0
 #define NUMSTARS 200
-#define GRAVITATION_RANGE2 4000000  /* maximo alcance de la gravedad */
+#define GRAVITATION_RANGE2 4000000  /* max. gravity reach */
 #define G .1 /* gravitation constant */
 #define DT .42
 #define RESOURCEFACTOR 1.2 /* velocity factor for getting resource from planets */
@@ -73,8 +73,8 @@
 #define NUMPLAYERS 2
 #define NUMGALAXIES 1
 #define NUMPLANETS 30 /* num. planets in galaxy */
-#define ULX 100000//200000L /* universe size */
-#define ULY 100000//200000L /* universe size */
+#define ULX 100000    /*  universe size */
+#define ULY 100000    /*  universe size */
 
 
 /* max and min option values */
@@ -83,9 +83,9 @@
 #define MAXNUMGALAXIES 10
 #define MINNUMGALAXIES 1
 #define MAXNUMPLANETS 200 /* num. planets in galaxy */
-#define MINNUMPLANETS 2 /* num. planets in galaxy */
-#define MAXULX 1000000//200000L
-#define MINULX 10000//200000L
+#define MINNUMPLANETS 2   /* num. planets in galaxy */
+#define MAXULX 1000000 
+#define MINULX 10000   
 
 #define MAXNUMTEAMS MAXNUMPLAYERS
 

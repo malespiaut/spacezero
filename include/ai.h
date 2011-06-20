@@ -38,8 +38,8 @@
 #define CCDATANQUEEN 5
 
 #define MAXPRIORITY 1
-#define MACRO 2
-#define FIRST 3
+#define MAINORD 2
+#define FIRSTORD 3
 
 /* order ids */
 

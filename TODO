@@ -12,7 +12,7 @@ libopenal_dev
 
 
 
-bugs:(last:115)
+bugs:(last:116)
 ====
 
 -[26] (010910) al pasar al modo manual siempre dispara. (posible disparo a EXPLOSION, objnext no eliminado)
@@ -37,7 +37,6 @@ bugs:(last:115)
 -[115]-geom 1000x-12 check all arguments...
 	    -geom -name hola
 -[]why dont explore (save08)(the last ship, no unknown planets)
-
 
 Version 0.6: (since 0707)
 ============
@@ -77,7 +76,7 @@ Version 0.8 (since 10May2011)
 -send drawmissile in DrawObjs() to DrawShip()
 -!!not enought money
 -include CELLON code 
-
+-Review Experience(). save09. training high levels.
 
 mouse:
 =====
@@ -205,6 +204,7 @@ X-(010611)- ID: 3308044. [32-64 bit] Client nickname is truncated to the last pa
 X-(030611)!![107](200511) Towers always aim the enemy even if out of range.(save06)
 X-(030611)!![105](200511) Queen autopilot: still crash the ship while landing. (Improve ExecLand())
 X-(070611)[110](240511) Explorers dont STOP. save03 (Improved ExecStop())
+X-(170611)[116][regression] autopilot fighters now leave the planet - ID: 3317317 (in low mass planets)(save10)
 
 
 /********************************************************************************/

@@ -43,7 +43,8 @@
 extern struct Player *players;
 extern int g_memused;
 extern struct HeadObjList listheadnearobjs;   /* list of near enemies objects of actual player */
-
+extern int gstarted;
+int gdrawmenu=1;
 #if DEBUG
 int debugoptions=1;
 #endif
@@ -93,12 +94,11 @@ GdkGC *penSoftRed=NULL;
 Point mouse_pos;
 struct Keys keys;
 
-
-
+GtkWidget *d_a;
 
 GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres param){
 
-  GtkWidget *d_a;
+
 
   GtkWidget *vbox;
   GtkWidget *menubar;
@@ -118,6 +118,8 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   char label[164];
 
   GtkTooltips *tooltips;
+  GdkGeometry geometry;
+
 
   win_main=gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(win_main),title);
@@ -125,7 +127,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
 #ifndef GTK12  
   gtk_window_set_resizable(GTK_WINDOW(win_main),FALSE);
 #endif
-
+  gtk_window_set_resizable(GTK_WINDOW(win_main),TRUE);
 
   /* fullscreen */
   /* gtk_widget_realize (win_main);   */
@@ -136,8 +138,33 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   vbox=gtk_vbox_new(FALSE,0);
 
   d_a=gtk_drawing_area_new();
-  gtk_drawing_area_size(GTK_DRAWING_AREA(d_a),w,h);
+
+  gtk_drawing_area_size(GTK_DRAWING_AREA(d_a),w,h);  
+  //  gtk_container_add (GTK_CONTAINER (win_main), d_a);
+
+
+  geometry.min_width=480;
+  geometry.min_height=300;
+
+  geometry.max_width=1680;
+  geometry.max_height=1050;
+  geometry.base_width=1;
+  geometry.base_height=1;
+  geometry.width_inc=1;
+  geometry.height_inc=1;
+  geometry.min_aspect=1.3;
+  geometry.max_aspect=2.0;
+
   
+  gtk_window_set_geometry_hints (GTK_WINDOW (win_main),
+ 				 GTK_WIDGET (d_a), 
+				 &geometry,
+				 GDK_HINT_MAX_SIZE |
+				 GDK_HINT_MIN_SIZE |
+ 				 GDK_HINT_ASPECT| 
+				 GDK_HINT_RESIZE_INC);
+
+
   menubar=gtk_menu_bar_new();
 
   /* events we need to detect */
@@ -366,6 +393,8 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   
   gtk_signal_connect(GTK_OBJECT(d_a),"expose_event",
 		     GTK_SIGNAL_FUNC(expose_event),NULL);
+/*    gtk_signal_connect(GTK_OBJECT(d_a),"size_request",    */
+/*      		     GTK_SIGNAL_FUNC(SizeRequest),NULL);    */
   gtk_signal_connect(GTK_OBJECT(d_a),"configure_event",
 		     GTK_SIGNAL_FUNC(configure_event),NULL);
   
@@ -406,6 +435,12 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_widget_show(hbox3);
   gtk_widget_show(hbox4);
   gtk_widget_show(vbox3);
+
+
+  gtk_window_resize(GTK_WINDOW(win_main),w,h);    
+
+
+
 
   /* tooltips */
   tooltips = gtk_tooltips_new ();
@@ -467,315 +502,13 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   }
   GameParametres(SET,GHEIGHT,GameParametres(GET,GHEIGHT,0)-GameParametres(GET,GPANEL,0));
 
+
   /********* --fonts **********/
 
 
 
   return(d_a);
 }
-
-
-
-GtkWidget *InitMenuGraphics(char *title,char *optfile,int w,int h){
-
-  GtkWidget *d_a;
-
-  GtkWidget *vbox;
-  GtkWidget *menubar;
-  GtkWidget *menuitemoptions;
-
-  GtkWidget *vbox2;
-  GtkWidget *vbox3;
-  GtkWidget *hbox1;
-  GtkWidget *hbox2;
-  GtkWidget *hbox3;
-  GtkWidget *hbox4;
-
-
-  char label[164];
-
-  GtkTooltips *tooltips;
-
-  win_mainmenu=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_title(GTK_WINDOW(win_mainmenu),title);
-
-#ifndef GTK12  
-  gtk_window_set_resizable(GTK_WINDOW(win_mainmenu),FALSE);
-#endif
-
-
-  vbox=gtk_vbox_new(FALSE,0);
-
-  d_a=gtk_drawing_area_new();
-  gtk_drawing_area_size(GTK_DRAWING_AREA(d_a),w,h);
-  
-  menubar=gtk_menu_bar_new();
-
-  /* events we need to detect */
-  gtk_widget_set_events(win_mainmenu,GDK_EXPOSURE_MASK
-			|GDK_LEAVE_NOTIFY_MASK
-			|GDK_KEY_PRESS_MASK
-			|GDK_KEY_RELEASE_MASK);
-  /*			|GDK_POINTER_MOTION_MASK */
-  /*			|GDK_BUTTON_PRESS_MASK */
-  /*			|GDK_BUTTON_RELEASE_MASK */
-  /*  			|GDK_POINTER_MOTION_HINT_MASK); */
-
-  gtk_widget_set_events(d_a,GDK_EXPOSURE_MASK
-			|GDK_LEAVE_NOTIFY_MASK
-			|GDK_KEY_PRESS_MASK
-			|GDK_KEY_RELEASE_MASK
-			|GDK_POINTER_MOTION_MASK
-			|GDK_BUTTON_PRESS_MASK
-			|GDK_BUTTON_RELEASE_MASK
-			|GDK_POINTER_MOTION_HINT_MASK);
-
-
-  
-
-
-  /* options menu */
-
-  winoptions=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_title(GTK_WINDOW(winoptions),"Options");
-  gtk_window_set_position(GTK_WINDOW(winoptions),GTK_WIN_POS_MOUSE);
-#ifndef GTK12  
-  gtk_window_set_deletable(GTK_WINDOW(winoptions),FALSE);
-#endif
-  menuitemoptions=gtk_menu_item_new_with_label("Options");
-  gtk_signal_connect(GTK_OBJECT (menuitemoptions),"activate",
-		     GTK_SIGNAL_FUNC(ShowWindowOptions),optfile);
-  gtk_signal_connect(GTK_OBJECT (winoptions),"destroy",
-		     GTK_SIGNAL_FUNC(QuitWindowOptions),"quit window");
-  gtk_signal_connect(GTK_OBJECT (winoptions),"delete_event",
-		     GTK_SIGNAL_FUNC(QuitWindowOptions),"quit window");
- 
-  gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemoptions);
-
-
-
-  vbox2=gtk_vbox_new(FALSE,10);
-  hbox1=gtk_hbox_new(FALSE,10);
-  hbox2=gtk_hbox_new(FALSE,10);
-  hbox3=gtk_hbox_new(FALSE,10);
-  hbox4=gtk_hbox_new(FALSE,10);
-  vbox3=gtk_vbox_new(FALSE,10);
- 
-  gtk_container_add(GTK_CONTAINER(winoptions),vbox2);
-  gtk_container_add(GTK_CONTAINER(winabout),vbox3);
-
-
-  snprintf(label,128," num. of planets: (%d,%d)",MINNUMPLANETS,MAXNUMPLANETS);
-  options4=gtk_label_new(label);
-  gtk_widget_show(options4);
-
-  options1=gtk_check_button_new_with_label("Known Universe");
-  gtk_widget_show(options1);
-  gtk_signal_connect(GTK_OBJECT (options1),"toggled",
- 		     GTK_SIGNAL_FUNC(PrintMessage),"option1"); 
-
-
-  options2=gtk_check_button_new_with_label("Music OFF");
-  gtk_widget_show(options2);
-  gtk_signal_connect(GTK_OBJECT (options2),"toggled",
- 		     GTK_SIGNAL_FUNC(PrintMessage),"option2"); 
-
-  options3=gtk_check_button_new_with_label("Sound OFF");
-  gtk_widget_show(options3);
-  gtk_signal_connect(GTK_OBJECT (options3),"toggled",
- 		     GTK_SIGNAL_FUNC(PrintMessage),"option3"); 
-  
-  snprintf(label,128," num. of planets: (%d,%d)",MINNUMPLANETS,MAXNUMPLANETS);
-  options4=gtk_label_new(label);
-  gtk_widget_show(options4);
-  options5=gtk_entry_new();
-  gtk_entry_set_text(GTK_ENTRY(options5),"20");
-#ifndef GTK12  
-  gtk_entry_set_width_chars(GTK_ENTRY(options5),4);
-#endif  
-  gtk_widget_show(options5);
-
-  snprintf(label,128," num. of players: (%d,%d)",MINNUMPLAYERS,MAXNUMPLAYERS);
-  options6=gtk_label_new(label);
-  gtk_widget_show(options6);
-  options7=gtk_entry_new();
-#ifndef GTK12  
-  gtk_entry_set_width_chars(GTK_ENTRY(options7),4);
-#endif 
-  gtk_entry_set_text(GTK_ENTRY(options7),"2");
-  gtk_widget_show(options7);
-
-
-  snprintf(label,128," Universe Size: (%d,%d)",MINULX,MAXULX);
-  options8=gtk_label_new(label);
-  gtk_widget_show(options8);
-  options9=gtk_entry_new();
-#ifndef GTK12  
-    gtk_entry_set_width_chars(GTK_ENTRY(options9),8);
-#endif
-  gtk_entry_set_text(GTK_ENTRY(options9),"100000");
-  gtk_widget_show(options9);
-
-
-  options10=gtk_button_new_with_label(" Set Default");
-  gtk_widget_show(options10);
-  gtk_signal_connect(GTK_OBJECT (options10),"clicked",
-		     GTK_SIGNAL_FUNC(SetDefaultOptions),"set default");
-
-  options11=gtk_button_new_with_label(" Save and Close");
-  gtk_widget_show(options11);
-  gtk_signal_connect(GTK_OBJECT (options11),"clicked",
-		     GTK_SIGNAL_FUNC(SaveOptions),optfile);
-
-  options12=gtk_button_new_with_label(" Close Window");
-  gtk_widget_show(options12);
-  gtk_signal_connect(GTK_OBJECT (options12),"clicked",
-		     GTK_SIGNAL_FUNC(QuitWindowOptions),"quit window");
-
-
-  snprintf(label,128," Changes will take effect after rerun spacezero.\n (sound and music when save)");
-  options13=gtk_label_new(label);
-  gtk_widget_show(options13);
-
-
-  options14=gtk_check_button_new_with_label("Cooperative mode");
-  gtk_widget_show(options14);
-  gtk_signal_connect(GTK_OBJECT (options14),"toggled",
- 		     GTK_SIGNAL_FUNC(PrintMessage),"option14"); 
-
-  options15=gtk_check_button_new_with_label("Computer cooperative mode");
-  gtk_widget_show(options15);
-  gtk_signal_connect(GTK_OBJECT (options15),"toggled",
- 		     GTK_SIGNAL_FUNC(PrintMessage),"option15"); 
-
-  options16=gtk_check_button_new_with_label("Queen mode");
-  gtk_widget_show(options16);
-  gtk_signal_connect(GTK_OBJECT (options16),"toggled",
- 		     GTK_SIGNAL_FUNC(PrintMessage),"option16"); 
-
-
-
-  snprintf(label,150,"\t SpaceZero 0.80.00\t\n\t May 2011\t\n\n\n  Copyrigth mrevenga.  \n  <mrevenga@users.sourforge.net>  \n  homepage:  http://spacezero.sourceforge.net/   ");
-
-
-  gtk_box_pack_start(GTK_BOX(vbox2),options13,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(vbox2),options1,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(vbox2),options2,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(vbox2),options3,FALSE,FALSE,0);
-
-  gtk_box_pack_start(GTK_BOX(vbox2),hbox1,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(vbox2),hbox2,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(vbox2),hbox3,FALSE,FALSE,0);
-/*   gtk_box_pack_start(GTK_BOX(vbox2),options14,FALSE,FALSE,0); */
-
-
-  gtk_box_pack_start(GTK_BOX(vbox2),options14,FALSE,FALSE,0);
-/*   gtk_box_pack_start(GTK_BOX(vbox2),options17,FALSE,FALSE,0); */
-  gtk_box_pack_start(GTK_BOX(vbox2),options15,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(vbox2),options16,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(vbox2),hbox4,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(hbox1),options4,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(hbox1),options5,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(hbox2),options6,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(hbox2),options7,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(hbox3),options8,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(hbox3),options9,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(hbox4),options11,FALSE,FALSE,0);/*save */
-  gtk_box_pack_start(GTK_BOX(hbox4),options10,FALSE,FALSE,0);/*load */
-  gtk_box_pack_start(GTK_BOX(hbox4),options12,FALSE,FALSE,0);/*quit options*/
-
-
-  /* -- options menu */
-
-
-
-  gtk_container_add(GTK_CONTAINER(win_mainmenu),vbox);
-  /*  gtk_box_pack_start(GTK_BOX(vbox),vbox2,FALSE,TRUE,0); */
-
-  gtk_signal_connect(GTK_OBJECT(win_mainmenu),"destroy",
-		     GTK_SIGNAL_FUNC(QuitGraphics),NULL);
-  
-  gtk_signal_connect(GTK_OBJECT(d_a),"expose_event",
-		     GTK_SIGNAL_FUNC(expose_event),NULL);
-  gtk_signal_connect(GTK_OBJECT(d_a),"configure_event",
-		     GTK_SIGNAL_FUNC(configure_event),NULL);
-  
-  gtk_signal_connect(GTK_OBJECT (win_mainmenu),"key_press_event",
-		     GTK_SIGNAL_FUNC(key_press),NULL);
-  
-  gtk_signal_connect(GTK_OBJECT (win_mainmenu),"key_release_event",
-		     GTK_SIGNAL_FUNC(key_release),NULL);
-  
-  gtk_signal_connect(GTK_OBJECT (win_mainmenu),"focus_in_event",
-		     GTK_SIGNAL_FUNC(GotFocus),NULL);
-  gtk_signal_connect(GTK_OBJECT (win_mainmenu),"focus_out_event",
-		     GTK_SIGNAL_FUNC(LostFocus),NULL);
-
-  /* mouse */
-  gtk_signal_connect(GTK_OBJECT (d_a),"motion_notify_event", 
- 		     GTK_SIGNAL_FUNC(motion_notify),NULL); 
-  gtk_signal_connect(GTK_OBJECT (d_a),"button_press_event",
-		     GTK_SIGNAL_FUNC(button_press),NULL);
-  gtk_signal_connect(GTK_OBJECT (d_a),"button_release_event",
-		     GTK_SIGNAL_FUNC(button_release),NULL);
-
-  gtk_box_pack_start(GTK_BOX(vbox),menubar,FALSE,TRUE,0);
-  gtk_box_pack_start(GTK_BOX(vbox),d_a,TRUE,TRUE,0);
-  
-  gtk_widget_show(menubar);
-  gtk_widget_show(menuitemoptions);
-  gtk_widget_show(d_a);
-  gtk_widget_show(win_mainmenu);
-  /*  gtk_widget_show(winoptions); */
-  gtk_widget_show(vbox);
-  gtk_widget_show(vbox2);
-  gtk_widget_show(hbox1);
-  gtk_widget_show(hbox2);
-  gtk_widget_show(hbox3);
-  gtk_widget_show(hbox4);
-  gtk_widget_show(vbox3);
-
-  /* tooltips */
-  tooltips = gtk_tooltips_new ();
-  gtk_tooltips_set_tip (tooltips, options1, "All The Universe is known by all players.", NULL);
-
-  tooltips = gtk_tooltips_new ();
-  gtk_tooltips_set_tip (tooltips, options14, "All human players belongs to the same team.", NULL);
-
-  tooltips = gtk_tooltips_new ();
-  gtk_tooltips_set_tip (tooltips, options15, "All computer players belongs to the same team.", NULL);
-
-  tooltips = gtk_tooltips_new ();
-  gtk_tooltips_set_tip (tooltips, options16, "If the Queen ship is destroyed, all player ships are destroyed. GAME OVER.", NULL);
-
-
-  /* --tooltips */
-
-
-  /* colors */
-  penRed= GetPen(NewColor(65535,0,0),pixmap);
-  penGreen= GetPen(NewColor(0,65535,0),pixmap);
-  penLightGreen= GetPen(NewColor(40000,65535,40000),pixmap);
-  penBlue= GetPen(NewColor(0,29325,65535),pixmap);
-  penYellow= GetPen(NewColor(65535,65535,0),pixmap);
-  penWhite= GetPen(NewColor(65535,65535,65535),pixmap);
-  penBlack= GetPen(NewColor(0,0,0),pixmap);
-  
-  /*255 165   0 */
-  penOrange= GetPen(NewColor(65535,42405,0),pixmap);
-  /*238 130 238 */
-  penViolet= GetPen(NewColor(61166,33410,61166),pixmap);
-  /*255 192 203 */
-  penPink= GetPen(NewColor(65535,49344,52171),pixmap);
-  penCyan= GetPen(NewColor(0,65535,65535),pixmap);
-  penSoftRed= GetPen(NewColor(20000,0,0),pixmap);
-  /* --colors */
-
-  return(d_a);
-}
-
-
-
 
 gint QuitGraphics(GtkWidget *widget,gpointer gdata){
 
@@ -844,7 +577,7 @@ gint expose_event(GtkWidget *widget, GdkEventExpose *event){
 gint configure_event(GtkWidget *widget, GdkEventConfigure *event){
   /* The window has been resized */  
 
-
+  gdrawmenu=TRUE;
   if(pixmap){
     gdk_pixmap_unref(pixmap);
   }
@@ -852,6 +585,21 @@ gint configure_event(GtkWidget *widget, GdkEventConfigure *event){
 			widget->allocation.width,
 			widget->allocation.height,
 			-1);
+
+  GameParametres(SET,GHEIGHT,widget->allocation.height-PANEL_HEIGHT); 
+  GameParametres(SET,GWIDTH,widget->allocation.width); 
+  
+  return TRUE;
+}
+
+gint SizeRequest(GtkWidget *widget, GdkEventConfigure *event){
+  /* The window has been resized */  
+
+  /* gtk_widget_set_size_request (d_a,widget->allocation.width, */
+  /* 			       widget->allocation.height); */
+  printf("RESIZE d_a: %d %d  \n",widget->allocation.width,
+			       widget->allocation.height); 
+  //  gstarted=TRUE;
   return TRUE;
 }
 
@@ -914,7 +662,7 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
   //  g_print("%d, %s, %u\n",event->keyval,event->string,gdk_keyval_to_unicode(event->keyval));   
   //  g_print("%d, %s\n",event->keyval,event->string);   
   CountKey(1);
-
+  gdrawmenu=TRUE;
 /*   if(GameParametres(GET,GPAUSED,0)==TRUE){ */
 /*     switch (event->keyval){ */
 /*     case 112:  /\*p *\/ */
@@ -1173,7 +921,8 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
 
 
 void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data){
-  
+
+  gdrawmenu=TRUE;  
   switch (event->keyval){
   case 65360:
     keys.home=FALSE;
@@ -1705,7 +1454,7 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
 		    x+x_1,gheight-(y+y_1),
 		    x+x_2,gheight-(y+y_2));
     } 
-    /********** --fire *************/
+    /********** --engine flares *************/
     break;
 
   case SATELLITE:	
@@ -1843,11 +1592,17 @@ void DrawStars(GdkPixmap *pixmap,int mode,float rx,float ry){
   static int sw2=0;
   static int numstars;
   int rrelxw,rrelyh;
-  int gwidth,gheight;
+  static int gwidth=0,gheight=0;
 
 
-  gwidth=GameParametres(GET,GWIDTH,0);
-  gheight=GameParametres(GET,GHEIGHT,0);
+  if(gwidth!=GameParametres(GET,GWIDTH,0)){
+    gwidth=GameParametres(GET,GWIDTH,0);
+    sw=0;
+  }
+  if(gheight!=GameParametres(GET,GHEIGHT,0)){
+    gheight=GameParametres(GET,GHEIGHT,0);
+    sw=0;
+  }
 
   if(sw==0){
     unsigned int col;
@@ -2532,7 +2287,7 @@ int DrawPlayerInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct Player *p
   }
   y=y0;
 
-  texth=gdk_text_height(gfont,"Lp",2);
+  texth=gdk_text_height(font,"Lp",2);
 
   incy=texth;
 
@@ -2575,7 +2330,7 @@ int DrawPlanetInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *planet,i
   if(font==NULL)return(0);
 
   
-  texth=gdk_text_height(gfont,"Lp",2);
+  texth=gdk_text_height(font,"Lp",2);
 
   incy=texth;
 
@@ -2866,7 +2621,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   y+=incy;
 
   /* order */
-  ord=ReadOrder(NULL,obj,MACRO);
+  ord=ReadOrder(NULL,obj,MAINORD);
   if(ord!=NULL){
     /*    strcpy(tmpcad,""); */
     switch(ord->id){
@@ -3028,26 +2783,22 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *
 }
 
 
-int XPrintMenuList(GdkPixmap *pixmap,GdkFont *font,struct MenuList *head,int x0,int y0){
+int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,int y0){
   /* 
      print the text list head in pixmap at the position x0, y0.
   */
-  struct MenuList *lh;
+  struct MenuItem *item;
   int x,y,scroll; 
   GdkGC *gc;
   static int charw=12;
   static int charh=12;
-  static int sw=0;
   int incy;
-
+  char point[MAXMENULEN];
 
   if(font==NULL)return(0);
-
-  if(sw==0){
-    charh=gdk_text_height(font,"Lp",2);
-    charw=gdk_text_width(font,"O",1);
-    sw++;
-  }
+  if(head==NULL)return(0);
+  charh=gdk_text_height(font,"Lp",2);
+  charw=gdk_text_width(font,"O",1);
 
   incy=charh+2;
 
@@ -3057,15 +2808,20 @@ int XPrintMenuList(GdkPixmap *pixmap,GdkFont *font,struct MenuList *head,int x0,
   y=y0+incy;
   scroll=1;
 
+  DrawString(pixmap,font,gc,x,y-scroll*incy,head->title);
+  y+=2*incy;
 
-  lh=head->next;
-  while(lh!=NULL){
-    DrawString(pixmap,font,gc,x,y-scroll*incy,lh->item.text);
-    lh=lh->next;
+  item=head->firstitem;
+  while(item!=NULL){
+    //    printf("%d %d: \"%s\"\n",x,y-scroll*incy,item->text);
+    if(item->active)gc=penWhite;
+    else gc=penGreen;
+    sprintf(point,"%s %s",item->text,GetOptionValue(item->id));
+
+    DrawString(pixmap,font,gc,x,y-scroll*incy,point);
+    item=item->next;
     y+=incy;
   }
-  
-
   return(0);
 }
 
@@ -3109,20 +2865,6 @@ GdkFont *InitFonts(char *fname){
   char fontname[128];
   GdkFont *font=NULL;
 
-/*   int nfonts; */
-/*     char **fontsystemnames; */
-/*     int MAX_FONTS=30000; */
-/*     fontsystemnames=XListFonts(GDK_DISPLAY(),"*",MAX_FONTS,&nfonts);  */
-/*     if(nfonts==MAX_FONTS){  */
-/*       printf("demasiadas fuentes. No mostramos ninguna\n");  */
-/*       return(NULL);  */
-/*     }  */
-/*     printf("Numero de tipos de letra: %d\n",nfonts);  */
-/*     for(i=0;i<nfonts;i++){  */
-/*       printf("%s\n",fontsystemnames[i]);  */
-/*     }  */
-/*     XFreeFontNames(fontsystemnames);  */
-  
 
 /* command line font type */
 
@@ -3151,6 +2893,44 @@ GdkFont *InitFonts(char *fname){
 
   return(font);
 }
+
+GdkFont *InitFontsMenu(char *fname){
+  /*
+    Try to found an available font in the system
+
+   */
+  int i;
+  char fontname[128];
+  GdkFont *font=NULL;
+
+/* command line font type */
+
+  strncpy(fontname,fname,128);
+  font=gdk_font_load(fontname);
+
+  /* default font type */
+
+  if(font==NULL){
+    for(i=0;i<NUMFONTNAMES;i++){
+      strncpy(fontname,fontnames2[i],128);
+      font=gdk_font_load(fontname);
+      if(font!=NULL){
+	break;
+      }
+      else{
+	printf("font %s not found\n",fontname); 
+      }
+    }
+    if(font==NULL){
+      fprintf(stderr,"Error: no fonts found in your system\n");
+      exit(-1);
+    }
+  }
+  printf("Menu using font: %s\n",fontname);
+
+  return(font);
+}
+
 
 
 /* options window */
@@ -3716,7 +3496,7 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 	  strncpy(tmpcad,cad,TEXTMENMAXLEN);
 	  snprintf(cad,TEXTMENMAXLEN,"%s e:%d",tmpcad,(int)(100*obj->gas/obj->gas_max));
 	}
-	ord=ReadOrder(NULL,obj,MACRO);
+	ord=ReadOrder(NULL,obj,MAINORD);
 	if(ord!=NULL){
 	  strncpy(tmpcad,cad,TEXTMENMAXLEN);
 	  switch(ord->id){
@@ -4052,7 +3832,7 @@ void DrawString(GdkDrawable *pixmap,GdkFont *font,GdkGC *gc,gint x,gint y,const 
    */
   if(font==NULL)return;
 
-  gdk_draw_string(pixmap,gfont,gc,x,y,string);
+  gdk_draw_string(pixmap,font,gc,x,y,string);
 }
 
 
@@ -4065,8 +3845,8 @@ void DrawMessageBox(GtkWidget *d_area,GdkPixmap *pixmap,GdkFont *font,char *cad,
   int textw,texth;
 
   if(font!=NULL){
-    textw=gdk_text_width(gfont,cad,strlen(cad));
-    texth=gdk_text_height(gfont,cad,strlen(cad));
+    textw=gdk_text_width(font,cad,strlen(cad));
+    texth=gdk_text_height(font,cad,strlen(cad));
   }
   else{
     texth=12;
@@ -4104,7 +3884,7 @@ void DrawMessageBox(GtkWidget *d_area,GdkPixmap *pixmap,GdkFont *font,char *cad,
   }  
 
 
-  DrawString(pixmap,gfont,penGreen,update_rect.x+texth,update_rect.y+1.5*texth,cad);
+  DrawString(pixmap,font,penGreen,update_rect.x+texth,update_rect.y+1.5*texth,cad);
   gtk_widget_queue_draw_area(d_area,update_rect.x,update_rect.y,
 			     update_rect.width+1,update_rect.height+1);
   

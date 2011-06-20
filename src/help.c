@@ -76,12 +76,12 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 				{"p",ARG_p},{"t",ARG_t},{"l",ARG_l},
 				{"s",ARG_s},{"c",ARG_c},{"ip",ARG_ip},
 				{"port",ARG_port},{"name",ARG_name},
-				{"nosound",ARG_nosound},{"nomusic",ARG_nomusic},
+				{"nosound",ARG_sound},{"nomusic",ARG_music},
 				{"k",ARG_k},{"font",ARG_font},{"geom",ARG_geom},
 				{"cooperative",ARG_cooperative},
 				{"compcooperative",ARG_compcooperative},
 				{"queen",ARG_queen},
-				{"nopirates",ARG_nopirates},
+				{"nopirates",ARG_pirates},
 				{"",ARG_0}};
   int narg=0;
   FILE *fp;
@@ -435,12 +435,12 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 	  return(ARG_name);
 	}
 	break;
-      case ARG_nosound: /* nosound */
+      case ARG_sound: /* nosound */
 	par->sound=0;
 	par->music=0;
 	break;
 
-      case ARG_nomusic: /* nomusic */
+      case ARG_music: /* nomusic */
 	par->music=0;
 	break;
       case ARG_k: /*k: known planets */
@@ -481,7 +481,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       case ARG_queen: /* queen mode on */
 	par->queen=1;
 	break;
-      case ARG_nopirates:
+      case ARG_pirates:
 	par->pirates=FALSE;
 	break;
 

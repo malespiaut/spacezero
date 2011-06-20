@@ -32,6 +32,17 @@
 #include "help.h"
 #include "ai.h"
 #include "functions.h"
+#include "general.h" 
+#include "save.h"
+#include "shell.h" 
+#include "planetnames.h"
+#include "spacecomm.h" 
+#include "sound.h" 
+#include "graphics.h" 
+#include "sectors.h"
+
+
+//#include "menu.h"
 
 #define SIGNAL0 SIGRTMIN
 
@@ -52,7 +63,6 @@ int UpdateObjs(void);
 void UpdateShip(Object *);
 void key_eval(struct Keys *key);
 void Collision(struct HeadObjList *);
-gint TimerCreateObj(gpointer dat);
 
 float PlanetAtraction(float *fx,float *fy,float x,float y,float m);
 void CreateUniverse(int,int,struct HeadObjList *,char **);

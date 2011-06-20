@@ -32,20 +32,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
-#include "general.h"
 #include "spacezero.h"
-#include "objects.h"
-#include "ai.h"
-#include "save.h"
-#include "shell.h"
-#include "help.h"
-#include "planetnames.h"
-#include "spacecomm.h"
-#include "sound.h"
-#include "graphics.h"
-#include "functions.h"
-#include "menu.h"
-#include "sectors.h"
 
 #define TESTSAVE FALSE
 #define DEBUGFAST FALSE
@@ -80,6 +67,7 @@ extern GdkGC *penSoftRed;
 
 extern Point mouse_pos;
 
+extern int gdrawmenu;
 struct Player *players;
 struct CCDATA *ccdatap;
 int actual_player,actual_player0;
@@ -96,7 +84,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.12"};
+char version[64]={"0.81.14"};
 //char copyleft[]="Copyright XaY";
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
@@ -142,7 +130,7 @@ unsigned int contabilidad[15];
 /*  sound */
 int soundenabled=TRUE;
 /* -- sound */
-
+int gstarted=FALSE;
 
 int gordermode=FALSE; /* FALSE nav mode, TRUE order mode */ 
 
@@ -155,6 +143,7 @@ void segfault_handler(int);
 char *savefile;
 char *recordfile;
 
+struct MenuHead *menuhead;
 
 int main(int argc,char *argv[]){
   /*
@@ -163,10 +152,9 @@ int main(int argc,char *argv[]){
   */
 
   GtkWidget *drawing_area;
-  FILE *fprecord;
 
   char title[64]="";
-  int i,j;
+  int i;
   int state;
   struct sigaction sa;
   sigset_t wait_response; 
@@ -303,16 +291,23 @@ int main(int argc,char *argv[]){
   fprintf(stdout,"record file: %s\n",recordfile);
   fprintf(stdout,"options file: %s\n",optionsfile);
   
-
   SetGameParametres(param);
 
+  printf("W: %d H: %d \n",  GameParametres(GET,GWIDTH,0), 
+   			    GameParametres(GET,GHEIGHT,0)); 
   /********** Graphics initialization **********/
-
   gtk_init(&argc,&argv);
+
   MakeTitle(param,title);
-  drawing_area=InitGraphics(title,optionsfile,
-			    GameParametres(GET,GWIDTH,0),
-			    GameParametres(GET,GHEIGHT,0),param);
+  drawing_area=InitGraphics(title,optionsfile, 
+   			    GameParametres(GET,GWIDTH,0), 
+   			    GameParametres(GET,GHEIGHT,0),param); 
+
+  printf("W: %d H: %d \n",  GameParametres(GET,GWIDTH,0), 
+   			    GameParametres(GET,GHEIGHT,0)); 
+  printf("W: %d H: %d \n", drawing_area->allocation.width,   
+	   drawing_area->allocation.height);
+
 #if DEBUG
   if(debuginit){
     printf("W: %d H: %d \n", drawing_area->allocation.width,   
@@ -321,7 +316,17 @@ int main(int argc,char *argv[]){
 #endif
   SetDefaultKeyValues(&keys,1);
   
+  menuhead=CreateMenu();
+  printf("ALL menu **********\n");
+  PrintAllMenu(menuhead);
+  printf("--ALL menu **********\n");
+  menuhead->active=TRUE;
+  //  exit(-1);
   /********** --Graphics initialization *********/
+
+
+
+
 
 #if SOUND
   /********* sound initialization *********/ 
@@ -539,14 +544,7 @@ int main(int argc,char *argv[]){
 #endif    
 
   PrintGameOptions();
-  gtk_timeout_add((int)(DT*200),MenuLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
 
-#if DEBUGFAST
-  gtk_timeout_add((int)(DT*5),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
-#else
-  gtk_timeout_add((int)(DT*100),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
-#endif
-  
   /******** what stuff draw *********/
   gdraw.menu=TRUE;
   gdraw.map=FALSE;
@@ -556,13 +554,22 @@ int main(int argc,char *argv[]){
   gdraw.info=FALSE;
   gdraw.crash=FALSE;  
 
-#if TEST
   gdraw.menu=TRUE;
-#else
-  gdraw.menu=FALSE;
-#endif
 
+  /******** --what stuff draw *********/
+
+  gtk_timeout_add((int)(DT*100),MenuLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
+
+#if DEBUGFAST
+  gtk_timeout_add((int)(DT*5),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
+#else
+  gtk_timeout_add((int)(DT*100),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
+#endif
+  
   gtk_main();
+
+
+  /********* game resume **********/
 
   printf("\ntotal points: %d record: %d\n",players[1].points,record);
   printf("******************************************************\n");
@@ -570,42 +577,47 @@ int main(int argc,char *argv[]){
   printf("Please, send bugs and suggestions to: mrevenga at users dot sourceforge dot net\n");
   printf("Homepage:  http://spacezero.sourceforge.net/\n");
 
-
-  j=-1;
   SaveRecord(recordfile,players,record);
-  if(0){
-    for(i=0;i<GameParametres(GET,GNPLAYERS,0);i++){
-    if(players[i].points>=record){
-      j=i;
-      record=players[i].points;
-    }
-    }
-    if(j!=-1){
-      if((fprecord=fopen(recordfile,"wt"))==NULL){
-	fprintf(stdout,"No puede abrirse el archivo: %s", recordfile);
-	exit(-1);
-      }
-      fprintf(fprecord,"%d",record);
-      fclose(fprecord);
-    }
-  }
 
   return 0;
-} /*  main */
+} /*  --main */
+
 
 gint MenuLoop(gpointer data){
+  struct MenuHead *actualmenu;
   GdkRectangle update_rect;
   GtkWidget *drawing_area=(GtkWidget *) data;
   int x,y;
-  int gwidth,gheight;
+  int width,height;
   char point[128];
 
+  int status;
+  static int textw=14;
+  static GdkFont *font,*fontmenu;
+  static int swfont=0;
+
+
   if(gdraw.menu==FALSE)return(TRUE);
+
+  if(!gdrawmenu)return(TRUE);
+  gdrawmenu=0;
+
   key_eval(&keys);
 
-  gwidth=GameParametres(GET,GWIDTH,0);
-  gheight=GameParametres(GET,GHEIGHT,0);
+  width=GameParametres(GET,GWIDTH,0);
+  height=GameParametres(GET,GHEIGHT,0);
+/*   printf("menuloop0 W: %d H: %d \n",  GameParametres(GET,GWIDTH,0),  */
+/* 	 GameParametres(GET,GHEIGHT,0));  */
 
+  if(swfont==0){
+    font=InitFontsMenu("");
+    textw=gdk_text_width(font,"Main Menu",9);
+
+    swfont++;
+    //    gstarted=TRUE;
+  }
+  if(height<400)fontmenu=gfont;
+  else fontmenu=font;
 
   /* clear window */
 
@@ -619,66 +631,52 @@ gint MenuLoop(gpointer data){
   /* printf something */  
 
   DrawStars(pixmap,nav_mode,0,0);
-
-  x=gwidth/2;
-  y=gheight/5;
+  
+  x=width/2;
+  y=height/9;
   sprintf(point,"SpaceZero");
-  DrawMessageBox(drawing_area,pixmap,gfont,point,x,y,MBOXDEFAULT);
-
-  x=gwidth/2;
-  y=gheight*(.80);
-
-  if(GameParametres(GET,GNET,0)==TRUE){
-    if(param.server==TRUE){
-      sprintf(point,"PRESS ENTER TO START");
-    }
-    else{
-      sprintf(point,"WATING TO SERVER TO START");
-    }
-  }
-  else{
-    sprintf(point,"PRESS ENTER TO START");
-  }
-
-  DrawMessageBox(drawing_area,pixmap,gfont,point,x,y,MBOXDEFAULT);
-
-  if(0)  {
-    struct MenuList mlist;
-    struct MenuItem item;
-    int textw;
-
-    mlist.next=NULL;
+  DrawMessageBox(drawing_area,pixmap,font,point,x,y,MBOXDEFAULT);
 
 
-    item.type=MENUITEMTEXT;
-    strncpy(item.text,"Options",MAXMENULEN);
-    Add2MenuList(&mlist,&item);
+  menuhead->active=TRUE;
+  actualmenu=SelectMenu(menuhead);
+  status=UpdateMenu(menuhead,actualmenu,&keys);
 
-    item.type=MENUITEMTEXT;
-    strncpy(item.text,"Start",MAXMENULEN);
-    Add2MenuList(&mlist,&item);
+  x=width/8;//-textw;
+  y=(1.0/3)*height;
+  //  printf("actual menu %p  \"%s\"\n",actualmenu,actualmenu->title);
 
-    item.type=MENUITEMTEXT;
-    strncpy(item.text,"Quit",MAXMENULEN);
-    Add2MenuList(&mlist,&item);
-
-    textw=gdk_text_width(gfont,"Options",strlen("Options"));
-
-    XPrintMenuList(pixmap,gfont,&mlist,GameParametres(GET,GWIDTH,0)/2-textw-20,GameParametres(GET,GHEIGHT,0)/2);
-
-    //    PrintMenuList(&mlist);
-    fflush(NULL);
-    //    exit(0);
- }
+  XPrintMenuHead(pixmap,fontmenu,actualmenu,x,y);
 
   /* show window */
+
   update_rect.x=0;
   update_rect.y=0;
   update_rect.width=drawing_area->allocation.width;
   update_rect.height=drawing_area->allocation.height;
-  
   gtk_widget_draw(drawing_area,&update_rect); /*  deprecated */
+
   
+  switch(status){
+  case 0:
+    break;
+  case ITEM_start:
+    printf("MENUENTER\n");
+    gdraw.menu=FALSE;
+    break;
+  case ITEM_quit:
+    printf("MENUQUIT\n");
+    gdraw.menu=FALSE;
+    GameParametres(SET,GQUIT,2);
+    break;
+
+  case MENUESC:
+    break;
+  default:
+    break;
+  }
+
+
   return(TRUE);
 }
 
@@ -725,28 +723,16 @@ gint MainLoop(gpointer data){
   }
 
   /* firsttime */
-  if(0&&!sw){
-    GameParametres(SET,GWIDTH,850);
-    GameParametres(SET,GHEIGHT,450);
-    
-    gwidth=GameParametres(GET,GWIDTH,0);
-    gheight=GameParametres(GET,GHEIGHT,0);
-    
-    
-    gtk_window_resize(GTK_WINDOW(win_main),gwidth,gheight);
-    gtk_drawing_area_size(GTK_DRAWING_AREA(drawing_area),gwidth,gheight);
-    
+  if(!sw){
+    gstarted=TRUE;  
     sw++;
   }
-
-  
   
   ulx=GameParametres(GET,GULX,0);
   uly=GameParametres(GET,GULY,0);
 
   gwidth=GameParametres(GET,GWIDTH,0);
   gheight=GameParametres(GET,GHEIGHT,0);
-
 
   proc=GetProc();
 
@@ -805,7 +791,6 @@ gint MainLoop(gpointer data){
 	n=CountObjs(&listheadplayer,-1,SHIP,-1);
 	n*=10;
       }
-      
       if(n<=0){
 	gameover=TRUE;
 	observeenemies=TRUE;
@@ -1069,7 +1054,7 @@ gint MainLoop(gpointer data){
     struct Order *ord;
 
     if(cv!=NULL){
-      ord=ReadOrder(NULL,cv,MACRO);
+      ord=ReadOrder(NULL,cv,MAINORD);
       if(ord!=NULL){
 	printf("%d %d %d %d\n",
 	       ord->priority,ord->id,ord->time,ord->g_time);
@@ -1437,7 +1422,7 @@ void key_eval(struct Keys *key){
   char text[TEXTMENMAXLEN];
 #endif
 
-  if(key->enter==TRUE && gdraw.menu==TRUE){
+  if(0&&key->enter==TRUE && gdraw.menu==TRUE){
     gdraw.menu=FALSE;
     key->enter=FALSE;
   }
@@ -1844,7 +1829,7 @@ void UpdateShip(Object *obj){
   int time;
   int n;
 
-  int proc,gwidth;
+  int proc,width;
 
 
   proc=GetProc();
@@ -2067,23 +2052,21 @@ void UpdateShip(Object *obj){
 	obj->cdata->mlevel=mlevel;
       }
       if(obj->cdata->mlevel - obj->level > 2){
-	float factor=0.02;
-	Experience(obj,(obj->cdata->mlevel - obj->level)*factor);
+	Experience(obj,0.02*(obj->cdata->mlevel - obj->level));
       }
 
     }  /*if(obj->mode==LANDED) */
 
   }
   if(obj->habitat==H_PLANET){
-    gwidth=GameParametres(GET,GWIDTH,0);
-    gwidth=LXFACTOR;
-    if(obj->x<0)obj->x+=gwidth;
-    if(obj->x>gwidth)obj->x-=gwidth;
+    width=LXFACTOR;
+    if(obj->x<0)obj->x+=width;
+    if(obj->x>width)obj->x-=width;
 
     /* if(obj->y>GameParametres(GET,GHEIGHT,0)){  *//* its out of planet */
     if(obj->y>LYFACTOR){ /* its out of planet */
       if(proc==players[obj->player].proc){
-	a=obj->x*(2*PI)/gwidth-PI;
+	a=obj->x*(2*PI)/width-PI;
 	cosa=cos(a);
 	sina=sin(a);
 	obj->x=obj->in->planet->x+2*obj->in->planet->r*cosa;
@@ -2136,7 +2119,7 @@ void UpdateAsteroid(Object *obj){
   float a,factor;
   float g=1.2/250000;
   float U;
-  int proc,gwidth;
+  int proc,width;
 
 
   if(obj->type!=ASTEROID)return;
@@ -2206,14 +2189,14 @@ void UpdateAsteroid(Object *obj){
   obj->fy0=obj->fy;
 
   if(obj->habitat==H_PLANET){
-    gwidth=GameParametres(GET,GWIDTH,0);
+    width=LXFACTOR;
 
-    if(obj->x<0)obj->x+=gwidth;
-    if(obj->x>gwidth)obj->x-=gwidth;
+    if(obj->x<0)obj->x+=width;
+    if(obj->x>width)obj->x-=width;
 
-    if(0 && obj->y>GameParametres(GET,GHEIGHT,0)){ /* its out of planet */
+    if(0 && obj->y>LYFACTOR){ /* its out of planet */
       if(proc==players[obj->player].proc){
-	a=obj->x*(2*PI)/gwidth-PI;
+	a=obj->x*(2*PI)/width-PI;
 	cosa=cos(a);
 	sina=sin(a);
 	obj->x=obj->in->planet->x+2*obj->in->planet->r*cosa;
@@ -2273,14 +2256,12 @@ void Collision(struct HeadObjList *lh){
   float a,b;
   char text[TEXTMENMAXLEN];  
   int i,j;
-  int gwidth,gheight,gkplanets,gnet,gnplayers;
+  int gkplanets,gnet,gnplayers;
   int proc;
   int crashsw=0;
   static int cont=0;
 
 
-  gwidth=GameParametres(GET,GWIDTH,0);
-  gheight=GameParametres(GET,GHEIGHT,0);
   gkplanets=GameParametres(GET,GKPLANETS,0);
   gnet=GameParametres(GET,GNET,0);
   gnplayers=GameParametres(GET,GNPLAYERS,0);
@@ -3097,21 +3078,6 @@ int UpdateObjs(void){
   return (n);
 }
 
-gint TimerCreateObj(gpointer data){
-  /* not used */
-  Object *nobj;
-
-  nobj=NewObj(&listheadobjs,SHIP,SHIP1, 
-	 GameParametres(GET,GWIDTH,0)*Random(-1), 
-	 GameParametres(GET,GHEIGHT,0)*Random(-1), 
-	 0,0,
-	 /*level_vel*(2*VELMAX*(Random(-1))-VELMAX),  */
-	 /*level_vel*(2*VELMAX*(Random(-1))-VELMAX),  */
-	      CANNON0,ENGINE2,0,NULL,NULL);
-  Add2ObjList(&listheadobjs,nobj);
-  return 1000;
-}
-
 
 int CheckPlanetDistance(struct HeadObjList *lh,float x,float y){
   /*
@@ -3204,7 +3170,6 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
 	else{
 	  strncpy(obj->name,ptnames[0],OBJNAMESMAXLEN);
 	}
-	/* obj->mass=150000;//HEREPROD */
 	Add2ObjList(lheadobjs,obj);
 	np++;
       }
@@ -3576,7 +3541,6 @@ int CheckGame(char *cad){
     types[i]=0;
   }
 
-
   printf("%s",cad);
  
   ls=listheadobjs.next;
@@ -3586,7 +3550,6 @@ int CheckGame(char *cad){
     type=obj->type+1;
     if(type>19)type=19;
     types[type]++;
-
 
     if(proc==players[obj->player].proc){
       nord=obj->norder;
@@ -3795,7 +3758,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   int lsw;
   struct TextMessageList *lh;
   int time;
-  int gwidth,gwidth2,gheight;
+  int wwidth,wwidth2,wheight;
   int incy;
 
 
@@ -3804,9 +3767,9 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
     gcframe=penGreen;
     sw=1;
   }
-  gwidth=GameParametres(GET,GWIDTH,0);
-  gheight=GameParametres(GET,GHEIGHT,0);
-  gwidth2=gwidth/2;
+  wwidth=GameParametres(GET,GWIDTH,0);
+  wheight=GameParametres(GET,GHEIGHT,0);
+  wwidth2=wwidth/2;
 
   time=GetTime();
 
@@ -3823,7 +3786,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   }
   incy=charh;
   y=incy;
-  x=gwidth2-7*charw;
+  x=wwidth2-7*charw;
   sprintf(point,"record: %d",record);
   DrawString(pixmap,gfont,penGreen,x,y,point);
 
@@ -3869,7 +3832,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
     sprintf(tmpcad,"%d",s);
   }
   strcat(point,tmpcad);
-  x=gwidth2-7*charw;
+  x=wwidth2-7*charw;
   DrawString(pixmap,gfont,penGreen,x,y,point);
 
   
@@ -3879,7 +3842,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 
   if(keys.o==FALSE){ 
     gdraw.order=FALSE;
-    DrawString(pixmap,gfont,penRed,10,gheight+GameParametres(GET,GPANEL,0)/2+4, 
+    DrawString(pixmap,gfont,penRed,10,wheight+GameParametres(GET,GPANEL,0)/2+4, 
 	       "O: Introduce command"); 
   }
   //  printf("%d %d\n",PANEL_HEIGHT,GameParametres(GET,GPANEL,0));  
@@ -3927,17 +3890,16 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   objt=NearestObj(&listheadobjs,cv,SHIP,PENEMY,&d2);
   if(cv!=NULL && objt!=NULL){
     if(d2 < (cv->radar*cv->radar)){
-      DrawEnemyShipInfo(pixmap,gfont,penGreen,objt,gwidth,0);
+      DrawEnemyShipInfo(pixmap,gfont,penGreen,objt,wwidth,0);
     }
   }
-  
   
   /* text messages */
 
  /* net message */  
   if(PendingTextMessage()){
     GetTextMessage(point);
-    DrawString(pixmap,gfont,gcframe,gwidth2-incy*6,.25*gheight,point);
+    DrawString(pixmap,gfont,gcframe,wwidth2-incy*6,.25*wheight,point);
     //    printf("draw info(): message: %s\n",point);
   }
 
@@ -3951,7 +3913,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 		       penBlack,
 		       TRUE,   
 		       10,
-		       gheight-incy*swgmess-10,
+		       wheight-incy*swgmess-10,
 		       glen+15,
 		       incy*swgmess+10);
 
@@ -3959,7 +3921,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 		       penRed,
 		       FALSE,   
 		       10,
-		       gheight-incy*swgmess-10,
+		       wheight-incy*swgmess-10,
 		       glen+15,
 		       incy*swgmess+10);
   }
@@ -3981,7 +3943,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 	break;
       }
 
-      DrawString(pixmap,gfont,gcmessage,20,gheight-incy*swgmess+incy*i+5,point);
+      DrawString(pixmap,gfont,gcmessage,20,wheight-incy*swgmess+incy*i+5,point);
       textw=gdk_text_width(gfont,point,strlen(point));      
       if(textw>glen)glen=textw;
       //      printf("draw info2(): message: %s\n",point);
@@ -4406,8 +4368,6 @@ void CreateTeams(struct Player *players,struct Parametres param){
   /* pirate player*/
   i=GameParametres(GET,GNPLAYERS,0)+1;
   players[i].team=nteam;
-
-
 }
 
 void CreatePlayers(struct Player **p,struct CCDATA **cc){
@@ -4416,7 +4376,7 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
   struct CCDATA *ccdatap;
 
 #if DEBUG
-  printf("MAIN:\n nplayers: %d\n",GameParametres(GET,GNPLAYERS,0));
+  printf("MAINORD:\n nplayers: %d\n",GameParametres(GET,GNPLAYERS,0));
   printf("nproc: %d  proc: %d\n",GetNProc(),GetProc());
 #endif
 
@@ -4577,10 +4537,11 @@ void SaveRecord(char *file,struct Player *players,int record){
   }
   if(j!=-1){
     if((fp=fopen(file,"wt"))==NULL){
-      fprintf(stdout,"No puede abrirse el archivo: %s",file);
+      fprintf(stdout,"I cant open the file: %s",file);
       exit(-1);
     }
     fprintf(fp,"%d",record);
     fclose(fp);
   }
 }
+

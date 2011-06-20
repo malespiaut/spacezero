@@ -27,6 +27,7 @@
 #define _FUNCTIONS_ 
 
 #include "objects.h"
+#include "menu.h"
 
 
 #define GET 0
@@ -55,6 +56,5 @@ void SetTime(int t);
 void IncTime(void);
 
 void DelCharFromCad(char *cad,char *filter);
-
 
 #endif

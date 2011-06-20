@@ -1121,14 +1121,6 @@ int FprintfObj(FILE *fp,Object *obj){
 	  obj->weapon0.cont1,obj->weapon0.mass,
 	  obj->weapon0.n,obj->weapon0.max_n);
 
-  /* printf("WRITE OBJ:(%d %d %d) %d %d %d %d %d %d %d\n", */
-  /* 	 obj->player,obj->id,obj->pid, */
-  /* 	 obj->weapon0.type, */
-  /* 	 obj->weapon0.rate,obj->weapon0.nshots, */
-  /* 	 obj->weapon0.cont1,obj->weapon0.mass, */
-  /* 	 obj->weapon0.n,obj->weapon0.max_n); */
-
-
   fprintf(fp,"%d %d %d %d %d %d %d %f ",
 	  obj->weapon0.projectile.type,
 	  obj->weapon0.projectile.durable,obj->weapon0.projectile.life,
@@ -1280,12 +1272,6 @@ int FscanfObj(FILE *fp,Object *obj,struct Tabla *t){
     perror("fscanf");
     exit(-1);
   }
-  /* printf("READ OBJ:(%d %d %d) %d %d %d %d %d %d %d\n", */
-  /* 	 obj->player,obj->id,obj->pid, */
-  /* 	 obj->weapon0.type, */
-  /* 	 obj->weapon0.rate,obj->weapon0.nshots, */
-  /* 	 obj->weapon0.cont1,obj->weapon0.mass, */
-  /* 	 obj->weapon0.n,obj->weapon0.max_n); */
 
   if(fscanf(fp,"%d%d%d%d%d%d%d%f",
 	    &obj->weapon0.projectile.type,

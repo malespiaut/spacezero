@@ -50,8 +50,10 @@ struct Draw{
 
 GtkWidget *InitGraphics(char *title,char *optfile,int,int,struct Parametres param);
 GdkFont *InitFonts(char *fontname);
+GdkFont *InitFontsMenu(char *fname);
 gint QuitGraphics(GtkWidget *widget,gpointer gdata);
 gint configure_event(GtkWidget *widget, GdkEventConfigure *event);
+gint SizeRequest(GtkWidget *widget, GdkEventConfigure *event);
 gint expose_event(GtkWidget *widget, GdkEventExpose *event);
 gint GotFocus(GtkWidget *widget,gpointer data);
 gint LostFocus(GtkWidget *widget,gpointer data);
@@ -116,7 +118,6 @@ void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv);
 void Real2Window(Object *,int habitat,int rx,int ry,int *wx,int *wy);
 void Window2Real(Object *,int habitat,int wx,int wy,int *rx,int *ry);
 
-int XPrintMenuList(GdkPixmap *pixmap,GdkFont *font,struct MenuList *head,int x0,int y0);
-
+int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,int y0);
 
 #endif

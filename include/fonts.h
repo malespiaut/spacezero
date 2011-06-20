@@ -37,3 +37,16 @@ char *fontnames[NUMFONTNAMES] =
     "*times*",
     "*courier*"};
 
+//char *fontnames2[NUMFONTNAMES] =
+char *fontnames2[] =
+  { 
+    "12x24",
+    "rk24",
+    "lucidasans-18",
+    "9x15",
+    "lucidasans-12",
+    "-misc-fixed-medium-r-normal--15-120-100-100-c-90-iso8859-1",  
+    "*lucida*",
+    "*times*",
+    "*courier*"};
+

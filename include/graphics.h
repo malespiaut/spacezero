@@ -38,6 +38,7 @@ struct Stars{
 };
 
 struct Draw{
+  int main;
   int menu;
   int map;
   int shiplist;
@@ -63,10 +64,10 @@ gint motion_notify(GtkWidget *widget,GdkEventMotion *event);
 void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data);
 void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data);
 GtkWidget *CreateSubMenu(GtkWidget *menu,char *szName);
+gint ShowWindow(GtkWidget *widget,gpointer gdata);
+gint QuitWindow(GtkWidget *widget,gpointer gdata);
 gint ShowWindowOptions(GtkWidget *widget,gpointer gdata);
-gint QuitWindowOptions(GtkWidget *widget,gpointer gdata);
-gint ShowWindowAbout(GtkWidget *widget,gpointer gdata);
-gint QuitWindowAbout(GtkWidget *widget,gpointer gdata);
+
 gint SaveOptions(GtkWidget *widget,gpointer gdata);
 gint SetDefaultOptions(GtkWidget *widget,gpointer gdata);
 gint PrintMessage(GtkWidget *widget,gpointer gdata);

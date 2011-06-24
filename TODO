@@ -47,7 +47,6 @@ Version 0.7 (since 060910)
 Version 0.8 (since 10May2011)
 ===========
 
--!!Initial menu game options: sound volume, resolution, etc.
 -!!Rewrite NearestObjAll(), call less times.
 -!!Reordenar, jerarquizar codigo, ficheros.
 -!!Disminuir numero de variables extern (97),58,72,76 grep extern src/*.c include/*h |grep ";" |wc
@@ -77,6 +76,7 @@ Version 0.8 (since 10May2011)
 -!!not enought money
 -include CELLON code 
 -Review Experience(). save09. training high levels.
+-When select a planet, center map on it , if its known.
 
 mouse:
 =====
@@ -97,15 +97,13 @@ Ships:
 AI:    
 ===
 
--towers movement consumes too energy.
--!!New order: "do not takeoff" = ID: 3305066 (STOP when landed.)
 -Orbit in automatic mode(Take off).
 -When parent dies, send orders to object sons.
 -Aterrizado al pasar a automatico, no despegar y volver a aterrizar.
 -evasion maneuver.
 -Avoid enemy shots.
 -Las ordenes dependen de unos objetivos a cumplir.
--Add flee.
+-Add retreat.
 -!!Fast ship pursuing a slow one: improve ,adjust velocity.
 -ChooseOrder to matrix form.
 	     -send TAKEOFF to ATTACK and GOTO.
@@ -119,6 +117,9 @@ AI:
 -!!check rules in ally planet. If is empty: conquer.
 -When an enemy ship is near a planet send only the necessary ships.
 -Add a different way to attack planets. 
+-Attacks in planets: turn earlier.
+-!!Modified order STOP: in outer space STOP, dont accelerate but can
+ fire. Inner a planet dont take off but can fire
 
 Comm:
 ====
@@ -135,7 +136,7 @@ Command shell:
 -Add help in menu.
 -!!ENEMIESKNOWN as game option.
 -!Save several games.
--Ignore order GOTO if the recipient are the same. ie. ship 44 order
+-Ignore order GOTO himself. ie. ship 44 order
  goto 44 must not take effect.
 -Add select x y
 
@@ -185,6 +186,8 @@ X-(030611)!!dont takeoff until better state (save05) no danger, GOTO , TAKEOFF
 X-(0706011)!!Review GetInformation()
 X-(070611)Set limits to window geometry: (640,1680)x(312,1050)
 X-(100611)Improve EXPLORE.
+X-(200611)Added: on line help.
+X-(240611)Added: Start up game options menu.
 
 
 BUGS version 0.80

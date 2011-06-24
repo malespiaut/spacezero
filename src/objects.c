@@ -781,7 +781,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0){
 
   struct ObjList *ls,*freels;
   Object *ret;
-  char text[TEXTMENMAXLEN];
+  char text[MAXTEXTLEN];
   int sw=0;
   int swx=0;
   int gnet;
@@ -840,7 +840,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0){
 
 
       if(freels->obj->type==SHIP && freels->obj->player == actual_player){
-	snprintf(text,TEXTMENMAXLEN,"(%c %d) SHIP DESTROYED",Type(freels->obj),freels->obj->pid);
+	snprintf(text,MAXTEXTLEN,"(%c %d) SHIP DESTROYED",Type(freels->obj),freels->obj->pid);
 	Add2TextMessageList(&listheadtext,text,freels->obj->id,freels->obj->player,0,100,0);
       }
 
@@ -2073,7 +2073,7 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
   list->info.time=GetTime();
   list->info.print=0;
   list->info.duration=time;
-  strncpy(list->info.text,cad,TEXTMENMAXLEN);
+  strncpy(list->info.text,cad,MAXTEXTLEN);
 
   if(lh->next==NULL){ /* is the lastest */
     list->next=NULL;
@@ -2111,7 +2111,7 @@ int Add2TextList(struct TextList *listhead,char *cad,int color){
     fprintf(stderr,"ERROR in malloc Add2TextList()\n");
     exit(-1);
   }
-  strncpy(list->text,cad,TEXTMENMAXLEN);
+  strncpy(list->text,cad,MAXTEXTLEN);
   list->color=color;
   list->next=NULL; 
   lh->next=list;

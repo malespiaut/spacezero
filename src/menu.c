@@ -30,9 +30,10 @@
 
 
 extern int g_memused;
+extern struct Parametres param;
+
 
 struct MenuHead *MenuHeadNew(char *title){
-
   struct MenuHead *mh;
 
   mh=malloc(sizeof(struct MenuHead));
@@ -41,11 +42,11 @@ struct MenuHead *MenuHeadNew(char *title){
     exit(-1);
   }
   strcpy(mh->title,"");
-  strncat(mh->title,title,MAXMENULEN);
-  strncpy(&mh->title[MAXMENULEN-1],"\0",1);
+  strncat(mh->title,title,MAXTEXTLEN);
+  strncpy(&mh->title[MAXTEXTLEN-1],"\0",1);
   mh->n=0;
   mh->nactive=0;
-  mh->active=FALSE;
+  mh->active=ITEM_ST_FALSE;
   mh->firstitem=NULL;
   return(mh);
 }
@@ -83,7 +84,7 @@ int Add2MenuHead(struct MenuHead *mhead,struct MenuItem *item0,char *title){
   itemnew->type=item0->type;
   itemnew->active=item0->active;
   strcpy(itemnew->text,"");
-  strncpy(itemnew->text,title,MAXMENULEN-1);
+  strncpy(itemnew->text,title,MAXTEXTLEN-1);
   strcpy(itemnew->value,"");
   itemnew->next=NULL;
   itemnew->nexthead=item0->nexthead;
@@ -104,7 +105,6 @@ void PrintMenuHead(struct MenuHead *mh){
     printf("%s\n",item->text);
     item=item->next;
   }
-
   printf("printmenuhead end\n--------------\n");
 }
 
@@ -113,7 +113,7 @@ void PrintAllMenu(struct MenuHead *mh){
 
   struct MenuItem *item;
 
-  printf("--------------\nprintfmenuhead\n");
+  printf("--------------\nprintfallmenuhead\n");
   if(mh==NULL)return;
 
   item=mh->firstitem;
@@ -125,88 +125,112 @@ void PrintAllMenu(struct MenuHead *mh){
     }
     item=item->next;
   }
-
-  printf("printmenuhead end\n--------------\n");
+  printf("printallmenuhead end\n--------------\n");
 }
 
 
 char *GetOptionValue(int id){
-  static char point[MAXMENULEN];
-  /*
-    #define ITEM_0 0
-    #define ITEM_h 1
-    #define ITEM_g 2
-    #define ITEM_n 3
-    #define ITEM_p 4
-    #define ITEM_t 5
-    #define ITEM_l 6
-    #define ITEM_s 7
-    #define ITEM_c 8
-    #define ITEM_ip 9
-    #define ITEM_port 10
-    #define ITEM_name 11
-    #define ITEM_sound 12
-    #define ITEM_music 13
-    #define ITEM_k 14
-    #define ITEM_cooperative 15
-    #define ITEM_compcooperative 16
-    #define ITEM_queen 17
-    #define ITEM_pirates 18
-    #define ITEM_font 19
-    #define ITEM_geom 20
-    #define ITEM_start 21
-    #define ITEM_quit 22 
-  */
 
+
+  static char point[MAXTEXTLEN];
   strcpy(point,"");
   switch(id){
   case ITEM_sound:
-    if(GameParametres(GET,GSOUND,0)==TRUE)
+    if(param.sound==TRUE)
       sprintf(point,"YES");
     else
       sprintf(point,"NO");
     break;
-
   case ITEM_music:
-    if(GameParametres(GET,GMUSIC,0)==TRUE)
+    if(param.music==TRUE)
       sprintf(point,"YES");
     else
       sprintf(point,"NO");
     break;
   case ITEM_k:
-    if(GameParametres(GET,GKPLANETS,0)==TRUE)
+    if(param.kplanets==TRUE)
       sprintf(point,"YES");
     else
       sprintf(point,"NO");
     break;
   case ITEM_cooperative:
-    if(GameParametres(GET,GCOOPERATIVE,0)==TRUE)
+    if(param.cooperative==TRUE)
       sprintf(point,"YES");
     else
       sprintf(point,"NO");
     break;
   case ITEM_compcooperative:
-    if(GameParametres(GET,GCOMPCOOPERATIVE,0)==TRUE)
+    if(param.compcooperative==TRUE)
       sprintf(point,"YES");
     else
       sprintf(point,"NO");
     break;
   case ITEM_queen:
-    if(GameParametres(GET,GQUEEN,0)==TRUE)
+    if(param.queen==TRUE)
       sprintf(point,"YES");
     else
       sprintf(point,"NO");
     break;
   case ITEM_pirates:
-    if(GameParametres(GET,GPIRATES,0)==TRUE)
+    if(param.pirates==TRUE)
       sprintf(point,"YES");
     else
       sprintf(point,"NO");
     break;
+  case ITEM_ip:
+    /* printf("IP:%s\n",param.IP); */
+    sprintf(point,"%s",param.IP);
+    break;
+  case ITEM_port:
+    /* printf("port:%d\n",param.port); */
+    sprintf(point,"%d",param.port);
+    break;
+  case ITEM_name:
+    sprintf(point,"%s",param.playername);
+    break;
+  case ITEM_p:
+    sprintf(point,"%d",param.nplayers);
+    break;
+  case ITEM_n:
+    sprintf(point,"%d",param.nplanets);
+    break;
+  case ITEM_g:
+    sprintf(point,"%d",param.ngalaxies);
+    break;
+  case ITEM_l:
+    sprintf(point,"%d",param.ul);
+    break;
+  case ITEM_geom:
+    sprintf(point,"%s",param.geom);
+    break;
+
+  case ITEM_start:
+  case ITEM_quit:
+  case ITEM_0:
+    break;
+
   default:
+    fprintf(stderr,"WARNING: GetOptionValue() id: %d unknown.\n",id);
     break;
   }
   return(point);
+}
+
+
+char *GetTextEntry(struct MenuItem *item,char *text){
+
+  char textentry[MAXTEXTLEN];
+  static int id =0;
+  if(id!=item->id){
+    printf("reset ks %d %d \n",item->id,id);
+    Keystrokes(RESET,NULL);
+  }
+  id=item->id;
+  //  strcpy(par,"");
+  Keystrokes(LOAD,textentry);
+  strcpy(text,"");
+  strcpy(text,textentry);
+  return(text);
 }
 
 struct MenuHead *CreateMenu(void){
@@ -232,23 +256,21 @@ struct MenuHead *CreateMenu(void){
 
   item.id=0;
   item.type=MENUITEMTEXT;
-  item.active=0;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=moptions;   /* linking with options menu */
-#if TEST
   Add2MenuHead(mhead,&item,"OPTIONS");
-#endif
 
   item.id=ITEM_start;
-  item.type=MENUITEMTEXT;
-  item.active=1;
+  item.type=MENUITEMACTION;
+  item.active=ITEM_ST_SHOW;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mhead,&item,"START GAME");
 
   item.id=ITEM_quit;
-  item.type=MENUITEMTEXT;
-  item.active=0;
+  item.type=MENUITEMACTION;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mhead,&item,"QUIT GAME");
@@ -258,7 +280,7 @@ struct MenuHead *CreateMenu(void){
 
   item.id=0;
   item.type=MENUITEMTEXT;
-  item.active=FALSE;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=mgeneraloptions;/* link with general options menu */
   Add2MenuHead(moptions,&item,"General Options");
@@ -267,8 +289,8 @@ struct MenuHead *CreateMenu(void){
   item.id=0;
   item.type=MENUITEMTEXT;
   strcpy(item.text,"");
-  strncat(item.text,"Game Options",MAXMENULEN);
-  item.active=FALSE;
+  strncat(item.text,"Game Options",MAXTEXTLEN);
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=mgameoptions;/* link with game options menu */
   Add2MenuHead(moptions,&item,"Game Options");
@@ -276,37 +298,44 @@ struct MenuHead *CreateMenu(void){
 
   item.id=0;
   item.type=MENUITEMTEXT;
-  item.active=FALSE;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=mmultiplayeroptions;/* link with multiplayer options menu */;
   Add2MenuHead(moptions,&item,"Multiplayer Options");
 
+  item.id=ITEM_default;
+  item.type=MENUITEMACTION;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=NULL;
+  Add2MenuHead(moptions,&item,"Load Default Options");
+
   /***** menu general options *********/
 
   item.id=ITEM_name;
-  item.type=MENUITEMTEXT;
-  item.active=FALSE;
+  item.type=MENUITEMTEXTENTRY;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgeneraloptions,&item,"Name");
+  Add2MenuHead(mgeneraloptions,&item,"Name:");
 
   item.id=ITEM_sound;
   item.type=MENUITEMBOOL;
-  item.active=FALSE;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgeneraloptions,&item,"Sound");
 
   item.id=ITEM_music;
   item.type=MENUITEMBOOL;
-  item.active=FALSE;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgeneraloptions,&item,"Music");
 
-  item.id=0;
-  item.type=MENUITEMTEXT;
-  item.active=FALSE;
+  item.id=ITEM_geom;
+  item.type=MENUITEMTEXTENTRY;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgeneraloptions,&item,"Window geometry: ");
@@ -314,93 +343,100 @@ struct MenuHead *CreateMenu(void){
 
   /****** menu game options ******/
 
-  item.id=0;
-  item.type=MENUITEMTEXT;
-  item.active=FALSE;
+  item.id=ITEM_p;
+  item.type=MENUITEMTEXTENTRY;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=NULL;
+  Add2MenuHead(mgameoptions,&item,"Number of players: ");
+
+  item.id=ITEM_n;
+  item.type=MENUITEMTEXTENTRY;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgameoptions,&item,"Number of planets: ");
 
-  item.id=0;
-  item.type=MENUITEMTEXT;
-  item.active=FALSE;
+  item.id=ITEM_g;
+  item.type=MENUITEMTEXTENTRY;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgameoptions,&item,"Number of galaxies: ");
 
-  item.id=0;
-  item.type=MENUITEMTEXT;
-  item.active=FALSE;
+  item.id=ITEM_l;
+  item.type=MENUITEMTEXTENTRY;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgameoptions,&item,"Size of Universe: ");
 
   item.id=ITEM_k;
   item.type=MENUITEMBOOL;
-  item.active=FALSE;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgameoptions,&item,"Planets are known: ");
 
   item.id=ITEM_pirates;
   item.type=MENUITEMBOOL;
-  item.active=FALSE;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgameoptions,&item,"Pirates: ");
 
   item.id=ITEM_cooperative;
   item.type=MENUITEMBOOL;
-  item.active=FALSE;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgameoptions,&item,"Cooperative mode: ");
 
   item.id=ITEM_compcooperative;
   item.type=MENUITEMBOOL;
-  item.active=FALSE;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgameoptions,&item,"Computer cooperative mode: ");
 
   item.id=ITEM_queen;
   item.type=MENUITEMBOOL;
-  item.active=FALSE;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgameoptions,&item,"Queen mode: ");
 
   /***** multiplayer menu options *****/
-  item.id=0;
-  item.type=MENUITEMTEXT;
-  item.active=FALSE;
+  item.id=ITEM_ip;
+  item.type=MENUITEMTEXTENTRY;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mmultiplayeroptions,&item,"IP address:");
 
-  item.id=0;
-  item.type=MENUITEMTEXT;
-  item.active=FALSE;
+  item.id=ITEM_port;
+  item.type=MENUITEMTEXTENTRY;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mmultiplayeroptions,&item,"port:");
 
-  item.id=0;
-  item.type=MENUITEMTEXT;
-  item.active=FALSE;
+  item.id=ITEM_server;
+  item.type=MENUITEMACTION;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mmultiplayeroptions,&item,"Start Server.");
 
-  item.id=0;
-  item.type=MENUITEMTEXT;
-  item.active=FALSE;
+  item.id=ITEM_client;
+  item.type=MENUITEMACTION;
+  item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mmultiplayeroptions,&item,"Connect to Server.");
 
 
-  PrintMenuHead(moptions);
+  /*  PrintMenuHead(moptions); */
   return(mhead);
 }
 
@@ -433,6 +469,11 @@ int UpdateMenu(struct MenuHead *mhead,struct MenuHead *mactual,struct Keys *keys
     return(MENUESC);
   }
 
+  if(keys->back){
+    Keystrokes(DELETELAST,NULL);
+    keys->back=FALSE;
+
+  }
   return(ret);
 }
 
@@ -445,12 +486,12 @@ void MenuDown(struct MenuHead *mhead){
   item=mhead->firstitem;
   while(item!=NULL){
     if(sw){
-      item->active=TRUE;
+      item->active=ITEM_ST_SHOW;
       return;
     }
     if(item->active){
       if(item->next!=NULL){
-	item->active=FALSE;
+	item->active=ITEM_ST_FALSE;
 	sw++;
       }
     }
@@ -469,8 +510,8 @@ void MenuUp(struct MenuHead *mhead){
   last=item;
   while(item!=NULL){
     if(item->active){
-      item->active=FALSE;
-      last->active=TRUE;
+      item->active=ITEM_ST_FALSE;
+      last->active=ITEM_ST_SHOW;
 
     }
     last=item;
@@ -482,53 +523,67 @@ void MenuUp(struct MenuHead *mhead){
 int MenuEnter(struct MenuHead *mhead){
   struct MenuItem *item;
   int sw=0;
+  char text[MAXTEXTLEN];
 
   /* printf("menuenter %s\n",mhead->title); */
 
   item=mhead->firstitem;
   while(item!=NULL){
     if(sw){
-      item->active=TRUE;
+      item->active=ITEM_ST_SHOW;
       return(0);
     }
     if(item->active){
 
       if(item->nexthead!=NULL){
 	if(item->nexthead->firstitem!=NULL){
-	  item->nexthead->active=TRUE;
+	  item->nexthead->active=ITEM_ST_SHOW;
 	  MenuItemActive(item->nexthead,FALSE);
-	  item->nexthead->firstitem->active=TRUE;
+	  item->nexthead->firstitem->active=ITEM_ST_SHOW;
 	}
       }
       else{
 	switch(item->type){
 	case MENUITEMBOOL:
-	  Funct01(item);
-	  /* printf("BOOL\n"); */
+	case MENUITEMTEXTENTRY:
+	case MENUITEMTEXT:
+	  strcpy(text,"");
+	  Keystrokes(LOAD,text);
+	  Funct01(item,text);
 	  break;
 	default:
 	  break;
 	}
       }
-      if(item->id==ITEM_start)return(ITEM_start);
-      if(item->id==ITEM_quit)return(ITEM_quit);
+      if(item->type==MENUITEMACTION){
+	if(item->id==ITEM_server){
+	  strcpy(item->text,"wating for player...");
+	}
+	return(item->id);
+      }
     }
     item=item->next;
   }
   return(0);
 }
 
+
 void MenuEsc(struct MenuHead *mhead){
   struct MenuItem *item;
-
+  int sw=0;
   /* printf("menuesc\n"); */
+  Keystrokes(RESET,NULL);	
 
   item=mhead->firstitem;
   while(item!=NULL){
-    item->active=FALSE;
+    if(item->active>=ITEM_ST_EDIT)sw=1;
+    if(item->active>ITEM_ST_SHOW)
+      item->active--;
+    
     item=item->next;
   }
-  mhead->active=FALSE;
+  if(sw==0)
+    mhead->active=FALSE;
   return;
 }
 
@@ -537,13 +592,11 @@ struct MenuHead *SelectMenu(struct MenuHead *mh){
 
   struct MenuItem *item;
   struct MenuHead *mhret;
-  
-
+ 
   mhret=mh;
-
   item=mh->firstitem;
   while (item != NULL){
-    if(item->active==TRUE){
+    if(item->active==ITEM_ST_SHOW){
       if(item->nexthead!=NULL){
 	if(item->nexthead->active){
 	  return(SelectMenu(item->nexthead));
@@ -571,59 +624,164 @@ void MenuItemActive(struct MenuHead *mhead,int value){
   return;
 }
 
-void Funct01(struct MenuItem *item){
-
+void Funct01(struct MenuItem *item,char *value){
+  /*
+    Applied the changes.
+   */
+  int tmparg;
 
   switch(item->type){
   case MENUITEMBOOL:
     switch(item->id){
     case ITEM_sound:
-      if(GameParametres(GET,GSOUND,0)==TRUE)
-	GameParametres(SET,GSOUND,FALSE);
-      else
-	GameParametres(SET,GSOUND,TRUE);
+      param.sound=param.sound==TRUE?FALSE:TRUE;
       break;
-      
     case ITEM_music:
-      if(GameParametres(GET,GMUSIC,0)==TRUE)
-	GameParametres(SET,GMUSIC,FALSE);
-      else
-	GameParametres(SET,GMUSIC,TRUE);
+      param.music=param.music==TRUE?FALSE:TRUE;
       break;
     case ITEM_k:
-      if(GameParametres(GET,GKPLANETS,0)==TRUE)
-	GameParametres(SET,GKPLANETS,FALSE);
-      else
-	GameParametres(SET,GKPLANETS,TRUE);
+      param.kplanets=param.kplanets==TRUE?FALSE:TRUE;
       break;
     case ITEM_cooperative:
-      if(GameParametres(GET,GCOOPERATIVE,0)==TRUE)
-	GameParametres(SET,GCOOPERATIVE,FALSE);
-      else
-	GameParametres(SET,GCOOPERATIVE,TRUE);
+      param.cooperative=param.cooperative==TRUE?FALSE:TRUE;
       break;
     case ITEM_compcooperative:
-      if(GameParametres(GET,GCOMPCOOPERATIVE,0)==TRUE)
-	GameParametres(SET,GCOMPCOOPERATIVE,FALSE);
-      else
-	GameParametres(SET,GCOMPCOOPERATIVE,TRUE);
+      param.compcooperative=param.compcooperative==TRUE?FALSE:TRUE;
       break;
     case ITEM_queen:
-      if(GameParametres(GET,GQUEEN,0)==TRUE)
-	GameParametres(SET,GQUEEN,FALSE);
-      else
-	GameParametres(SET,GQUEEN,TRUE);
+      param.queen=param.queen==TRUE?FALSE:TRUE;
       break;
     case ITEM_pirates:
-      if(GameParametres(GET,GPIRATES,0)==TRUE)
-	GameParametres(SET,GPIRATES,FALSE);
-      else
-	GameParametres(SET,GPIRATES,TRUE);
+      param.pirates=param.pirates==TRUE?FALSE:TRUE;
       break;
+
     default:
+      break;
+    }
+    break;
+
+  case MENUITEMTEXT:
+    break;
+  case MENUITEMTEXTENTRY:
+    item->active++;
+    if(item->active==ITEM_ST_EDIT)Keystrokes(RESET,NULL);
+
+    switch(item->id){
+    case ITEM_name:
+      if(item->active==ITEM_ST_UPDATE){
+	strncpy(param.playername,value,MAXTEXTLEN);
+	Keystrokes(RESET,NULL);
+	item->active=ITEM_ST_SHOW;
+      }
+      break;
+
+    case ITEM_geom:
+      if(item->active==ITEM_ST_UPDATE){
+	strncpy(param.geom,value,MAXTEXTLEN);
+	Keystrokes(RESET,NULL);
+	item->active=ITEM_ST_SHOW;
+      }
+      break;
+
+    case ITEM_p:
+      if(item->active==ITEM_ST_UPDATE){
+	tmparg=param.nplayers;
+	param.nplayers=atoi(value);
+	if(CheckArgs(param)){
+	  fprintf(stderr,"WARNING: Invalid value\n");
+	  param.nplayers=tmparg;
+	}
+	else{
+	  Keystrokes(RESET,NULL);
+	}
+	item->active=ITEM_ST_SHOW;
+      }
+      break;
+    case ITEM_n:
+      if(item->active==ITEM_ST_UPDATE){
+	tmparg=param.nplanets;
+	param.nplanets=atoi(value);
+	if(CheckArgs(param)){
+	  fprintf(stderr,"WARNING: Invalid value\n");
+	  param.nplanets=tmparg;
+	}
+	else{
+	  Keystrokes(RESET,NULL);
+	}
+	item->active=ITEM_ST_SHOW;
+      }
+      break;
+
+    case ITEM_g:
+      if(item->active==ITEM_ST_UPDATE){
+	tmparg=param.ngalaxies;
+	param.ngalaxies=atoi(value);
+	if(CheckArgs(param)){
+	  fprintf(stderr,"WARNING: Invalid value\n");
+	  param.ngalaxies=tmparg;
+	}
+	else{
+	  Keystrokes(RESET,NULL);
+	}
+	item->active=ITEM_ST_SHOW;
+      }
+      break;
+
+    case ITEM_l:
+      if(item->active==ITEM_ST_UPDATE){
+	tmparg=param.ul;
+	param.ul=atoi(value);
+	if(CheckArgs(param)){
+	  fprintf(stderr,"WARNING: Invalid value\n");
+	  param.ul=tmparg;
+	}
+	else{
+	  Keystrokes(RESET,NULL);
+	}
+	item->active=ITEM_ST_SHOW;
+      }
+      break;
+
+    case ITEM_ip:
+      if(item->active==ITEM_ST_UPDATE){
+	strncpy(param.IP,value,MAXTEXTLEN);
+	Keystrokes(RESET,NULL);
+	item->active=ITEM_ST_SHOW;
+      }
+      break;
+    
+    case ITEM_port:
+      if(item->active==ITEM_ST_UPDATE){
+	tmparg=param.port;
+	param.port=atoi(value);
+	if(CheckArgs(param)){
+	  fprintf(stderr,"WARNING: Invalid value\n");
+	  param.port=tmparg;
+	}
+	else{
+	  Keystrokes(RESET,NULL);
+	}
+	item->active=ITEM_ST_SHOW;
+      }
+      break;
+    
+    case ITEM_server:
+      printf("Starting server\n");
+      break;
+    
+    case ITEM_client:
+      printf("Starting client\n");
+      break;
+      
+    default:
+      printf("Funct01()id: %d not defined\n",item->id);
       break;
     }
 
     break;
+  default:
+    printf("Funct01()type: %d not defined\n",item->type);
+    break;
+    
   }
 }

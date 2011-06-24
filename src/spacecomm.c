@@ -82,7 +82,7 @@ extern struct Player *players;
 extern struct Keys keys;
 extern Object *cv;              /* coordenates center */
 
-extern char clientname[PLAYERNAMEMAXLEN];
+extern char clientname[MAXTEXTLEN];
 
 struct TextMessage textmen0;  /* send message here */
 struct TextMessage textmen1;  /* recv message here */
@@ -90,7 +90,7 @@ struct Buffer buffer1,buffer2; /* buffers used in comm. */
 struct Global gclient;
 
 
-int OpenComm(int mode,struct Parametres par){
+int OpenComm(int mode,struct Parametres par,struct Sockfd *sockfd){
   /*
     version 02 26May2011
     Initiates comm sockets
@@ -108,24 +108,9 @@ int OpenComm(int mode,struct Parametres par){
   struct sockaddr_in ser_addr2,cli_addr2;
   int cli_addr_len2;
 
-  pthread_attr_t attr;
-  pthread_t thread;
-  
-  struct Thread_arg targs; /* arguments sended to the server and client */
   int i;
 
-
-  struct Parametres paramc;
-  char *buf1,*buf2;
-  /*  struct IntList *kp,*ks; */
-  int npcc,npcs;
-  int gkplanets,gnplayers;
-
-
   sfd=nsfd=sfd2=nsfd2=0;
-
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
 
   textmen0.n=0;
   textmen0.time=0;
@@ -278,8 +263,37 @@ int OpenComm(int mode,struct Parametres par){
   default:
     break;
   }
+  sockfd->sfd=sfd;
+  sockfd->sfd2=sfd2;
+  sockfd->nsfd=nsfd;
+  sockfd->nsfd2=nsfd2;
 
+  return(0);
+}
+
+int StartComm(int mode,struct Sockfd *sockfd){
   /* Initial comunication between server and client */
+  char *buf1,*buf2;
+
+  int sfd,nsfd;
+  int sfd2,nsfd2;
+  pthread_attr_t attr;
+  pthread_t thread;
+  
+  struct Thread_arg targs; /* arguments sended to the server and client */
+
+  int gkplanets,gnplayers;
+  struct Parametres paramc;
+  int npcc,npcs;
+
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
+
+  sfd=  sockfd->sfd;
+  sfd2= sockfd->sfd2;
+  nsfd=  sockfd->nsfd;
+  nsfd2= sockfd->nsfd2;
+
 
   switch(mode){
   case 0:/* server */
@@ -298,9 +312,9 @@ int OpenComm(int mode,struct Parametres par){
     printf("Client parametres:\n\tnplayers:%d\n\tname: %s\n",
 	   paramc.nplayers,paramc.playername);
     
-    /* interprete the message */
+    /* interpret the message */
     if(strlen(paramc.playername)>0){
-      snprintf(clientname,PLAYERNAMEMAXLEN,"%s",paramc.playername); 
+      snprintf(clientname,MAXTEXTLEN,"%s",paramc.playername); 
     }
     npcc=paramc.nplayers;
     if(npcc>GameParametres(GET,GNPLAYERS,0)){
@@ -1104,14 +1118,14 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     memcpy(buf,&text->text,nbytes);
 
     if(0){
-      char cad[TEXTMENMAXLEN+1];
-      if(nbytes<TEXTMENMAXLEN){
+      char cad[MAXTEXTLEN+1];
+      if(nbytes<MAXTEXTLEN){
 	strncpy(cad,buf,nbytes);
 	memcpy(cad+nbytes+1,"\0",1);
       }
       else{
-	strncpy(cad,buf,TEXTMENMAXLEN);
-	memcpy(cad+TEXTMENMAXLEN,"\0",1);
+	strncpy(cad,buf,MAXTEXTLEN);
+	memcpy(cad+MAXTEXTLEN,"\0",1);
       }
       printf("COPY2BUFF: %s\n",cad);
     }
@@ -1583,7 +1597,7 @@ int ReadObjsfromBuffer(char *buf){
       break;
 
     case SENDOBJSTR:
-      if(header.nbytes>TEXTMENMAXLEN || header.nbytes<0){
+      if(header.nbytes>MAXTEXTLEN || header.nbytes<0){
 	fprintf(stderr,"ERROR in SENDOBJSTR : %d\n",header.nbytes);
 	exit(-1);
       }
@@ -1622,7 +1636,7 @@ int ReadObjsfromBuffer(char *buf){
 	/****/
 	player=&players[playerall.id];
 
-	strncpy(player->playername,playerall.playername,PLAYERNAMEMAXLEN);
+	strncpy(player->playername,playerall.playername,MAXTEXTLEN);
 	printf("received player: %s\n",player->playername);
 
 	player->id=playerall.id;
@@ -1728,7 +1742,7 @@ int ReadObjsfromBuffer(char *buf){
 void SendTextMessage(char *mess){
   int l;
   l=strlen(mess);
-  if(l>TEXTMENMAXLEN)l=TEXTMENMAXLEN;
+  if(l>MAXTEXTLEN)l=MAXTEXTLEN;
 #if DEBUG
   if(debugcomm1){
     printf("Sending: %s\n",mess);
@@ -1747,7 +1761,7 @@ int PendingTextMessage(void){
 void GetTextMessage(char *mess){
   int l;
   l=strlen(textmen1.text);
-  if(l>TEXTMENMAXLEN)l=TEXTMENMAXLEN;
+  if(l>MAXTEXTLEN)l=MAXTEXTLEN;
   memcpy(mess,textmen1.text,l);
   memcpy(mess+l,"\0",1);
   textmen1.time--;
@@ -3241,7 +3255,7 @@ int ServerProcessBuffer(struct Buffer *buffer){
 	memcpy(&ks,&player->ksectors,sizeof(struct HeadIntIList));
 
 
-	strncpy(player->playername,playerall.playername,PLAYERNAMEMAXLEN);
+	strncpy(player->playername,playerall.playername,MAXTEXTLEN);
 	printf("received player: %s\n",player->playername);
 	player->id=playerall.id;
 	player->pid=playerall.pid;
@@ -3480,7 +3494,7 @@ int CopyPlayer2Buffer(struct Buffer *buffer,  struct Player *player){
   
   playerall=(struct PlayerAll *)(buffer->data+buffer->n);
 
-  strncpy(playerall->playername,player->playername,PLAYERNAMEMAXLEN);
+  strncpy(playerall->playername,player->playername,MAXTEXTLEN);
   printf("received player: %s\n",player->playername);
   
   playerall->id=player->id;

@@ -150,7 +150,7 @@ void Shell_02(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadObjList lh
   static char message[128]="";
   static char messagetmp[128]="";
   static char ord[16]="";
-  static char par[TEXTMENMAXLEN]="";
+  static char par[MAXTEXTLEN]="";
   static char lastpar[16]="";
   static int level=0;
   static int order=0;
@@ -349,9 +349,9 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   */
   static char cad[128]="";
   static char ord[16]="";
-  static char par[TEXTMENMAXLEN]="";
-  static char lastpar[TEXTMENMAXLEN]="";
-  static char par0[TEXTMENMAXLEN]="";
+  static char par[MAXTEXTLEN]="";
+  static char lastpar[MAXTEXTLEN]="";
+  static char par0[MAXTEXTLEN]="";
   static int level=0;
   static int order=0;
   static int nn=0;
@@ -728,7 +728,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   Object *ret=NULL;
   struct Order ord;
   int price;
-  char text[TEXTMENMAXLEN];
+  char text[MAXTEXTLEN];
   int time;
   float d2,d2b;
 
@@ -1112,7 +1112,7 @@ void SelectionBox(Object **pcv,int reset){
   }
 
   if(region.habitat<0)return;
-  
+  //  printf("habitat: %d \n",habitat.type);
   if((habitat.type==H_SPACE && gdraw.map==TRUE) || habitat.type==H_PLANET){
     if(keys.mleft==FALSE){
       if(sw){ /* mouse release */
@@ -1186,7 +1186,7 @@ void SelectionBox(Object **pcv,int reset){
     }
     
     if(keys.mleft==TRUE){
-      /*       printf("\t mouse pos: %d %d\n",mouse_pos.x,mouse_pos.y); */
+      /* printf("\t mouse pos: %d %d\n",mouse_pos.x,mouse_pos.y);  */
       if(sw==0){
 	region.rect.x=mouse_pos.x;
 	region.rect.y=mouse_pos.y;
@@ -1227,7 +1227,7 @@ int Keystrokes(int action,char *c){
      returns the number of chars manipulated.
    */
   static int n=0;
-  static char text[TEXTMENMAXLEN];
+  static char text[MAXTEXTLEN];
   int m=0;
   char endln='\0';
 
@@ -1238,7 +1238,7 @@ int Keystrokes(int action,char *c){
   case ADD: /*  ADD */
     memcpy(&text[n],c,sizeof(char));
     n++;
-    if(n>TEXTMENMAXLEN-1)n=TEXTMENMAXLEN-1;
+    if(n>MAXTEXTLEN-1)n=MAXTEXTLEN-1;
     m=1;
     break;
   case DELETELAST: /*  DELETE the last char */

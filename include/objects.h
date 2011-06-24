@@ -259,7 +259,7 @@ typedef struct{
 struct _Object{
   int id;           /* global identifier */
   int pid;          /* player identifier */
-  char name[OBJNAMESMAXLEN];   /* object name */
+  char name[MAXTEXTLEN];   /* object name */
   short player;
   short type;       /* type: SHIP,PLANET,PROJECTILE,... */
 
@@ -325,7 +325,7 @@ typedef struct _Object Object;
 struct ObjectAll{ /* SENDOBJALL */
   int id;           /* global identifier */
   int pid;          /* player identifier */
-  char name[OBJNAMESMAXLEN];   /* object name */
+  char name[MAXTEXTLEN];   /* object name */
   short player;
   short type;       /* type: SHIP,PLANET,PROJECTILE,... */
   short subtype;    /* object subtype */
@@ -545,7 +545,7 @@ struct Global{
 };
 
 struct Player{
-  char playername[PLAYERNAMEMAXLEN]; /* name of the player */
+  char playername[MAXTEXTLEN]; /* name of the player */
   short id;          /* player id */
   int pid;         /* last ship player id  */
   short proc;        /* machine that controls it */
@@ -573,7 +573,7 @@ struct Player{
 };
 
 struct PlayerAll{
-  char playername[PLAYERNAMEMAXLEN]; /* name of the player */
+  char playername[MAXTEXTLEN]; /* name of the player */
   short id;          /* player id */
   int pid;         /* last ship player id  */
   short proc;        /* machine that controls it */

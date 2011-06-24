@@ -39,11 +39,14 @@
 #include "spacecomm.h"
 #include "functions.h"
 
-
 int CreateDir(char *dir);
 char *CreateOptionsFile(void);
 char *CreateSaveFile(int server,int client);
 char *CreateRecordFile(void);
+
+void SaveParamOptions(char *file,struct Parametres *par);
+void LoadParamOptions(char *file,struct Parametres *par);
+void PrintParamOptions(struct Parametres *par);
 
 int ExecSave(struct HeadObjList ,char *);
 int FprintfPlanet(FILE *fp,Object *obj);

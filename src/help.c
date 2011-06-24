@@ -30,8 +30,6 @@
 #include "spacecomm.h"
 
 
-
-
 void PrintArguments(struct Parametres param,char *title){
 
   printf("%s\n",title);
@@ -63,6 +61,7 @@ void PrintArguments(struct Parametres param,char *title){
 
 int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   /*
+    version 01
     funcion Arguments(). 
     Check the options file.
     Check the number of command line arguments.
@@ -85,39 +84,14 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 				{"",ARG_0}};
   int narg=0;
   FILE *fp;
-  int value;
   int fsw=0;
 #if DEBUG
   int debug=0;
 #endif
 
-/* default values */
-  par->ngalaxies=NUMGALAXIES;
-  par->nplanets=NUMPLANETS;
-  par->nplayers=-1;
-  par->nteams=2;
-  par->ul=ULX;
-  par->kplanets=0;
-  par->sound=TRUE;
-  par->music=TRUE;
-
-  par->cooperative=FALSE;
-  par->compcooperative=FALSE;
-  par->queen=FALSE;
-
-  par->pirates=TRUE;
-
-  par->server=FALSE;
-  par->client=FALSE;
-  //  par->IP=DEFAULT_IP;
-  strncpy(par->IP,DEFAULT_IP,32);strncpy(&par->IP[31],"\0",1);
-  par->port=DEFAULT_PORT;
-  par->port2=DEFAULT_PORT+1;
-  strcpy(par->playername,"");
-  strcpy(par->font,"");
-  strcpy(par->geom,"");
-
-
+  /* default values */
+  SetDefaultParamValues(par);
+  
   /*******  options file values ******/
 #if DEBUG
   if(debug)printf("reading options file\n");
@@ -125,49 +99,35 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   if((fp=fopen(optfile,"rt"))==NULL){
 
     if((fp=fopen(optfile,"wt"))==NULL){
-      fprintf(stdout,"No puede abrirse el archivo: %s\n", optfile);
+      fprintf(stdout,"I cany create the file: %s\n", optfile);
       exit(-1);
     }
+    /* file doesnt exists */
     /* default options */   /* check also SetDefaultOptions() in graphics.c */
-    fprintf(fp,"%d %d %d %d %d %d %d %d %d\n",
-	    FALSE,FALSE,FALSE,NUMPLANETS,NUMPLAYERS,ULX,FALSE,FALSE,FALSE);
     fclose(fp);
+    SaveParamOptions(optfile,par);
 
     if((fp=fopen(optfile,"rt"))==NULL){
-      fprintf(stdout,"No puede abrirse el archivo: %s", optfile);
+      fprintf(stdout,"I cant open the file: %s", optfile);
       exit(-1);
     }
+    fclose(fp);
   }
 
-  if(fscanf(fp,"%d",&value)!=1){ /* universe known */
-    perror("fscanf");
-    fsw=1;
-  }
-  if(value==0 || value==1){
-    if(value==1)par->kplanets=1;
-#if DEBUG
-    if(debug)printf("\tknown planets:%d\n",value); 
-#endif
-  }
-  else{
+  LoadParamOptions(optfile,par);
+
+  /****** checking options *******/
+
+  /* universe known */
+  if(par->kplanets!=0 && par->kplanets!=1){
     fsw=2;
 #if DEBUG
     if(debug)fprintf(stderr,"\tuk: ERROR\n"); 
 #endif
+    
   }
-
-
-  if(fscanf(fp,"%d",&value)!=1){ /* music off */
-    perror("fscanf");
-    fsw=1;
-  }
-  if(value==0 || value==1){
-    if(value==1)par->music=0;
-#if DEBUG
-    if(debug)printf("\tmusic OFF:%d\n",value);
-#endif
-  }
-  else{
+  
+  if(par->music!=0 && par->music!=1){
     fsw=3;
     par->music=0;
 #if DEBUG
@@ -175,20 +135,8 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 #endif
   }
 
-  if(fscanf(fp,"%d",&value)!=1){ /* sound off */
-    perror("fscanf");
-    fsw=1;
-  }
-  if(value==0 || value==1){
-    if(value==1){
-      par->sound=0;
-      par->music=0;
-    }
-#if DEBUG
-    if(debug)printf("\tsound OFF:%d\n",value); 
-#endif
-  }
-  else{
+
+  if(par->sound!=0 && par->sound!=1){
     fsw=4;
     par->sound=0;
     par->music=0;
@@ -196,115 +144,45 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
     if(debug)fprintf(stderr,"\tsound OFF:ERROR\n"); 
 #endif
   }
-  
-  if(fscanf(fp,"%d",&value)!=1){ /* number of planets */
-    perror("fscanf");
-    fsw=1;
-  }
-  if(value<MINNUMPLANETS || value>MAXNUMPLANETS){
+
+  if(par->nplanets<MINNUMPLANETS || par->nplanets>MAXNUMPLANETS){
     fsw=5;
 #if DEBUG
     if(debug)fprintf(stderr,"\tnplanets:ERROR\n");
 #endif
   }
-  else{
-#if DEBUG
-    if(debug)printf("\tnplanets:%d\n",value);
-#endif
-    par->nplanets=value;
-  }
 
-
-  if(fscanf(fp,"%d",&value)!=1){ /* number of players */
-    perror("fscanf");
-    fsw=1;
-  }
-  if(value<MINNUMPLAYERS || value>MAXNUMPLAYERS){
+  if(par->nplayers<MINNUMPLAYERS || par->nplayers>MAXNUMPLAYERS){
     fsw=6;
 #if DEBUG
     if(debug)fprintf(stderr,"\tnplayers:ERROR\n");
 #endif
   }
-  else{
-#if DEBUG
-    if(debug)printf("\tnplayers:%d\n",value);
-#endif
-    par->nplayers=value;
-  }
   
-  
-  if(fscanf(fp,"%d",&value)!=1){ /* Universe size */
-    perror("fscanf");
-    fsw=1;
-  }
-  if(value<MINULX || value>MAXULX){
+  if(par->ul<MINULX || par->ul>MAXULX){
     fsw=7;
 #if DEBUG
     if(debug)fprintf(stderr,"\tuniverse size:ERROR\n"); 
 #endif
   }
-  else{
-#if DEBUG
-    if(debug)printf("\tuniverse size:%d\n",value); 
-#endif
-    par->ul=value;
-  }
+
   if(par->nplayers>par->nplanets)fsw=8;
 
-
-  if(fscanf(fp,"%d",&value)!=1){ /* cooperative mode on off */
-    perror("fscanf");
-    fsw=1;
-  }
-  if(value==0 || value==1){
-#if DEBUG
-    if(debug)printf("\tcooperative:%d\n",value);
-#endif
-    if(value==1){
-      par->cooperative=1;
-    }
-  }
-  else{
+  if(par->cooperative!=0 && par->cooperative!=1){
     fsw=9;
 #if DEBUG
     if(debug)fprintf(stderr,"\tcooperative:ERROR\n");
 #endif
   }
 
-
-  if(fscanf(fp,"%d",&value)!=1){ /* computer cooperative mode on off */
-    perror("fscanf");
-    fsw=1;
-  }
-  if(value==0 || value==1){
-#if DEBUG
-    if(debug)printf("\tcomputer cooperative:%d\n",value); 
-#endif
-    if(value==1){
-      par->compcooperative=1;
-    }
-  }
-  else{
+  if(par->compcooperative!=0 && par->compcooperative!=1){
     fsw=10;
 #if DEBUG
     if(debug)fprintf(stderr,"\tcomputer cooperative:ERROR\n"); 
 #endif
   }
 
-  if(fscanf(fp,"%d",&value)!=1){ /* Queen mode on off */
-    perror("fscanf");
-    fsw=1;
-  }
-  if(value==0 || value==1){
-#if DEBUG
-    if(debug)printf("\tQueen mode:%d\n",value);
-#endif
-    if(value==1){
-      par->queen=1;
-    }
-    
-  }
-  else{
+  if(par->queen!=0 && par->queen!=1){
 #if DEBUG
     if(debug)fprintf(stderr,"\tQueen mode:ERROR\n");
 #endif
@@ -312,24 +190,10 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   }
 
 
-  fclose(fp);
-
   if(fsw){
     fprintf(stderr,"(%d)Warning: Incorrect values in options file %s\n",fsw,optfile);
     fprintf(stderr,"\t Ignoring file.\n");
     fprintf(stderr,"\t Setting default values.\n");
-
-    par->ngalaxies=NUMGALAXIES;
-    par->nplanets=NUMPLANETS;
-    par->nplayers=NUMPLAYERS;
-    par->ul=ULX;
-    par->kplanets=FALSE;
-    par->sound=TRUE;
-    par->music=TRUE;
-    par->cooperative=FALSE;
-    par->compcooperative=FALSE;
-    par->queen=FALSE;
-    par->pirates=TRUE;
 
     if(fsw==3){
       par->music=FALSE;
@@ -377,7 +241,6 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 	}
 	break;
       case ARG_p:/*'p': number of players */
-	/*	printf("mierda\n"); */
 	if(i+1<argc){
 	  par->nplayers=atoi(argv[i+1]);
 	  i++;
@@ -408,7 +271,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       case ARG_ip:/*'ip': ip of the server */
 	if(i+1<argc){
 	  //	  par->IP=(argv[i+1]);
-	  strncpy(par->IP,argv[i+1],32);strncpy(&par->IP[31],"\0",1);
+	  strncpy(par->IP,argv[i+1],MAXTEXTLEN);strncpy(&par->IP[MAXTEXTLEN-1],"\0",1);
 	  i++;
 	}
 	else{
@@ -461,10 +324,6 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 	  strncpy(par->geom,argv[i+1],32);
 	  strncpy(&par->geom[31],"\0",1);
 	  //HERE check param values.
-	  
-
-
-
 	  i++;
 	}
 	else{
@@ -509,6 +368,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 
   return(0);
 }  /* --Arguments()  */
+
 
 void Usage(char *ver,char *l_rev){
      
@@ -675,6 +535,10 @@ int CheckArgs(struct Parametres p){
     return(1);
   }
 
+  if(p.port<1024 || p.port>65535){
+    printf("Invalid port: %d. Must be between (1024,65535).\n",p.port);
+    return(1);
+  }
   return(0);
 }
 
@@ -773,4 +637,33 @@ void PrintWarnings(char *version){
 
 
   fprintf(stderr,"**************************************************************\n");
+}
+
+void SetDefaultParamValues(struct Parametres *par){
+  
+  par->ngalaxies=NUMGALAXIES;
+  par->nplanets=NUMPLANETS;
+  par->nplayers=2;
+  par->nteams=2;
+  par->ul=ULX;
+  par->kplanets=0;
+  par->sound=TRUE;
+  par->music=TRUE;
+
+  par->cooperative=FALSE;
+  par->compcooperative=FALSE;
+  par->queen=FALSE;
+
+  par->pirates=TRUE;
+
+  par->server=FALSE;
+  par->client=FALSE;
+  strncpy(par->IP,DEFAULT_IP,MAXTEXTLEN);strncpy(&par->IP[MAXTEXTLEN-1],"\0",1);
+  par->port=DEFAULT_PORT;
+  par->port2=DEFAULT_PORT+1;
+  strcpy(par->playername,"player"); // HERE set default
+  strcpy(par->font,"6x13");
+  strcpy(par->geom,"1024x550");
+
+
 }

@@ -66,6 +66,7 @@ void Collision(struct HeadObjList *);
 
 float PlanetAtraction(float *fx,float *fy,float x,float y,float m);
 void CreateUniverse(int,int,struct HeadObjList *,char **);
+void InitGameVars(void);
 void CreateTestShips(struct HeadObjList *lheadobjs);
 
 int PrintfObjInfo(FILE *fp,Object *obj);

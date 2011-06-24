@@ -23,6 +23,8 @@
 		version 0.80 May 2011
 ****/
 
+#include "general.h"
+#include "save.h"
 
 #ifndef _HELP_
 #define _HELP_
@@ -64,16 +66,16 @@ struct Parametres{
   int pirates;
   int server;
   int client;
-  char IP[32];
+  char IP[MAXTEXTLEN];
   int port;
   int port2;
-  char playername[32];
+  char playername[MAXTEXTLEN];
   char font[128];
-  char geom[32];
+  char geom[MAXTEXTLEN];
 };
 
 struct Validargum{
-    char cad[24];
+    char cad[MAXTEXTLEN];
     int id;
   };
 
@@ -82,6 +84,7 @@ void PrintArguments(struct Parametres param,char *title);
 int SearchArg(char *target,struct Validargum *v);
 void Usage(char *ver,char *l_rev);
 int Arguments(int argc,char *argv[],struct Parametres *,char *optfile);
+void SetDefaultParamValues(struct Parametres *par);
 int CheckArgs(struct Parametres p);
 int GetGeom(char *geom,int *w,int *h);
 

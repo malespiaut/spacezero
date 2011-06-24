@@ -84,7 +84,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.14"};
+char version[64]={"0.81.17"};
 //char copyleft[]="Copyright XaY";
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
@@ -115,7 +115,6 @@ struct HeadObjList *listheadkplanets;  /* lists of planets known by players */
 struct HeadObjList listheadplayer;     /* list of objects of each player */
 struct HeadObjList listheadnearobjs;   /* list of near enemies objects of actual player. only used in draw map function. */
 
-
 struct TextMessageList listheadtext;
 struct Parametres param;
 Vector r_rel;
@@ -123,14 +122,13 @@ Vector r_rel;
 struct Habitat habitat;
 
 
-char clientname[PLAYERNAMEMAXLEN];
+char clientname[MAXTEXTLEN];
 
 unsigned int contabilidad[15];
 
 /*  sound */
 int soundenabled=TRUE;
 /* -- sound */
-int gstarted=FALSE;
 
 int gordermode=FALSE; /* FALSE nav mode, TRUE order mode */ 
 
@@ -140,10 +138,13 @@ void signal_handler(int ,siginfo_t *,void *);
 void int_handler(int);
 void segfault_handler(int);
 
+
 char *savefile;
 char *recordfile;
+char *optionsfile;
 
 struct MenuHead *menuhead;
+
 
 int main(int argc,char *argv[]){
   /*
@@ -158,7 +159,7 @@ int main(int argc,char *argv[]){
   int state;
   struct sigaction sa;
   sigset_t wait_response; 
-  char *optionsfile;
+  int width,height;
 
   srand(time(NULL));
 
@@ -262,8 +263,13 @@ int main(int argc,char *argv[]){
 
   PrintWarnings(version);
   optionsfile=CreateOptionsFile();
+  recordfile=CreateRecordFile();
 
-  /*********** checking command line options *************/
+#if TESTSAVE
+    strcat(savefiletmp,"/tmp/tmpsavespacezero");
+#endif
+
+  /*********** read options file and checking command line options *************/
   state=Arguments(argc,argv,&param,optionsfile);
   if(state){
     /* printf("status:%d\n",state); */
@@ -278,33 +284,18 @@ int main(int argc,char *argv[]){
   }
 
   PrintArguments(param,"Game arguments:");
+  printf("NET: %d\n",GameParametres(GET,GNET,0));
 
 
-#if TESTSAVE
-    strcat(savefiletmp,"/tmp/tmpsavespacezero");
-#endif
-
-  recordfile=CreateRecordFile();
-  savefile=CreateSaveFile(param.server,param.client);
-
-  fprintf(stdout,"save file: %s\n",savefile);
-  fprintf(stdout,"record file: %s\n",recordfile);
-  fprintf(stdout,"options file: %s\n",optionsfile);
-  
-  SetGameParametres(param);
-
-  printf("W: %d H: %d \n",  GameParametres(GET,GWIDTH,0), 
-   			    GameParametres(GET,GHEIGHT,0)); 
   /********** Graphics initialization **********/
   gtk_init(&argc,&argv);
 
   MakeTitle(param,title);
+  GetGeom(param.geom,&width,&height);  
+  printf("W: %d H: %d \n",  width,height);
   drawing_area=InitGraphics(title,optionsfile, 
-   			    GameParametres(GET,GWIDTH,0), 
-   			    GameParametres(GET,GHEIGHT,0),param); 
+   			    width,height,param); 
 
-  printf("W: %d H: %d \n",  GameParametres(GET,GWIDTH,0), 
-   			    GameParametres(GET,GHEIGHT,0)); 
   printf("W: %d H: %d \n", drawing_area->allocation.width,   
 	   drawing_area->allocation.height);
 
@@ -317,16 +308,12 @@ int main(int argc,char *argv[]){
   SetDefaultKeyValues(&keys,1);
   
   menuhead=CreateMenu();
-  printf("ALL menu **********\n");
-  PrintAllMenu(menuhead);
-  printf("--ALL menu **********\n");
+  /* printf("ALL menu **********\n"); */
+  /* PrintAllMenu(menuhead); */
+  /* printf("--ALL menu **********\n"); */
   menuhead->active=TRUE;
   //  exit(-1);
   /********** --Graphics initialization *********/
-
-
-
-
 
 #if SOUND
   /********* sound initialization *********/ 
@@ -354,198 +341,9 @@ int main(int argc,char *argv[]){
   /********* --sound initialization *********/ 
 #endif
 
-  /****** start server and client *********/
-
-  if(GameParametres(GET,GNET,0)==TRUE){
-    if(param.server==TRUE){
-      printf("SERVER\n");
-      OpenComm(0,param);
-    }
-    if(param.client==TRUE){
-      printf("CLIENT\n");
-      OpenComm(1,param);
-    }  
-    printf("conexion established\n");
-    
-    /* synchronization with comm threads  */
-    sem_wait(&sem_barrier);
-  }
-  /****** --start server and client *********/
-
-  /*****************************************************************/
-  /* client and server now known all the game options              */
-  /*****************************************************************/
-
-  listheadobjs.next=NULL;
-  listheadobjs.n=0;
-  listheadplanets.next=NULL;
-  listheadplanets.n=0;
-  listheadtext.next=NULL;
-  listheadtext.info.n=0;
-  listheadnearobjs.next=NULL;
-  listheadnearobjs.n=0;
-  for(i=0;i<4;i++)fobj[i]=0;
-  gtime0=0;
-
-  /********** players ***********/
-  CreatePlayers(&players,&ccdatap);
-  /********** --players ***********/
-  
-  /********** teams ***********/
-  CreateTeams(players,param);
-  /********** --teams **********/
-
-  if(param.queen){
-    printf("WARNING: Queen mode set to ON.\n");
-    GameParametres(SET,GQUEEN,TRUE);
-  }
-
-  /******** Create Universe **************/
-  if(param.client==FALSE){
-    printf("CreateUniverse()...");
-    CreateUniverse(GameParametres(GET,GULX,0),GameParametres(GET,GULY,0),&listheadobjs,planetnames);
-    CreatePlanetList(listheadobjs,&listheadplanets);
-    printf("...done\n");
-    printf("CreateShips()..."); 
-    CreateShips(&listheadobjs); 
-    //    CreateTestShips(&listheadobjs);
-    printf("...done\n"); 
-  }
-  /******** -- Create Universe **************/
-
-  listheadcontainer=malloc((GameParametres(GET,GNPLANETS,0)+1)*sizeof(struct HeadObjList));
-  g_memused+=(GameParametres(GET,GNPLANETS,0)+1)*sizeof(struct HeadObjList);
-  if(listheadcontainer==NULL){
-    fprintf(stderr,"ERROR in malloc main()\n");
-    exit(-1);
-  }
-  for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
-    listheadcontainer[i].next=NULL;
-    listheadcontainer[i].n=0;
-  }
-
-  listheadkplanets=malloc((GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct HeadObjList));
-  g_memused+=(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct HeadObjList);
-  if(listheadkplanets==NULL){
-    fprintf(stderr,"ERROR in malloc main()\n");
-    exit(-1);
-  }
-  for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    listheadkplanets[i].next=NULL;
-    listheadkplanets[i].n=0;
-  }
-
-  /********* sending and receiving Universe *****************/
-
-  if(param.server==TRUE){
-    if(ExecSave(listheadobjs,SAVETMPFILE)!=0){
-      fprintf(stderr,"Error in main(): I cant open %s\n",SAVETMPFILE);
-      exit(-1);
-    }
-    printf("gid: %d\n",g_objid);
-    SetModifiedAll(&listheadobjs,ALLOBJS,SENDOBJUNMOD,TRUE);
-    p_time=GetTime();
-  }
-  
-  if(GameParametres(GET,GNET,0)==TRUE){
-    sem_post(&sem_barrier1);
-    sem_wait(&sem_barrier);
-  }
-  
-  if(param.client==TRUE){
-    
-    printf("BEF GU:  gid:%d\n",g_objid);
-    printf("gid loc:%d\n",glocal.g_objid);
-    printf("gid rem:%d\n",gremote.g_objid);
-    
-    //    sprintf(players[1].playername,"%s",param.playername);
-    GetUniverse();
-    printf("AFTER GU:  gid:%d\n",g_objid);
-    printf("gid loc:%d\n",glocal.g_objid);
-    printf("gid rem:%d\n",gremote.g_objid);
-    g_objid=glocal.g_objid;
-
-    SetModifiedAll(&listheadobjs,ALLOBJS,SENDOBJUNMOD,TRUE);
-    CreatePlanetList(listheadobjs,&listheadplanets);
-  }
-  /********* --sending and receiving Universe *****************/
-
-  actual_player=1;
-  if(GameParametres(GET,GMODE,0)==SERVER){ /* only two human players, by now*/ 
-    actual_player=2;
-  }
-  actual_player0=actual_player;
-  players[actual_player].control=HUMAN;
-
-  printf("Actual Player: %d\n",actual_player);
-#if DEBUG
-  if(debuginit){
-    for(i=1;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-      printf("PLAYER: %d\n",i);
-      printf("\tcontrol: %d\n",players[i].control);
-      printf("\tproc: %d\n",players[i].proc);
-    }
-  }
-#endif
-  DestroyObjList(&listheadplayer); 
-  listheadplayer.n=0; 
-  listheadplayer.next=NULL; 
-  CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
-
-
-  cv=NextCv(&listheadplayer,cv,actual_player);
-  if(cv!=NULL){
-    habitat.type=cv->habitat;
-    habitat.obj=cv->in;
-    cv->selected=TRUE;
-  }
-
-  /* Adding planets to players list */
-  AddPlanets2List(&listheadobjs,players);   
-
-  /* pruebas verlet list */
-  if(0){
-    struct VerletList *vl;
-    printf("Creating verlet list ...");
-    vl=CreateVerletList(listheadobjs);
-    printf(" ...done\n");
-    printf("printing ...");
-    PrintVerletList(vl);
-    printf("... done\n");
-    printf("destrying ...");
-    DestroyVerletList(vl);
-    printf("... done\n");
-    printf("printing ...");
-    PrintVerletList(vl);
-    printf("... done\n");
-    
-  }
-  /* --pruebas verlet list */
-
-
-  /* print teams */
-  PrintTeams(players);
-
-#if CELLON
-  {
-    int nx,ny;
-    nx=GameParametres(GET,GULX,0)/2000;
-    ny=GameParametres(GET,GULY,0)/2000;
-
-    cell=malloc(nx*ny*sizeof(int));
-    if(cell==NULL){ 
-      fprintf(stderr,"ERROR in malloc (creating cell)\n"); 
-      exit(-1); 
-    }
-    for(i=0;i<nx*ny;i++){
-      cell[i]=0;
-    }
-  } 
-#endif    
-
-  PrintGameOptions();
 
   /******** what stuff draw *********/
+  gdraw.main=FALSE;
   gdraw.menu=TRUE;
   gdraw.map=FALSE;
   gdraw.shiplist=FALSE;
@@ -554,12 +352,9 @@ int main(int argc,char *argv[]){
   gdraw.info=FALSE;
   gdraw.crash=FALSE;  
 
-  gdraw.menu=TRUE;
-
   /******** --what stuff draw *********/
 
-  gtk_timeout_add((int)(DT*100),MenuLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
-
+  gtk_timeout_add((int)(DT*50),MenuLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
 #if DEBUGFAST
   gtk_timeout_add((int)(DT*5),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
 #else
@@ -595,11 +390,12 @@ gint MenuLoop(gpointer data){
   static int textw=14;
   static GdkFont *font,*fontmenu;
   static int swfont=0;
+  int swexit=0;
+  int swsaveoptions=0;
 
+  if(gdraw.menu==FALSE)return(TRUE); 
 
-  if(gdraw.menu==FALSE)return(TRUE);
-
-  if(!gdrawmenu)return(TRUE);
+  if(!gdrawmenu)return(TRUE); 
   gdrawmenu=0;
 
   key_eval(&keys);
@@ -612,9 +408,7 @@ gint MenuLoop(gpointer data){
   if(swfont==0){
     font=InitFontsMenu("");
     textw=gdk_text_width(font,"Main Menu",9);
-
     swfont++;
-    //    gstarted=TRUE;
   }
   if(height<400)fontmenu=gfont;
   else fontmenu=font;
@@ -661,22 +455,52 @@ gint MenuLoop(gpointer data){
   case 0:
     break;
   case ITEM_start:
-    printf("MENUENTER\n");
-    gdraw.menu=FALSE;
+    /* printf("MENUENTER\n"); */
+    swsaveoptions=1;
+    swexit=1;
     break;
   case ITEM_quit:
-    printf("MENUQUIT\n");
-    gdraw.menu=FALSE;
+    SetGameParametres(param);
     GameParametres(SET,GQUIT,2);
+    gdraw.menu=FALSE;
+    gdraw.main=TRUE;
+    Keystrokes(RESET,NULL);
+    SetDefaultKeyValues(&keys,1);
+    return(TRUE);
     break;
-
+  case ITEM_default:
+    printf("loading default \n"); 
+    SetDefaultParamValues(&param);
+    break;
+  case ITEM_server:
+    param.server=TRUE;
+    param.client=FALSE;
+    swsaveoptions=1;
+    swexit=1;
+    printf("start server....\n");
+    break;
+  case ITEM_client:
+    param.server=FALSE;
+    param.client=TRUE;
+    swexit=1;
+    printf("start client....\n");
+    break;
   case MENUESC:
     break;
   default:
     break;
   }
-
-
+  if(swexit){
+    gdraw.menu=FALSE;
+    gdraw.main=TRUE;
+    Keystrokes(RESET,NULL);
+    SetDefaultKeyValues(&keys,1);
+    SetGameParametres(param);
+    if(swsaveoptions){
+      //      snprintf(param.geom,16,"%dx%d",width,height);
+      SaveParamOptions(optionsfile,&param);
+    }
+  }
   return(TRUE);
 }
 
@@ -708,7 +532,10 @@ gint MainLoop(gpointer data){
   int loadsw =0;
   static int sw=0;
 
-  if(gdraw.menu==TRUE)return(TRUE);
+
+
+  if(gdraw.main==FALSE)return(TRUE);
+  /* printf("main loop\n");  */
 
 #if DEBUG
   if(debugmem){
@@ -717,25 +544,51 @@ gint MainLoop(gpointer data){
     }
   }
 #endif
-
+  
   if(gtime0==0){
     gtime0=time(NULL);
   }
-
-  /* firsttime */
-  if(!sw){
-    gstarted=TRUE;  
-    sw++;
-  }
   
-  ulx=GameParametres(GET,GULX,0);
-  uly=GameParametres(GET,GULY,0);
 
   gwidth=GameParametres(GET,GWIDTH,0);
   gheight=GameParametres(GET,GHEIGHT,0);
+  
+  if(!sw){   /* firsttime */
 
+    savefile=CreateSaveFile(param.server,param.client);
+    
+    fprintf(stdout,"save file: %s\n",savefile);
+    fprintf(stdout,"record file: %s\n",recordfile);
+    fprintf(stdout,"options file: %s\n",optionsfile);
+
+    if(0){
+      struct Parametres par;
+      LoadParamOptions(optionsfile,&par);
+      printf("param options\n------------\n");
+      PrintParamOptions(&par);
+    }
+
+    InitGameVars(); /* */
+
+    if(GameParametres(GET,GQUIT,0)==2 ){
+      Quit(NULL,NULL); 
+    }
+    gtk_window_resize(GTK_WINDOW(win_main),gwidth,gheight+PANEL_HEIGHT);
+    GameParametres(SET,GHEIGHT,drawing_area->allocation.height-PANEL_HEIGHT); 
+    GameParametres(SET,GWIDTH,drawing_area->allocation.width); 
+
+    gdraw.menu=FALSE;
+    sw++;
+  }
+
+  ulx=GameParametres(GET,GULX,0);
+  uly=GameParametres(GET,GULY,0);
+  
+  gwidth=GameParametres(GET,GWIDTH,0);
+  gheight=GameParametres(GET,GHEIGHT,0);
+  
   proc=GetProc();
-
+  
 #if CELLON
   {
     int nx,ny;
@@ -747,7 +600,7 @@ gint MainLoop(gpointer data){
     UpdateCell(&listheadobjs,cell);
   } 
 #endif
-
+  
   for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
     DestroyObjList(&listheadcontainer[i]);
     listheadcontainer[i].next=NULL;
@@ -758,25 +611,25 @@ gint MainLoop(gpointer data){
     listheadkplanets[i].next=NULL;
     listheadkplanets[i].n=0;
   }
-
+  
   key_eval(&keys);
-
+  
   if(GameParametres(GET,GPAUSED,0)==FALSE){
     //    if(swpaused<NETSTEP){  
-      DestroyObjList(&listheadplayer);
-      listheadplayer.next=NULL;
-      listheadplayer.n=0;
-      
-      CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
-      CreateContainerLists(&listheadobjs,listheadcontainer);
-      CreatekplanetsLists(&listheadobjs,listheadkplanets);
-      //    }
+    DestroyObjList(&listheadplayer);
+    listheadplayer.next=NULL;
+    listheadplayer.n=0;
+    
+    CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
+    CreateContainerLists(&listheadobjs,listheadcontainer);
+    CreatekplanetsLists(&listheadobjs,listheadkplanets);
+    //    }
   }
-
+  
   /* messages */
   swmess=0;
-
-
+  
+  
   /* GAME OVER */
   if(actual_player==actual_player0){
     
@@ -798,7 +651,7 @@ gint MainLoop(gpointer data){
       n--;
     }
   }
-
+  
   if(gameover==TRUE){
     sprintf(pointmess,"GAME OVER");
     swmess++;
@@ -813,11 +666,11 @@ gint MainLoop(gpointer data){
     sprintf(pointmess,"Really QUIT?  ( y/n )");
     swmess++;
   }
-
+  
   if(swmess){
     DrawMessageBox(drawing_area,pixmap,gfont,pointmess,gwidth/2,0.3*gheight,MBOXBORDER);
   }
-
+  
   if(GameParametres(GET,GPAUSED,0)==TRUE){
     if(swpaused>=NETSTEP){
       //      DestroyObjList(&listheadplayer); // HERE quitar esto? revisar
@@ -832,11 +685,11 @@ gint MainLoop(gpointer data){
   else{
     swpaused=0;
   }
-
+  
   if(GameParametres(GET,GQUIT,0)==1){
     //    return(TRUE);
   }
-
+  
   drawmap=FALSE;
   if(!(cont%2))drawmap=TRUE;
   
@@ -879,12 +732,12 @@ gint MainLoop(gpointer data){
     if(proc==players[GameParametres(GET,GNPLAYERS,0)+1].proc){/*  Send TO ai */
       if(GetTime()-lasttimepirates>2000){
 	if(((20000.0*rand())/RAND_MAX)<=1){
-	  char text[TEXTMENMAXLEN];
+	  char text[MAXTEXTLEN];
 	  lasttimepirates=GetTime();
 	  x0=ulx*Random(-1)-ulx/2;
 	  y0=uly*Random(-1)-uly/2;
 	  CreatePirates(&listheadobjs,4,x0,y0);
-	  snprintf(text,TEXTMENMAXLEN,"PIRATES!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));
+	  snprintf(text,MAXTEXTLEN,"PIRATES!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));
 	  Add2TextMessageList(&listheadtext,text,0,-1,0,100,0);
 	  if(GameParametres(GET,GNET,0)==TRUE){
 	    SendTextMessage(text);
@@ -898,7 +751,7 @@ gint MainLoop(gpointer data){
     //    if(GameParametres(GET,GNET,0)==FALSE){
     if(GetTime()-lasttimeasteroids>3000){
       if(((11000.0*rand())/RAND_MAX)<=1){ /* every 10 minutes */
-	char text[TEXTMENMAXLEN];
+	char text[MAXTEXTLEN];
 	float factor;
 
 	factor=(float)GameParametres(GET,GULX,0)/100000.0;
@@ -910,7 +763,7 @@ gint MainLoop(gpointer data){
 	  y0=uly*Random(-1)-uly/2;
 	  CreateAsteroids(&listheadobjs,6,x0,y0);
 	  
-	  snprintf(text,TEXTMENMAXLEN,"ASTEROIDS!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));
+	  snprintf(text,MAXTEXTLEN,"ASTEROIDS!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));
 	  Add2TextMessageList(&listheadtext,text,0,-1,0,100,0);
 	  if(GameParametres(GET,GNET,0)==TRUE){
 	    SendTextMessage(text);   
@@ -1011,17 +864,18 @@ gint MainLoop(gpointer data){
       printf("done\n");
     }
     CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
+    PrintGameOptions();
   }
 
 
   if(keys.save==TRUE && swcomm==TRUE){
-    char text[TEXTMENMAXLEN];
+    char text[MAXTEXTLEN];
     keys.load=FALSE;
     keys.save=FALSE;
 
 
     if(ExecSave(listheadobjs,savefile)==0){    
-      snprintf(text,TEXTMENMAXLEN,"GAME SAVED.");
+      snprintf(text,MAXTEXTLEN,"GAME SAVED.");
       Add2TextMessageList(&listheadtext,text,0,-1,0,100,0);
       if(GameParametres(GET,GNET,0)==TRUE){
 	SendTextMessage(text);   
@@ -1141,13 +995,13 @@ gint MainLoop(gpointer data){
 
 #else
 
- 	gdk_draw_rectangle(pixmap,     
- 			   drawing_area->style->black_gc,     
- 			   TRUE,    
- 			   0,0,     
- 			   drawing_area->allocation.width,     
- 			   drawing_area->allocation.height); 
-
+      gdk_draw_rectangle(pixmap,     
+			 drawing_area->style->black_gc,     
+			 TRUE,    
+			 0,0,     
+			 drawing_area->allocation.width,     
+			 drawing_area->allocation.height); 
+      
 #endif
 
       }  
@@ -1273,33 +1127,7 @@ gint MainLoop(gpointer data){
     update_rect.height=drawing_area->allocation.height;
   }
 
-
-
-  /* PRODUCTION */
-  if(1){
-    gtk_widget_draw(drawing_area,&update_rect); /*  deprecated */
-  }
-  else{
-    if(GameParametres(GET,GMODE,0)==SERVER){
-      if(0||!(cont%30)){
-	//	gtk_widget_queue_draw(drawing_area); 
-	gtk_widget_draw(drawing_area,&update_rect); /*  deprecated */
-      }
-    }
-    else{
-
-
-#if DEBUGFAST
-      if(!(cont%120)){
-	//gtk_widget_queue_draw(drawing_area); 
-	gtk_widget_draw(drawing_area,&update_rect); /*  deprecated */
-      }  
-      
-#else
-      gtk_widget_draw(drawing_area,&update_rect); /*  deprecated */
-#endif
-    }
-  }
+  gtk_widget_draw(drawing_area,&update_rect); /*  deprecated */
 
   if(GameParametres(GET,GPAUSED,0)==TRUE){
     paused=1;
@@ -1419,7 +1247,7 @@ void key_eval(struct Keys *key){
 #if TEST
   Object *nobj;
   float x0,y0;
-  char text[TEXTMENMAXLEN];
+  char text[MAXTEXTLEN];
 #endif
 
   if(0&&key->enter==TRUE && gdraw.menu==TRUE){
@@ -1465,9 +1293,9 @@ void key_eval(struct Keys *key){
       x0=gulx*Random(-1)-gulx/2;
       y0=guly*Random(-1)-guly/2;
       /* CreatePirates(&listheadobjs,4,x0,y0);  */
-      /* snprintf(text,TEXTMENMAXLEN,"PIRATES!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));  */
+      /* snprintf(text,MAXTEXTLEN,"PIRATES!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));  */
       CreateAsteroids(&listheadobjs,6,x0,y0); 
-      snprintf(text,TEXTMENMAXLEN,"ASTEROIDS!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE)); 
+      snprintf(text,MAXTEXTLEN,"ASTEROIDS!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE)); 
 
       Add2TextMessageList(&listheadtext,text,0,-1,0,100,0);
       if(GameParametres(GET,GNET,0)==TRUE){
@@ -2254,7 +2082,7 @@ void Collision(struct HeadObjList *lh){
   float damage;
   float v;
   float a,b;
-  char text[TEXTMENMAXLEN];  
+  char text[MAXTEXTLEN];  
   int i,j;
   int gkplanets,gnet,gnplayers;
   int proc;
@@ -2520,7 +2348,7 @@ void Collision(struct HeadObjList *lh){
 		  for(i=0;i<=gnplayers+1;i++){
 		    if(players[obj->player].team==players[i].team){
 		      players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);;
-		      snprintf(text,TEXTMENMAXLEN,"(%d) PLANET %d discovered",obj->pid,pnt->id);
+		      snprintf(text,MAXTEXTLEN,"(%d) PLANET %d discovered",obj->pid,pnt->id);
 		      Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0);
 		    }
 		  }
@@ -2637,7 +2465,7 @@ void Collision(struct HeadObjList *lh){
 		}
 		
 		if(objt1->player==actual_player && cv!=objt1){
-		  snprintf(text,TEXTMENMAXLEN,"(%c %d) HELP",Type(objt1),objt1->pid);
+		  snprintf(text,MAXTEXTLEN,"(%c %d) HELP",Type(objt1),objt1->pid);
 		  Add2TextMessageList(&listheadtext,text,objt1->id,objt1->player,0,100,2);
 		}
 	      }
@@ -2787,13 +2615,13 @@ void Collision(struct HeadObjList *lh){
 		  }
 		  
 		  if(players[obj1->in->player].team!=players[obj1->player].team){
-		    char text[TEXTMENMAXLEN];
+		    char text[MAXTEXTLEN];
 		    if(players[obj1->in->player].team != 1){
 		      GetInformation(&players[obj1->player],&players[obj1->in->player],obj1);
 		    }
 		    Experience(obj1,50);  /* Experience for conquest a planet */
 		    
-		    snprintf(text,TEXTMENMAXLEN,"Planet %d LOST",obj1->in->id);
+		    snprintf(text,MAXTEXTLEN,"Planet %d LOST",obj1->in->id);
 		    Add2TextMessageList(&listheadtext,text,obj1->in->id,obj1->in->player,0,100,2);
 		    
 		    obj1->in->player=obj1->player;
@@ -3749,7 +3577,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   Object *planet;
   Object *objt;
   float d2;
-  char point[TEXTMENMAXLEN];
+  char point[MAXTEXTLEN];
   char tmpcad[16];
   int x,y;
   int h,m,s;
@@ -3927,7 +3755,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   }
   glen=0;
   while(lh!=NULL){
-    strncpy(point,lh->info.text,TEXTMENMAXLEN);
+    strncpy(point,lh->info.text,MAXTEXTLEN);
     if(lh->info.dest!=actual_player && lh->info.dest !=-1){
       lh->info.duration=0;
       lsw=1;
@@ -4243,6 +4071,11 @@ void PrintGameOptions(void){
   
   printf("\tUniverse size: %d\n",GameParametres(GET,GULX,0));
 
+  if(GameParametres(GET,GNET,0))
+    printf("\tnet game: yes\n");
+  else
+    printf("\tnet game: no\n");
+
 }
 
 
@@ -4253,15 +4086,14 @@ void SetGameParametres(struct Parametres param){
 
   if(param.server==TRUE||param.client==TRUE){
     GameParametres(SET,GNET,TRUE);
+    printf("NET\n");
+    if(param.server==TRUE){
+      GameParametres(SET,GMODE,SERVER);
+    }
+    if(param.client==TRUE){
+      GameParametres(SET,GMODE,CLIENT);
+    }
   }
-
-  if(param.server==TRUE){
-    GameParametres(SET,GMODE,SERVER);
-  }
-  if(param.client==TRUE){
-    GameParametres(SET,GMODE,CLIENT);
-  }
-
 
   GameParametres(SET,GNGALAXIES,param.ngalaxies);
   GameParametres(SET,GNPLANETS,param.nplanets);
@@ -4296,7 +4128,11 @@ void SetGameParametres(struct Parametres param){
   GameParametres(SET,GHEIGHT,DEFAULTHEIGHT);
   GetGeom(param.geom,&width,&height);
   GameParametres(SET,GWIDTH,width);
-  GameParametres(SET,GHEIGHT,height);
+  GameParametres(SET,GHEIGHT,height-GameParametres(GET,GPANEL,0));
+  printf("gpanel: %d\n",GameParametres(GET,GPANEL,0));
+  printf("W: %d H: %d \n",    GameParametres(GET,GWIDTH,0),GameParametres(GET,GHEIGHT,0));
+  printf("W: %d H: %d \n",width,height);
+
 
   /*********** process identifier ***********/
 
@@ -4398,7 +4234,7 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
   *cc=ccdatap;
 
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    snprintf(players[i].playername,PLAYERNAMEMAXLEN,"player%d",i);
+    snprintf(players[i].playername,MAXTEXTLEN,"player%d",i);
     players[i].id=i;
     players[i].pid=GameParametres(GET,GNPLANETS,0)+1;
     players[i].proc=0;
@@ -4439,13 +4275,13 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
       if(i==1){
 	players[i].proc=1;
 	if(strlen(clientname)>0){
-	  snprintf(players[i].playername,PLAYERNAMEMAXLEN,"%s",clientname);	
+	  snprintf(players[i].playername,MAXTEXTLEN,"%s",clientname);	
 	}
       }
       if(i==2){
 	players[i].control=HUMAN;
 	if(strlen(param.playername)>0){
-	  snprintf(players[i].playername,PLAYERNAMEMAXLEN,"%s",param.playername);
+	  snprintf(players[i].playername,MAXTEXTLEN,"%s",param.playername);
 	}
       }
     }
@@ -4453,13 +4289,13 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
       if(i==1){
 	players[i].control=HUMAN;
 	if(strlen(param.playername)>0){
-	  snprintf(players[i].playername,PLAYERNAMEMAXLEN,"%s",param.playername);
+	  snprintf(players[i].playername,MAXTEXTLEN,"%s",param.playername);
 	}
       }
     }
   }
 
-  snprintf(players[GameParametres(GET,GNPLAYERS,0)+1].playername,PLAYERNAMEMAXLEN,"%s","pirates");
+  snprintf(players[GameParametres(GET,GNPLAYERS,0)+1].playername,MAXTEXTLEN,"%s","pirates");
 
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){ /* HERE TODO include ccdata in player*/
     ccdatap[i].player=i;
@@ -4545,3 +4381,203 @@ void SaveRecord(char *file,struct Player *players,int record){
   }
 }
 
+
+
+void InitGameVars(void){
+  int i;
+  struct Sockfd sfd;
+    /****** start server and client *********/
+    
+    if(GameParametres(GET,GNET,0)==TRUE){
+      if(param.server==TRUE){
+	printf("SERVER\n");
+	OpenComm(0,param,&sfd);
+	printf("opencomm finished\n");
+	StartComm(0,&sfd);
+      }
+      if(param.client==TRUE){
+	printf("CLIENT\n");
+	OpenComm(1,param,&sfd);
+	printf("opencomm finished\n");
+	StartComm(1,&sfd);
+      }  
+      printf("conexion established\n");
+      
+      /* synchronization with comm threads  */
+      sem_wait(&sem_barrier);
+    }
+    /****** --start server and client *********/
+    
+    /*****************************************************************/
+    /* client and server now known all the game options              */
+    /*****************************************************************/
+    
+    listheadobjs.next=NULL;
+    listheadobjs.n=0;
+    listheadplanets.next=NULL;
+    listheadplanets.n=0;
+    listheadtext.next=NULL;
+    listheadtext.info.n=0;
+    listheadnearobjs.next=NULL;
+    listheadnearobjs.n=0;
+    for(i=0;i<4;i++)fobj[i]=0;
+    gtime0=0;
+    
+    /********** players ***********/
+    CreatePlayers(&players,&ccdatap);
+    /********** --players ***********/
+    
+    /********** teams ***********/
+    CreateTeams(players,param);
+    /********** --teams **********/
+    
+    if(param.queen){
+      printf("WARNING: Queen mode set to ON.\n");
+      GameParametres(SET,GQUEEN,TRUE);
+    }
+    
+    /******** Create Universe **************/
+    if(param.client==FALSE){
+      printf("CreateUniverse()...");
+      CreateUniverse(GameParametres(GET,GULX,0),GameParametres(GET,GULY,0),&listheadobjs,planetnames);
+      CreatePlanetList(listheadobjs,&listheadplanets);
+      printf("...done\n");
+      printf("CreateShips()..."); 
+      CreateShips(&listheadobjs); 
+      //    CreateTestShips(&listheadobjs);
+      printf("...done\n"); 
+    }
+    /******** -- Create Universe **************/
+    
+    listheadcontainer=malloc((GameParametres(GET,GNPLANETS,0)+1)*sizeof(struct HeadObjList));
+    g_memused+=(GameParametres(GET,GNPLANETS,0)+1)*sizeof(struct HeadObjList);
+    if(listheadcontainer==NULL){
+      fprintf(stderr,"ERROR in malloc main()\n");
+      exit(-1);
+    }
+    for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
+      listheadcontainer[i].next=NULL;
+      listheadcontainer[i].n=0;
+    }
+    
+    listheadkplanets=malloc((GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct HeadObjList));
+    g_memused+=(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct HeadObjList);
+    if(listheadkplanets==NULL){
+      fprintf(stderr,"ERROR in malloc main()\n");
+      exit(-1);
+    }
+    for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+      listheadkplanets[i].next=NULL;
+      listheadkplanets[i].n=0;
+    }
+    
+    /********* sending and receiving Universe *****************/
+    
+    if(param.server==TRUE){
+      if(ExecSave(listheadobjs,SAVETMPFILE)!=0){
+	fprintf(stderr,"Error in main(): I cant open %s\n",SAVETMPFILE);
+	exit(-1);
+      }
+      /* printf("gid: %d\n",g_objid); */
+      SetModifiedAll(&listheadobjs,ALLOBJS,SENDOBJUNMOD,TRUE);
+      p_time=GetTime();
+    }
+    
+    if(GameParametres(GET,GNET,0)==TRUE){
+      sem_post(&sem_barrier1);
+      sem_wait(&sem_barrier);
+    }
+    
+    if(param.client==TRUE){
+      
+      /* printf("BEF GU:  gid:%d\n",g_objid); */
+      /* printf("gid loc:%d\n",glocal.g_objid); */
+      /* printf("gid rem:%d\n",gremote.g_objid); */
+      
+      //    sprintf(players[1].playername,"%s",param.playername);
+      GetUniverse();
+      /* printf("AFTER GU:  gid:%d\n",g_objid); */
+      /* printf("gid loc:%d\n",glocal.g_objid); */
+      /* printf("gid rem:%d\n",gremote.g_objid); */
+      g_objid=glocal.g_objid;
+      
+      SetModifiedAll(&listheadobjs,ALLOBJS,SENDOBJUNMOD,TRUE);
+      CreatePlanetList(listheadobjs,&listheadplanets);
+    }
+    /********* --sending and receiving Universe *****************/
+    
+    actual_player=1;
+    if(GameParametres(GET,GMODE,0)==SERVER){ /* only two human players, by now*/ 
+      actual_player=2;
+    }
+    actual_player0=actual_player;
+    players[actual_player].control=HUMAN;
+    
+    printf("Actual Player: %d\n",actual_player);
+#if DEBUG
+    if(debuginit){
+      for(i=1;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+	printf("PLAYER: %d\n",i);
+	printf("\tcontrol: %d\n",players[i].control);
+	printf("\tproc: %d\n",players[i].proc);
+      }
+    }
+#endif
+    DestroyObjList(&listheadplayer); 
+    listheadplayer.n=0; 
+    listheadplayer.next=NULL; 
+    CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
+    
+    
+    cv=NextCv(&listheadplayer,cv,actual_player);
+    if(cv!=NULL){
+      habitat.type=cv->habitat;
+      habitat.obj=cv->in;
+      cv->selected=TRUE;
+    }
+    
+    /* Adding planets to players list */
+    AddPlanets2List(&listheadobjs,players);   
+    
+    /* pruebas verlet list */
+    if(0){
+      struct VerletList *vl;
+      printf("Creating verlet list ...");
+      vl=CreateVerletList(listheadobjs);
+      printf(" ...done\n");
+      printf("printing ...");
+      PrintVerletList(vl);
+      printf("... done\n");
+      printf("destrying ...");
+      DestroyVerletList(vl);
+      printf("... done\n");
+      printf("printing ...");
+      PrintVerletList(vl);
+      printf("... done\n");
+      
+    }
+    /* --pruebas verlet list */
+    
+    
+    /* print teams */
+    PrintTeams(players);
+    
+#if CELLON
+    {
+      int nx,ny;
+      nx=GameParametres(GET,GULX,0)/2000;
+      ny=GameParametres(GET,GULY,0)/2000;
+      
+      cell=malloc(nx*ny*sizeof(int));
+      if(cell==NULL){ 
+	fprintf(stderr,"ERROR in malloc (creating cell)\n"); 
+	exit(-1); 
+      }
+      for(i=0;i<nx*ny;i++){
+	cell[i]=0;
+      }
+    } 
+#endif    
+    
+    PrintGameOptions();
+}

@@ -33,7 +33,7 @@ float Random(int a){
   returns a random float between (0,1) from the table rtable 
   if a >= 0 set read index to a
   if a= -2 return read index
-  if a=-3 recalc random values 
+  if a= -3 recalc random values 
 */
   static float rtable[1000];
   static int n=0;
@@ -52,6 +52,7 @@ float Random(int a){
     for(i=0;i<1000;i++){
       rtable[i]=(float)rand()/RAND_MAX;
     }
+    n=0;
     sw=1;
   }
   if(n>=1000)n=0;
@@ -371,7 +372,7 @@ void DelCharFromCad(char *cad,char *filter){
   //  printf("\"");
   while(cad[n]!='\0'){
     //    printf("%c",*c);
-    if(n>=TEXTMENMAXLEN-1)break;
+    if(n>=MAXTEXTLEN-1)break;
     if(strchr(filter,cad[n])==NULL){ /* not found */
       //  printf("not found :%c\n",cad[n]);
     }

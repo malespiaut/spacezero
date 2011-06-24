@@ -25,8 +25,9 @@
 
 #include <string.h>
 #include <errno.h>
-
+#include <stdio.h>
 #include "save.h"
+
 
 extern int actual_player;
 extern int record;
@@ -57,14 +58,6 @@ int debugsave=1;
 #endif
 #define MINORSAVEVERSION "0.81.01" /* the save file must be at least this version */
 
-
-
-/* char optionsfile[128]=""; */
-/* char savefile0[128]=""; /\* server *\/ */
-/* char savefile1[128]=""; /\* client *\/ */
-/* char savefiletmp[128]=""; /\* tmp save file *\/ */
-
-//char recordfile[128]="";
 
 int CreateDir(char *dir){
   /*
@@ -226,7 +219,6 @@ int ExecSave(struct HeadObjList lh,char *nom){
   /*control*/
   control=((float)rand()/RAND_MAX);
   fprintf(fp,"%f\n",control);
-  //  printf("control1: %f\n",control);
   
   /* net or local game */ 
   fprintf(fp,"%d\n",GameParametres(GET,GNET,0));
@@ -452,7 +444,6 @@ int ExecLoad(char *nom){
     perror("fscanf");
     exit(-1);
   }
-  printf("control1: %f\n",control);
   
   if(strcmp(versionfile,MINORSAVEVERSION)>=0){
     printf("Version:  game:(%s)  file:(%s) >= %s  ... OK\n",version,versionfile,MINORSAVEVERSION);
@@ -893,7 +884,7 @@ int ExecLoad(char *nom){
     exit(-1);
   }
 
-  printf("control2: %f ...",control2);
+  /* printf("control2: %f ...",control2); */
   if(control!=control2){
     fprintf(stderr,"ERROR Execload(). Error in save file. May be corrupted.\n");
     exit(-1);
@@ -1791,3 +1782,68 @@ void FscanfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo){
   }
   pinfo->planet=planet;
 }
+
+void SaveParamOptions(char *file,struct Parametres *par){
+
+  FILE *fp;
+
+  if((fp=fopen(file,"wt"))==NULL){
+    fprintf(stdout,"No puede abrirse el archivo: %s",file);
+    exit(-1);
+  }
+  printf("saving options to file: %s\n",file);
+  fprintf(fp,"%s\n",version);
+  fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d\n",
+	 par->ngalaxies,par->nplanets, par->nplayers, par->ul,par->kplanets,
+	 par->sound,par->music,par->cooperative,par->compcooperative,par->queen,
+	 par->pirates,par->port);
+  
+  if(strlen(par->IP)==0)strcpy(par->IP,DEFAULT_IP);
+  fprintf(fp,"%s\n",par->IP);
+  if(strlen(par->playername)==0)strcpy(par->playername,"player");
+  fprintf(fp,"%s\n",par->playername);
+  if(strlen(par->font)==0)strcpy(par->font,"6x13");
+  fprintf(fp,"%s\n",par->font);
+  if(strlen(par->geom)==0)strcpy(par->geom,"1024x550"); //HERE add default value
+  fprintf(fp,"%s\n",par->geom);
+
+  fclose(fp);
+} 
+
+void LoadParamOptions(char *file,struct Parametres *par){
+
+  FILE *fp; 
+  char version[MAXTEXTLEN];
+
+  if((fp=fopen(file,"rt"))==NULL){
+    fprintf(stdout,"No puede abrirse el archivo: %s",file);
+    exit(-1);
+  }
+  fscanf(fp,"%s",version);
+  /* HERE check version */
+
+  fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d",
+	 &par->ngalaxies,&par->nplanets, &par->nplayers, &par->ul,&par->kplanets,
+	 &par->sound,&par->music,&par->cooperative,&par->compcooperative,&par->queen,
+	 &par->pirates,&par->port);
+  
+  fscanf(fp,"%s",par->IP);
+  fscanf(fp,"%s",par->playername);
+  fscanf(fp,"%s",par->font);
+  fscanf(fp,"%s",par->geom);
+  fclose(fp);
+} 
+
+void PrintParamOptions(struct Parametres *par){
+
+  printf("version:\"%s\"\n",version);
+  printf("%d %d %d %d %d %d %d %d %d %d %d %d\n",
+	 par->ngalaxies,par->nplanets, par->nplayers, par->ul,par->kplanets,
+	 par->sound,par->music,par->cooperative,par->compcooperative,par->queen,
+	 par->pirates,par->port);
+  
+  printf("IP:\"%s\"\n",par->IP);
+  printf("name:\"%s\"\n",par->playername);
+  printf("font:\"%s\"\n",par->font);
+  printf("geom:\"%s\"\n",par->geom);
+} 

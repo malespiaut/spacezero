@@ -50,7 +50,7 @@
 
 
 #define DEFAULT_IP "127.0.0.1"
-#define DEFAULT_PORT 8000
+#define DEFAULT_PORT 50100
 
 
 #define NETSTEP 3
@@ -107,11 +107,16 @@ struct Thread_arg{
   int n;
 };
 
+struct Sockfd{
+  int sfd,sfd2;
+  int nsfd,nsfd2;
+};
 
-
+  
 /* Declaracion de funciones */
-
-int OpenComm(int mode,struct Parametres param);
+  
+int OpenComm(int mode,struct Parametres param,struct Sockfd *sfd);
+int StartComm(int mode,struct Sockfd *sockfd);
 void *CommClient(struct Thread_arg *);
 void *CommServer(struct Thread_arg *);
 

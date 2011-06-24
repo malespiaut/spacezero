@@ -66,7 +66,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   float a,b,ia;
   float d2_enemy;
   float vx,vy,v2;
-  char text[TEXTMENMAXLEN];
+  char text[MAXTEXTLEN];
   float alcance2;
   struct NearObject nobjs[4];
   int i;
@@ -151,21 +151,21 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       if(obj->in!=NULL && (players[obj->player].team == players[obj->in->player].team)){
 	objt=obj->in;
 	if(ship_enemy->habitat==H_SPACE){
-	  snprintf(text,TEXTMENMAXLEN,"(P %d) ENEMIES NEAR",objt->pid);
+	  snprintf(text,MAXTEXTLEN,"(P %d) ENEMIES NEAR",objt->pid);
 	  value=1;
 	}
 	else{
-	  snprintf(text,TEXTMENMAXLEN,"Planet %d under attack!!",objt->pid);
+	  snprintf(text,MAXTEXTLEN,"Planet %d under attack!!",objt->pid);
 	  value=3;
 	}
       }
       else{
-	snprintf(text,TEXTMENMAXLEN,"(%c %d) ENEMIES NEAR",Type(obj),obj->pid);
+	snprintf(text,MAXTEXTLEN,"(%c %d) ENEMIES NEAR",Type(obj),obj->pid);
 	value=1;
       }
       break;
     case ASTEROID:
-      snprintf(text,TEXTMENMAXLEN,"(%c %d) ASTEROIDS NEAR",Type(obj),obj->pid);
+      snprintf(text,MAXTEXTLEN,"(%c %d) ASTEROIDS NEAR",Type(obj),obj->pid);
       break;
     default:
       break;
@@ -250,7 +250,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 		if(obj->in->id==objt->id){
 		  if(obj->player==act_player && mainord->h==0){
 		    /*		    fprintf(stdout,"(%c %d) HE LLEGADO a %d\n",Type(obj),obj->id,obj->in->id); */
-		    snprintf(text,TEXTMENMAXLEN,"(%c %d) ARRIVED TO %d",Type(obj),obj->pid,obj->in->id);
+		    snprintf(text,MAXTEXTLEN,"(%c %d) ARRIVED TO %d",Type(obj),obj->pid,obj->in->id);
 		    Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0);
 		  }
 		  mainord->h=1;
@@ -280,7 +280,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	  if(mainord->c==-1){ /* destination is a sector */ 
 	    if(fabs(obj->x-mainord->a)<400 && fabs(obj->y-mainord->b)<400){
 	      if(obj->player==act_player && mainord->h==0 && mainord->id!=EXPLORE){
-		snprintf(text,TEXTMENMAXLEN,"(%c %d) ARRIVED TO %d %d",
+		snprintf(text,MAXTEXTLEN,"(%c %d) ARRIVED TO %d %d",
 			 Type(obj),obj->pid,(int)(mainord->a/SECTORSIZE)-(mainord->a<0),(int)(mainord->b/SECTORSIZE)-(mainord->b<0));
 		Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0);
 	      }
@@ -3216,7 +3216,7 @@ void GetInformation(struct Player *p1,struct Player *p2,Object *obj){
     player 1 get some information from player 2
   */
   struct IntList *ks;
-  char text[TEXTMENMAXLEN];  
+  char text[MAXTEXTLEN];  
 
   if(p1==NULL||p2==NULL)return;
   if(obj==NULL)return;
@@ -3232,10 +3232,10 @@ void GetInformation(struct Player *p1,struct Player *p2,Object *obj){
     }
     else{
       /* if are enemies */ 
-      if((2./3*GameParametres(GET,GNPLANETS,0))*Random(-1)<1){
+      if((2./3*GameParametres(GET,GNPLANETS,0))*((float)rand()/RAND_MAX)<1){
 	if(!IsInIntList(p1->kplanets,ks->id)){
 	  p1->kplanets=Add2IntList(p1->kplanets,ks->id);
-	  snprintf(text,TEXTMENMAXLEN,"Received info from enemy");
+	  snprintf(text,MAXTEXTLEN,"Received info from enemy");
 	  /*	  fprintf(stdout,"Received info from enemy"); */
 	  Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0);
 	}

@@ -45,9 +45,10 @@
 #define PI 3.14159265
 
 
-
-#define TEXTMENMAXLEN 48
-#define PLAYERNAMEMAXLEN 32
+//#define MAXMENULEN 32
+//#define TEXTMENMAXLEN 48
+//#define PLAYERNAMEMAXLEN 32
+#define MAXTEXTLEN 128
 /* window properties */
 #define DEFAULTWIDTH 1024//900//1024//800//1024//1152
 #define DEFAULTHEIGHT 550//600 //500 //550//700//768
@@ -116,7 +117,7 @@
 #define SAVEFILENET "saven"
 #define SAVEFILESINGLE SAVEFILE0 
 #define RECORDFILE "record"
-#define OPTIONSFILE "options"
+#define OPTIONSFILE "options2"
 #define DATADIR0 "./dat/"
 #define DATADIR1 "/usr/local/share/spacezero/" /* tar.gz */
 //#define DATADIR1 "/usr/share/games/spacezero/" /* DEB pkg*/
@@ -180,7 +181,7 @@ enum SZ_Error{
 
 struct TextList{
   int color;
-  char text[TEXTMENMAXLEN];  /* text */
+  char text[MAXTEXTLEN];  /* text */
   struct TextList *next;
 };
 
@@ -197,7 +198,7 @@ struct TextMessage{
   int time;    /* time of the text */
   int value ;  /* relevance of the message */
   int duration; /* duration of the text*/
-  char text[TEXTMENMAXLEN];  /* text */
+  char text[MAXTEXTLEN];  /* text */
 };
 
 struct TextMessageList{

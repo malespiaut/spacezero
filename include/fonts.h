@@ -22,6 +22,9 @@
 		E-mail: mrevenga at users.sourceforge.net
 		version 0.80 May 2011
 ****/
+#ifndef _FONTS_
+#define _FONTS_
+
 
 #define NUMFONTNAMES 9
 
@@ -50,3 +53,4 @@ char *fontnames2[] =
     "*times*",
     "*courier*"};
 
+#endif

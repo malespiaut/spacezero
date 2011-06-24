@@ -28,15 +28,16 @@
 
 #include "general.h"
 #include "functions.h"
-
-#define MAXMENULEN 32
+#include "help.h"
+#include "shell.h"
 
 /* menu item types */
-#define MENUITEMTEXT 0
-#define MENUITEMBOOL 1
-#define MENUITEMCHECKBOX 2
-#define MENUITEMTEXTENTRY 3
-#define MENUITEMCOMBO 4
+#define MENUITEMTEXT 0  /* only show text */
+#define MENUITEMBOOL 1  /* two values: yes ,no */
+#define MENUITEMCHECKBOX 2 /* as ITEMBOOL */
+#define MENUITEMTEXTENTRY 3 /* free text entry */
+#define MENUITEMCOMBO 4  /* combo list */
+#define MENUITEMACTION 5 /* */ 
 
 /* menu item ids */
 #define ITEM_0 0
@@ -62,12 +63,22 @@
 #define ITEM_geom 20
 #define ITEM_start 21
 #define ITEM_quit 22 
+#define ITEM_server 23 
+#define ITEM_client 24
+#define ITEM_default 25 
+
+
+/* menu edit state   */
+#define ITEM_ST_FALSE 0
+#define ITEM_ST_SHOW 1
+#define ITEM_ST_EDIT 2
+#define ITEM_ST_UPDATE 3
 
 #define MENUENTER 1
 #define MENUESC 2
 
 struct MenuHead{
-  char title[MAXMENULEN];
+  char title[MAXTEXTLEN];
   int n;
   int nactive;
   int active;
@@ -78,8 +89,8 @@ struct MenuItem{
   int id;
   int type;
   int active;
-  char text[MAXMENULEN];
-  char value[MAXMENULEN];
+  char text[MAXTEXTLEN];
+  char value[MAXTEXTLEN];
   struct MenuItem *next;
   struct MenuHead *nexthead;
 };
@@ -89,6 +100,7 @@ void PrintAllMenu(struct MenuHead *mh);
 struct MenuHead *MenuHeadNew(char *title);
 int Add2MenuHead(struct MenuHead *mhead,struct MenuItem *item0,char *title);
 char *GetOptionValue(int id);
+char *GetTextEntry(struct MenuItem *item,char *);
 struct MenuHead *CreateMenu(void);
 int  UpdateMenu(struct MenuHead *mhead,struct MenuHead *mactual,struct Keys *keys;);
 void MenuUp(struct MenuHead *mhead);
@@ -97,6 +109,6 @@ int MenuEnter(struct MenuHead *mhead);
 void MenuEsc(struct MenuHead *mhead);
 struct MenuHead *SelectMenu(struct MenuHead *mhead);
 void MenuItemActive(struct MenuHead *mhead,int active);
-void Funct01(struct MenuItem *item);
+void Funct01(struct MenuItem *item,char *);
 
 #endif

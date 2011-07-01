@@ -591,7 +591,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 #endif    
 
     if(execord->time>=0){
-      if(cv==obj)printf("order: %d\n",execord->id);      
+      /* if(cv==obj)printf("order: %d\n",execord->id);  */
       switch(execord->id){
       case FIRE:
 	if(!obj->weapon->cont1 && obj->gas > obj->weapon->projectile.gascost && 
@@ -1114,7 +1114,7 @@ void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct 
 
   if(obj->dest->in!=obj->in && obj->mode==LANDED){
     ExecStop(obj,0);
-    if(cv==obj)printf("stop\n");
+    /* if(cv==obj)printf("stop\n"); */
     return;
   }
   if(morder!=NULL){
@@ -2389,7 +2389,7 @@ int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
       if(obj->mode!=LANDED && 
 	 morderid==STOP){
 	*orderid=LAND;
-	printf("land\n");
+	/* printf("land\n"); */
       }
       
       if(ship_enemy->habitat==H_SPACE && morderid!=STOP){

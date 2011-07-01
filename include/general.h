@@ -63,7 +63,7 @@
 #define DT .42
 #define RESOURCEFACTOR 1.2 /* velocity factor for getting resource from planets */
 #define COSTFACTOR 1.0     /* multiplicative factor to ships cost */
-#define DAMAGEFACTOR 1.0;  /* multiplicative factor to weapon damage */
+#define DAMAGEFACTOR .9;  /* multiplicative factor to weapon damage */
 
 #define PLANETSKNOWN 0
 #define ENEMIESKNOWN 0

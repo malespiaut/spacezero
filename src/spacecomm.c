@@ -707,7 +707,7 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
     if(obj->type==PLANET){ // HERE , must be this mod 
       obj->modified=SENDOBJPLANET; 
     }
-
+    /* printf("(ttl:%d) ",obj->ttl); */
     nbytes+=CopyObj2Buffer(buffer,obj,obj->modified);
     g_nobjsend++;
     if(obj->type==PROJECTILE){
@@ -2676,12 +2676,19 @@ void Setttl0(struct HeadObjList *lh){
   struct ObjList *ls;
   Object *obj=NULL;
   int proc,gmode,enemy;
+  int sw;
 
   proc=GetProc();
   gmode=GameParametres(GET,GMODE,0);
+
+  /***TODO*****/
+  /* calc which team is allied of another proccessor */
+
+  /********/
+
+
   ls=lh->next;
   while(ls!=NULL){
-
     if(proc!=players[ls->obj->player].proc){
       ls=ls->next;continue;
     }
@@ -2701,36 +2708,59 @@ void Setttl0(struct HeadObjList *lh){
     case SERVER:
     /* server   */ 
     /* send data if an enemy is near */      
+      sw=0;
       switch (obj->type){
       case PROJECTILE:
       case ASTEROID:
       case SHIP:
+	/*    players[actual_player].control=HUMAN; */
 	if(1||ENEMIESKNOWN==0){
 	  if(obj->ttl<=0){ /* objects ready to send */
-	    enemy=AreEnemy(lh,proc,obj);
-	    switch(enemy){ /*  */
-	    case 0:  /* (4r,inf) */
-	      obj->ttl=100; /* dont send */
-	      break;
-	    case 1:  /* (3r,4r) */
-	      obj->ttl=64;    /* dont send */
-	      break;
-	    case 2:  /* (1.5r,3r) */
-	      obj->ttl=16;  /* dont send */
-	      break;
-	    case 3:  /* (900p,1.5r) */
-	      if(obj->ttl<0){
-		obj->ttl=4; /* send */
+
+	    if(param.cooperative==TRUE && players[obj->player].control==HUMAN){
+	      if(obj->ttl==0){ /* send object */
 		SetModified(obj,SENDOBJMOD0);
 	      }
-	      break;
-	    case 4:  /* (0,900p) */
-	    default:
-	      obj->ttl=0;
-	      SetModified(obj,SENDOBJMOD);
-	      break;
+	      if(obj->ttl<0){   /* already send */
+	      sw=1;
+	      }
+
 	    }
-	  
+	    else{
+	      sw=1;
+	    }
+	    if(sw){ /* reassign  ttl */
+	      enemy=AreEnemy(lh,proc,obj);
+	      switch(enemy){ /*  */
+	      case 0:  /* (4r,inf) */
+		obj->ttl=90+obj->id%20; /* dont send */
+		break;
+	      case 1:  /* (3r,4r) */
+		obj->ttl=58+obj->id%12;    /* dont send */
+		break;
+	      case 2:  /* (1.5r,3r) */
+		obj->ttl=16;  /* dont send */
+		break;
+	      case 3:  /* (900p,1.5r) */
+		if(obj->ttl<0){
+		  obj->ttl=4; /* send */
+		  SetModified(obj,SENDOBJMOD0);
+	      }
+		break;
+	      case 4:  /* (0,900p) */
+	      default:
+		obj->ttl=0;
+		SetModified(obj,SENDOBJMOD);
+		break;
+	      }
+	    }
+	    /*****************************/
+	    /*TODO: ADD if it is allied of another processor send */
+	    
+
+
+
+	    /*****************************/
 	  }
 	}
 	else{
@@ -2811,10 +2841,10 @@ void Setttl0(struct HeadObjList *lh){
 	    switch(enemy){ /*  */
 	      
 	    case 0:  /* (4r,inf) */
-	      obj->ttl=100;
+	      obj->ttl=90+obj->id%20;
 	      break;
 	    case 1:  /* (3r,4r) */
-	      obj->ttl=64; 
+	      obj->ttl=56+obj->id%16;
 	      break;
 	    case 2:  /* (1.5r,3r) */
 	      obj->ttl=16;

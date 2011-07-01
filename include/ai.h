@@ -45,24 +45,25 @@
 
 #define NOTHING 0
 #define TURN 1
-#define ACCEL 2
-#define BRAKE 3
-#define STOP 4
-#define ATTACK 5
-#define LAND 6
-#define TAKEOFF 7
-#define TURNACCEL 8
-#define FIRE 9
+#define TURNACCEL 2
+#define ACCEL 3
+#define BRAKE 4
+#define STOP 5
+#define FIRE 6
+#define ATTACK 7
+#define LAND 8
+#define TAKEOFF 9
 #define GOTO 10
 #define EXPLORE 11
-#define SELECT 12
-#define REPITE 13
-#define BUY 14
-#define SELL 15
-#define UPGRADE 16
-#define WRITE 17
-#define PATROL 18
-#define RUNAWAY 19
+#define RETREAT 12
+#define SELECT 13
+#define REPITE 14
+#define BUY 15
+#define SELL 16
+#define UPGRADE 17
+#define WRITE 18
+#define PATROL 19
+#define RUNAWAY 20
 
 
 struct PlanetInfo{
@@ -116,7 +117,7 @@ Segment *LandZone(struct Planet *planet);
 Object *Coordinates(struct HeadObjList *lhobjs,int id,float *x,float *y);
 void ExecGoto(Object *obj,struct Order *ord);
 void ExecLand(Object *obj,struct Order *order);
-void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *order,float d2);
+void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *order,struct Order *morder,float d2);
 void ExecStop(Object *obj,float v0);
 int ExecBrake(Object *obj,float v0);
 void ExecTurn(Object *obj,float ia);
@@ -128,7 +129,7 @@ void Play(Object *obj,int sid,float vol);
 
 /* int SetModifiedAll20(struct HeadObjList lh,int proc); */
 
-int Risk(struct HeadObjList *lhobjs,Object *obj,int *order_id);
+int Risk(struct HeadObjList *lhobjs,Object *obj,int,int *order_id);
 void DelAllOrder(Object *obj);
 void DelFirstOrder(Object *obj);
 struct Order *ReadOrder(struct Order *,Object *obj,int);

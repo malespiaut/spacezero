@@ -587,10 +587,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   }
   GameParametres(SET,GHEIGHT,GameParametres(GET,GHEIGHT,0)-GameParametres(GET,GPANEL,0));
 
-
   /********* --fonts **********/
-
-
 
   return(d_a);
 }
@@ -671,7 +668,7 @@ gint configure_event(GtkWidget *widget, GdkEventConfigure *event){
 			widget->allocation.height,
 			-1);
 
-  GameParametres(SET,GHEIGHT,widget->allocation.height-PANEL_HEIGHT); 
+  GameParametres(SET,GHEIGHT,widget->allocation.height-GameParametres(GET,GPANEL,0)); 
   GameParametres(SET,GWIDTH,widget->allocation.width); 
   
   return TRUE;
@@ -709,8 +706,9 @@ gint button_release(GtkWidget *widget,GdkEventButton *event){
   static int lasttime=0;
   int time;
 
-/*   printf("mouse release\n");  */
+
   time=GetTime();
+  /* printf("mouse release %d %d\n",time,lasttime);   */
   if(time-lasttime<6){
     keys.mdclick=TRUE;
   }
@@ -2741,6 +2739,9 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
     case EXPLORE:
       snprintf(point,128,"ORDER: EXPLORE");
       break;
+    case RETREAT:
+      snprintf(point,128,"ORDER: RETREAT");
+      break;
     default:
       snprintf(point,128,"ORDER id: %d",ord->id);
       break;
@@ -2876,6 +2877,7 @@ int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,
   GdkGC *gc;
   static int charw=12;
   static int charh=12;
+  static int cont=0;
   int incy;
   char point[MAXTEXTLEN];
   char point2[MAXTEXTLEN];
@@ -2884,6 +2886,9 @@ int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,
   if(font==NULL)return(0);
   if(head==NULL)return(0);
 
+
+  cont++;
+  if(cont>20)cont=0;
   strcpy(point2,"");
 
   charh=gdk_text_height(font,"Lp",2);
@@ -2921,7 +2926,10 @@ int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,
       }
       else{
 	sprintf(point,"%s ",item->text);
-	sprintf(point2,"%s",GetTextEntry(item,text));
+	if(cont%2)
+	  sprintf(point2,"%s",GetTextEntry(item,text));
+	else
+	  sprintf(point2,"%s_",GetTextEntry(item,text));
       }
       break;
     }
@@ -3002,8 +3010,7 @@ GdkFont *InitFonts(char *fname){
       exit(-1);
     }
   }
-  printf("using font: %s\n",fontname);
-
+  printf("using font: %s panel: %d\n",fontname,GameParametres(GET,GPANEL,0));
   return(font);
 }
 

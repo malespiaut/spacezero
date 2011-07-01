@@ -61,7 +61,7 @@ struct Ordername{
 };
 
 
-struct Shell shells[10];
+struct Shell shells[11];
 struct Ordername ordernames[15];
 
 
@@ -69,6 +69,7 @@ struct Ordername ordernames[15];
 void initshell(void){
   /*
     Initialize the shell
+    not used TODO
    */
 
   ordernames[0].order=GOTO;
@@ -78,8 +79,8 @@ void initshell(void){
 
   strncpy(shells[0].name,"main",16);
   strncpy(shells[0].menu,
-	  "G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPITE   B: BUY   U: UPGRADE   W: WRITE   E: SELL",128);
-  strncpy(shells[0].options,"gxsptrbuwe",16);
+	  "G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPITE   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D: RETREAT",128);
+  strncpy(shells[0].options,"gxsptrbuwed",16);
   shells[0].noptions=10;
   shells[0].orders[0]=GOTO;
   shells[0].orders[1]=EXPLORE;
@@ -91,6 +92,7 @@ void initshell(void){
   shells[0].orders[7]=WRITE;
   shells[0].orders[8]=SELL;
   shells[0].orders[9]=UPGRADE;
+  shells[0].orders[10]=RETREAT;
 
   strcpy(shells[0].par,"");
   shells[0].order=0;
@@ -139,6 +141,11 @@ void initshell(void){
   strncpy(shells[9].menu,"UPGRADE",128);
   strcpy(shells[9].par,"");
   shells[9].order=UPGRADE;
+
+  strncpy(shells[10].name,"retreat",16);
+  strncpy(shells[10].menu,"RETREAT",128);
+  strcpy(shells[10].par,"");
+  shells[10].order=RETREAT;
 }
 
 void Shell_02(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadObjList lhead,struct Keys *key,Object **pcv){
@@ -450,13 +457,21 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   
   if(level==1){
     if(*pcv!=NULL){
-      strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPITE   B: BUY   U: UPGRADE   W: WRITE   E: SELL",128); 
+      int textw;
+
+      strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPITE   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",128); 
+      
+      textw=gdk_text_width(font,cad,strlen(cad));
+      if(textw>GameParametres(GET,GWIDTH,0)){
+	strncpy(cad,"",1);
+	strncpy(cad,"G:GT  X:EXP  S:SLC  P:STP  T:TOFF  R:REP  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",128); 
+      }
+      
     }
     else{
       strncpy(cad,"S: SELECT   W: WRITE",128); 
       key->g=key->x=key->p=key->t=key->r=key->b=key->u=key->e=FALSE;
     }
-//    strncpy(cad,shells[0].menu,128);
     
     if(key->g==TRUE){
       level=2;
@@ -520,6 +535,13 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
       strcpy(ord,"SELL");
       key->e=FALSE;
     }
+
+    if(key->d==TRUE){
+      level=2;
+      order=RETREAT;
+      strcpy(ord,"RETREAT");
+      key->d=FALSE;
+    }
     
     Keystrokes(RESET,NULL);
     
@@ -559,6 +581,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     case STOP:
     case TAKEOFF:
     case REPITE:
+    case RETREAT:
       strcpy(cad,"");
       snprintf(cad,128,"%s %s",ord,par);
       break;
@@ -625,7 +648,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
        strncpy(par,lastpar,16);
     } 
 
-    if(order==GOTO||order==TAKEOFF||order==EXPLORE||order==STOP){
+    if(order==GOTO||order==TAKEOFF||order==EXPLORE||order==STOP||order==RETREAT){
       key->i=TRUE;
     }
 
@@ -731,7 +754,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   char text[MAXTEXTLEN];
   int time;
   float d2,d2b;
-
+  int retreatsw=0;
   int nargs;
   char arg1[100],arg2[100];
 
@@ -753,7 +776,9 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   switch(order){
   case GOTO:
   case TAKEOFF:
+  case RETREAT:
   case EXPLORE:
+  case STOP:
     if(obj->engine.type<=ENGINE1)return(NULL);
     break;
   case SELL:
@@ -777,8 +802,14 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 
   ord.id=NOTHING;
   ord.time=0;
+  retreatsw=0;
 
   switch(order){
+
+  case RETREAT:
+    nargs=1;
+    strcpy(&arg1[0],"n");
+    retreatsw=1;
   case GOTO:
 
     switch(nargs){
@@ -851,7 +882,13 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	    printf("Not Allowed. Destiny is an enemy ship.\n");
 	  }
 	  else{
-	    printf("(%c %d) going to ship %d.\n",Type(obj),obj->pid,obj_dest->pid);
+	    if(obj_dest==obj){
+	      printf("Not Allowed. Destiny is equal than origin.\n");
+	      obj_dest=NULL;
+	      }	
+	    else{
+	      printf("(%c %d) going to ship %d.\n",Type(obj),obj->pid,obj_dest->pid);
+	    }
 	  }
 	  break;
 	default:
@@ -861,7 +898,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       
       if(obj_dest!=NULL){
 	ord.priority=1;
-	ord.id=GOTO;
+	if(!retreatsw)ord.id=GOTO;
+	else ord.id=RETREAT;
 	ord.time=0;
 	ord.g_time=time;
 	ord.a=obj_dest->x;
@@ -872,8 +910,6 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	ord.f=ord.g=ord.h=0;
 	DelAllOrder(obj);
 	AddOrder(obj,&ord);
-
-	//	printf("Ship %d: going to sector %f %f\n",obj->id,ord.a,ord.b);
 
       }
       break;
@@ -993,7 +1029,6 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 
       DelAllOrder(obj_dest);
       AddOrder(obj_dest,&ord);
-      printf("(%c %d) stopping.\n",Type(obj),obj->pid);
     }
     break;
   case TAKEOFF:

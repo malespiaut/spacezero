@@ -50,7 +50,7 @@ Version 0.8 (since 10May2011)
 -!!Rewrite NearestObjAll(), call less times.
 -!!Reordenar, jerarquizar codigo, ficheros.
 -!!Disminuir numero de variables extern (97),58,72,76 grep extern src/*.c include/*h |grep ";" |wc
--!!Disminuir los HERE (74)84,68  grep HERE src/*c include/*h|wc
+-!!Disminuir los HERE (74)84,68,75  grep HERE src/*c include/*h|wc
 -Game statistics.
 -Create charge list (lista de carga).
 -!!toroidal Universe as option.
@@ -64,7 +64,6 @@ Version 0.8 (since 10May2011)
 -!!Damage in collision depends on mass and velocity. Elastic shocks. 
 -!!Change ksectorslist for a three elements list: id,x,y.
 -!!In terminal, messages repite so much.
--!!Send ships info to allies.
 -!!In pause mode consumes CPU, redraw every 5 steps..
 -Size of font.
 -Dont createlists in execload()
@@ -77,6 +76,7 @@ Version 0.8 (since 10May2011)
 -include CELLON code 
 -Review Experience(). save09. training high levels.
 -When select a planet, center map on it , if its known.
+
 
 mouse:
 =====
@@ -103,7 +103,6 @@ AI:
 -evasion maneuver.
 -Avoid enemy shots.
 -Las ordenes dependen de unos objetivos a cumplir.
--Add retreat.
 -!!Fast ship pursuing a slow one: improve ,adjust velocity.
 -ChooseOrder to matrix form.
 	     -send TAKEOFF to ATTACK and GOTO.
@@ -118,8 +117,6 @@ AI:
 -When an enemy ship is near a planet send only the necessary ships.
 -Add a different way to attack planets. 
 -Attacks in planets: turn earlier.
--!!Modified order STOP: in outer space STOP, dont accelerate but can
- fire. Inner a planet dont take off but can fire
 
 Comm:
 ====
@@ -136,8 +133,6 @@ Command shell:
 -Add help in menu.
 -!!ENEMIESKNOWN as game option.
 -!Save several games.
--Ignore order GOTO himself. ie. ship 44 order
- goto 44 must not take effect.
 -Add select x y
 
 Planets:
@@ -188,6 +183,11 @@ X-(070611)Set limits to window geometry: (640,1680)x(312,1050)
 X-(100611)Improve EXPLORE.
 X-(200611)Added: on line help.
 X-(240611)Added: Start up game options menu.
+X-(260611)!!Send ships info to allies.
+X-(270611)!!Modified order STOP: in outer space STOP, dont accelerate but can
+ fire. Inner a planet dont take off but can fire.
+X-(280611)Ignore order GOTO himself.
+X-(280611)!!Add retreat order.
 
 
 BUGS version 0.80

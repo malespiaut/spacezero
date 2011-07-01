@@ -513,6 +513,14 @@ int CheckArgs(struct Parametres p){
     printf("Number of planets must be < %d\n",MAXNUMPLANETS);
     return(1);
   }
+  if(p.ngalaxies<MINNUMGALAXIES){
+    printf("Number of planets must be > %d\n",MINNUMGALAXIES);
+    return(1);
+  }
+  if(p.ngalaxies>MAXNUMGALAXIES){
+    printf("Number of planets must be < %d\n",MAXNUMGALAXIES);
+    return(1);
+  }
   if(p.nplayers<MINNUMPLAYERS){
     printf("Number of players must be > %d\n",MINNUMPLAYERS);
     return(1);
@@ -535,11 +543,16 @@ int CheckArgs(struct Parametres p){
     return(1);
   }
 
-  if(p.port<1024 || p.port>65535){
-    printf("Invalid port: %d. Must be between (1024,65535).\n",p.port);
+  if(p.port<49152 || p.port>65535){
+    printf("Invalid port: %d. Must be between (49152,65535).\n",p.port);
     return(1);
   }
-  return(0);
+  /* TODO */
+  /***** ip *****/ 
+
+  /***** geom *****/ 
+
+ return(0);
 }
 
 

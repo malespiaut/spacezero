@@ -3074,7 +3074,7 @@ void Experience(Object *obj,float pts){
 	    obj->weapon0.nshots++;
 	  }
 	}
-	obj->weapon0.projectile.damage*=1.2*DAMAGEFACTOR;
+	obj->weapon0.projectile.damage*=1.+.2*DAMAGEFACTOR;
       }
       
       if(obj->weapon1.type!=CANNON0){
@@ -3083,7 +3083,7 @@ void Experience(Object *obj,float pts){
 	if(obj->weapon1.max_n<14){ /* max 15 missiles */
 	  obj->weapon1.max_n+=2;
 	}
-	obj->weapon1.projectile.damage*=1.2*DAMAGEFACTOR;
+	obj->weapon1.projectile.damage*=1.+.2*DAMAGEFACTOR;
       }
 
       if(obj->weapon2.type!=CANNON0){
@@ -3091,7 +3091,7 @@ void Experience(Object *obj,float pts){
 	if(obj->weapon2.rate>9){
 	  obj->weapon2.rate--;
 	}
-	obj->weapon2.projectile.damage*=1.2*DAMAGEFACTOR;
+	obj->weapon2.projectile.damage*=1.+.2*DAMAGEFACTOR;
       }
 
       if(obj->shield>.9)obj->shield=.9;

@@ -84,7 +84,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.19c"};
+char version[64]={"0.81.26"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Jun. 2011"};
@@ -112,7 +112,7 @@ struct HeadObjList listheadplanets;    /* list of all planets */
 struct HeadObjList *listheadcontainer; /* lists of objects that contain objects: free space and planets*/
 struct HeadObjList *listheadkplanets;  /* lists of planets known by players */
 struct HeadObjList listheadplayer;     /* list of objects of each player */
-struct HeadObjList listheadnearobjs;   /* list of near enemies objects of actual player. only used in draw map function. */
+
 
 struct TextMessageList listheadtext;
 struct Parametres param;
@@ -136,7 +136,6 @@ struct Draw gdraw;
 void signal_handler(int ,siginfo_t *,void *);
 void int_handler(int);
 void segfault_handler(int);
-
 
 char *savefile;
 char *recordfile;
@@ -493,11 +492,14 @@ gint MenuLoop(gpointer data){
     break;
   }
   if(swexit){
+    char title[64]="";
     gdraw.menu=FALSE;
     gdraw.main=TRUE;
     Keystrokes(RESET,NULL);
     SetDefaultKeyValues(&keys,1);
     SetGameParametres(param);
+    MakeTitle(param,title);
+    gtk_window_set_title(GTK_WINDOW(win_main),title);
     if(swsaveoptions){
       SaveParamOptions(optionsfile,&param);
     }
@@ -726,19 +728,15 @@ gint MainLoop(gpointer data){
     }
   }
   
-  if(drawmap==TRUE){
-    if(!(cont%10)){
-      DestroyObjList(&listheadnearobjs);
-      listheadnearobjs.n=0;
-      listheadnearobjs.next=NULL;
-      CreateNearObjsList(&listheadobjs,&listheadnearobjs,actual_player);
-    }
-  }
-
   for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
     Collision(&listheadcontainer[i]);         /* interact among objects */
   }
-  GetGold();     
+
+
+  GetGold();
+
+
+  /**** create pirates *****/
   if(GameParametres(GET,GPIRATES,0)==TRUE && (players[GameParametres(GET,GNPLAYERS,0)+1].nplanets<5)){
     if(proc==players[GameParametres(GET,GNPLAYERS,0)+1].proc){/*  Send TO ai */
       if(GetTime()-lasttimepirates>2000){
@@ -758,6 +756,9 @@ gint MainLoop(gpointer data){
     }
   }
 
+  /**** --create pirates *****/
+
+  /**** create asteroids *****/
   if(proc==players[GameParametres(GET,GNPLAYERS,0)+1].proc){/*  Send TO ai */
     if(GetTime()-lasttimeasteroids>3000){
       if(((11000.0*rand())/RAND_MAX)<=1){ /* every 10 minutes */
@@ -782,11 +783,19 @@ gint MainLoop(gpointer data){
       }
     }
   }
-  
+
+  /**** --create asteroids *****/  
+
+
   if(swpaused==TRUE){
     printf("PAUSED\n");
     fflush(NULL);
   }
+
+
+  /*** check for pilots ****/
+  EjectPilots(&listheadobjs);
+  /*** --check for pilots ****/
   
   /* synchronization with comm threads */
 
@@ -804,9 +813,13 @@ gint MainLoop(gpointer data){
   else{
     swcomm=TRUE;
   }
-
-
+  
   GetPoints(listheadobjs,proc,players);/* points and experience */
+
+  /*** check for pilots ****/
+  EjectPilots(&listheadobjs);
+  /*** --check for pilots ****/
+
 
   if(GameParametres(GET,GKPLANETS,0)==FALSE){
     UpdateSectors(listheadobjs);
@@ -1026,17 +1039,29 @@ gint MainLoop(gpointer data){
       }
     }
     else{  
-      if(habitat.type==H_SPACE && cv!=NULL)DrawStars(pixmap,nav_mode,r_rel.x,r_rel.y);
+      if(cv!=NULL){
+	switch(habitat.type){
+	case H_SPACE:
+	  DrawStars(pixmap,nav_mode,r_rel.x,r_rel.y);
+	  DrawRadar(pixmap,cv,&listheadobjs);
+	  break;
+	case H_PLANET:
+	  DrawPlanetSurface(pixmap,habitat.obj->planet,gcolors[players[habitat.obj->player].color]);
+	  break;
+	case H_SHIP:
+	  /**TODO draw ship ***/
+	  DrawSpaceShip(pixmap,cv,&listheadobjs);
+	  /*****/
+	  break;
+	default:
+	  fprintf(stderr,"ERROR MailLoop habitat %d unknown\n",habitat.type);
+	  exit(-1);
+	  break;
+
+	}
+      }
 
       DrawObjs(pixmap,&listheadobjs,habitat,cv,r_rel); 
-
-      if(cv!=NULL && (habitat.type==H_SPACE)){
-	DrawRadar(pixmap,cv,&listheadobjs);
-      }
-      
-      if(habitat.type==H_PLANET && cv!=NULL){
-	DrawPlanetSurface(pixmap,habitat.obj->planet,gcolors[players[habitat.obj->player].color]); 
-      }
 
       if(cv!=NULL){
 	if(cv->accel>0){
@@ -1044,9 +1069,11 @@ gint MainLoop(gpointer data){
 	}
       }
     }
+
     if(gdraw.shiplist==TRUE){
       DrawPlayerList(pixmap,actual_player,&listheadplayer,cv,loadsw || !(GetTime()%20));
     }
+
     DrawInfo(pixmap,cv);
   }/* if(paused==0) */
 
@@ -1071,7 +1098,7 @@ gint MainLoop(gpointer data){
     Shell(0,pixmap,gfont,penGreen,&listheadobjs,&players[actual_player],&keys,&cv);
     if(keys.o==FALSE)gdraw.order=FALSE;
     if(cv!=NULL){
-      if(cv->state==-1){ /* Object just selled*/
+      if(cv->state==-1){ /* Object just selled HERE or pilot buy a ship*/
 	cv=SelectObjInObj(&listheadplayer,cv->in->id,cv->player);
 	if(cv!=NULL){
 	  cv->selected=TRUE;
@@ -1135,8 +1162,13 @@ gint MainLoop(gpointer data){
     update_rect.width=drawing_area->allocation.width/2;
     update_rect.height=drawing_area->allocation.height;
   }
-
+#if DEBUGFAST
+  if(!(cont%120)){
+    gtk_widget_draw(drawing_area,&update_rect); /*  deprecated */
+  }
+#else
   gtk_widget_draw(drawing_area,&update_rect); /*  deprecated */
+#endif
 
   if(GameParametres(GET,GPAUSED,0)==TRUE){
     paused=1;
@@ -1166,6 +1198,16 @@ gint MainLoop(gpointer data){
     ship_c=NULL;  
   }  
 
+  if(cv!=NULL){
+    habitat.type=cv->habitat;
+    habitat.obj=cv->in;
+    if(cv->type==PLANET){
+      habitat.type=H_PLANET;
+      habitat.obj=cv;
+    }
+  }
+  
+
   cont++;
   return(TRUE);
 
@@ -1178,7 +1220,7 @@ gint Quit(GtkWidget *widget,gpointer gdata){
 
 
 #if DEBUG
-  if(debuginit){
+  if(1||debuginit){
     Object *obj;
 
     printf("****************** Statistics ************************\n");
@@ -1324,6 +1366,8 @@ void key_eval(struct Keys *key){
 
   /* mouse */
   if(key->mleft==TRUE){
+    //    printf("mouse left\n");
+    //    key->mleft=FALSE;
   }
   if(key->mright==TRUE){
   }
@@ -1356,7 +1400,7 @@ void key_eval(struct Keys *key){
 	  cv=obj;
 	  habitat.type=cv->habitat;
 	  habitat.obj=cv->in;
-	  SelectionBox(&cv,1);
+	  SelectionBox(&cv,2);
 	  cv->selected=TRUE;
 	}
       }
@@ -1400,7 +1444,7 @@ void key_eval(struct Keys *key){
 	if(cv!=NULL){
 	  habitat.type=cv->habitat;
 	  habitat.obj=cv->in;
-	  SelectionBox(&cv,1);
+	  SelectionBox(&cv,2);
 	}
       }
     }
@@ -1435,18 +1479,39 @@ void key_eval(struct Keys *key){
 #if TEST
 	/* PRODUCTION DELETE SATELLITES */	
 	if(key->s==TRUE && key->ctrl==FALSE){ 
-	  nobj=NewObj(&listheadobjs,SHIP,SATELLITE,
-		      ship_c->x-2.5*ship_c->radio*cos(ship_c->a),
-		      ship_c->y-2.5*ship_c->radio*sin(ship_c->a),
-		      ship_c->vx,ship_c->vy,
-		      CANNON4,ENGINE1,ship_c->player,ship_c,ship_c->in);
-	  Add2ObjList(&listheadobjs,nobj);
+	  if(0){
+	    nobj=NewObj(&listheadobjs,SHIP,SATELLITE,
+			ship_c->x-2.5*ship_c->radio*cos(ship_c->a),
+			ship_c->y-2.5*ship_c->radio*sin(ship_c->a),
+			ship_c->vx,ship_c->vy,
+			CANNON4,ENGINE1,ship_c->player,ship_c,ship_c->in);
+	  }
+	  else{
+	    if(cv==ship_c){
+	      if(ship_c->type==SHIP && ship_c->mode!=SOLD &&
+		 (ship_c->subtype==FIGHTER||ship_c->subtype==EXPLORER||ship_c->subtype==QUEEN)){
+
+		if(1){
+		  ship_c->state=-1;
+		}
+	      }
+	    }
+	  }
+	  //	  Add2ObjList(&listheadobjs,nobj);
+	  
 	  key->s=FALSE;
 	}
 	/* --PRODUCTION DELETE SATELLITES */	
 #endif
+
+	/**** ship movement *****/
+
 	if(cv==ship_c){ 
 	  if(ship_c->gas>0 && gdraw.map==FALSE){
+	    if(cv->type==SHIP&&cv->subtype==PILOT){
+	      key->up=key->left=key->right=key->space=FALSE;
+	    }
+
 	    if(key->up==TRUE){
 	      ship_c->accel+=ship_c->engine.a;
 	      if(ship_c->accel>ship_c->engine.a_max)ship_c->accel=ship_c->engine.a_max;
@@ -1458,7 +1523,7 @@ void key_eval(struct Keys *key){
 	    }
 	    if(key->left==TRUE && ship_c->gas > ship_c->engine.gascost){
 	      ship_c->ang_a+=ship_c->engine.ang_a;
-	      if(ship_c->ang_a > ship_c->engine.ang_a_max) 
+	      if(ship_c->ang_a > ship_c->engine.ang_a_max)
 		ship_c->ang_a=ship_c->engine.ang_a_max; 
 	    }
 	    if(key->right==TRUE && ship_c->gas>ship_c->engine.gascost){
@@ -1481,6 +1546,7 @@ void key_eval(struct Keys *key){
 	    }
 	  }
 	}
+	/**** --ship movement *****/
       }    
     }/* if(ship_c!=NULL) */
     
@@ -1497,19 +1563,26 @@ void key_eval(struct Keys *key){
 	key->n=FALSE;
       }
       
-      if(actual_player==actual_player0){ /* PRODUCTION */
+      if(TEST||actual_player==actual_player0){ /* PRODUCTION */
 	
 	if(key->i==TRUE || key->esc==TRUE){
 	  if(GameParametres(GET,GQUIT,0)==0){
-	    ship_c=cv;
-	    ship_c->ai=1;
-	    key->a=FALSE;
-	    key->i=FALSE;
-	    key->esc=FALSE;
+	    if(cv->type==SHIP && 
+	       (cv->subtype==FIGHTER || 
+		cv->subtype==EXPLORER || 
+		cv->subtype==QUEEN || 
+		cv->subtype==TOWER)){
+	      ship_c=cv;
+	      ship_c->ai=1;
+	      key->a=FALSE;
+	      key->i=FALSE;
+	      key->esc=FALSE;
+	    }
 	  }
 	}
 	
-	if(key->a==TRUE){
+	if(key->a==TRUE && cv->type==SHIP && 
+	   (cv->subtype==FIGHTER || cv->subtype==EXPLORER || cv->subtype==QUEEN || cv->subtype==TOWER)){
 	  ship_c=cv;
 	  ship_c->ai=0;
 	  key->a=FALSE;
@@ -1592,7 +1665,7 @@ void key_eval(struct Keys *key){
     if(cv!=NULL){
       habitat.type=cv->habitat;
       habitat.obj=cv->in;
-      SelectionBox(&cv,1);
+      SelectionBox(&cv,2);
       cv->selected=TRUE;
       
       if(nav_mode==ABSOLUTE){
@@ -1634,7 +1707,7 @@ void key_eval(struct Keys *key){
     }
   }
   /*-- save and load game */
-}
+  }
 
 
 
@@ -1662,6 +1735,7 @@ void UpdateShip(Object *obj){
 
   proc=GetProc();
 
+
   vx=obj->vx;
   vy=obj->vy;
   dtim=DT/obj->mass;
@@ -1669,36 +1743,58 @@ void UpdateShip(Object *obj){
   fx0=fy0=0;
 
   if(0&&obj==cv){
-    printf("mode: %d\n",obj->mode);
+    printf("mode: %d %d\n",obj->mode,obj->id);
   }
 
-  if(obj->habitat==H_SPACE){
-    U=PlanetAtraction(&fx0,&fy0,obj->x,obj->y,obj->mass);
-    if(0&&obj==cv){
-      printf("P.A. f=%f U=%f\n",sqrt(fx0*fx0+fy0*fy0),U);
+  if(0&&obj==cv){
+    printf("items:%d habitat:%d mass:%d\n",obj->items,obj->habitat,obj->mass);
+    printf("eng: a_max:%d ang_a:%f\n",obj->engine.a_max,obj->engine.ang_a);
+    obj->items=0;
+  }
+
+  if(obj->habitat==H_SHIP){
+    if(obj->in!=NULL){
+      /* printf("(stype: %d) id: %d in (stype: %d) id:%d\n",obj->subtype,obj->id,obj->in->subtype,obj->in->id); */
+      obj->x=obj->in->x;
+      obj->x0=obj->in->x0;
+      obj->y=obj->in->y;
+      obj->y0=obj->in->y0;
+
+      obj->vx=obj->in->vx;
+      obj->vy=obj->in->vy;
     }
-    
+    else{
+      fprintf(stderr,"ERROR UpdateShip(): habitat=H_SHIP in = NULL id: %d (pid:%d) t:%d st: %d player: %d\n",obj->id,obj->pid, obj->type,obj->subtype,obj->player);
+      exit(-1);
+    }
+    return;
+  }
+
+  fx0=fy0=0;
+  switch(obj->habitat){
+  case H_SPACE:
+    U=PlanetAtraction(&fx0,&fy0,obj->x,obj->y,obj->mass);
     if(obj->subtype==SATELLITE){
       if(fx0>0.0000001){
 	obj->life=2400;
       }
     }
-  }
-  else{
-      if(obj->in!=NULL){
-	fy0=-g*obj->mass*(float)obj->in->mass;
-	if(0&&obj==cv){
-	  printf("P.A. in f=%f\n",fy0);
-	}
-      }
-      else{
-	printf("in = NULL in id: %d\n",obj->id);
-	return;
-      }
-  }
-
-  if(0&&obj==cv){
-    printf("P.A. f=%f %f %f accel: %f\n",sqrt(fx0*fx0+fy0*fy0),fx0,fy0,obj->accel);
+    break;
+  case H_PLANET:
+    fy0=-g*obj->mass*(float)obj->in->mass;
+    break;
+  case H_SHIP:
+    fx0=fy0=0;
+    if(obj->in==NULL){
+      fprintf(stderr,"ERROR UpdateShip(hship): in = NULL in id: %d (%d) t:%d st: %d\n",obj->id,obj->pid, obj->type,obj->subtype);
+      //      obj->state=-1;
+      return;
+    }
+    break;
+  default:
+    fprintf(stderr,"ERROR UpdateShip(): Habitat unknown: %d in = NULL in id: %d (%d) t:%d st: %d\n",obj->habitat,obj->id,obj->pid, obj->type,obj->subtype);
+    exit(-1);
+    break;
   }
 
   obj->x0=obj->x;
@@ -1710,11 +1806,16 @@ void UpdateShip(Object *obj){
   }
 
   fx=fy=0;
-  if(obj->habitat==H_SPACE){
+  switch(obj->habitat){
+  case H_SPACE:
     PlanetAtraction(&fx,&fy,obj->x,obj->y,obj->mass);
-  }
-  else{
-      fy=-g*obj->mass*(float)obj->in->mass;
+    break;
+  case H_PLANET:
+    fy=-g*obj->mass*(float)obj->in->mass;
+    break;
+  default:
+    fx=fy=0;
+    break;
   }
 
   if(proc==players[obj->player].proc){
@@ -1755,6 +1856,7 @@ void UpdateShip(Object *obj){
 
   if(obj->type==SHIP){
     vmax2=obj->engine.v2_max*(1-0.4375*(obj->state<25));
+    if(obj->subtype==PILOT)vmax2=15*15;
   }
   else{
     vmax2=obj->engine.v2_max;
@@ -1779,7 +1881,8 @@ void UpdateShip(Object *obj){
     if(obj->ang_v < -obj->engine.ang_v_max)obj->ang_v=-obj->engine.ang_v_max;
   }
   else{
-    obj->ang_v*=0.5;
+    if(obj->type==SHIP && obj->subtype!=PILOT) /* HERE TODO add artifact to engine*/
+      obj->ang_v*=0.5;
   }
   
   
@@ -1818,7 +1921,7 @@ void UpdateShip(Object *obj){
 
   if(proc==players[obj->player].proc){
     
-    if(obj->type==SHIP && obj->habitat==H_SPACE){
+    if(obj->type==SHIP && obj->subtype!=PILOT && obj->habitat==H_SPACE){
 
       obj->gas+=0.05;
 
@@ -1830,7 +1933,7 @@ void UpdateShip(Object *obj){
     }
 
 
-    if(obj->type==SHIP && obj->mode==LANDED){
+    if(obj->type==SHIP && obj->mode==LANDED && obj->subtype!=PILOT){ //HERE TODO add propertie to ships, pilots.
       time=GetTime();
       /* repair and refuel  */
       if(players[obj->player].gold<5){
@@ -1858,7 +1961,9 @@ void UpdateShip(Object *obj){
 	/* if(cv==obj){ */
 	/*   printf("womax:%d\n",obj->weapon0.max_n); */
 	/* } */
+
 	if(!(time%4)){
+	  
 	  if(obj->weapon0.n<obj->weapon0.max_n){
 	    if(players[obj->player].gold>obj->weapon0.projectile.unitcost){
 	      obj->weapon0.n++;
@@ -1882,14 +1987,29 @@ void UpdateShip(Object *obj){
 	    }
 	  }
 	}
+	
       }
       /* Learning Experience */
-      {
+      if(obj->type==SHIP && obj->subtype!=PILOT){ //HERE TODO pilots has no ship for training
 	int mlevel=0;
 	float incexp;
+	int n;
 	if(time - obj->cdata->tmlevel>50){
-
-	  mlevel=NearMaxLevelObj(obj,&listheadcontainer[obj->in->id]);
+	  switch(obj->habitat){
+	  case H_SPACE:
+	    n=0;
+	    break;
+	  case H_PLANET:
+	    n=obj->in->id;
+	    break;
+	  case H_SHIP:
+	    n=0;
+	    break;
+	  default:
+	    n=0;
+	    break;
+	  }
+	  mlevel=NearMaxLevelObj(obj,&listheadcontainer[n]);
 	  
 	  obj->cdata->tmlevel=time;
 	  obj->cdata->mlevel=mlevel;
@@ -1981,7 +2101,7 @@ void UpdateAsteroid(Object *obj){
   }
   else{
     if(obj->mode==NAV){
-      if(obj->in!=NULL){
+      if(obj->habitat==H_PLANET){
 	fy0=-g*obj->mass*(float)obj->in->mass;
       }
       else{
@@ -2098,13 +2218,12 @@ void Collision(struct HeadObjList *lh){
   float damage;
   float v;
   float a,b;
-  char text[MAXTEXTLEN];  
+  char text[MAXTEXTLEN];
   int i,j;
   int gkplanets,gnet,gnplayers;
   int proc;
   int crashsw=0;
   static int cont=0;
-
 
   gkplanets=GameParametres(GET,GKPLANETS,0);
   gnet=GameParametres(GET,GNET,0);
@@ -2147,6 +2266,13 @@ void Collision(struct HeadObjList *lh){
 	}
       }
 #endif
+      if(obj1->habitat==H_SHIP){
+	ls1=ls1->next;continue;
+      }
+      if(obj1->subtype==PILOT && obj1->mode==LANDED){
+	ls1=ls1->next;continue;
+      }
+
       break;
     case PROJECTILE:
       if(obj1->subtype==EXPLOSION){ 
@@ -2173,23 +2299,13 @@ void Collision(struct HeadObjList *lh){
       }
     }
     while(ls2!=NULL){  /* double loop */
+    
       if(obj1->state<=0){
 	contabilidad[0]++;
 	ls2=ls2->next;
 	continue;
       }
       obj2=ls2->obj;
-
-/*       if(obj1->subtype==EXPLOSION && obj2->subtype==EXPLOSION){ */
-/* 	ls2=ls2->next;continue; */
-/*       } */
-
-/*       if(obj2->type==PROJECTILE && obj2->subtype==EXPLOSION){ */
-/* 	ls2=ls2->next;continue; */
-/*       } */
-
-
-      
 
       switch(obj2->type){
       case SHIP:
@@ -2201,7 +2317,12 @@ void Collision(struct HeadObjList *lh){
 	    ls2=ls2->next;continue;
 	  }
 	}
-
+	if(obj2->habitat==H_SHIP){
+	  ls2=ls2->next;continue;
+	}
+	if(obj2->subtype==PILOT && obj2->mode==LANDED){
+	  ls2=ls2->next;continue;
+	}
 	break;
       case PROJECTILE:
 	if(obj1->type==PROJECTILE){
@@ -2232,25 +2353,47 @@ void Collision(struct HeadObjList *lh){
 	break;
       }
 
-      if(obj1->player==obj2->player){ /* same player, two ships or shots */
+      /***** same team, two ships or shots *****/
+      if(players[obj1->player].team==players[obj2->player].team){
 	if((obj1->type!=PLANET && obj2->type!=PLANET)){
-	  ls2=ls2->next;
-	  contabilidad[3]++;
-	  continue;
+
+	  if((obj1->type==SHIP && obj1->subtype==PILOT) || 
+	     (obj2->type==SHIP && obj2->subtype==PILOT)){
+
+	    if(obj1->subtype==PILOT && obj2->subtype==PILOT){
+	      ls2=ls2->next;
+	      contabilidad[3]++;
+	      continue;
+	    }
+
+	    /* pilot-projectile dont collide */
+	    if(obj1->type==PROJECTILE||obj2->type==PROJECTILE){
+	      ls2=ls2->next;
+	      contabilidad[3]++;
+	      continue;
+	    }
+	  }
+	  else{
+	    ls2=ls2->next;
+	    contabilidad[3]++;
+	    continue;
+	  }
 	}
       }
+      /***** --same team, two ships or shots *****/
 
       if(obj2->state<=0){
 	contabilidad[4]++;
 	ls2=ls2->next;
 	continue;
       }
-
+      
       if(obj1->in!=obj2->in){
 	ls2=ls2->next;
 	contabilidad[5]++;
 	continue;
       }
+      
       if(obj1->parent==obj2 || obj2->parent==obj1){
 	ls2=ls2->next;
 	contabilidad[7]++;
@@ -2268,9 +2411,11 @@ void Collision(struct HeadObjList *lh){
 
       if(players[obj1->player].team==players[obj2->player].team){
 	if(!(obj1->type==PLANET || obj2->type==PLANET)){
-	  contabilidad[9]++;
-	  ls2=ls2->next;
-	  continue;
+	  if(obj1->subtype!=PILOT && obj2->subtype!=PILOT){
+	    contabilidad[9]++;
+	    ls2=ls2->next;
+	    continue;
+	  }
 	}
       }
 
@@ -2287,61 +2432,47 @@ void Collision(struct HeadObjList *lh){
       r02=0.25*((rx+r0x)*(rx+r0x)+(ry+r0y)*(ry+r0y));
 
 
-      /* list of near enemy ships */
-      if(0){/* HERE in another routine */
-	if(obj2->player!=obj1->player){
-	  if(obj1->player==actual_player && obj1->type==SHIP){
-	    if(obj2->player==SHIP && obj2->habitat==H_SPACE){
-	      if(r2<radar1*radar1){
-		Add2ObjList(&listheadnearobjs,obj2);
-	      }
-	    }
-	    if(obj2->player==ASTEROID && obj2->habitat==H_SPACE){
-	      Add2ObjList(&listheadnearobjs,obj2);
-	    }
-	  }
-	}
-      }
-      /* --list of near enemy objects */
-
-      /* Experience in combat, among SHIPS */
+      /***** Experience in combat, among SHIPS *****/
       if(r2<1000000){      
+
 	if(obj1->type==SHIP && obj2->type==SHIP){
 	  if(players[obj2->player].team!=players[obj1->player].team){
 	    if(obj1->habitat==obj1->habitat){
-	      int il;
-	      float factor,points;
-	      /* obj1 */
-	      if(proc==players[obj1->player].proc){
-		il=obj2->level-obj1->level;
-		factor=0.001;
-		if(il>3)il=3;
-		if(il==-1)factor/=2;
-		if(il<-1)factor=0;
-		if(factor>0){
-		  points=(il+2)*(il+2)*factor*(obj2->level+1);
-		  Experience(obj1,points);
+	      if(obj1->subtype!=PILOT && obj2->subtype!=PILOT){
+		int il;
+		float factor,points;
+		/* obj1 */
+		if(proc==players[obj1->player].proc){
+		  il=obj2->level-obj1->level;
+		  factor=0.001;
+		  if(il>3)il=3;
+		  if(il==-1)factor/=2;
+		  if(il<-1)factor=0;
+		  if(factor>0){
+		    points=(il+2)*(il+2)*factor*(obj2->level+1);
+		    Experience(obj1,points);
+		  }
 		}
-	      }
-	      /* obj2 */
-	      if(proc==players[obj2->player].proc){
-		il=obj1->level-obj2->level;
-		if(il>3)il=3;
-		factor=0.001;
-		if(il==-1)factor/=2;
-		if(il<-1)factor=0;
-		if(factor>0){
-		  points=(il+2)*(il+2)*factor*(obj1->level+1);
-		  Experience(obj2,points);
+		/* obj2 */
+		if(proc==players[obj2->player].proc){
+		  il=obj1->level-obj2->level;
+		  if(il>3)il=3;
+		  factor=0.001;
+		  if(il==-1)factor/=2;
+		  if(il<-1)factor=0;
+		  if(factor>0){
+		    points=(il+2)*(il+2)*factor*(obj1->level+1);
+		    Experience(obj2,points);
+		  }
 		}
 	      }
 	    }
 	  }
 	}
       }
-    /* --Experience in combat */
+      /***** --Experience in combat *****/
 
-      /* planets and SHIPS */
+      /***** planets and SHIPS *****/
       if(gkplanets==FALSE){
 	/*	if(r2<RADAR_RANGE2){  planet  discovered  */
 	if((obj1->type==PLANET && obj2->type==SHIP) ||
@@ -2363,7 +2494,7 @@ void Collision(struct HeadObjList *lh){
 		if(IsInIntList((players[obj->player].kplanets),pnt->id)==0){
 		  for(i=0;i<=gnplayers+1;i++){
 		    if(players[obj->player].team==players[i].team){
-		      players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);;
+		      players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);
 		      snprintf(text,MAXTEXTLEN,"(%d) PLANET %d discovered",obj->pid,pnt->id);
 		      Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0);
 		    }
@@ -2374,8 +2505,7 @@ void Collision(struct HeadObjList *lh){
 	  }
 	}
       }
-      /* --planets and SHIPS */
-
+      /***** --planets and SHIPS *****/
 
       if(r2<radio2 || r02<radio2){
 	contabilidad[12]++;
@@ -2398,9 +2528,9 @@ void Collision(struct HeadObjList *lh){
 	  }
 	}
 
-	/*
+	/*****
 	   objects and planets 
-	*/
+	*****/
 
 	if((obj1->type==PLANET && obj2->type!=PLANET) ||
 	   (obj2->type==PLANET && obj1->type!=PLANET)){
@@ -2447,11 +2577,70 @@ void Collision(struct HeadObjList *lh){
 	  }
 	}
 
-	/*  --objects and planets */
+	/*****
+	      --objects and planets 
+	*****/
 
 
 	/* among ships and projectiles */
 	if((obj1->type!=PLANET && obj2->type!=PLANET)){
+
+	  /***** between ship and pilots, same team *****/
+	  if((players[obj1->player].team==players[obj2->player].team) && 
+	     (obj1->type==SHIP && obj2->type==SHIP) && 
+	     (obj1->subtype==PILOT || obj2->subtype==PILOT) && 
+	     (obj1->subtype!=PILOT || obj2->subtype!=PILOT)){ 
+	    
+	    if(obj1->subtype==PILOT){
+	      if(obj2->subtype==EXPLORER||obj2->subtype==FIGHTER||obj2->subtype==QUEEN){
+		obj1->in=obj2;
+		obj1->habitat=H_SHIP;
+		obj2->items=obj2->items | ITPILOT;
+		if(cv==obj1){
+		  cv=obj2;
+		  if(obj1->selected==TRUE){
+		    obj1->selected=FALSE;
+		    obj2->selected=TRUE;
+		  }
+		}
+		if(obj1->player==actual_player){
+		  printf("Pilot %d rescued\n",obj1->pid);/* HERE proc*/
+		}
+		if(GameParametres(GET,GNET,0)==TRUE){
+		  SetModified(obj1,SENDOBJALL);
+		  SetModified(obj2,SENDOBJALL);
+		}
+		ls1=ls1->next;continue;
+	      }
+	    }
+	    else{
+	      if(obj2->subtype==PILOT){
+		if(obj1->subtype==EXPLORER || obj1->subtype==FIGHTER || obj1->subtype==QUEEN){
+		  obj2->in=obj1;
+		  obj2->habitat=H_SHIP;
+		  obj1->items=obj1->items | ITPILOT;
+		  if(cv==obj2){
+		    cv=obj1;
+		    if(obj2->selected==TRUE){
+		      obj2->selected=FALSE;
+		      obj1->selected=TRUE;
+		    }
+		  }
+		  if(obj1->player==actual_player){
+		    printf("Pilot %d rescued\n",obj2->pid);
+		  }
+		  if(GameParametres(GET,GNET,0)==TRUE){
+		    SetModified(obj1,SENDOBJALL);
+		    SetModified(obj2,SENDOBJALL);
+		  }		   
+		  
+		  ls2=ls2->next;continue;
+		}
+	      }
+	    }
+	  }
+	  
+	  /***** --between ship and pilot same team *****/
 
 	  for(i=0;i<2;i++){
 	    if(i==0){
@@ -2481,7 +2670,7 @@ void Collision(struct HeadObjList *lh){
 		}
 	      }
 	    }
-	    if(objt1->type==SHIP || objt1->type==ASTEROID || objt1->subtype==MISSILE){//HERE
+	    if(objt1->type==SHIP || objt1->type==ASTEROID || (objt1->type==PROJECTILE && objt1->subtype==MISSILE)){//HERE
 	      if(gnet==TRUE){
 		if(proc==players[objt1->player].proc){
 		  SetModified(objt1,SENDOBJAALL);
@@ -2489,43 +2678,27 @@ void Collision(struct HeadObjList *lh){
 		}
 	      }
 	    }
-	    
+
+	    /***** ship destroyed *****/
 	    if(objt1->state<=0){
-	      if(obj1->in!=NULL && objt1->type==SHIP){
-		float price;
-		
-		price=0.025*GetPrice(objt1,0,0,0);
-		if(price>0){
-		  objt1->in->planet->gold+=price;
-		  /* printf("ship (L%d) destroyed at planet  %d gold: %f price:%f\n", */
-		  /* 	 obj1->level,objt1->in->id,objt1->in->planet->gold,price); */
-		}
-	      }
 
-
-	      if(objt2->type==SHIP){
-		objt1->sw=objt2->id;
-	      }
-	      if(objt2->type==PROJECTILE){
-		if(objt2->parent!=NULL){
-		  objt1->sw=objt2->parent->id;
-		}
-	      }
-
-		
-	      if(gnet==TRUE){
-		if(proc==players[objt1->player].proc){
-		  SetModified(objt1,SENDOBJKILL);
-		  objt1->ttl=0;
-		}
-	      }
 	      switch(objt1->type){
 	      case SHIP:
+
+		  if(obj1->habitat==H_PLANET){
+		    float price;
+		    price=0.025*GetPrice(objt1,0,0,0);
+		    if(price>0){
+		      objt1->in->planet->gold+=price;
+		    }
+		  }
+		
 		break;
+
 	      case ASTEROID:
-/* 		if(objt1->in!=NULL){ */
-/* 		  objt1->in->planet->gold+=(4-objt1->subtype)*200; */
-/* 		} */
+		/* 		if(objt1->in!=NULL){ */
+		/* 		  objt1->in->planet->gold+=(4-objt1->subtype)*200; */
+		/* 		} */
 		if(objt1->subtype<ASTEROID3){
 		  if(proc==players[objt1->player].proc){
 		    for(j=0;j<3;j++){
@@ -2545,7 +2718,31 @@ void Collision(struct HeadObjList *lh){
 	      default:
 		break;
 	      }
+	      
+	      switch(objt2->type){
+	      case SHIP:
+		if(objt2->subtype!=PILOT){
+		  objt1->sw=objt2->id;
+		}
+		break;
+	      case PROJECTILE:
+		if(objt2->parent!=NULL){
+		  objt1->sw=objt2->parent->id;
+		}
+		break;
+	      default:
+		break;
+	      }
+	      
+	      if(gnet==TRUE){
+		if(proc==players[objt1->player].proc){
+		  SetModified(objt1,SENDOBJKILL);
+		  objt1->ttl=0;
+		}
+	      }
 	    }
+	    /***** --ship destroyed *****/
+
 	  } /* for(i=0;i<2;i++){ */
 	}
 	/* --among ships and projectiles */
@@ -2553,8 +2750,6 @@ void Collision(struct HeadObjList *lh){
       else{
 	if(r2<4*radio2 && 0){
 	  /* Avoid collision */ /* TODO */
-
-
 	}
       }
 
@@ -2572,6 +2767,7 @@ void Collision(struct HeadObjList *lh){
 
     /* collision with planet terrain */
     if(obj1->mode!=LANDED && obj1->habitat==H_PLANET){
+      //      if(obj1->subtype==PILOT){ls1=ls1->next;continue;}
       if(proc==players[obj1->player].proc || obj1->type==PROJECTILE){
 	planet=obj1->in->planet;
 	contabilidad[13]++;
@@ -2600,14 +2796,15 @@ void Collision(struct HeadObjList *lh){
 		crashsw=1;
 		break;
 	      case LANDZONE:
-		if(fabs(obj1->vx)>2 || /* ship crashed */
-		   fabs(obj1->vy)>5 ||
-		   fabs(obj1->a-PI/2)>.35){
+		if( (fabs(obj1->vx)>2 || /* ship crashed */
+		     fabs(obj1->vy)>5 ||
+		     fabs(obj1->a-PI/2)>.35)){
 		  crashsw=1;
 		}
-		else{ /* ship has landed */
+		else{/***** ship has landed *****/
 		  if(obj1->vy<0){
 		    obj1->mode=LANDED;
+		    if(obj1->items & ITPILOT)obj1->items=obj1->items&(~ITPILOT);
 		    if(gnet==TRUE){
 		      if(proc==players[obj1->player].proc){
 			SetModified(obj1,SENDOBJAALL);
@@ -2618,20 +2815,29 @@ void Collision(struct HeadObjList *lh){
 		    obj1->vy=0;
 		    obj1->ang_a=0;
 		    obj1->ang_v=0;
-		    /* obj1->y=obj1->y0=s.y0+obj1->radio+1; */
 		    obj1->y=obj1->y0=s.y0;
-		  }
-		  
-		  if(players[obj1->in->player].team!=players[obj1->player].team){
-		    char text[MAXTEXTLEN];
-		    if(players[obj1->in->player].team != 1){
-		      GetInformation(&players[obj1->player],&players[obj1->in->player],obj1);
+		    if(obj1->subtype==PILOT){
+		      obj1->a=0;
+		      //obj1->ai=0;
 		    }
-		    Experience(obj1,50);  /* Experience for conquest a planet */
-		    
-		    snprintf(text,MAXTEXTLEN,"Planet %d LOST",obj1->in->id);
-		    Add2TextMessageList(&listheadtext,text,obj1->in->id,obj1->in->player,0,100,2);
-		    
+		  }
+
+		  /***** conquering a planet *****/
+		  
+		  switch(IsPlanetEmpty(obj1->in,obj1)){
+		  case 0:/* planet totally empty */
+		    // printf("isplanetempty 0\n");
+		    if(players[obj1->in->player].team!=players[obj1->player].team){
+		      char text[MAXTEXTLEN];
+		      if(players[obj1->in->player].team != 1){//HERE ???
+			GetInformation(&players[obj1->player],&players[obj1->in->player],obj1);
+		      }
+		      Experience(obj1,50);  /* Experience for conquest a planet */
+		      
+		      snprintf(text,MAXTEXTLEN,"Planet %d LOST",obj1->in->id);
+		      Add2TextMessageList(&listheadtext,text,obj1->in->id,obj1->in->player,0,100,2);
+		    }
+
 		    obj1->in->player=obj1->player;
 		    if(gnet==TRUE){
 		      if(proc==players[obj1->player].proc){
@@ -2640,20 +2846,19 @@ void Collision(struct HeadObjList *lh){
 			obj1->ttl=0;
 		      }
 		    }
+		    break;		      
+		  case 1: /* no enemies and some ally landed */
+		    //		    printf("isplanetempty 1\n");
+		    
+		    break;
+		  case 2: /* enemies landed */
+		    // printf("isplanetempty 2\n");
+		    break;
+		  default:
+		    // printf("isplanetempty default\n");
+		    break;
 		  }
-		  else{
-		    if(PlanetEmpty(obj1->in,obj1)){
-		      obj1->in->player=obj1->player;
-		      if(gnet==TRUE){
-			if(proc==players[obj1->player].proc){
-			  SetModified(obj1->in,SENDOBJPLANET);
-			  players[obj1->player].modified=SENDPLAYERMOD;
-			  obj1->ttl=0;
-			}
-		      }
-		    }
-		  }
-		}
+		} /***** --else ship has landed *****/
 		break;
 	      default:
 		break;
@@ -2734,8 +2939,16 @@ int UpdateObjs(void){
     obj=ls->obj;
     
     if(obj->durable==TRUE){
-      
-      obj->life--;
+      switch(obj->subtype){
+      case PILOT:
+	if(obj->habitat==H_SPACE){
+	  obj->life--;
+	}
+	break;
+      default:
+	obj->life--;
+	break;
+      }
       if(obj->life<=0){
 	obj->life=0;
 	obj->state=0;
@@ -2816,15 +3029,18 @@ int UpdateObjs(void){
 	case SHIP4:
 	case SATELLITE:
 	case TOWER:
+	case PILOT:
 	  if(proc==players[obj->player].proc){
 	    ai(&listheadobjs,obj,actual_player);
 	  }
 	  if(0&&obj==cv){
 	    printf("\t accel 2: %f v: (%f,%f)   engacel: %d\n",obj->accel,obj->vx,obj->vy,obj->engine.a);
+	    printf("\tupdate ship. gas: %f %f\n",obj->gas,obj->accel);
 	  }
-	  if(0&&obj==cv)printf("\tupdate ship. gas: %f %f\n",obj->gas,obj->accel);
+
 	  UpdateShip(obj);
-	  if(0&&obj==cv)printf("\tupdate ship. gas: %f %f\n",obj->gas,obj->accel);
+
+	  if(0&&obj==cv)if(obj->subtype==PILOT)printf("\tupdate pilot.: habitat %d \n",obj->habitat);
 	  break;
 	  
 	default:
@@ -2930,16 +3146,14 @@ int CheckPlanetDistance(struct HeadObjList *lh,float x,float y){
     }
     ls=ls->next;
   }
-  
   return(0);
-
 }
+
 
 void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames){
   /*
     Create Galaxies and planets.
    */
-
 
   int i,j;
   float x,y;
@@ -3007,6 +3221,7 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
     }
   }
 }
+
 
 float PlanetAtraction(float *fx,float *fy,float x,float y,float m){
   /*
@@ -3355,7 +3570,7 @@ int CheckGame(char *cad){
   int nord;
   int i;
   int n=0;
-  int types[20];
+  int types[ALLOBJS];
   int type;
   int proc;
 
@@ -3364,7 +3579,7 @@ int CheckGame(char *cad){
 
   /* Checking Orders */
 
-  for(i=0;i<20;i++){
+  for(i=0;i<ALLOBJS;i++){
     types[i]=0;
   }
 
@@ -3375,7 +3590,7 @@ int CheckGame(char *cad){
     obj=ls->obj;
 
     type=obj->type+1;
-    if(type>19)type=19;
+    if(type>ALLOBJS)type=ALLOBJS;
     types[type]++;
 
     if(proc==players[obj->player].proc){
@@ -3394,31 +3609,44 @@ int CheckGame(char *cad){
 	DelAllOrder(obj);
       } 
 
-      /* if planet dont belongs to a landed ship */
-      if(obj->mode==LANDED && obj->in==NULL){
-	fprintf(stderr,"\tError CheckGame() obj %d landed and in NULL\n",obj->id);
+      if(obj->type==SHIP && obj->subtype==TOWER && obj->habitat!=H_PLANET){
+	fprintf(stderr,"\tError CheckGame() obj %d TOWER not in planet. habitat: %d . player: %d \n",obj->id, obj->habitat,obj->player);
 	ls=ls->next;continue;
       }
-      if(obj->mode==LANDED && obj->in!=NULL){
-	if(obj->in->planet==NULL){
-	  fprintf(stderr,"\tError CheckGame() obj %d planet not assigned\n",obj->id);
+
+      /* if planet dont belongs to a landed ship */
+      if(obj->type==SHIP){
+	if(obj->mode==LANDED && obj->in==NULL){
+	  fprintf(stderr,"\tError CheckGame() obj %d landed and in NULL\n",obj->id);
 	  ls=ls->next;continue;
 	}
-      }
-      if(obj->mode==LANDED && players[obj->in->player].team!=players[obj->player].team){ 
-	/* 
-	   this is posible if two ships of different players are landed in the same planet.
-	 */
-	obj->in->player=obj->player;
+	if(obj->mode==LANDED && obj->in!=NULL){
+	  if(obj->in->planet==NULL){
+	    fprintf(stderr,"\tError CheckGame() obj %d planet not assigned\n",obj->id);
+	    ls=ls->next;continue;
+	  }
+	}
+	if(obj->habitat!=H_SPACE && obj->in==NULL){
+	  fprintf(stderr,"\tError CheckGame() obj %d not in space and in = NULL\n",obj->id);
+	  fprintf(stderr,"\t\ttype: %d stype: %d\n",obj->type,obj->subtype);
+	  fprintf(stderr,"\t\thabitat: %d\n",obj->habitat);
+	  ls=ls->next;continue;
+	}
+	if(obj->mode==LANDED && players[obj->in->player].team!=players[obj->player].team){ 
+	  /* 
+	     this is posible if two ships of different players are landed in the same planet.
+	  */
+	  //	  obj->in->player=obj->player;
+	}
       }
     }
     ls=ls->next;
   }
-
-/*   for(i=0;i<20;i++){ */
-/*     printf("n. obj of type %d: %d\n",i,types[i]); */
-/*   } */
-
+#if DEBUG
+  for(i=0;i<ALLOBJS;i++){ 
+    printf("n. obj of type %d: %d\n",i,types[i]); 
+  } 
+#endif
   return(0);
 }
 
@@ -3442,7 +3670,7 @@ void Density(void){
   while(ls!=NULL){
     if(ls->obj->type==PLANET){
       
-      if(ls->obj->in!=NULL){
+      if(ls->obj->habitat==H_PLANET){
 	x=ls->obj->in->planet->x;
 	y=ls->obj->in->planet->y;
       }
@@ -3698,16 +3926,17 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
     /*
      *   Planet info
      */
-    if(obj!=NULL){
-      if(obj->type==PLANET)planet=obj;
-      else planet=obj->in;
-      
-      if(planet!=NULL){
 
-	y=DrawPlanetInfo(pixmap,gfont,penGreen,planet,10,y);
-	sprintf(point,"============");
-	DrawString(pixmap,gfont,penGreen,10,y,point);
-	y+=incy;
+    if(obj!=NULL){
+      if(obj->habitat==H_PLANET){
+	planet=obj->in;
+	if(planet!=NULL){
+	  
+	  y=DrawPlanetInfo(pixmap,gfont,penGreen,planet,10,y);
+	  sprintf(point,"============");
+	  DrawString(pixmap,gfont,penGreen,10,y,point);
+	  y+=incy;
+	}
       }
     }
   }
@@ -3856,6 +4085,7 @@ void GetGold(void){
       players[ls->obj->player].balance+=.01*RESOURCEFACTOR; 
       break;
     case SHIP:
+      if(ls->obj->subtype==PILOT){ls=ls->next;continue;}
       players[ls->obj->player].balance-=ls->obj->cost;
 
       switch(ls->obj->subtype){
@@ -3869,8 +4099,6 @@ void GetGold(void){
 	    ls->obj->in->planet->gold-=inctower;
 	    ls->obj->in->planet->A-=0.015;
 	    if(ls->obj->in->planet->A<0)ls->obj->in->planet->A=0;
-	    
-
 	  }
 	  else{
 	    players[ls->obj->player].balance+=ls->obj->in->planet->gold;
@@ -3944,6 +4172,11 @@ void GetPoints(struct HeadObjList hol,int proc,struct Player *p){
     else{
       if(obj->state<=0)sw=1;
     }
+    if(sw){
+      /* no points for kill a pilot */
+      if(obj->type==SHIP && obj->subtype==PILOT)sw=0; // HERE no funciona
+    }
+
 
     if(sw){
       switch(obj->type){
@@ -3956,6 +4189,7 @@ void GetPoints(struct HeadObjList hol,int proc,struct Player *p){
 	/* points to the killer */
 	if(obj->sw!=0){
 	  obj2=SelectObj(&listheadobjs,(obj->sw));
+
 	  if(obj2!=NULL){
 	    obj3=NULL;
 	    if(obj2->type==SHIP)obj3=obj2;
@@ -3965,7 +4199,7 @@ void GetPoints(struct HeadObjList hol,int proc,struct Player *p){
 	      p[obj3->player].nkills++;
 
 	      /* Experience for kill an enemy */
-	      il=obj->level-obj3->level;
+	      il=obj->level - obj3->level;
 	      if(il>3)il=3;
 	      factor=50;
 	      if(il<0)factor/=2;
@@ -4004,7 +4238,7 @@ void GetPoints(struct HeadObjList hol,int proc,struct Player *p){
 		p[obj3->player].gold+=200;
 		break;
 	      default:
-		fprintf(stderr,"ERROR in GetGold():asteroid subtype unknown\n");
+		fprintf(stderr,"ERROR in GetGold():asteroid subtype %d unknown\n",obj->subtype);
 		exit(-1);
 		break;
 	      }
@@ -4153,8 +4387,6 @@ void MakeTitle(struct Parametres param, char *title){
   strcat(title,version);
   strcat(title,"  ");
   strcat(title,copyleft);
-  /* strcat(title,"  "); */
-  /* strcat(title,last_revision); */
 }
 
 void CreateTeams(struct Player *players,struct Parametres param){
@@ -4376,7 +4608,6 @@ void SaveRecord(char *file,struct Player *players,int record){
 }
 
 
-
 void InitGameVars(void){
   int i;
   struct Sockfd sfd;
@@ -4412,8 +4643,7 @@ void InitGameVars(void){
     listheadplanets.n=0;
     listheadtext.next=NULL;
     listheadtext.info.n=0;
-    listheadnearobjs.next=NULL;
-    listheadnearobjs.n=0;
+
     for(i=0;i<4;i++)fobj[i]=0;
     gtime0=0;
     
@@ -4565,3 +4795,5 @@ void InitGameVars(void){
     
     PrintGameOptions();
 }
+
+

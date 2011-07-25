@@ -52,7 +52,7 @@ int ExecSave(struct HeadObjList ,char *);
 int FprintfPlanet(FILE *fp,Object *obj);
 int FprintfObj(FILE *fp,Object *obj);
 int ExecLoad(char *);
-int FscanfObj(FILE *fp,Object *obj,struct Tabla *);
+int FscanfObj(FILE *fp,Object *obj,struct ObjTable *);
 int FscanfPlanet(FILE *fp,struct Planet *planet);
 
 int Check(void);

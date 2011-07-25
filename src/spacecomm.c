@@ -58,6 +58,7 @@ SENDOBJUNMOD0
 #if DEBUG
 int debugcomm1=0;
 #endif
+int debugpilot=0;
 
 extern struct HeadObjList listheadobjs;
 extern struct Habitat habitat;
@@ -739,7 +740,7 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
   {
     int i;
     struct MessageHeader messh;
-    //HERE continuar aqui      
+    //HERE continue here      
     for(i=1;i<GameParametres(GET,GNPLAYERS,0)+2;i++){ 
       if(proc==players[i].proc && players[i].modified==SENDPLAYERMOD){
 #if DEBUG
@@ -788,6 +789,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
   int kid;
 
 
+
   /*  if(modtype==SENDOBJKILL)return(0); */
   if(buffer->n+sizeof(struct MessageHeader)+2*sizeof(Object) > buffer->size){
     int newsize;
@@ -818,6 +820,12 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     if(modtype<=SENDOBJPLANET){ 
       printf("\tSEND:%d %d %d %d %d %d\n",
 	     obj->id,obj->modified,obj->type,obj->subtype,obj->ttl,GetTime());
+    }
+  }
+  
+  if(modtype<SENDOBJPLANET){
+    if(obj!=NULL){
+
     }
   }
 
@@ -906,6 +914,11 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     odyn.id=obj->id;
     odyn.level=obj->level;
     odyn.habitat=obj->habitat;
+
+    odyn.inid=0;
+    if(obj->in!=NULL){
+      odyn.inid=obj->in->id;
+    }
     odyn.mode=obj->mode;
     odyn.x=obj->x;
     odyn.y=obj->y;
@@ -920,6 +933,16 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     //    odyn.gas=obj->gas;
     odyn.state=obj->state;
 
+
+    if(debugpilot&&obj->type==SHIP && obj->subtype==PILOT){
+      int intype=0;
+      if(obj->in!=NULL){
+	intype=obj->in->type;
+      }
+      printf("%d sending pilot(%d): player:%d id: %d pid: %d in: %d type in: %d\n",
+	     GetTime(),modtype,obj->player,odyn.id,obj->pid,odyn.inid,intype);
+    }
+    
     //aqui    memcpy((struct Objectdynamic *)buf,&odyn,nbytes);
     memcpy(buf,&odyn,nbytes);
     buffer->n+=nbytes;
@@ -939,7 +962,16 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     oaall.x0=obj->x0;
     oaall.y0=obj->y0;
     oaall.vx=obj->vx;
-    oaall.vy=obj->vy;
+    oaall.vy=obj->vy;   
+    
+    if(debugpilot&&obj->type==SHIP && obj->subtype==PILOT){
+      int intype=0;
+      if(obj->in!=NULL){
+	intype=obj->in->type;
+      }
+      printf("%d sending pilot(%d): player:%d id: %d pid: %d in: %d type in: %d\n",
+	     GetTime(),modtype,obj->player,odyn.id,obj->pid,odyn.inid,intype);
+    }
 
 /*     oaall.fx=obj->fx; */
 /*     oaall.fy=obj->fy; */
@@ -954,11 +986,22 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     oaall.life=obj->life;
     //oaall.shield=obj->shield;
     oaall.state=obj->state;
-    oaall.in=0;
 
+    oaall.inid=0;
     if(obj->in!=NULL){
-      oaall.in=obj->in->id; 
+      oaall.inid=obj->in->id; 
     }
+
+
+    if(debugpilot&&obj->type==SHIP && obj->subtype==PILOT){
+      int intype=0;
+      if(obj->in!=NULL){
+	intype=obj->in->type;
+      }
+      printf("%d sending pilot(%d): player:%d id: %d pid: %d in: %d type in: %d\n",
+	     GetTime(),modtype,obj->player,oaall.id,obj->pid,oaall.inid,intype);
+    }
+
 
     //aqui    memcpy((struct ObjectAAll *)buf,&oaall,nbytes);
     memcpy(buf,&oaall,nbytes);
@@ -990,7 +1033,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     onew.life=obj->life;
 
     onew.parent=0;
-    onew.in=0;
+    onew.inid=0;
     onew.planet=0;
 
     onew.engtype=obj->engine.type;
@@ -999,7 +1042,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
       onew.parent=obj->parent->id; 
     }
     if(obj->in!=NULL){
-      onew.in=obj->in->id;
+      onew.inid=obj->in->id;
     }
 
     //aqui    memcpy((struct ObjectNew *)buf,&onew,nbytes);
@@ -1037,6 +1080,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     oall.mass=obj->mass;
 
     oall.cargo=obj->cargo;
+    oall.items=obj->items;
     oall.radio=obj->radio;
     oall.cost=obj->cost;
     oall.damage=obj->damage;
@@ -1077,13 +1121,25 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
 
     if(obj->parent!=NULL){oall.parent=obj->parent->id;}else{oall.parent=0;}
     if(obj->dest!=NULL){oall.dest=obj->dest->id;}else{oall.dest=0;}
-    if(obj->in!=NULL){oall.in=obj->in->id;}else{oall.in=0;}
+    if(obj->in!=NULL){oall.inid=obj->in->id;}else{oall.inid=0;}
 
     oall.weapon=0; /* HERE choose correct weapon */
     memcpy(&oall.weapon0,&obj->weapon0,sizeof(Weapon));
     memcpy(&oall.weapon1,&obj->weapon1,sizeof(Weapon));
     memcpy(&oall.weapon2,&obj->weapon2,sizeof(Weapon));
     memcpy(&oall.engine,&obj->engine,sizeof(Engine));
+
+
+
+    if(debugpilot&&obj->type==SHIP && obj->subtype==PILOT){
+      int intype=0;
+      if(obj->in!=NULL){
+	intype=obj->in->type;
+      }
+      printf("%d sending pilot(%d): player:%d id: %d pid: %d in: %d type in: %d\n",
+	     GetTime(),modtype,obj->player,oall.id,obj->pid,oall.inid,intype);
+    }
+
 
     //aqui    memcpy((struct ObjectAAll *)buf,&oall,nbytes);
     memcpy(buf,&oall,nbytes);
@@ -1158,6 +1214,7 @@ int ReadObjsfromBuffer(char *buf){
 
   struct ObjectNew objnew;
   int id,projid,idkiller;
+  int inid;
   int nbytes,tbytes;
   int proc;
   char *buf0;
@@ -1215,6 +1272,7 @@ int ReadObjsfromBuffer(char *buf){
       if(nobj!=NULL){
 	//aqui	  memcpy(&objdyn,(struct Objectdynamic *)buf,nbytes);
 	  memcpy(&objdyn,buf,nbytes);
+
 	  if(0){
 	    printf("recv SENDOBJMOD: %d %d %d\n",nobj->player,nobj->id,nobj->pid);
 	    printf("\thabitat %d %d\n",nobj->habitat,objdyn.habitat);
@@ -1223,9 +1281,22 @@ int ReadObjsfromBuffer(char *buf){
 	    printf("\ta %f %f\n",nobj->a,objdyn.a);
 	    printf("\taccel %f %f\n",nobj->accel,objdyn.accel);
 	    printf("\tvx vy %f %f %f %f\n",nobj->vx,objdyn.vx,nobj->vy,objdyn.vy);
-
 	  }
+
 	  nobj->level=objdyn.level;
+	  inid=0;
+	  if(nobj->in!=NULL){
+	    inid=nobj->in->id;
+	  }
+	  if(inid!=objdyn.inid){
+	    if(objdyn.inid==0){
+	      nobj->in=NULL;
+	    }
+	    else{
+	      nobj->in=SelectObj(&listheadobjs,objdyn.inid);		
+	    }
+	  }
+
 	  nobj->habitat=objdyn.habitat;
 	  nobj->mode=objdyn.mode;
 	  nobj->x=objdyn.x;
@@ -1241,6 +1312,21 @@ int ReadObjsfromBuffer(char *buf){
 	  //	  nobj->gas=objdyn.gas;
 	  nobj->state=objdyn.state;
 	  nobj->ttl=0;
+
+	  if(debugpilot){
+	    int inid=0,intype=0;
+	    if(nobj->in!=NULL){
+	      inid=nobj->in->id;
+	      intype=nobj->in->type;
+	      
+	    }
+	    if(nobj->type==SHIP && nobj->subtype==PILOT){
+	      printf("%d pilot received(%d): player:%d id: %d pid: %d in: %d(%d) type in: %d habitat:%d\n",
+		     GetTime(),header.id,nobj->player,nobj->id,nobj->pid,inid,objdyn.inid,intype,nobj->habitat);
+	    }
+	  }
+	  
+
       }
       else{   /* New object or object has been killed in client side*/
 	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJMOD) id: %d  doesnt exists\n",
@@ -1287,10 +1373,15 @@ int ReadObjsfromBuffer(char *buf){
 	nobj->in=NULL;
 	
 	nobj->ttl=0;
-	if(objaall.in!=0){
-	  nobj->in=SelectObj(&listheadobjs,objaall.in);
-	  if(nobj->in!=NULL)
-	    nobj->planet=nobj->in->planet;
+	if(objaall.inid!=0){
+	  nobj->in=SelectObj(&listheadobjs,objaall.inid);
+
+	  if(nobj->in!=NULL){
+	    nobj->planet=NULL;
+	    if(nobj->in->type==PLANET){
+	      nobj->planet=nobj->in->planet;
+	    }
+	  }
 	  else{
 	    fprintf(stderr,"ERROR in ReadObjsfromBuffer(OBJAALL)in =NULL\n");
 	    exit(-1);
@@ -1345,6 +1436,7 @@ int ReadObjsfromBuffer(char *buf){
       nobj->mass=objall.mass;
       
       nobj->cargo=objall.cargo;
+      nobj->items=objall.items;
       nobj->radio=objall.radio;
       nobj->cost=objall.cost;
       nobj->damage=objall.damage;
@@ -1407,15 +1499,39 @@ int ReadObjsfromBuffer(char *buf){
       
       objt=NULL;
 
-      nobj->dest=SelectObj(&listheadobjs,(objall.dest)); 
+      nobj->dest=SelectObj(&listheadobjs,(objall.dest)); //HERE one function for all the pointers
       //      nobj->parent=SelectObj(&listheadobjs,(int)(obj->parent));
-      nobj->in=SelectObj(&listheadobjs,(objall.in));
+      nobj->in=SelectObj(&listheadobjs,objall.inid);
+
+
+      if(debugpilot){
+	int inid=0,intype=0;
+	if(nobj->in!=NULL){
+	  inid=nobj->in->id;
+	  intype=nobj->in->type;
+	  
+	}
+	if(nobj->type==SHIP && nobj->subtype==PILOT){
+	  printf("%d pilot received(%d): player:%d id: %d pid: %d in: %d(%d) type in: %d habitat:%d\n",
+		 GetTime(),header.id,nobj->player,nobj->id,nobj->pid,inid,objall.inid,intype,nobj->habitat);
+	}
+      }
 
       if(nobj->in!=NULL){
-	nobj->planet=nobj->in->planet;
+
+	nobj->planet=NULL;
+
+	if(nobj->in->type==PLANET){
+	  nobj->planet=nobj->in->planet;
+	}
       }
       else{
-	if(objall.in!=0){
+	if(debugpilot&&nobj->type==SHIP && nobj->subtype==PILOT){
+	  printf("%d pilot received(%d): player:%d id: %d pid: %d in=NULL objallin:%d\n",
+		 GetTime(),header.id,nobj->player,nobj->id,nobj->pid,objall.inid);
+	}
+
+	if(objall.inid!=0){
 	  fprintf(stderr,"ERROR in ReadObjsfromBuffer(id: %d)in =NULL\n",nobj->id);
 	  exit(-1);
 	}
@@ -1450,11 +1566,29 @@ int ReadObjsfromBuffer(char *buf){
 	memcpy(&(nobj->player),buf+sizeof(int),sizeof(int));
 	memcpy(&(nobj->planet->gold),buf+2*sizeof(int),sizeof(float));
       }
-/*       printf("PLANET recv %d %d %d",id,GetTime(),nobj->ttl);  */
-/*       if(nobj!=NULL){ */
-/* 	printf("\tplayer: %d gold: %f",nobj->player,nobj->planet->gold);  */
-/*       } */
-/*       printf("\n");  */
+      /* check if I a have that information */
+
+      if(players[nobj->player].team==players[actual_player].team){
+
+	if(IsInIntList((players[actual_player].kplanets),nobj->id)==0){
+	  players[actual_player].kplanets=Add2IntList((players[actual_player].kplanets),nobj->id);
+	  fprintf(stdout,"PLANET %d discovered\n",nobj->id);
+	}
+      }
+
+      /*
+	if(obj->mode==LANDED && players[obj->in->player].team!=players[obj->player].team)
+
+	  if(players[actual_player].team==players[nobj->player].team){
+	    players[actual_player].kplanets=Add2IntList((players[i].kplanets),pnt->id);
+	  }
+      */
+
+      /*       printf("PLANET recv %d %d %d",id,GetTime(),nobj->ttl);  */
+      /*       if(nobj!=NULL){ */
+      /* 	printf("\tplayer: %d gold: %f",nobj->player,nobj->planet->gold);  */
+      /*       } */
+      /*       printf("\n");  */
       buf+=nbytes;
       tbytes+=nbytes;
       break;
@@ -1510,7 +1644,8 @@ int ReadObjsfromBuffer(char *buf){
 		  CANNON0,objnew.engtype,objnew.player,parent,NULL);
       
       if(nobj==NULL){
-	fprintf(stderr,"\nERROR in ReadObjsfromBuffer(): NewObj() devuelve NULL\n");
+	fprintf(stderr,"\nERROR in ReadObjsfromBuffer(): NewObj() returns NULL\n");
+	fprintf(stderr,"\t object not created. Exiting ...\n");
 	exit(-1);
       }
 
@@ -1561,8 +1696,8 @@ int ReadObjsfromBuffer(char *buf){
 /*       if(objnew.parent!=0){ */
 /* 	nobj->parent=SelectObj(listheadobjs,objnew.parent); */
 /*       } */
-      if(objnew.in!=0){
-	nobj->in=SelectObj(&listheadobjs,objnew.in);
+      if(objnew.inid!=0){
+	nobj->in=SelectObj(&listheadobjs,objnew.inid);
 	
 	if(nobj->habitat==H_SPACE){
 	    fprintf(stderr,"ERROR in ReadObjsfromBuffer(OBJNEW)in !=NULL\n");
@@ -1570,7 +1705,7 @@ int ReadObjsfromBuffer(char *buf){
 	}
       }
 
-      objt=SelectObj(&listheadobjs,objnew.planet); 
+      objt=SelectObj(&listheadobjs,objnew.planet);
       if(objt!=NULL){ 
  	nobj->planet=objt->planet; 
       } 
@@ -2445,7 +2580,7 @@ int CheckModifiedPre(struct HeadObjList *lh,int proc){
     obj=ls->obj;
 
     if(proc!=players[obj->player].proc){
-      if(obj->state<0){
+      if(obj->state<=0){
 	if(obj->modified!=SENDOBJNEW && 
 	   obj->modified!=SENDOBJNOTSEND && 
 	   obj->modified!=SENDOBJUNMOD){
@@ -2724,7 +2859,6 @@ void Setttl0(struct HeadObjList *lh){
 	      if(obj->ttl<0){   /* already send */
 	      sw=1;
 	      }
-
 	    }
 	    else{
 	      sw=1;
@@ -3259,7 +3393,7 @@ int ServerProcessBuffer(struct Buffer *buffer){
 	printf("SENDGLOBAL\n");
 	nbytes=sizeof(struct Global);
 	memcpy(&gclient,buf,nbytes);
-	printf("Variables globales:\n");      
+	printf("Global variables:\n");      
 	printf("\tactual: %d\n",gclient.actual_player);
 	printf("\tobj id: %d\n",gclient.g_objid);
 	printf("\tproj id: %d\n",gclient.g_projid);

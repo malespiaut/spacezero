@@ -65,7 +65,6 @@ struct Shell shells[11];
 struct Ordername ordernames[15];
 
 
-
 void initshell(void){
   /*
     Initialize the shell
@@ -467,12 +466,27 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
 	strncpy(cad,"G:GT  X:EXP  S:SLC  P:STP  T:TOFF  R:REP  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",128); 
       }
       
+      if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT && CountNSelected(lhead,player)==1){
+	strncpy(cad,"S: SELECT   B: BUY   W: WRITE",128); 
+	key->g=key->x=key->p=key->t=key->r=key->e=FALSE;
+      }
+
+      if(0&&CountNSelected(lhead,player)>1){
+	strncpy(cad,"G: GOTO   X: EXPLORE   P: STOP   T: TAKEOFF   R: REPITE   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",128); 
+	textw=gdk_text_width(font,cad,strlen(cad));
+	if(textw>GameParametres(GET,GWIDTH,0)){
+	  strncpy(cad,"",1);
+	  strncpy(cad,"G:GT  X:EXP  P:STP  T:TOFF  R:REP  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",128); 
+	}
+	key->s=FALSE;
+      }
+      
     }
     else{
       strncpy(cad,"S: SELECT   W: WRITE",128); 
       key->g=key->x=key->p=key->t=key->r=key->b=key->u=key->e=FALSE;
     }
-    
+
     if(key->g==TRUE){
       level=2;
       order=GOTO;
@@ -570,6 +584,9 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
       snprintf(pr2,12,"%d",GetPrice(NULL,SHIP3,ENGINE4,CANNON4));
       snprintf(pr3,12,"%d",GetPrice(NULL,TOWER,ENGINE1,CANNON4));
       snprintf(cad,128,"1: EXPLORER(%s)   2: FIGTHER(%s)   3: TOWER(%s)",pr1,pr2,pr3);
+      if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT){
+	snprintf(cad,128,"                  2: FIGTHER(%s)",pr2);
+      }
       level=3;
       break;
     case UPGRADE:
@@ -609,6 +626,9 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     case BUY:
       Keystrokes(LOAD,par);
       DelCharFromCad(par,"123");
+      if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT){
+	DelCharFromCad(par,"2");
+      }
       switch(strtol(par,NULL,10)){
       case 1:
 	strcpy(cad,"EXPLORER"); 
@@ -670,7 +690,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
 
     if(gameorder==FALSE){
       
-      /* first selected goes to cv */
+      /* first selected goes to cv if cv is not selected*/
       ls=lhead->next;
       while(ls!=NULL){  //HERE create a selected list
 	if(ls->obj->selected==TRUE){
@@ -683,10 +703,10 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
 	      sw++;
 	    }
 	  }
+	  if(obj0==cv)firstselobj=cv;
 	}
 	ls=ls->next;
       }
-      
     }
     else{
       obj0=ExecOrder(lhead,*pcv,player,order,par);
@@ -701,7 +721,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
       if(firstselobj!=cv && firstselobj!=NULL){
 	*pcv=firstselobj;
 	if(*pcv!=NULL){
-	  SelectionBox(pcv,1);
+	  SelectionBox(pcv,2);
 	  (*pcv)->selected=TRUE;
 	}
       }
@@ -774,14 +794,24 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   /* forbidden orders */
 
   switch(order){
-  case GOTO:
+
   case TAKEOFF:
+    if(obj->engine.type<=ENGINE1)return(NULL);
+    if(obj->type==SHIP && obj->subtype==PILOT)return(NULL);
+    if(obj->habitat!=H_PLANET)return(NULL);
+    break;
   case RETREAT:
   case EXPLORE:
   case STOP:
+  case GOTO:
     if(obj->engine.type<=ENGINE1)return(NULL);
+    if(obj->type==SHIP && obj->subtype==PILOT)return(NULL);
     break;
   case SELL:
+    if(obj->type==SHIP && obj->subtype==PILOT){
+      printf("You can't sell pilots\n");
+      return(NULL);
+    }
   case BUY:
   case UPGRADE:
     if(obj->mode!=LANDED){
@@ -869,8 +899,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	switch(obj_dest->type){
 	case PLANET: /* if planet is unknown*/
 	  if(IsInIntList((players[obj->player].kplanets),id1)==0){
+	    printf("Not Allowed. Planet or ship %d unknown.\n",obj_dest->pid);
 	    obj_dest=NULL;
-	    printf("Not Allowed. Planet or ship unknown.\n");
 	  }
 	  else{
 	    printf("(%c %d) going to planet %d.\n",Type(obj),obj->pid,obj_dest->pid);
@@ -883,7 +913,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  }
 	  else{
 	    if(obj_dest==obj){
-	      printf("Not Allowed. Destiny is equal than origin.\n");
+	      printf("(%c %d) Not Allowed. Destiny %d is equal than origin.\n",Type(obj),obj->pid,obj_dest->pid);
 	      obj_dest=NULL;
 	      }	
 	    else{
@@ -908,6 +938,12 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	ord.d=obj_dest->type;
 	ord.e=obj_dest->pid;
 	ord.f=ord.g=ord.h=0;
+	ord.i=ord.j=ord.k=ord.l=0;
+	if(obj_dest->type==SHIP && obj_dest->subtype==PILOT){
+	  ord.i=PILOT;
+	  printf("ord_i 1st: %f\n",ord.i);
+	}
+
 	DelAllOrder(obj);
 	AddOrder(obj,&ord);
 
@@ -926,6 +962,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       ord.c=-1;
       ord.d=0;
       ord.e=ord.f=ord.g=ord.h=0;
+      ord.i=ord.j=ord.k=ord.l=0;
       DelAllOrder(obj);
       AddOrder(obj,&ord);
 
@@ -950,6 +987,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     ord.d=0;
     ord.e=ord.f=ord.g=0;
     ord.h=1;
+    ord.i=ord.j=ord.k=ord.l=0;
     DelAllOrder(obj);
     AddOrder(obj,&ord);
     printf("(%c %d) going to explore.\n",Type(obj),obj->pid);
@@ -1015,9 +1053,9 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       
       ord.a=ord.b=ord.c=ord.d=0;
       ord.e=ord.f=ord.g=ord.h=0;
-
+      ord.i=ord.j=ord.k=ord.l=0;
       /* if ship is in a planet change order to goto this planet */
-/*       if(obj_dest->in!=NULL){ */
+/*       if(obj_dest->habitat==H_PLANET){ */
 /* 	ord.id=GOTO; */
 /* 	ord.a=obj_dest->in->x; */
 /* 	ord.b=obj_dest->in->y; */
@@ -1041,6 +1079,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       
       ord.a=ord.b=ord.c=ord.d=0;
       ord.e=ord.f=ord.g=ord.h=0;
+      ord.i=ord.j=ord.k=ord.l=0;
       DelAllOrder(obj_dest);
       AddOrder(obj_dest,&ord);
       printf("(%c %d) taking off.\n",Type(obj),obj->pid);
@@ -1080,6 +1119,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       printf("Price: %d eng: %d weapon: %d\n",
 	     price, obj->engine.type, obj->weapon->type);
       AddGold(players,obj->player,price);
+      obj->mode=SOLD;
+      obj->items=0;
       obj->state=-1;
     }
     break;
@@ -1132,22 +1173,50 @@ void SelectionBox(Object **pcv,int reset){
   int x1,y1;
   Object *cv;
   int n;  
+
+
+  if(*pcv==NULL)return;
+
   cv=*pcv;
 
-  if(reset){ /* reset */
+  if(cv0!=cv){
+    cv0=cv;
+    if(reset==0)reset=1;
+  }
+
+  switch(reset){
+  case 0:
+    break;
+  case 1:
+    region.rect.width=region.rect.height=0;
+    habitat.type=cv->habitat;
+    habitat.obj=cv->in;
+    (*pcv)->selected=TRUE;
+    
+    sw=0;
+    return;
+    break;
+  case 2:
     region.rect.width=region.rect.height=0;
     UnmarkObjs(&listheadobjs);
-    if(cv!=NULL){
-      habitat.type=cv->habitat;
-      habitat.obj=cv->in;
-      (*pcv)->selected=TRUE;
-    }
+    habitat.type=cv->habitat;
+    habitat.obj=cv->in;
+    (*pcv)->selected=TRUE;
+   
     sw=0;
+    return;
+
+
+    break;
+  default:
+    break;
+  }
+
+  if(region.habitat<0){
+    printf("Sel: habitat<0\n");
     return;
   }
 
-  if(region.habitat<0)return;
-  //  printf("habitat: %d \n",habitat.type);
   if((habitat.type==H_SPACE && gdraw.map==TRUE) || habitat.type==H_PLANET){
     if(keys.mleft==FALSE){
       if(sw){ /* mouse release */
@@ -1159,13 +1228,73 @@ void SelectionBox(Object **pcv,int reset){
 	if(region.rect.width==0 || region.rect.height==0){
 	  /*reset*/
 	  region.rect.width=region.rect.height=0;
-	  UnmarkObjs(&listheadobjs);
-	  if(cv!=NULL){
-	    habitat.type=cv->habitat;
-	    habitat.obj=cv->in;
-	    cv->selected=TRUE;
+	  if(keys.ctrl==FALSE){
+	    UnmarkObjs(&listheadobjs);
 	  }
+	  habitat.type=cv->habitat;
+	  habitat.obj=cv->in;
+	  cv->selected=TRUE;
+
 	  sw=0;
+
+	  /***** mouse selection, one click *****/
+	  {
+	    if(region.habitat>0){
+	      region.rect.y=GameParametres(GET,GHEIGHT,0)-region.rect.y;
+	    }
+	    
+	    Window2Real(cv,region.habitat,region.rect.x,region.rect.y,&x0,&y0); 
+	    Window2Real(cv,region.habitat,region.rect.x+region.rect.width, 
+			region.rect.y+region.rect.height, 
+			&x1,&y1); 
+	    
+	    region.rect.x=x0; 
+	    region.rect.y=y0; 
+	    region.rect.width=0; 
+	    region.rect.height=0; 
+	   
+	    if(region.habitat>=0){
+	      cv0=SelectOneShip(&listheadobjs,region,cv,keys.ctrl);
+	      if(cv0!=NULL){
+		if(keys.ctrl==TRUE){
+		  if(cv0->selected==TRUE){
+
+		    if(CountSelected(&listheadobjs,cv->player)>1){
+		      cv0->selected=cv0->selected==TRUE?FALSE:TRUE;
+		      /* HERE new cv */
+		      printf("TODO must choose a new cv\n");
+		      if(cv==cv0 && cv0->selected==FALSE){
+			*pcv=FirstSelected(&listheadobjs,cv->player);
+			habitat.type=(*pcv)->habitat;
+			habitat.obj=(*pcv)->in;
+			(*pcv)->selected=TRUE;
+		      }
+		    }
+		  }
+		  else{
+		    //		    cv->selected=FALSE;
+		    *pcv=cv0;
+		    habitat.type=(*pcv)->habitat;
+		    habitat.obj=(*pcv)->in;
+		    (*pcv)->selected=TRUE;
+		  }
+		}
+		else{
+		  cv->selected=FALSE;
+		  *pcv=cv0;
+		  habitat.type=(*pcv)->habitat;
+		  habitat.obj=(*pcv)->in;
+		  (*pcv)->selected=TRUE;
+		}
+	      }
+	      else{
+		fprintf(stderr,"WARNING SelectionBox() cv0=NULL\n");
+		//		exit(-1); // HERE PRODUCTION this never must happen
+	      }
+	    }
+	  }
+	  /***** --mouse selection, one click *****/
+
 	}
 	else{
 	  if(region.rect.width<0){
@@ -1199,7 +1328,7 @@ void SelectionBox(Object **pcv,int reset){
 		 region.rect.width,region.rect.height);  /* window coordinates */
 #endif	    
 	  if(region.habitat>=0){
-	    cv0=MarkObjs(&listheadobjs,region);
+	    cv0=MarkObjs(&listheadobjs,region,*pcv,keys.ctrl);
 	    
 	    if(cv0!=NULL){
 	      *pcv=cv0;
@@ -1209,7 +1338,7 @@ void SelectionBox(Object **pcv,int reset){
 	      ///		SelectionBox(cv,1); /* reset selection box*/
 	    }
 	  }
-	  n=CountSelected(&listheadobjs);
+	  n=CountSelected(&listheadobjs,cv->player);
 	  if(n<6){
 	    printf("Selected ships:\n");
 	    PrintSelected(&listheadobjs); 
@@ -1232,6 +1361,14 @@ void SelectionBox(Object **pcv,int reset){
 	  region.habitat=0;
 	}
 	else{
+	  switch(habitat.type){
+	  case H_PLANET:
+	    break;
+	  case H_SHIP:
+	    break;
+	  default:
+	    break;
+	  }
 	  if(habitat.type==H_PLANET){
 	    if(cv!=NULL)region.habitat=cv->in->id;
 	  }
@@ -1393,3 +1530,5 @@ int Get2Args(char *cad,char *arg1,char *arg2){
   //  printf("GA final(%s) (%s) (%s)\n",cad,arg1,arg2);
   return(nargs);
 }
+
+

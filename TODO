@@ -12,7 +12,7 @@ libopenal_dev
 
 
 
-bugs:(last:116)
+bugs:(last:117)
 ====
 
 -[26] (010910) al pasar al modo manual siempre dispara. (posible disparo a EXPLOSION, objnext no eliminado)
@@ -36,7 +36,8 @@ bugs:(last:116)
 -[101](105011)32/64 bits Gdk-WARNING **: GdkWindow 0x2e00005 unexpectedly destroyed ??(after ubuntu update, no more)(it continues)(happens after screensaver)
 -[115]-geom 1000x-12 check all arguments...
 	    -geom -name hola
--[]why dont explore (save08)(the last ship, no unknown planets)
+-[117]why dont explore (save08)(the last ship, no unknown planets)
+
 
 Version 0.6: (since 0707)
 ============
@@ -77,11 +78,9 @@ Version 0.8 (since 10May2011)
 -Review Experience(). save09. training high levels.
 -When select a planet, center map on it , if its known.
 
-
 mouse:
 =====
 -!!double click: GOTO with selected ship(s).
--Single click: select ship. In map view and inside a planet.
 
 Ships:
 ======
@@ -99,7 +98,6 @@ AI:
 
 -Orbit in automatic mode(Take off).
 -When parent dies, send orders to object sons.
--Aterrizado al pasar a automatico, no despegar y volver a aterrizar.
 -evasion maneuver.
 -Avoid enemy shots.
 -Las ordenes dependen de unos objetivos a cumplir.
@@ -116,7 +114,8 @@ AI:
 -!!check rules in ally planet. If is empty: conquer.
 -When an enemy ship is near a planet send only the necessary ships.
 -Add a different way to attack planets. 
--Attacks in planets: turn earlier.
+-!!No despegar y aterrizar al pasar a automatico.
+-!!dont allow build towers in ally planets or share the resources. Send resources in planet info.
 
 Comm:
 ====
@@ -130,10 +129,12 @@ Save
 
 Command shell:
 ==============
--Add help in menu.
+
 -!!ENEMIESKNOWN as game option.
 -!Save several games.
 -Add select x y
+-Add RETREAT n
+
 
 Planets:
 =======
@@ -143,8 +144,6 @@ Version 0.9
 -Dynamic Universe.
 -Add transports, comerce.
 -Missions.=> Missions script files. (XML?)
--Keep ships(pilots) between games.
--Create pilots, survive to ship destruction, they are the experience. survival ships.
 -Increase planet terrain. As in "Defender"
 -Avoid shocks whith ships.(See earlier ai() version).
 
@@ -188,6 +187,10 @@ X-(270611)!!Modified order STOP: in outer space STOP, dont accelerate but can
  fire. Inner a planet dont take off but can fire.
 X-(280611)Ignore order GOTO himself.
 X-(280611)!!Add retreat order.
+X-(010711)Add help in menu.
+X-(150711)Attacks in planets: turn earlier.
+X-(200711)Added:!!Create pilots, survive to ship destruction, they are the experience. survival ships.(without prisioners)
+X-(210711)Single click: select ship. In map view and inside a planet.
 
 
 BUGS version 0.80
@@ -268,7 +271,7 @@ X-(030411)!!revisar INSTALL
 X-(040411)distance between objs corrected
 X-(170411)Sound and music control.
 X-(010511)Mirar mensajes planet under attack, no salen a tiempo. save13
-X-(130511)!!En opciones mostrear las reales del juego actual.
+X-(130511)!!En opciones mostrar las reales del juego actual.
 
 
 

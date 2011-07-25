@@ -56,7 +56,6 @@ struct Global gremote,glocal;
 #if DEBUG
 int debugsave=1;
 #endif
-#define MINORSAVEVERSION "0.81.01" /* the save file must be at least this version */
 
 
 int CreateDir(char *dir){
@@ -411,7 +410,7 @@ int ExecLoad(char *nom){
   int id,projid;
   FILE *fp;
   int sc,sv;
-  struct Tabla *tbl;
+  struct ObjTable *tbl;
   int habitat_type,habitat_obj;
   float control,control2;
   struct Global *global;
@@ -521,7 +520,7 @@ int ExecLoad(char *nom){
   }
   printf("\tNumber of objects: %d\n",num_objs);
   
-  tbl=malloc(num_objs*sizeof(struct Tabla));
+  tbl=malloc(num_objs*sizeof(struct ObjTable));
   if(tbl==NULL){
     fprintf(stderr,"ERROR in malloc ExecLoad()\n");
     exit(-1);
@@ -966,7 +965,7 @@ int ExecLoad(char *nom){
       if(tbl[i].in != 0){
 	obj0->in=SelectObj(&listheadobjs,tbl[i].in);
 	if(obj0->in==NULL){
-	  fprintf(stderr,"Error in ExecLoad(): asignation of in\n");
+	  fprintf(stderr,"Error ExecLoad(): asignation of in\n");
 	}
       }
       if(tbl[i].planet != 0){
@@ -979,7 +978,7 @@ int ExecLoad(char *nom){
 
       if(obj0->mode==LANDED){
 	Segment s;
-	if(obj0->in!=NULL){
+	if(obj0->habitat==H_PLANET){
 	  if(!GetLandedZone(&s,obj0->in->planet)){
 	    /* obj0->y=obj0->y0=s.y0+obj0->radio+1; */
 	  }
@@ -1072,11 +1071,11 @@ int FprintfObj(FILE *fp,Object *obj){
   ttl=0;
   /* positions saved normalized */
   
-  fprintf(fp,"%d %d %s %hd %hd %hd %hd %g %d %d %d %d %d %d %d %g %d %hd %hd %hd %hd %hd ",
+  fprintf(fp,"%d %d %s %hd %hd %hd %hd %g %d %d %d %d %d %d %d %d %g %d %hd %hd %hd %hd %hd ",
 	  obj->id,obj->pid,obj->name,obj->player,obj->type,
 	  obj->subtype,obj->level,obj->experience,obj->kills,
 	  obj->durable,obj->visible,obj->radar,obj->mass,
-	  obj->cargo,obj->radio,obj->cost,obj->damage,
+	  obj->items,obj->cargo,obj->radio,obj->cost,obj->damage,
 	  obj->ai,modified,ttl,obj->habitat,obj->mode);
   
   
@@ -1198,19 +1197,19 @@ int FprintfPlanet(FILE *fp,Object *obj){
   return(0);
 }
 
-int FscanfObj(FILE *fp,Object *obj,struct Tabla *t){
+int FscanfObj(FILE *fp,Object *obj,struct ObjTable *t){
   /*
     Read an object from the file *fp
   */
   int in,dest,parent,weapon;
   short modified;  
 
-  if(fscanf(fp,"%d%d%16s%hd%hd%hd%hd%f%d%d%d%d%d%d%d%f%d%hd%hd%hd%hd%hd",
+  if(fscanf(fp,"%d%d%16s%hd%hd%hd%hd%f%d%d%d%d%d%d%d%d%f%d%hd%hd%hd%hd%hd",
 	    &obj->id,&obj->pid,obj->name,&obj->player,&obj->type,
 	    &obj->subtype,&obj->level,&obj->experience,&obj->kills,
 	    &obj->durable,&obj->visible,&obj->radar,&obj->mass,
-	    &obj->cargo,&obj->radio,&obj->cost,&obj->damage,
-	    &obj->ai,&modified,&obj->ttl,&obj->habitat,&obj->mode)!=22){
+	    &obj->items,&obj->cargo,&obj->radio,&obj->cost,&obj->damage,
+	    &obj->ai,&modified,&obj->ttl,&obj->habitat,&obj->mode)!=23){
     perror("fscanf");
     exit(-1);
   }
@@ -1477,9 +1476,10 @@ int FprintfOrders(FILE *fp,Object *obj){
     ord=&(lo->order);
     fprintf(fp,"%d %d %d %d ",
 	    ord->priority,ord->id,ord->time,ord->g_time);
-    fprintf(fp,"%g %g %g %g %g %g %g %g ",
+    fprintf(fp,"%g %g %g %g %g %g %g %g %g %g %g %g ",
 	    ord->a,ord->b,ord->c,ord->d,
-	    ord->e,ord->f,ord->g,ord->h);
+	    ord->e,ord->f,ord->g,ord->h,
+	    ord->i,ord->j,ord->k,ord->l);
     i++;
     lo=lo->next;
   }
@@ -1519,9 +1519,10 @@ int FscanfOrders(FILE *fp,Object *obj){
       perror("fscanf");
       exit(-1);
     }
-    if(fscanf(fp,"%f%f%f%f%f%f%f%f",
+    if(fscanf(fp,"%f%f%f%f%f%f%f%f%f%f%f%f",
 	      &order.a,&order.b,&order.c,&order.d,
-	      &order.e,&order.f,&order.g,&order.h)!=8){
+	      &order.e,&order.f,&order.g,&order.h,
+	      &order.i,&order.j,&order.k,&order.l)!=12){
       perror("fscanf");
       exit(-1);
     }

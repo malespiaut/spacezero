@@ -653,7 +653,7 @@ void PrintWarnings(char *version){
 }
 
 void SetDefaultParamValues(struct Parametres *par){
-  
+  printf("Setting default param values\n");  
   par->ngalaxies=NUMGALAXIES;
   par->nplanets=NUMPLANETS;
   par->nplayers=2;
@@ -675,8 +675,7 @@ void SetDefaultParamValues(struct Parametres *par){
   par->port=DEFAULT_PORT;
   par->port2=DEFAULT_PORT+1;
   strcpy(par->playername,"player"); // HERE set default
+  
   strcpy(par->font,"6x13");
   strcpy(par->geom,"1024x550");
-
-
 }

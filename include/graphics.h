@@ -92,6 +92,7 @@ void DrawPlanetSurface(GdkPixmap *pixmap,struct Planet *planet,  GdkGC *color);
 void DrawAsteroid(GdkPixmap *pixmap,int x,int y,Object *obj);
 int DrawRadar(GdkPixmap *pixmap,Object *,struct HeadObjList *);
 void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList,Object *cv,int ulx);
+void DrawSpaceShip(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc);
 
 void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl);
 

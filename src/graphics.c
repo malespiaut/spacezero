@@ -40,10 +40,14 @@
 #include "menu.h"
 #include "sectors.h"
 
+#define DOT 1
+#define LINE 2
+#define CIRCLE 3
+
+
 extern struct Player *players;
 extern struct Parametres param;
 extern int g_memused;
-extern struct HeadObjList listheadnearobjs;   /* list of near enemies objects of actual player */
 extern char version[64];
 int gdrawmenu=1;
 
@@ -95,11 +99,13 @@ GdkGC *penViolet=NULL;
 GdkGC *penPink=NULL;
 GdkGC *penCyan=NULL;
 GdkGC *penSoftRed=NULL;
+GdkGC *penGrey=NULL;
 
 Point mouse_pos;
 struct Keys keys;
 
 GtkWidget *d_a;
+
 
 GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres param){
 
@@ -561,11 +567,12 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   penPink= GetPen(NewColor(65535,49344,52171),pixmap);
   penCyan= GetPen(NewColor(0,65535,65535),pixmap);
   penSoftRed= GetPen(NewColor(20000,0,0),pixmap);
+  penGrey= GetPen(NewColor(40000,40000,40000),pixmap);
 
   gcolors[0]=penWhite;
-  gcolors[1]=penYellow;
-  gcolors[2]=penRed;
-  gcolors[3]=penGreen;
+  gcolors[1]=penGreen;
+  gcolors[2]=penYellow;
+  gcolors[3]=penRed;
   gcolors[4]=penBlue;
   gcolors[5]=penOrange;
   gcolors[6]=penViolet;
@@ -1228,9 +1235,10 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
     if(ls->obj->type==SHIP && ls->obj->ttl<MINTTL){ls=ls->next;continue;}
     if(ls->obj->state<=0){ls=ls->next;continue;}
     if(ls->obj->habitat!=habitat.type){ls=ls->next;continue;}
-    if(cv!=NULL){
-      if(cv->in!=ls->obj->in){ls=ls->next;continue;}
-    }
+
+    if(cv->in!=ls->obj->in){ls=ls->next;continue;}
+    if(cv->habitat==H_SHIP){ls=ls->next;continue;}
+    
     x=ls->obj->x;
     y=ls->obj->y;
     
@@ -1334,6 +1342,7 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
       case SHIP4:
       case SATELLITE:
       case TOWER:	
+      case PILOT:
 	if(ls->obj->habitat==H_PLANET && ls->obj==cv && ls->obj->selected==TRUE){
 	  lx=x;
 	  ly=y;
@@ -1346,7 +1355,7 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
 	}
 	else{
 	  gc=gcolors[players[ls->obj->player].color];
-	  if(ls->obj->selected==TRUE && ls->obj!=cv)gc=penWhite;
+	  if(ls->obj->selected==TRUE && ls->obj!=cv && ls->obj->player==cv->player)gc=penGrey;
 	  DrawShip(pixmap,gc,x,y,ls->obj);
 	}
 	
@@ -1441,7 +1450,59 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
 		     1.,0.5,
 		     1.,0};
 
-	      
+  /*  static float s7[]={14,  SHIP7 PILOT 
+		     1.,0,
+		     1.,0.25,
+		     0.5,0.25,
+		     0.5,0.5,
+		     0,0.5,
+		     0,0.25,
+		     -1,0.25,
+		     -1,-0.25,
+		     0,-0.25,
+		     0,-0.5,
+		     0.5,-0.5,
+		     0.5,-0.25,
+		     1,-0.25,
+		     1.,0};	      
+*/
+  static float s7[]={11, /* SHIP7 PILOT */
+		     .5,.25,
+		     -.25,.25,
+		     -.25,-.25,
+		     0,-.25,
+		     0,-1,
+		     .25,-1,
+		     .25,-.25,
+		     .5,-.25,
+		     .5,.75,
+		     0,.75,
+		     0,.25};	      
+
+
+  static float s8[]={20, /* SHIP7 PILOT in pod */
+		     0.75,0.25,
+		     0.75,.75,
+		     .25,1.25,
+		     -.25,1.25,
+		     -.75,.75,
+		     -.75,-.75,
+		     -.25,-1.25,
+		     .25,-1.25,
+		     .75,-.75,
+		     .75,.25,
+		     -.25,.25,
+		     -.25,-.25,
+		     0,-.25,
+		     0,-1,
+		     .25,-1,
+		     .25,-.25,
+		     .5,-.25,
+		     .5,.75,
+		     0,.75,
+		     0,.25};	      
+
+
   float *s;
   int i;
   static GdkGC  *gcobj[3];
@@ -1476,17 +1537,55 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
   case TOWER:
     s=s6;
     break;
+  case PILOT:
+    s=s7;
+    if(obj->mode!=LANDED)
+      s=s8;
+    break;
+
   default:
     s=s1;
     break;
   }
   switch(obj->subtype){
+  case PILOT:
+    rcosa=obj->radio*cos(obj->a);
+    rsina=obj->radio*sin(obj->a);
+    
+    for(i=0;i<s[0]-1;i++){
+      x0=s[2*i+1];
+      y0=s[2*i+2];
+      x1=s[2*i+3];
+      y1=s[2*i+4];
+      
+      x_0=x0*rcosa-y0*rsina;
+      y_0=x0*rsina+y0*rcosa;
+      
+      x_1=x1*rcosa-y1*rsina;
+      y_1=x1*rsina+y1*rcosa;
+      
+      gdk_draw_line(pixmap,gc,
+		    x+x_0,gheight-(y+y_0),
+		    x+x_1,gheight-(y+y_1));
+      
+    }
+    gdk_draw_rectangle(pixmap,gc2,TRUE,
+		       x-1,gheight-y-1,3,3);
+
+    if(0&&obj->mode!=LANDED){ /* pod */
+      
+      gdk_draw_arc(pixmap,gc,FALSE,
+		 x-1.5*obj->radio,gheight-y-1.5*obj->radio,
+		 3*obj->radio,3*obj->radio,0,23040);
+
+    }
+    break;
 
   case SHIP1:
   case SHIP2:
   case SHIP3:
   case SHIP4:
-
+    
     rcosa=obj->radio*cos(obj->a);
     rsina=obj->radio*sin(obj->a);
     
@@ -1509,6 +1608,7 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
     }
     gdk_draw_rectangle(pixmap,gc2,TRUE,
 		       x-1,gheight-y-1,3,3);
+
     /********** engine flares *************/
     if(obj->accel>0){ 
       x0=-.6;//-.04*obj->radio;
@@ -1860,10 +1960,33 @@ int DrawRadar(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc){
 	  gc=penRed;
 	}
       }
-      gdk_draw_point(pixmap,gc,x,gheight-y);
-      gdk_draw_point(pixmap,gc,x+1,gheight-y);
-      gdk_draw_point(pixmap,gc,x,gheight-y+1);
-      gdk_draw_point(pixmap,gc,x+1,gheight-y+1);
+      switch(ls->obj->subtype){
+      case PILOT:
+	{
+	  int interval=20;
+	  if(ls->obj->life<1200){
+	    interval=10;
+	  }
+	  if(GetTime()%interval < interval/2 ){
+	    gdk_draw_line(pixmap,gc,
+			  x-1,gheight-y,
+			  x+1,gheight-y);
+	    gdk_draw_line(pixmap,gc,
+			  x,gheight-y-1,
+			  x,gheight-y+1);
+
+	  }
+	}
+	break;
+      default:
+	gdk_draw_point(pixmap,gc,x,gheight-y);
+	gdk_draw_point(pixmap,gc,x+1,gheight-y);
+	gdk_draw_point(pixmap,gc,x,gheight-y+1);
+	gdk_draw_point(pixmap,gc,x+1,gheight-y+1);
+	break;
+      }
+
+
       n++;
       break;
     case PLANET:
@@ -1930,7 +2053,7 @@ int DrawRadar_01(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lh){
 
   while (ls!=NULL){
 
-    if(ls->obj->in!=NULL){ls=ls->next;continue;}
+    if(ls->obj->habitat!=H_SPACE){ls=ls->next;continue;}
     if(ls->obj->type==SHIP && ls->obj->ttl<MINTTL){ls=ls->next;continue;}
     if(ls->obj==obj){ls=ls->next;continue;}
 
@@ -1990,6 +2113,66 @@ int DrawRadar_01(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lh){
   return(n);
 }
 
+
+void DrawSpaceShip(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc){
+
+  int gwidth,gheight;
+  GdkGC *gc;
+
+  float x0,y0,x1,y1,x2,y2;
+  int i,j;
+  float fx,fy;
+  float s[]={8,
+	     LINE,-.75,1.5,.75,1.5,
+	     LINE,.75,1.5,1.25,1,
+	     LINE,1.25,1,1.25,.25,
+	     LINE,1.25,.25,.75,-.25,
+	     LINE,.75,-.25,-.75,-.25,
+	     LINE,-.75,-.25,-1.25,.25,
+	     LINE,-1.25,.25,-1.25,1,
+	     LINE,-1.25,1,-.75,1.5};
+
+
+  gwidth=GameParametres(GET,GWIDTH,0);
+  gheight=GameParametres(GET,GHEIGHT,0);
+  gc=penWhite;
+
+  fx=(float)gwidth/4;
+  fy=(float)gheight/4;
+
+  x0=(float)gwidth/2;
+  y0=(float)gheight/2;
+  /*
+    x0=2*fx;
+    y0=2*fy;
+  */
+  j=1;
+  for(i=0;i<s[0];i++){
+
+    switch((int)s[j]){
+    case DOT:
+      break;
+    case LINE:
+      x1=s[++j];
+      y1=s[++j];
+      x2=s[++j];
+      y2=s[++j];
+      j++;
+      gdk_draw_line(pixmap,gc,
+		    x0+x1*fx,gheight-(y0+y1*fy),
+		    x0+x2*fx,gheight-(y0+y2*fy));
+      break;
+    case CIRCLE:
+      break;
+    default:
+      printf("DrawSpaceShip() error\n");
+      break;
+    }
+  }
+  return;
+}
+
+
 void DrawAsteroid(GdkPixmap *pixmap,int x,int y,Object *obj){
   /*
     version 01 25Oct10
@@ -2041,14 +2224,18 @@ void DrawAsteroid(GdkPixmap *pixmap,int x,int y,Object *obj){
 		   pts,16);
 }
 
+
+
 void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int ulx){
   /*
-    version 01
+    version 02
     Draw an space map with the known universe.
 
    */  
   struct ObjList *ls;
   struct IntList *ks;
+
+  static struct HeadObjList listheadnearobjs;   /* list of near enemies objects of actual player.*/
 
   GdkGC *gc;
   int x,y,x0,y0;
@@ -2063,6 +2250,26 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   int i,j;
   int gwidth,gheight;
   int gnet,proc;
+  static int createnearobjsw=1;
+  static int lasttime;
+  static int lastplayer;
+  int time;
+
+  time=GetTime();
+  if(time>lasttime+10 || time<lasttime || player!=lastplayer){
+    createnearobjsw=1;
+  }
+  
+  if(createnearobjsw){
+    DestroyObjList(&listheadnearobjs);
+    listheadnearobjs.n=0;
+    listheadnearobjs.next=NULL;
+    CreateNearObjsList(&hol,&listheadnearobjs,player);
+    lasttime=GetTime();
+    lastplayer=player;
+    createnearobjsw=0;
+  }
+
 
   gwidth=GameParametres(GET,GWIDTH,0);
   gheight=GameParametres(GET,GHEIGHT,0);
@@ -2163,7 +2370,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   }
   /* --sectors */
 
-  /* enemy ships */
+  /***** enemy ships *****/
 
   gc=penRed;
 
@@ -2185,23 +2392,48 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
     case PLANET:
       break;
     case SHIP:
+      switch(ls->obj->subtype){
 
-      if(gnet==TRUE){
-	if(proc!=players[ls->obj->player].proc){
-	  if(ls->obj->ttl<MINTTL){ls=ls->next;continue;}
+      case PILOT:
+	{
+	  int interval=20;
+	  if(ls->obj->life<1200){
+	    interval=10;
+	  }
+	  if(GetTime()%interval < interval/2 ){
+	    gdk_draw_line(pixmap,gc,
+			  x-4,gheight-y,
+			  x-2,gheight-y);
+	    gdk_draw_line(pixmap,gc,
+			  x+2,gheight-y,
+			  x+4,gheight-y);
+	    gdk_draw_line(pixmap,gc,
+			  x,gheight-y-4,
+			  x,gheight-y-2);
+	    gdk_draw_line(pixmap,gc,
+			  x,gheight-y+2,
+			  x,gheight-y+4);
+	  }
 	}
-      }
-      
-      gc=gcolors[players[ls->obj->player].color];
-      gdk_draw_line(pixmap,gc,
-		    x,gheight-y-2,
-		    x,gheight-y+2);
-      gdk_draw_line(pixmap,gc,
-		    x-2,gheight-y,
-		    x+2,gheight-y);
-      if(0&&label&1){
-	sprintf(point,"%d",ls->obj->pid);
-	DrawString(pixmap,gfont,gc,x+5,gheight-y,point);
+	break;
+      default:
+	if(gnet==TRUE){
+	  if(proc!=players[ls->obj->player].proc){
+	    if(ls->obj->ttl<MINTTL){ls=ls->next;continue;}
+	  }
+	}
+	
+	gc=gcolors[players[ls->obj->player].color];
+	gdk_draw_line(pixmap,gc,
+		      x,gheight-y-2,
+		      x,gheight-y+2);
+	gdk_draw_line(pixmap,gc,
+		      x-2,gheight-y,
+		      x+2,gheight-y);
+	if(0&&label&1){
+	  sprintf(point,"%d",ls->obj->pid);
+	  DrawString(pixmap,gfont,gc,x+5,gheight-y,point);
+	}
       }
       break;
     case ASTEROID:      
@@ -2214,10 +2446,10 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   }
   
 
-  /* --enemy ships */
+  /***** --enemy ships *****/
 
 
-  /* planets and ships */
+  /***** planets and ships *****/
   gc=penRed;
   
   ls=hol.next;
@@ -2231,7 +2463,6 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 	  ls=ls->next;continue;
 	}
       }
-
       break;
     case PLANET:
       if(IsInIntList((players[player].kplanets),ls->obj->id)==0){
@@ -2273,12 +2504,38 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
       break;
     case SHIP:
      gc=gcolors[players[ls->obj->player].color];
-      gdk_draw_line(pixmap,gc,
-		    x,gheight-y-2,
-		    x,gheight-y+2);
-      gdk_draw_line(pixmap,gc,
-		    x-2,gheight-y,
-		    x+2,gheight-y);
+     switch(ls->obj->subtype){
+     case PILOT:
+       {
+	 int interval=20;
+	 if(ls->obj->life<1200){
+	   interval=10;
+	 }
+	 if(GetTime()%interval < interval/2 ){
+	   gdk_draw_line(pixmap,gc,
+			 x-4,gheight-y,
+			 x-2,gheight-y);
+	   gdk_draw_line(pixmap,gc,
+			 x+2,gheight-y,
+			 x+4,gheight-y);
+	   gdk_draw_line(pixmap,gc,
+			 x,gheight-y-4,
+			 x,gheight-y-2);
+	   gdk_draw_line(pixmap,gc,
+			 x,gheight-y+2,
+			 x,gheight-y+4);
+	 }
+       }
+       break;
+     default:
+       gdk_draw_line(pixmap,gc,
+		     x,gheight-y-2,
+		     x,gheight-y+2);
+       gdk_draw_line(pixmap,gc,
+		     x-2,gheight-y,
+		     x+2,gheight-y);
+       break;
+     }
       if(label&1){
 	sprintf(point,"%d",ls->obj->pid);
 	DrawString(pixmap,gfont,gc,x+5,gheight-y,point);
@@ -2298,10 +2555,10 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
     }
     ls=ls->next;
   }
-  /* --planets and ships */
+  /***** --planets and ships *****/
 
 
-  /* scale */
+  /***** scale *****/
 
   x0=gwidth-50;
   y0=gheight-20;
@@ -2317,9 +2574,9 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   gdk_draw_line(pixmap,penGreen,
 		x0,y0-2,
 		x0,y0+2);
-  /* --scale */
+  /***** --scale *****/
 
-  /* mouse position */
+  /***** mouse position *****/
 
   x0=gwidth/2;
   y0=gheight/2;
@@ -2334,14 +2591,11 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   i=a/SECTORSIZE-(a<0);
   j=b/SECTORSIZE-(b<0);
 
-  //  sprintf(point,"%d %d",mouse_pos.x,mouse_pos.y);
   sprintf(point,"%d %d",i,j);
-  //  sprintf(point,"%d %d  %d %d",i,j,a,b);
   DrawString(pixmap,gfont,penGreen,mouse_pos.x,mouse_pos.y,point);
-  /* --mouse position */
+
+  /***** --mouse position *****/
 }
-
-
 int DrawPlayerInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct Player *player,int x0,int y0){
   /*
     Show info about the player
@@ -2497,7 +2751,7 @@ int DrawEnemyShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,i
     else
       gc=penYellow;
   }
-
+  if(obj->type==SHIP&&obj->subtype==PILOT && obj->mode==LANDED)n=0;
   gdk_draw_rectangle(pixmap,gc,TRUE,x+textw+10+1,y+1,n,texth-2);
   gdk_draw_rectangle(pixmap,color,FALSE,x+textw+10,y,sx,texth-1);
   y+=incy;
@@ -2509,6 +2763,7 @@ int DrawEnemyShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,i
   if(n<0)n=0;
   if(n<50)gc=penYellow;
   if(n<25)gc=penRed;
+  if(obj->type==SHIP&&obj->subtype==PILOT && obj->mode==LANDED)n=0;
   gdk_draw_rectangle(pixmap,gc,TRUE,x+textw+10+1,y+1,n,texth-2);
   gdk_draw_rectangle(pixmap,color,FALSE,x+textw+10,y,sx,texth-1);
   y+=incy;
@@ -2575,6 +2830,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   else{
     if(n<50)gc=penYellow;
   }
+  if(obj->type==SHIP&&obj->subtype==PILOT && obj->mode==LANDED)n=0;
   gdk_draw_rectangle(pixmap,gc,TRUE,x+1,y+1,n,texth-2);
   gdk_draw_rectangle(pixmap,color,FALSE,x,y,sx,texth-1);
   sprintf(point,"ENERGY %.0f",obj->gas);
@@ -2590,6 +2846,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   else{
     if(n<50)gc=penYellow;
   }
+  if(obj->type==SHIP&&obj->subtype==PILOT && obj->mode==LANDED)n=0;
   gdk_draw_rectangle(pixmap,gc,TRUE,x+1,y+1,n,texth-2);
   gdk_draw_rectangle(pixmap,color,FALSE,x,y,sx,texth-1);
   sprintf(point,"STATE (Sh:%.1f)",obj->shield);
@@ -2612,10 +2869,31 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
 
   //    obj->id=GetNProc()*g_objid+GetProc();    /* identifier */
 
-  //  sprintf(point,"SHIP(%c) id: %d (%d) %c  L : %d",Type(obj),obj->pid,obj->id,mode,obj->level);  
-  sprintf(point,"SHIP(%c) id: %d %c  L : %d",Type(obj),obj->pid,mode,obj->level);  
+
+  sprintf(point,"%s id: %d %c  L : %d",TypeCad(obj),obj->pid,mode,obj->level);
   DrawString(pixmap,font,color,x0+x,y+texth,point);
   y+=incy;
+
+  /***** carrying objects *****/
+
+  if(obj->items&ITPILOT){
+    Object pilot;
+    int gheight;
+    gheight=GameParametres(GET,GHEIGHT,0);
+    pilot.state=1;
+    pilot.type=SHIP;
+    pilot.subtype=PILOT;
+    pilot.mode=LANDED;
+    pilot.radio=texth;
+    pilot.a=0;
+    pilot.accel=0;
+    pilot.gas_max=1;
+    DrawShip(pixmap,color,x0+x+pilot.radio,-(y+texth)+gheight,&pilot);
+    gdk_draw_rectangle(pixmap,color,FALSE,x0+x,y+texth-texth,2*texth,2*texth);
+    y+=2*incy;    
+  }
+
+
   /* weapon */
 
   if(obj->weapon==NULL){
@@ -2665,6 +2943,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   /* sector */
 
   if(obj->habitat==H_PLANET){
+    //    printf("ship: %d %d %d %d\n",obj->id,obj->pid,obj->type,obj->subtype);
     ox=obj->in->x;
     oy=obj->in->y;
   }
@@ -3505,7 +3784,7 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 
     color=0;
     if(cvobj!=NULL){
-      if(cvobj->in==NULL)color=1;
+      if(cvobj->habitat==H_SPACE)color=1;
     }
     snprintf(cad,MAXTEXTLEN,"out: %d",
 	     CountShipsInPlanet(hlp,0,SHIP,-1,0));
@@ -3760,8 +4039,10 @@ void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv){
   int x0,y0,x1,y1;
 
 
-  if(reg.habitat<0)return;
-
+  if(reg.habitat<0){
+    fprintf(stderr,"ERROR: DrawSelectionBox(): reb habitat=%d (<0)",reg.habitat);
+    return;
+  }
   rect.x=reg.rect.x;
   rect.y=reg.rect.y;
   rect.width=reg.rect.width;
@@ -3874,6 +4155,9 @@ void DrawString(GdkDrawable *pixmap,GdkFont *font,GdkGC *gc,gint x,gint y,const 
     
    */
   if(font==NULL)return;
+  if(pixmap==NULL)return;
+  if(gc==NULL)return;
+  if(string==NULL)return;
 
   gdk_draw_string(pixmap,font,gc,x,y,string);
 }

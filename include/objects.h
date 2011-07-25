@@ -50,9 +50,10 @@
 /* Obj modes */
 #define NAV 1
 #define LANDED 2
+#define SOLD 3
 
 
-/* object types */
+/* object types 0-31 */
 #define SHIP 1
 #define PROJECTILE 2
 #define PLANET 3
@@ -62,7 +63,7 @@
 #define TRACE 14
 #define ALLOBJS 31
 
-/* objects subtypes */
+/* objects subtypes 0-16*/
 /* ship subtypes (SHIP)*/
 #define SHIP0 0
 #define SHIP1 1
@@ -71,7 +72,8 @@
 #define SHIP4 4
 #define SHIP5 5
 #define SHIP6 6
-#define SHIPMAX SHIP6
+#define SHIP7 7
+#define SHIPMAX SHIP7
 
 #define PRICESHIP0 100
 #define PRICESHIP1 100
@@ -80,14 +82,15 @@
 #define PRICESHIP4 400
 #define PRICESHIP5 200
 #define PRICESHIP6 200
+#define PRICESHIP7 0
 
-/* projectile subtypes (PROJECTILE)*/
-#define SHOT0 20
-#define SHOT1 21
-#define SHOT2 22
-#define SHOT3 23  // missile
-#define SHOT4 24  /* laser */
-#define EXPLOSION 25
+/* projectile subtypes (PROJECTILE) 49-64*/
+#define SHOT0 49
+#define SHOT1 50
+#define SHOT2 51
+#define SHOT3 52  // missile
+#define SHOT4 53  /* laser */
+#define EXPLOSION 54
 #define MISSILE SHOT3
 #define LASER SHOT4
 
@@ -99,7 +102,11 @@
 #define QUEEN SHIP4
 #define SATELLITE SHIP5
 #define TOWER SHIP6
+#define PILOT SHIP7
 
+/* ship items */
+#define ITSURVIVAL 1 
+#define ITPILOT 2
 
 /* weapons types */
 #define CANNON0 0   /* no weapon */
@@ -153,7 +160,7 @@
 #define TERRAIN 0
 #define LANDZONE 1
 
-
+/* Asteroid types */
 #define ASTEROID1 1
 #define ASTEROID2 2
 #define ASTEROID3 3
@@ -179,7 +186,7 @@ struct _Segment{
 
 typedef struct _Segment Segment;
 
-struct Tabla{
+struct ObjTable{
   int id,parent,dest,in,planet;
 };
 
@@ -200,6 +207,7 @@ struct Order{
   int g_time;     /* order time */
   float a,b,c,d;  /* internal variables */
   float e,f,g,h;
+  float i,j,k,l;
   /*  struct Order *next; */
 };
 
@@ -274,6 +282,7 @@ struct _Object{
   int radar;        /* radar range */
   int mass;         /* mass */
 
+  int items;        /* survival ship, ...*/
   int cargo;        /* capacity of the bodega TODO*/
   int radio;        /* ship radio */
   float cost;       /* cost of the object per unit time*/
@@ -340,7 +349,8 @@ struct ObjectAll{ /* SENDOBJALL */
   int radar;        /* radar range */
   int mass;         /* mass */
 
-  int cargo;        /* capacity of the bodega TODO*/
+  int cargo;        /* capacity of the dock TODO*/
+  int items;
   int radio;        /* ship radio */
   float cost;       /* cost of the object per unit time*/
   int damage;       /* damage of the ship in collision*/
@@ -376,7 +386,7 @@ struct ObjectAll{ /* SENDOBJALL */
 
   int parent;     /* pointer to parent obj */
   int dest;       /* pointer to nearest enemy object */
-  int in;         /* Object in which is contained */ 
+  int inid;         /* Object in which is contained */ 
   //  struct ListOrder *lorder;
 
   int weapon;     /*weapon selected 0 1 2*/
@@ -392,63 +402,29 @@ struct ObjectAll{ /* SENDOBJALL */
 
 struct ObjectNew{ /* SENDOBJNEW */
   int id;         /* identificador */
-  /*  char name[OBJNAMESMAXLEN];*/ /*    object name  */
   short player;
   short type;       /* type: SHIP,PLANET,PROJECTILE,... */
 
   short subtype;    /* subtipo de objeto */
-  /*  int level; */
-  /*  float experience; */
-  /*  int points; */
-
   int durable;
-  /*  int visible; */
-  //  int radar;     /* radar range */
-  //  int mass;      /* mass */
-
-  //  int cargo;     /* capacity of the bodega TODO*/
   int radio;      /* ship radio */
-  //  float cost;     /* cost of the object per unit time*/
   int damage;     /* damage of the ship */
 
   short ai;         /* -1: by keyboard. [0,10] */
   short modified;   /* SENDOBJMOD, SENDOBJMOD0, etc, must be updated by net */
-  //  int ttl;        /* if !=0 dont send  */
   short habitat;    /* free space or planet (H_SPACE H_PLANET)*/
   short mode;       /* LANDED, NAV(EGATING)  */
 
   float x,y;      /* position */
-  //  float x0,y0;    /* old position */
   float vx,vy;    /* velocity */
-  //  float fx,fy;    /* new force */
-  // float fx0,fy0;  /* old force */
-
   float a;        /* ship angle */
-  //  float ang_v;    /* angular velocity */
-  //  float ang_a;    /* angular acceleration */
-  //  float accel;     /* linear acceleration */
   float gas;      /* gas */
-  //  float gas_max;  /* gas capacity */
   float life;     /* time life */
-  //  float shield;   /* shield [0,1]*/
-  //  float state;    /* estate of the ship %[0,100]*/
 
-  //  float dest_r2;  /* distance**2 to the nearest object */
-  //  int sw;
-  //  int trace;
-  //  int norder;     /* numero  de ordenes pendientes */
-  //  struct Order actorder;
   int parent;     /* pointer to parent obj */
-  int in;         /* Object in which is contained */ 
+  int inid;         /* Object in which is contained */ 
   int planet;
-  //struct ListOrder *lorder;
 
-
-  //  Weapon *weapon;            /*weapon selected 0 1 2*/
-  //  Weapon weapon0;              /* actual weapon */
-  // Weapon weapon1;              /* actual weapon */
-  //Weapon weapon2;              /* actual weapon */
-  //Engine engine;              /* engine */
   int engtype;
 };
 
@@ -456,10 +432,8 @@ struct ObjectNew{ /* SENDOBJNEW */
 
 struct ObjectAAll{  /* SENDOBJAALL */
   int id;         /* identificador */
-  //  int visible;  // not used
   short level;
-  //  int kills;
-  short habitat;    /* free space or planet */
+  short habitat;    /* free space, planet or ship */
   short mode;       /* LANDED, NAVEGATING  */
   float x,y;      /* posicion actual */
   float x0,y0;    /* posicion anterior */  
@@ -472,10 +446,9 @@ struct ObjectAAll{  /* SENDOBJAALL */
 
   float gas;      /* combustible */
   float life;     /* tiempo de vida */
-  //  float shield;   /* escudo [0,1]*/
   float state;    /* estado de la nave %[0,100]*/
 
-  int in;         /* Object in which is contained */ 
+  int inid;         /* Object id in which is contained */ 
 };
 
 
@@ -483,6 +456,7 @@ struct Objectdynamic{ /* SENDOBJMOD */
   int id;          /* identificador */
   short level;
   short habitat;   /* free space or planet */
+  int inid;        /* id of the container */
   short mode;      /* LANDED, NAVEGATING  */
   float x,y;       /* posicion actual */
   float x0,y0;     /* posicion anterior */   
@@ -618,6 +592,7 @@ void Experience(Object *obj,float points);
 Object *NewObj(struct HeadObjList *lhobjs,int type,int stype,
 	       int x,int y,float vx,float vy,
 	       int weapontype,int engtype,int,Object *parent,Object *in);
+void ShipProperties(Object *obj,int stype,Object *in);
 void NewWeapon(Weapon *weapon,int type);
 void NewEngine(Engine *eng,int type);
 struct Planet *NewPlanet(void);
@@ -633,7 +608,6 @@ int CountPlayerShipObjs(struct HeadObjList *lh,int player,int *cont);
 int CountPlayerPlanets(struct HeadObjList *lh,struct Player player,int *cont);
 int CountPlanets(struct HeadObjList *lh,int type);
 int CountModObjs(struct HeadObjList *lh,int type);
-
 
 void PrintObj(Object *obj);
 
@@ -674,7 +648,7 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer);
 int CreatekplanetsLists(struct HeadObjList *lh,struct HeadObjList *hkplanets);
 int CreatePlanetList(struct HeadObjList,struct HeadObjList *);
 void CreateNearObjsList(struct HeadObjList *lh,struct HeadObjList *lhn,int player);
-
+int CreatePilot(Object *obj);
 
 int Add2TextList(struct TextList *head,char *cad,int color);
 int DestroyTextList(struct TextList *head);
@@ -682,24 +656,29 @@ int PrintTextList(struct TextList *head);
 int PosTextList(struct TextList *head,int m);
 int CountTextList(struct TextList *head);
 char Type(Object *obj);
-
+char *TypeCad(Object *obj);
 
 int UpdateSectors(struct HeadObjList lh);
 int GetPrice(Object *obj,int sid,int eng,int weapon);
 int BuyShip(struct Player player,Object *obj,int type);
 
 
-Object *MarkObjs(struct HeadObjList *lh,Region reg);
-int UnmarkObjs(struct HeadObjList *lh);
+Object *MarkObjs(struct HeadObjList *lh,Region reg,Object *cv,int ctrl);
+void UnmarkObjs(struct HeadObjList *lh);
 int PrintSelected(struct HeadObjList *lh);
-int CountSelected(struct HeadObjList *lh);
+int CountSelected(struct HeadObjList *lh,int player);
+int CountNSelected(struct HeadObjList *lh,int player);
 int NearMaxLevelObj(Object *obj,struct HeadObjList *lh);
-int PlanetEmpty(Object *planet,Object *obj);
-
+int IsPlanetEmpty(Object *planet,Object *obj);
+Object *FirstSelected(struct HeadObjList *lh,int player);
+Object *SelectOneShip(struct HeadObjList *lh,Region region,Object *cv,int ctrl);
 
 int UpdateCell(struct HeadObjList *lh,int *cell);
 int ValueCell(int *cell,Object *obj);
 
+int CreatePilot( Object *obj);
+int RescuePilots(Object *obj,struct HeadObjList *lh);
+int EjectPilots(struct HeadObjList *lh);
 
 
 /*************************/

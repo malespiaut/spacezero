@@ -101,10 +101,11 @@ GdkGC *penCyan=NULL;
 GdkGC *penSoftRed=NULL;
 GdkGC *penGrey=NULL;
 
-Point mouse_pos;
 struct Keys keys;
 
 GtkWidget *d_a;
+
+
 
 
 GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres param){
@@ -129,7 +130,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
 
 
   char label[164];
-  char labelhelp[2048];
+  char labelhelp[1024];
 
   GtkTooltips *tooltips;
   GdkGeometry geometry;
@@ -318,8 +319,10 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   strcat(labelhelp,"mouse pointer\tshow coordinates.\n");
   strcat(labelhelp,"l\t\t\tshow-hide labels.");
   
-  printf("help LEN: %d\n",strlen(labelhelp));//HERE check but no show
-
+  if(strlen(labelhelp)>1024){
+    fprintf(stderr,"ERROR InitGraphics(): cad labelhelp too long.\n");
+    exit(-1);
+  }
 
   help1=gtk_label_new(labelhelp);
   gtk_widget_show(help1);
@@ -666,7 +669,7 @@ gint expose_event(GtkWidget *widget, GdkEventExpose *event){
 gint configure_event(GtkWidget *widget, GdkEventConfigure *event){
   /* The window has been resized */  
 
-  gdrawmenu=TRUE;//HERE 
+  gdrawmenu=TRUE;
   if(pixmap){
     gdk_pixmap_unref(pixmap);
   }
@@ -705,7 +708,21 @@ gint LostFocus(GtkWidget *widget,gpointer data){
 
 gint button_press(GtkWidget *widget,GdkEventButton *event){
   /* printf("mouse press\n");  */
-  keys.mleft=TRUE;
+  switch(event->button){
+  case 1:
+    keys.mleft=TRUE;
+    keys.mright=FALSE;
+    break;
+  case 2:
+    break;
+  case 3:
+    keys.mright=TRUE;
+    keys.mleft=FALSE;
+    break;
+  default:
+    break;
+  }
+
   return(0);
 }
 
@@ -722,6 +739,7 @@ gint button_release(GtkWidget *widget,GdkEventButton *event){
   lasttime=time;
 
   keys.mleft=FALSE;
+  keys.mright=FALSE;
   return(0);
 }
 
@@ -739,10 +757,25 @@ gint motion_notify(GtkWidget *widget,GdkEventMotion *event){
     state=event->state;
   }
   
-  mouse_pos.x=x;
-  mouse_pos.y=y;
-  /*  printf("mouse move: x= %d, y= %d\n",x,y); */
+  MousePos(SET,&x,&y);
   return(TRUE);
+}
+
+void MousePos(int order,int *x,int *y){
+  static int x0=0,y0=0;
+
+  switch(order){
+  case SET:
+    x0=*x;
+    y0=*y;
+    break;
+  case GET:
+    *x=x0;
+    *y=y0;
+    break;
+  default:
+    break;
+  }
 }
 
 
@@ -752,23 +785,11 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
   //  g_print("%d, %s\n",event->keyval,event->string);   
   CountKey(1);
   gdrawmenu=TRUE;
-/*   if(GameParametres(GET,GPAUSED,0)==TRUE){ */
-/*     switch (event->keyval){ */
-/*     case 112:  /\*p *\/ */
-/* /\*       GameParametres(SET,GPAUSED,FALSE); *\/ */
-/* /\*       keys.p=FALSE; *\/ */
-/*       break; */
-/*     default: */
-/*       break; */
-/*     } */
-/*     //    return; */
-/*   } */
 
   if(event->keyval>31 && event->keyval < 256  ){
     Keystrokes(ADD,(char *)&(event->keyval));
   }
   else{
-    /* recodified for access to 2 byte keys using 1 byte TODO ??*/
     switch(event->keyval){
     case 65470: /* F1 key */
       Keystrokes(ADD,"F");
@@ -814,7 +835,6 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
     break;
   case 65362:
     keys.up=TRUE;
-    //    printf("up press\n");
     break;
   case 65363:
     keys.right=TRUE;
@@ -2247,7 +2267,6 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   static float objx=0,objy=0;
   float factor,ifactor;
   char point[100];
-  int i,j;
   int gwidth,gheight;
   int gnet,proc;
   static int createnearobjsw=1;
@@ -2299,9 +2318,9 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   x0=0.5*gwidth;
   y0=0.5*gheight;
  
-  Shift(ulx,cv,&zoom,&cvx,&cvy,SET);
-  factor=gwidth*(float)zoom/ulx;
-  ifactor=ulx/(gwidth*(float)zoom);
+  Shift(SET,ulx,cv,&zoom,&cvx,&cvy);
+  factor=gwidth*zoom/ulx;
+  ifactor=ulx/(gwidth*zoom);
   sd=SECTORSIZE*factor;
 
  /*  objx=(-objx+cvx)*factor;  */
@@ -2581,21 +2600,16 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   x0=gwidth/2;
   y0=gheight/2;
   
-  x=mouse_pos.x;
-  y=gheight - mouse_pos.y;
-  
-  a=(x-x0)*ifactor-cvx+objx;
-  b=(y-y0)*ifactor-cvy+objy;
-  
-
-  i=a/SECTORSIZE-(a<0);
-  j=b/SECTORSIZE-(b<0);
-
-  sprintf(point,"%d %d",i,j);
-  DrawString(pixmap,gfont,penGreen,mouse_pos.x,mouse_pos.y,point);
+  MousePos(GET,&x,&y);
+  Window2Sector(cv,&x,&y);
+  sprintf(point,"%d %d",x,y);
+  MousePos(GET,&x,&y);
+  DrawString(pixmap,gfont,penGreen,x,y,point);
 
   /***** --mouse position *****/
 }
+
+
 int DrawPlayerInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct Player *player,int x0,int y0){
   /*
     Show info about the player
@@ -2989,9 +3003,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
     case GOTO:
       
       if(ord->c!=-1){
-	/*	snprintf(tmpcad,32,"GOTO: %d",(int)ord->c); */
-	//	snprintf(point,128,"ORDER GOTO: %d(%d)",(int)ord->e,(int)ord->c); // HERE ord->c
-	snprintf(point,128,"ORDER GOTO: %d",(int)ord->e); // HERE ord->c
+	snprintf(point,128,"ORDER GOTO: %d",(int)ord->e);
 	dx=ox-ord->a;
 	dy=oy-ord->b;
 	d=sqrt(dx*dx+dy*dy)/SECTORSIZE;
@@ -3881,7 +3893,7 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
   return;
 }
 
-void Shift(int ulx,Object *cv,float *z,float *x,float *y,int action){
+void Shift(int action,int ulx,Object *cv,float *z,float *x,float *y){
   static float cvx=0,cvy=0;
   static float zoom=1;
   static int id=0;
@@ -3936,6 +3948,8 @@ void Shift(int ulx,Object *cv,float *z,float *x,float *y,int action){
   *x=cvx;
   *y=cvy;
 }
+
+
 void Window2Real(Object *cv,int habitat, int wx,int wy,int *rx,int *ry){
   /* version 01 */
   float zoom;
@@ -3963,7 +3977,7 @@ void Window2Real(Object *cv,int habitat, int wx,int wy,int *rx,int *ry){
     }
   }
   if(habitat==0){  /* free space */
-    Shift(ulx,cv,&zoom,&cvx,&cvy,GET);
+    Shift(GET,ulx,cv,&zoom,&cvx,&cvy);
     
     x0=0.5*gwidth;
     y0=0.5*gheight;
@@ -4013,7 +4027,7 @@ void Real2Window(Object *cv,int habitat,int rx,int ry,int *wx,int *wy){
     }
   }
   if(habitat==0){ /* free space */
-    Shift(ulx,cv,&zoom,&cvx,&cvy,GET);
+    Shift(GET,ulx,cv,&zoom,&cvx,&cvy);
     
     x0=0.5*gwidth;
     y0=0.5*gheight;

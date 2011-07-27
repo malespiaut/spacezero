@@ -677,7 +677,6 @@ int UpdateCell(struct HeadObjList *lh,int *cell);
 int ValueCell(int *cell,Object *obj);
 
 int CreatePilot( Object *obj);
-int RescuePilots(Object *obj,struct HeadObjList *lh);
 int EjectPilots(struct HeadObjList *lh);
 
 

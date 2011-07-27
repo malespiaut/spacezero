@@ -424,7 +424,7 @@ int ExecLoad(char *nom){
   struct CCDATA *ccdata;
   int nkp,nks;
   int *planet2meetid,*planet2attackid; //HERE set to number of players
-
+  int nx,ny;
 
   /* 
    *     Del all the objects ...
@@ -894,23 +894,21 @@ int ExecLoad(char *nom){
   printf("... done\n");
 
 
-
-#if CELLON
-  {
-    int nx,ny;
-    nx=GameParametres(GET,GULX,0)/2000;
-    ny=GameParametres(GET,GULY,0)/2000;
-
-    cell=realloc(cell,nx*ny*sizeof(int));
-    if(cell==NULL){ 
-      fprintf(stderr,"ERROR in malloc (creating cell)\n"); 
-      exit(-1); 
-    }
-    for(i=0;i<nx*ny;i++){
-      cell[i]=0;
-    }
-  } 
-#endif    
+  
+  /****CELLON ****/
+  nx=GameParametres(GET,GULX,0)/2000;
+  ny=GameParametres(GET,GULY,0)/2000;
+  
+  cell=realloc(cell,nx*ny*sizeof(int));
+  if(cell==NULL){ 
+    fprintf(stderr,"ERROR in malloc (creating cell)\n"); 
+    exit(-1); 
+  }
+  for(i=0;i<nx*ny;i++){
+    cell[i]=0;
+  }
+ 
+  /****CELLON****/
 
 
   
@@ -1713,7 +1711,7 @@ void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
 
   ccdata->time=0;
 
-  /* HERE assign pointers*/
+  /***** pointers *****/
 
   ccdata->planetlowdefense=NULL;
   ccdata->planetweak=NULL;
@@ -1805,11 +1803,11 @@ void SaveParamOptions(char *file,struct Parametres *par){
   fprintf(fp,"%s\n",par->playername);
   if(strlen(par->font)==0)strcpy(par->font,"6x13");
   fprintf(fp,"%s\n",par->font);
-  if(strlen(par->geom)==0)strcpy(par->geom,"1024x550"); //HERE add default value
+  if(strlen(par->geom)==0)snprintf(par->geom,MAXTEXTLEN,"%dx%d",DEFAULTWIDTH,DEFAULTHEIGHT);
   fprintf(fp,"%s\n",par->geom);
-
   fclose(fp);
 } 
+
 
 void LoadParamOptions(char *file,struct Parametres *par){
 

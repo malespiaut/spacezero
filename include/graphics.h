@@ -113,12 +113,14 @@ gint Options(GtkWidget *widget,gpointer gdata);
 
 void SetDefaultKeyValues(struct Keys *key,int action);
 
-void Shift(int ulx,Object *cv,float *z,float *x,float *y,int action);
+void Shift(int action,int ulx,Object *cv,float *z,float *x,float *y);
 
+void MousePos(int order,int *x,int *y);
 
 void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv);
 void Real2Window(Object *,int habitat,int rx,int ry,int *wx,int *wy);
 void Window2Real(Object *,int habitat,int wx,int wy,int *rx,int *ry);
+void Window2Sector(Object *cv,int *x,int *y);
 
 int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,int y0);
 

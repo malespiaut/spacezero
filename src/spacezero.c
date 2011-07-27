@@ -65,8 +65,6 @@ extern GdkGC *penPink;
 extern GdkGC *penCyan;
 extern GdkGC *penSoftRed;
 
-extern Point mouse_pos;
-
 extern int gdrawmenu;
 struct Player *players;
 struct CCDATA *ccdatap;
@@ -84,7 +82,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.26"};
+char version[64]={"0.81.27"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Jun. 2011"};
@@ -534,7 +532,7 @@ gint MainLoop(gpointer data){
   char pointmess[128];
   int loadsw =0;
   static int sw=0;
-
+  int nx,ny;
 
 
   if(gdraw.main==FALSE)return(TRUE);
@@ -606,17 +604,17 @@ gint MainLoop(gpointer data){
   
   proc=GetProc();
   
-#if CELLON
-  {
-    int nx,ny;
-    nx=GameParametres(GET,GULX,0)/2000;
-    ny=GameParametres(GET,GULY,0)/2000;
-    for(i=0;i<nx*ny;i++){
-      cell[i]=0;
-    }
-    UpdateCell(&listheadobjs,cell);
-  } 
-#endif
+  /*****CELLON*****/
+  
+  nx=GameParametres(GET,GULX,0)/2000;
+  ny=GameParametres(GET,GULY,0)/2000;
+  for(i=0;i<nx*ny;i++){
+    cell[i]=0;
+  }
+  UpdateCell(&listheadobjs,cell);
+  
+  /*****--CELLON*****/
+
   
   for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
     DestroyObjList(&listheadcontainer[i]);
@@ -959,6 +957,11 @@ gint MainLoop(gpointer data){
     gdraw.stats=FALSE;
   }
 
+  if(keys.mright){
+    keys.o=TRUE;
+    keys.g=TRUE;
+  }
+
   if(keys.o==TRUE){
     gdraw.order=TRUE;
   }
@@ -1098,7 +1101,7 @@ gint MainLoop(gpointer data){
     Shell(0,pixmap,gfont,penGreen,&listheadobjs,&players[actual_player],&keys,&cv);
     if(keys.o==FALSE)gdraw.order=FALSE;
     if(cv!=NULL){
-      if(cv->state==-1){ /* Object just selled HERE or pilot buy a ship*/
+      if(cv->mode==SOLD){
 	cv=SelectObjInObj(&listheadplayer,cv->in->id,cv->player);
 	if(cv!=NULL){
 	  cv->selected=TRUE;
@@ -1366,12 +1369,15 @@ void key_eval(struct Keys *key){
 
   /* mouse */
   if(key->mleft==TRUE){
-    //    printf("mouse left\n");
-    //    key->mleft=FALSE;
+    //printf("mouse left\n");
+    //key->mleft=FALSE;
   }
   if(key->mright==TRUE){
+    //    printf("mouse right\n");
+    //    key->mright=FALSE;
   }
   if(key->mdclick==TRUE){
+    //    printf("mouse mdclick\n");
     key->mdclick=FALSE;
   }
   /* --mouse */
@@ -1707,8 +1713,7 @@ void key_eval(struct Keys *key){
     }
   }
   /*-- save and load game */
-  }
-
+}
 
 
 void UpdateShip(Object *obj){
@@ -1736,22 +1741,6 @@ void UpdateShip(Object *obj){
   proc=GetProc();
 
 
-  vx=obj->vx;
-  vy=obj->vy;
-  dtim=DT/obj->mass;
-  
-  fx0=fy0=0;
-
-  if(0&&obj==cv){
-    printf("mode: %d %d\n",obj->mode,obj->id);
-  }
-
-  if(0&&obj==cv){
-    printf("items:%d habitat:%d mass:%d\n",obj->items,obj->habitat,obj->mass);
-    printf("eng: a_max:%d ang_a:%f\n",obj->engine.a_max,obj->engine.ang_a);
-    obj->items=0;
-  }
-
   if(obj->habitat==H_SHIP){
     if(obj->in!=NULL){
       /* printf("(stype: %d) id: %d in (stype: %d) id:%d\n",obj->subtype,obj->id,obj->in->subtype,obj->in->id); */
@@ -1759,7 +1748,6 @@ void UpdateShip(Object *obj){
       obj->x0=obj->in->x0;
       obj->y=obj->in->y;
       obj->y0=obj->in->y0;
-
       obj->vx=obj->in->vx;
       obj->vy=obj->in->vy;
     }
@@ -1770,7 +1758,13 @@ void UpdateShip(Object *obj){
     return;
   }
 
+  vx=obj->vx;
+  vy=obj->vy;
+  dtim=DT/obj->mass;
   fx0=fy0=0;
+
+
+  /***** Forces 1*****/
   switch(obj->habitat){
   case H_SPACE:
     U=PlanetAtraction(&fx0,&fy0,obj->x,obj->y,obj->mass);
@@ -1797,6 +1791,8 @@ void UpdateShip(Object *obj){
     break;
   }
 
+  /*** first step ****/
+
   obj->x0=obj->x;
   obj->y0=obj->y;
 
@@ -1804,6 +1800,8 @@ void UpdateShip(Object *obj){
     obj->x+=obj->vx*DT+.5*(fx0)*DT*dtim;
     obj->y+=obj->vy*DT+.5*(fy0)*DT*dtim;
   }
+
+  /*** forces 2 ****/
 
   fx=fy=0;
   switch(obj->habitat){
@@ -1818,14 +1816,18 @@ void UpdateShip(Object *obj){
     break;
   }
 
+  /***** gas cost *****/
   if(proc==players[obj->player].proc){
-    if(obj->engine.a_max && obj->accel>0){
-      obj->gas-=10*obj->engine.gascost*obj->accel/obj->engine.a_max;
-      if(obj->gas<0){
-	obj->gas=0;
-	obj->accel=0;
+    if(obj->engine.a>0){
+      if(obj->accel>0){
+	obj->gas-=10*obj->engine.gascost*obj->accel/obj->engine.a_max;
+	if(obj->gas<0){
+	  obj->gas=0;
+	  obj->accel=0;
+	}
       }
     }
+  
     if(obj->engine.ang_a_max && obj->ang_a!=0){
       obj->gas-=fabs(obj->engine.gascost*obj->ang_a/obj->engine.ang_a_max);
       if(obj->gas<0){
@@ -1834,6 +1836,8 @@ void UpdateShip(Object *obj){
       }
     }
   }
+
+  /***** step 2 *****/
   if(obj->accel){
     vx+=(.5*(fx+fx0)+cos(obj->a)*obj->accel)*dtim;
     vy+=(.5*(fy+fy0)+sin(obj->a)*obj->accel)*dtim;
@@ -1852,7 +1856,7 @@ void UpdateShip(Object *obj){
   } 
 
 
-  /* if max vel is reached, reescaling */
+  /***** if max vel is reached, reescaling *****/
 
   if(obj->type==SHIP){
     vmax2=obj->engine.v2_max*(1-0.4375*(obj->state<25));
@@ -1870,11 +1874,10 @@ void UpdateShip(Object *obj){
     vx*=factor;
     vy*=factor;
   }
-  
-  if(0&&obj==cv){
-    printf("vx: %f vy: %f vmax: %d\n",obj->vx,obj->vy,obj->engine.v_max);
-  }
 
+
+  /***** angular velocity *****/
+  
   if(obj->ang_a!=0){
     obj->ang_v+=obj->ang_a*100.*dtim;
     if(obj->ang_v > obj->engine.ang_v_max)obj->ang_v=obj->engine.ang_v_max;
@@ -1884,11 +1887,11 @@ void UpdateShip(Object *obj){
     if(obj->type==SHIP && obj->subtype!=PILOT) /* HERE TODO add artifact to engine*/
       obj->ang_v*=0.5;
   }
-  
-  
+
+
   ang0=obj->a;
   obj->a+=(obj->ang_v+0.5*obj->ang_a*100.*dtim)*DT;
-  if(obj->mode==LANDED){
+  if(obj->mode==LANDED){  /* max angle of landed ships */
     float maxang=0;
     switch(obj->subtype){
     case TOWER:
@@ -1904,17 +1907,14 @@ void UpdateShip(Object *obj){
   if(obj->a > PI)obj->a-=2*PI;
   if(obj->a < -PI)obj->a+=2*PI;
 
-
-
-  if(0&&obj==ship_c){
-    printf("ang: a: %f v:%f\n",obj->ang_a,obj->ang_v);
-  }
-  
   obj->vx=vx;
   obj->vy=vy;
   obj->fx0=obj->fx;
   obj->fy0=obj->fy;
   
+
+  /***** recharging armor and fuel ******/
+
   if(obj->weapon0.cont1)obj->weapon0.cont1--;
   if(obj->weapon1.cont1)obj->weapon1.cont1--;
   if(obj->weapon2.cont1)obj->weapon2.cont1--;
@@ -1926,7 +1926,6 @@ void UpdateShip(Object *obj){
       obj->gas+=0.05;
 
       if(obj->gas > obj->gas_max)obj->gas=obj->gas_max; 
-      if(0&&obj==cv)printf("update ship. gas: %f %f\n",obj->gas,obj->accel);
       if(obj->state>0 && obj->state<25){
 	obj->state+=0.005;
       }
@@ -1937,7 +1936,7 @@ void UpdateShip(Object *obj){
       time=GetTime();
       /* repair and refuel  */
       if(players[obj->player].gold<5){
-	n=5*Random(-1);
+	n=5*Random(-1); /* HERE depend on number of objects */
       }
       else{
 	n=0;
@@ -1950,20 +1949,13 @@ void UpdateShip(Object *obj){
 	  }
 	  if(obj->state>100)obj->state=100;
 	  players[obj->player].gold-=.125; /* total cost 250  */
-	  
 	}
 	if(obj->gas < obj->gas_max){
 	  obj->gas+=2;
 	  if(obj->gas>obj->gas_max)obj->gas=obj->gas_max;
 	  players[obj->player].gold-=.2; /* total cost 100 */
-	  
 	}
-	/* if(cv==obj){ */
-	/*   printf("womax:%d\n",obj->weapon0.max_n); */
-	/* } */
-
 	if(!(time%4)){
-	  
 	  if(obj->weapon0.n<obj->weapon0.max_n){
 	    if(players[obj->player].gold>obj->weapon0.projectile.unitcost){
 	      obj->weapon0.n++;
@@ -1987,10 +1979,10 @@ void UpdateShip(Object *obj){
 	    }
 	  }
 	}
-	
       }
-      /* Learning Experience */
-      if(obj->type==SHIP && obj->subtype!=PILOT){ //HERE TODO pilots has no ship for training
+
+      /***** Learning, experience *****/
+      if(obj->type==SHIP && obj->subtype!=PILOT){ //HERE TODO pilots has no ship for training. must depend of pilot properties.
 	int mlevel=0;
 	float incexp;
 	int n;
@@ -2023,6 +2015,8 @@ void UpdateShip(Object *obj){
     }  /*if(obj->mode==LANDED) */
 
   }
+
+  /***** boundaries at planet *****/
   if(obj->habitat==H_PLANET){
     width=LXFACTOR;
     if(obj->x<0)obj->x+=width;
@@ -2046,7 +2040,6 @@ void UpdateShip(Object *obj){
 	
 	a=atan2(ry,rx);
 	
-	/*      obj->a=obj->a-a+PI/2;  */
 	obj->a=a-PI/2+obj->a;
 	
 	obj->habitat=H_SPACE;
@@ -2158,7 +2151,7 @@ void UpdateAsteroid(Object *obj){
     if(obj->x<0)obj->x+=width;
     if(obj->x>width)obj->x-=width;
 
-    if(0 && obj->y>LYFACTOR){ /* its out of planet */
+    if(obj->y > LYFACTOR){ /* its out of planet */
       if(proc==players[obj->player].proc){
 	a=obj->x*(2*PI)/width-PI;
 	cosa=cos(a);
@@ -2195,7 +2188,6 @@ void UpdateAsteroid(Object *obj){
       }
     }
   }
-  
   return;
 }
 
@@ -2258,14 +2250,7 @@ void Collision(struct HeadObjList *lh){
       }
       
       if(gnet==TRUE && obj1->ttl<MINTTL){ls1=ls1->next;continue;}
-#if CELLON
-      if(0&&obj1->habitat==H_SPACE){
-	if(ValueCell(cell,obj1)==1<<(players[obj1->player].team+2)){
-	  printf(".");	 
-	  ls1=ls1->next;continue;
-	}
-      }
-#endif
+
       if(obj1->habitat==H_SHIP){
 	ls1=ls1->next;continue;
       }
@@ -2604,7 +2589,7 @@ void Collision(struct HeadObjList *lh){
 		  }
 		}
 		if(obj1->player==actual_player){
-		  printf("Pilot %d rescued\n",obj1->pid);/* HERE proc*/
+		  printf("Pilot %d rescued\n",obj1->pid);
 		}
 		if(GameParametres(GET,GNET,0)==TRUE){
 		  SetModified(obj1,SENDOBJALL);
@@ -4611,6 +4596,9 @@ void SaveRecord(char *file,struct Player *players,int record){
 void InitGameVars(void){
   int i;
   struct Sockfd sfd;
+  int nx,ny;
+    
+
     /****** start server and client *********/
     
     if(GameParametres(GET,GNET,0)==TRUE){
@@ -4776,23 +4764,22 @@ void InitGameVars(void){
     /* print teams */
     PrintTeams(players);
     
-#if CELLON
-    {
-      int nx,ny;
-      nx=GameParametres(GET,GULX,0)/2000;
-      ny=GameParametres(GET,GULY,0)/2000;
-      
-      cell=malloc(nx*ny*sizeof(int));
-      if(cell==NULL){ 
-	fprintf(stderr,"ERROR in malloc (creating cell)\n"); 
-	exit(-1); 
-      }
-      for(i=0;i<nx*ny;i++){
-	cell[i]=0;
-      }
-    } 
-#endif    
+  /*****CELLON*****/
     
+    nx=GameParametres(GET,GULX,0)/2000;
+    ny=GameParametres(GET,GULY,0)/2000;
+    
+    cell=malloc(nx*ny*sizeof(int));
+    if(cell==NULL){ 
+      fprintf(stderr,"ERROR in malloc (creating cell)\n"); 
+      exit(-1); 
+    }
+    for(i=0;i<nx*ny;i++){
+      cell[i]=0;
+    }
+ 
+
+    /*****--CELLON*****/
     PrintGameOptions();
 }
 

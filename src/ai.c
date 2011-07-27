@@ -1775,8 +1775,6 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
        number of ships in every planet,
        build the ccdata list 
     */
-    /* HERE TODO quitar destroyccplanet()*/
-    //DestroyCCPlanetInfo(ccdata);
     /* update ccdata list with known info */
     CalcCCInfo(lhobjs,&listheadkplanets[player.id],player.id,ccdata);
     /* Calc the planet with less towers and weakest. */
@@ -2886,7 +2884,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     }
     
     break;
-  case CANNON7: //HERE, not finished, not used
+  case CANNON7: /* not finished, not used */
     if(obj2==NULL){
       printf("Warning: FireCannon() obj2=NULL\n");
       break;

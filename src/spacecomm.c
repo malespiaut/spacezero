@@ -1772,7 +1772,7 @@ int ReadObjsfromBuffer(char *buf){
 	player=&players[playerall.id];
 
 	strncpy(player->playername,playerall.playername,MAXTEXTLEN);
-	printf("received player: %s\n",player->playername);
+	printf("received player: %s\n",player->playername); //PRODUCTION delete this line.
 
 	player->id=playerall.id;
 	player->pid=playerall.pid;

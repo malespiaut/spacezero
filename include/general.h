@@ -33,8 +33,6 @@
 
 //#define GDK_DISABLE_DEPRECATED
 
-#define CELLON 1  /* HERE include in code */
-
 /*  compile options: */
 #define SOUND 1  // compile with sound
 #define DEBUG 0
@@ -47,10 +45,8 @@
 
 #define MINORSAVEVERSION "0.81.23" /* the save file must be at least this version */
 
-//#define MAXMENULEN 32
-//#define TEXTMENMAXLEN 48
-//#define PLAYERNAMEMAXLEN 32
 #define MAXTEXTLEN 128
+
 /* window properties */
 #define DEFAULTWIDTH 1024//900//1024//800//1024//1152
 #define DEFAULTHEIGHT 550//600 //500 //550//700//768
@@ -141,7 +137,6 @@
 
 /* Game parametres */
 
-
 #define DEFAULT    0
 #define GULX       1        /* universe size */
 #define GULY       2        /* universe size */
@@ -177,10 +172,8 @@ enum SZ_Error{
   SZ_NOTALLOWED,
   SZ_NOTIMPLEMENTED
 };
-
-
-
 /*   --Error codes for all functions */
+
 
 struct TextList{
   int color;

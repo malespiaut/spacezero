@@ -50,10 +50,10 @@ Version 0.8 (since 10May2011)
 
 -!!Rewrite NearestObjAll(), call less times.
 -!!Reordenar, jerarquizar codigo, ficheros.
--!!Disminuir numero de variables extern (97),58,72,76 grep extern src/*.c include/*h |grep ";" |wc
--!!Disminuir los HERE (74)84,68,75  grep HERE src/*c include/*h|wc
+-!!Disminuir numero de variables extern (97),58,72,76,92 grep extern src/*.c include/*h |grep ";" |wc
+-!!Disminuir los HERE (74)88,69  grep HERE src/*c include/*h|wc
 -Game statistics.
--Create charge list (lista de carga).
+-Create list of load (lista de carga).
 -!!toroidal Universe as option.
 -math function tables.
 -Objects with sons(shots are sons of the ships).
@@ -66,7 +66,6 @@ Version 0.8 (since 10May2011)
 -!!Change ksectorslist for a three elements list: id,x,y.
 -!!In terminal, messages repite so much.
 -!!In pause mode consumes CPU, redraw every 5 steps..
--Size of font.
 -Dont createlists in execload()
 -Explosions: add ship parts
 -!!Merge UpdateShip() y UpdateAsteroid() ??
@@ -74,13 +73,11 @@ Version 0.8 (since 10May2011)
 -!!Improve Risk()
 -send drawmissile in DrawObjs() to DrawShip()
 -!!not enought money
--include CELLON code 
 -Review Experience(). save09. training high levels.
 -When select a planet, center map on it , if its known.
 
 mouse:
 =====
--!!double click: GOTO with selected ship(s).
 
 Ships:
 ======
@@ -114,13 +111,14 @@ AI:
 -!!check rules in ally planet. If is empty: conquer.
 -When an enemy ship is near a planet send only the necessary ships.
 -Add a different way to attack planets. 
--!!No despegar y aterrizar al pasar a automatico.
+-!!dont take off when change to automatic mode.
 -!!dont allow build towers in ally planets or share the resources. Send resources in planet info.
 
 Comm:
 ====
 -in Object: Change int by boolean (to improve comm)
 -!Compress data.
+-!!send allies periodically.
 
 Save
 ====
@@ -191,6 +189,8 @@ X-(010711)Add help in menu.
 X-(150711)Attacks in planets: turn earlier.
 X-(200711)Added:!!Create pilots, survive to ship destruction, they are the experience. survival ships.(without prisioners)
 X-(210711)Single click: select ship. In map view and inside a planet.
+X-(260711)include CELLON code 
+X-(270711)!!rigth click => order GOTO x y
 
 
 BUGS version 0.80
@@ -211,6 +211,7 @@ X-(030611)!![107](200511) Towers always aim the enemy even if out of range.(save
 X-(030611)!![105](200511) Queen autopilot: still crash the ship while landing. (Improve ExecLand())
 X-(070611)[110](240511) Explorers dont STOP. save03 (Improved ExecStop())
 X-(170611)[116][regression] autopilot fighters now leave the planet - ID: 3317317 (in low mass planets)(save10)
+X-Size of font.
 
 
 /********************************************************************************/

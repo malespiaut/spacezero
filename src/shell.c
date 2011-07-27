@@ -38,7 +38,6 @@ extern GdkGC *penGreen;
 extern struct Habitat habitat;
 extern struct Keys keys;
 extern struct HeadObjList listheadobjs;       /* list of all objects */
-extern Point mouse_pos;
 extern int fobj[4];
 extern struct Draw gdraw;
 #if DEBUG
@@ -564,19 +563,34 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   /*  printf("last:%d order: %d\n",lastorder,order); */
   if(level==2){
 
+
+
     switch(order){
       
     case SELECT:
     case GOTO:
 
-      strcpy(par,""); 
-      Keystrokes(LOAD,par);
+      if(key->mright==TRUE && gdraw.map==TRUE){
+	int x,y;
+	MousePos(GET,&x,&y);
+	strcpy(par,"");
+	Window2Sector(*pcv,&x,&y);
+	snprintf(par,12,"%d %d",x,y);
+	key->mright=FALSE;
+	key->enter=TRUE;
+	
+      }
+      else{
+	strcpy(par,"");
+	Keystrokes(LOAD,par);
+      }
       strcpy(cad,"");
       strncat(cad,ord,128);
-
+      
       DelCharFromCad(par,"1234567890,- fnFN");
-
+      
       strncat(cad,par,128);
+      
       break;
     case BUY:
       strcpy(cad,"");
@@ -771,7 +785,6 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   Object *ret=NULL;
   struct Order ord;
   int price;
-  char text[MAXTEXTLEN];
   int time;
   float d2,d2b;
   int retreatsw=0;
@@ -1148,15 +1161,22 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     break;
     
   case WRITE:
-    printf("=============\n");
-    Keystrokes(LOAD,text);
-    printf("%s\n",text);
-    printf("=============\n");
-    if(GameParametres(GET,GNET,0)==TRUE){
-      SendTextMessage(text);   
-    }
-    SetDefaultKeyValues(&keys,0);
-    break;
+    {
+      char text[MAXTEXTLEN];
+      char cad[MAXTEXTLEN];
+
+      Keystrokes(LOAD,text);
+      snprintf(cad,MAXTEXTLEN,"%s: %s",players[obj->player].playername,text);      
+
+      printf("=============\n");
+      //      printf("%s\n",cad);
+      printf("=============\n");
+      if(GameParametres(GET,GNET,0)==TRUE){
+	SendTextMessage(cad);   
+      }
+      SetDefaultKeyValues(&keys,0);
+      
+    }    break;
   default:
     break;
   }
@@ -1169,6 +1189,7 @@ void SelectionBox(Object **pcv,int reset){
   static int sw=0;
   static Region region;
   static Object *cv0=NULL;
+  int x,y;
   int x0,y0;
   int x1,y1;
   Object *cv;
@@ -1239,6 +1260,7 @@ void SelectionBox(Object **pcv,int reset){
 
 	  /***** mouse selection, one click *****/
 	  {
+	    keys.esc=TRUE;
 	    if(region.habitat>0){
 	      region.rect.y=GameParametres(GET,GHEIGHT,0)-region.rect.y;
 	    }
@@ -1258,11 +1280,8 @@ void SelectionBox(Object **pcv,int reset){
 	      if(cv0!=NULL){
 		if(keys.ctrl==TRUE){
 		  if(cv0->selected==TRUE){
-
 		    if(CountSelected(&listheadobjs,cv->player)>1){
 		      cv0->selected=cv0->selected==TRUE?FALSE:TRUE;
-		      /* HERE new cv */
-		      printf("TODO must choose a new cv\n");
 		      if(cv==cv0 && cv0->selected==FALSE){
 			*pcv=FirstSelected(&listheadobjs,cv->player);
 			habitat.type=(*pcv)->habitat;
@@ -1350,10 +1369,11 @@ void SelectionBox(Object **pcv,int reset){
     }
     
     if(keys.mleft==TRUE){
-      /* printf("\t mouse pos: %d %d\n",mouse_pos.x,mouse_pos.y);  */
+      keys.esc=TRUE;
       if(sw==0){
-	region.rect.x=mouse_pos.x;
-	region.rect.y=mouse_pos.y;
+	MousePos(GET,&x,&y);
+	region.rect.x=x;
+	region.rect.y=y;
 	region.rect.width=region.rect.height=0;
 	
 	region.habitat=-1;
@@ -1375,8 +1395,9 @@ void SelectionBox(Object **pcv,int reset){
 	}
 	sw=1;
       }
-      region.rect.width=mouse_pos.x-region.rect.x;
-      region.rect.height=mouse_pos.y-region.rect.y;
+      MousePos(GET,&x,&y);
+      region.rect.width=x-region.rect.x;
+      region.rect.height=y-region.rect.y;
     }
     
     if(region.rect.width!=0){
@@ -1532,3 +1553,42 @@ int Get2Args(char *cad,char *arg1,char *arg2){
 }
 
 
+void Window2Sector(Object *cv,int *x,int *y){
+  /*
+    convert the x,y coordinates in sector. 
+  */
+
+  int a,b;
+  int i,j;
+  float ifactor;
+  int gwidth,gheight,ulx;
+  float zoom=1;
+  float cvx,cvy;
+  float objx,objy;
+
+  gheight=GameParametres(GET,GHEIGHT,0);
+  gwidth=GameParametres(GET,GWIDTH,0);
+  ulx=GameParametres(GET,GULX,0);
+
+  Shift(GET,ulx,cv,&zoom,&cvx,&cvy);
+
+  ifactor=ulx/(gwidth*zoom);
+
+  if(cv->habitat==H_PLANET){
+    objx=cv->in->planet->x;
+    objy=cv->in->planet->y;
+  }
+  else{
+    objx=cv->x;
+    objy=cv->y;
+  }
+  
+  a=(*x-gwidth/2)*ifactor-cvx+objx;
+  b=(gheight-*y-gheight/2)*ifactor-cvy+objy;
+    
+  i=a/SECTORSIZE-(a<0);
+  j=b/SECTORSIZE-(b<0);
+
+  *x=i;
+  *y=j;
+}

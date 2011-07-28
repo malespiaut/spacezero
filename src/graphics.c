@@ -3284,8 +3284,8 @@ GdkFont *InitFonts(char *fname){
   font=gdk_font_load(fontname);
 
   /* default font type */
-
   if(font==NULL){
+    fprintf(stderr,"WARNING: font %s not found. Using default.\n",fontname);
     for(i=0;i<NUMFONTNAMES;i++){
       strncpy(fontname,fontnames[i],128);
       font=gdk_font_load(fontname);
@@ -3301,7 +3301,7 @@ GdkFont *InitFonts(char *fname){
       exit(-1);
     }
   }
-  printf("using font: %s panel: %d\n",fontname,GameParametres(GET,GPANEL,0));
+  printf("using font: %s\n",fontname);
   return(font);
 }
 

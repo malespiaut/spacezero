@@ -82,7 +82,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.27"};
+char version[64]={"0.81.28"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Jun. 2011"};
@@ -3155,7 +3155,7 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
 
   ngalaxies=GameParametres(GET,GNGALAXIES,0);
 
-  rg=ulx/ngalaxies;
+  rg=ulx/(2*ngalaxies);
 
   nplanets=GameParametres(GET,GNPLANETS,0);
   nplanetpergalaxy=(int)((float)nplanets/ngalaxies+0.5);
@@ -3170,13 +3170,13 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
 
   for(j=0;j<ngalaxies;j++){
     if(np>=nplanets)break;
-    x0=ulx*Random(-1)-ulx/2;
-    y0=uly*Random(-1)-uly/2;
+    x0=(ulx-2*rg)*Random(-1)-(ulx-2*rg)/2;
+    y0=(uly-2*rg)*Random(-1)-(uly-2*rg)/2;
     if(ngalaxies==1){
       x0=0;
       y0=0;
     }
-    for(i=0;i<nplanetpergalaxy;i++){
+    for(i=0;i<=nplanetpergalaxy;i++){
       if(np>=nplanets)break;
       n=0;
       do{
@@ -3190,7 +3190,9 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
       }
       while(CheckPlanetDistance(lheadobjs,x,y));
 	
-      /*    printf("%f %f\n",x,y); */
+      if(x<-ulx/2||x>ulx/2||y<-uly/2||y>uly/2){
+	printf("WARNING CreateUniverse(): planet out of limits: %f %f\n",x,y); 
+      }
       obj=NewObj(lheadobjs,PLANET,NULO,x,y,0,0,CANNON0,ENGINE0,0,NULL,NULL);
       if(obj!=NULL){
       
@@ -3205,6 +3207,10 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
       }
     }
   }
+  if(np!=nplanets){
+    printf("WARNING CreateUniverse(): number of planets incorrect: %d\n",np);
+  }
+  printf("\tnumber of planets created: %d\n",np);
 }
 
 
@@ -4342,7 +4348,6 @@ void SetGameParametres(struct Parametres param){
   GameParametres(SET,GWIDTH,width);
   GameParametres(SET,GHEIGHT,height-GameParametres(GET,GPANEL,0));
 
-  printf("gpanel: %d\n",GameParametres(GET,GPANEL,0));
   printf("W: %d H: %d \n",    GameParametres(GET,GWIDTH,0),GameParametres(GET,GHEIGHT,0));
   printf("W: %d H: %d \n",width,height);
 

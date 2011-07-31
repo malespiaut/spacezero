@@ -105,7 +105,7 @@ struct Keys keys;
 
 GtkWidget *d_a;
 
-
+float Distance(Object *cv,float x0,float y0);
 
 
 GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres param){
@@ -2268,11 +2268,13 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   float factor,ifactor;
   char point[100];
   int gwidth,gheight;
+  int texth;
   int gnet,proc;
   static int createnearobjsw=1;
   static int lasttime;
   static int lastplayer;
   int time;
+  float distance;
 
   time=GetTime();
   if(time>lasttime+10 || time<lasttime || player!=lastplayer){
@@ -2602,11 +2604,41 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   
   MousePos(GET,&x,&y);
   Window2Sector(cv,&x,&y);
+  if(TEST)distance=Distance(cv,x*SECTORSIZE,y*SECTORSIZE);
   sprintf(point,"%d %d",x,y);
   MousePos(GET,&x,&y);
   DrawString(pixmap,gfont,penGreen,x,y,point);
 
+  if(TEST){
+    texth=gdk_text_height(gfont,"Lp",2);
+    sprintf(point,"%d",(int)(distance/SECTORSIZE));
+    DrawString(pixmap,gfont,penGreen,x,y-texth-2,point);
+  }
   /***** --mouse position *****/
+}
+
+
+float Distance(Object *cv,float x,float y){
+  float x1,y1,x2,y2;
+  float d;
+
+  if(cv==NULL)return(0);
+
+  if(cv->habitat!=H_SPACE){
+    x1=cv->in->x;
+    y1=cv->in->y;
+  }
+  else{
+    x1=cv->x;
+    y1=cv->y;
+  }
+
+  x2=x;
+  y2=y;
+  d=sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
+
+  return(d);
+
 }
 
 
@@ -2914,7 +2946,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
     fprintf(stderr,"Warning: weapon NULL in DrawShipInfo()\n");
     obj->weapon=&obj->weapon0;
   }
-  sprintf(point,"Weapon: %d (D:%d)",obj->weapon->n,obj->weapon->projectile.damage);
+  sprintf(point,"Amm. : %d (D:%d)",obj->weapon->n,obj->weapon->projectile.damage);
   DrawString(pixmap,font,color,x0+x,y+texth,point);
   if(font!=NULL){
     x+=gdk_text_width(font,point,strlen(point))+textw;

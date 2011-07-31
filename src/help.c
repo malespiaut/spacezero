@@ -514,11 +514,11 @@ int CheckArgs(struct Parametres p){
     return(1);
   }
   if(p.ngalaxies<MINNUMGALAXIES){
-    printf("Number of planets must be > %d\n",MINNUMGALAXIES);
+    printf("Number of galaxies must be >= %d\n",MINNUMGALAXIES);
     return(1);
   }
   if(p.ngalaxies>MAXNUMGALAXIES){
-    printf("Number of planets must be < %d\n",MAXNUMGALAXIES);
+    printf("Number of galaxies must be <= %d\n",MAXNUMGALAXIES);
     return(1);
   }
   if(p.nplayers<MINNUMPLAYERS){
@@ -526,7 +526,7 @@ int CheckArgs(struct Parametres p){
     return(1);
   }
   if(p.nplanets<p.nplayers){
-    printf("Number of planets must be > number of players\n");
+    printf("Number of planets must be >= number of players\n");
     return(1);
   }
 

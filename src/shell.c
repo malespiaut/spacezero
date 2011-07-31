@@ -77,7 +77,7 @@ void initshell(void){
 
   strncpy(shells[0].name,"main",16);
   strncpy(shells[0].menu,
-	  "G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPITE   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D: RETREAT",128);
+	  "G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D: RETREAT",128);
   strncpy(shells[0].options,"gxsptrbuwed",16);
   shells[0].noptions=10;
   shells[0].orders[0]=GOTO;
@@ -85,7 +85,7 @@ void initshell(void){
   shells[0].orders[2]=SELECT;
   shells[0].orders[3]=STOP;
   shells[0].orders[4]=TAKEOFF;
-  shells[0].orders[5]=REPITE;
+  shells[0].orders[5]=REPEAT;
   shells[0].orders[6]=BUY;
   shells[0].orders[7]=WRITE;
   shells[0].orders[8]=SELL;
@@ -120,10 +120,10 @@ void initshell(void){
   strcpy(shells[5].par,"");
   shells[5].order=TAKEOFF;
 
-  strncpy(shells[6].name,"repite",16);
-  strncpy(shells[6].menu,"REPITE",128);
+  strncpy(shells[6].name,"repeat",16);
+  strncpy(shells[6].menu,"REPEAT",128);
   strcpy(shells[6].par,"");
-  shells[6].order=REPITE;
+  shells[6].order=REPEAT;
 
   strncpy(shells[7].name,"buy",16);
   strncpy(shells[7].menu,"BUY",128);
@@ -211,7 +211,7 @@ void Shell_02(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadObjList lh
   }
 
   if(key->enter==TRUE){
-    if(order==REPITE && order !=0){ 
+    if(order==REPEAT && order !=0){ 
        order=lastorder;
        strcpy(par,"");
        strncpy(par,lastpar,16);
@@ -285,7 +285,7 @@ void Shell_02(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadObjList lh
       /*      printf("TAKEOFF\n"); */
       order=TAKEOFF;
       break;
-    case 4: /* r REPITE */
+    case 4: /* r REPEAT */
       break;
     case 5: /* b BUY */
       break;
@@ -375,7 +375,6 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   Object *firstselobj=NULL;
   int sw=0;
 
-  
   switch(command){
   case 0:
     break;
@@ -391,7 +390,6 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   default:
     break;
   }
-
   if(lhead==NULL || pixmap==NULL||color==NULL||ps==NULL||key==NULL){
     level=0;
     return(0);
@@ -414,7 +412,6 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   cv0=cv;
 
   player=ps->id;
-
   if(ps->proc!=GetProc()){
     fprintf(stderr,"WARNING proc %d %d \n",GetProc(),ps->proc);
     key->o=FALSE;
@@ -430,15 +427,14 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     key->esc=FALSE;
     return(0);
   }
-
   if(key->esc|key->tab|key->Pagedown|key->Pageup|key->home){
+    printf("%d %d %d %d %d\n",key->esc,key->tab,key->Pagedown,key->Pageup,key->home); //HERE
     key->o=FALSE;
     key->p=FALSE;
     key->esc=FALSE;
     level=0;
     return(0);
   }
-
   if(level==0){
     key->g=key->s=key->p=key->t=key->r=key->b=key->w=key->e=FALSE;
     //aqui 
@@ -457,12 +453,12 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     if(*pcv!=NULL){
       int textw;
 
-      strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPITE   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",128); 
+      strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",128); 
       
       textw=gdk_text_width(font,cad,strlen(cad));
       if(textw>GameParametres(GET,GWIDTH,0)){
 	strncpy(cad,"",1);
-	strncpy(cad,"G:GT  X:EXP  S:SLC  P:STP  T:TOFF  R:REP  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",128); 
+	strncpy(cad,"G:GT  X:EXP  S:SLC  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",128); 
       }
       
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT && CountNSelected(lhead,player)==1){
@@ -471,11 +467,11 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
       }
 
       if(0&&CountNSelected(lhead,player)>1){
-	strncpy(cad,"G: GOTO   X: EXPLORE   P: STOP   T: TAKEOFF   R: REPITE   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",128); 
+	strncpy(cad,"G: GOTO   X: EXPLORE   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",128); 
 	textw=gdk_text_width(font,cad,strlen(cad));
 	if(textw>GameParametres(GET,GWIDTH,0)){
 	  strncpy(cad,"",1);
-	  strncpy(cad,"G:GT  X:EXP  P:STP  T:TOFF  R:REP  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",128); 
+	  strncpy(cad,"G:GT  X:EXP  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",128); 
 	}
 	key->s=FALSE;
       }
@@ -520,8 +516,8 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     }
     if(key->r==TRUE){
       level=2;
-      order=REPITE;
-      strcpy(ord,"REPITE");
+      order=REPEAT;
+      strcpy(ord,"REPEAT");
       key->r=FALSE;
     }
     if(key->b==TRUE){
@@ -558,7 +554,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     
     Keystrokes(RESET,NULL);
     
-    /*    if(order!=REPITE)lastorder=order; */
+    /*    if(order!=REPEAT)lastorder=order; */
   }
   /*  printf("last:%d order: %d\n",lastorder,order); */
   if(level==2){
@@ -570,7 +566,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     case SELECT:
     case GOTO:
 
-      if(key->mright==TRUE && gdraw.map==TRUE){
+      if(key->mright==TRUE && gdraw.map==TRUE && *pcv!=NULL){
 	int x,y;
 	MousePos(GET,&x,&y);
 	strcpy(par,"");
@@ -611,7 +607,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     case EXPLORE:
     case STOP:
     case TAKEOFF:
-    case REPITE:
+    case REPEAT:
     case RETREAT:
       strcpy(cad,"");
       snprintf(cad,128,"%s %s",ord,par);
@@ -676,7 +672,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   }
 
   if(key->enter==TRUE){
-    if(order==REPITE && order !=0){ 
+    if(order==REPEAT && order !=0){ 
        order=lastorder;
        strcpy(par,"");
        strncpy(par,lastpar,16);
@@ -1260,7 +1256,7 @@ void SelectionBox(Object **pcv,int reset){
 
 	  /***** mouse selection, one click *****/
 	  {
-	    keys.esc=TRUE;
+	    //	    keys.esc=TRUE;
 	    if(region.habitat>0){
 	      region.rect.y=GameParametres(GET,GHEIGHT,0)-region.rect.y;
 	    }
@@ -1369,7 +1365,7 @@ void SelectionBox(Object **pcv,int reset){
     }
     
     if(keys.mleft==TRUE){
-      keys.esc=TRUE;
+      //      keys.esc=TRUE;
       if(sw==0){
 	MousePos(GET,&x,&y);
 	region.rect.x=x;
@@ -1565,6 +1561,8 @@ void Window2Sector(Object *cv,int *x,int *y){
   float zoom=1;
   float cvx,cvy;
   float objx,objy;
+
+  if(cv==NULL)return;
 
   gheight=GameParametres(GET,GHEIGHT,0);
   gwidth=GameParametres(GET,GWIDTH,0);

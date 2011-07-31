@@ -57,7 +57,7 @@
 #define EXPLORE 11
 #define RETREAT 12
 #define SELECT 13
-#define REPITE 14
+#define REPEAT 14
 #define BUY 15
 #define SELL 16
 #define UPGRADE 17

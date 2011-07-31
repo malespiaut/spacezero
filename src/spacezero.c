@@ -82,10 +82,10 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.28"};
+char version[64]={"0.81.29"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Jun. 2011"};
+char last_revision[]={"Jul. 2011"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -2475,8 +2475,8 @@ void Collision(struct HeadObjList *lh){
 	    
 	    if(!((cont+obj->id)%20)){
 	      if(r2<obj->radar*obj->radar){
-
 		if(IsInIntList((players[obj->player].kplanets),pnt->id)==0){
+		  Experience(obj,40);/* Experience for discover a planet */
 		  for(i=0;i<=gnplayers+1;i++){
 		    if(players[obj->player].team==players[i].team){
 		      players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);
@@ -3115,17 +3115,21 @@ int UpdateObjs(void){
 }
 
 
-int CheckPlanetDistance(struct HeadObjList *lh,float x,float y){
+int CheckPlanetDistance(struct HeadObjList *lh,float x,float y,int d){
   /*
     The distance between two planets must be greater than 600
+    returns:
+    1 if there are a near planet
+    0 if not
   */
 
   struct ObjList *ls;
+  float d2=d*d;
 
   ls=lh->next;
   while(ls!=NULL){
     if(ls->obj->type==PLANET){      
-      if((ls->obj->x-x)*(ls->obj->x-x)+(ls->obj->y-y)*(ls->obj->y-y)<600*600 ){
+      if((ls->obj->x-x)*(ls->obj->x-x)+(ls->obj->y-y)*(ls->obj->y-y)<d2){
 	return(1);
       }
     }
@@ -3133,7 +3137,6 @@ int CheckPlanetDistance(struct HeadObjList *lh,float x,float y){
   }
   return(0);
 }
-
 
 void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames){
   /*
@@ -3143,56 +3146,114 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
   int i,j;
   float x,y;
   float x0,y0;
-  float rg;
+  float r,rg,ru; /* radio galaxy and universe */
+  float d2,d2min,d2limit;
   Object *obj;
   int n,np=0;
-  int nplanetpergalaxy=1;
+  int nplanetspergalaxy=1;
   int nplanets;
   int ngalaxies=1;
+  int valid;
+  Point *gpos;
 
 
   /* HERE check this equation. galaxy size */
 
   ngalaxies=GameParametres(GET,GNGALAXIES,0);
-
-  rg=ulx/(2*ngalaxies);
-
   nplanets=GameParametres(GET,GNPLANETS,0);
-  nplanetpergalaxy=(int)((float)nplanets/ngalaxies+0.5);
+  nplanetspergalaxy=(int)((float)nplanets/ngalaxies+0.5);
+  ru=ulx/2;
+  uly=ulx; /* universe is square */
 
-  if(nplanetpergalaxy/(rg*rg) < 3E-9){
-    /* HERE    rg=sqrt(nplanetpergalaxy/3E-9); */
+  gpos=malloc(ngalaxies*sizeof(Point));
+  if(gpos==NULL){ 
+    fprintf(stderr,"ERROR in malloc CreateUniverse()\n"); 
+    exit(-1); 
+  } 
+
+  for(i=0;i<ngalaxies;i++){
+    gpos[i].x=0;
+    gpos[i].y=0;
+  }
+
+  if(ngalaxies==1){
+    rg=ulx/3;
+  }
+  else{
+    //    rg=ulx/(ngalaxies);
+    rg=ulx/(sqrt(ngalaxies*16));
+
   }
 
   printf("\n\tnumber of galaxies: %d\n",ngalaxies);
-  printf("\tnumber of planets per galaxy: %d\n",nplanetpergalaxy);
+  printf("\tnumber of planets per galaxy: %d\n",nplanetspergalaxy);
   printf("\tgalaxy radius: %.0f\n",rg);
+  printf("\tdensity: %g\n",nplanetspergalaxy/(rg*rg));
+
+
+  /* galaxy center coordinates */
+
+  x0=2*(ru-rg)*Random(-1)-(ru-rg);
+  y0=2*(ru-rg)*Random(-1)-(ru-rg);
+  gpos[0].x=x0;
+  gpos[0].y=y0;
+  d2limit=9*(float)rg*rg;
+  for(j=1;j<ngalaxies;j++){
+    n=0;
+    do{
+      x0=2*(ru-rg)*Random(-1)-(ru-rg);
+      y0=2*(ru-rg)*Random(-1)-(ru-rg);
+      d2min=(float)ulx*ulx;
+      n++;
+      for(i=0;i<j;i++){
+	d2=(x0-gpos[i].x)*(x0-gpos[i].x)+(y0-gpos[i].y)*(y0-gpos[i].y);
+	if(d2<d2min)d2min=d2;
+      }
+      if(n>100){
+	n=0;
+	d2limit*=.8; /* relax condition */
+      }
+    }
+    while(d2min<d2limit);
+    gpos[j].x=x0;
+    gpos[j].y=y0;
+  }
 
   for(j=0;j<ngalaxies;j++){
     if(np>=nplanets)break;
-    x0=(ulx-2*rg)*Random(-1)-(ulx-2*rg)/2;
-    y0=(uly-2*rg)*Random(-1)-(uly-2*rg)/2;
+    x0=gpos[j].x;
+    y0=gpos[j].y;
     if(ngalaxies==1){
       x0=0;
       y0=0;
     }
-    for(i=0;i<=nplanetpergalaxy;i++){
+    for(i=0;i<nplanetspergalaxy;i++){
       if(np>=nplanets)break;
       n=0;
       do{
-	x=x0+rg*Random(-1)-rg/2;
-	y=y0+rg*Random(-1)-rg/2;
-	n++;
+	valid=1;
+	x=x0+6*rg*(float)rand()/RAND_MAX-3*rg;
+	y=y0+6*rg*(float)rand()/RAND_MAX-3*rg;
 	if(n>100){
 	  fprintf(stderr,"ERROR: Universe size too small or too much planets. Exiting...\n");
 	  exit(-1);
 	}
-      }
-      while(CheckPlanetDistance(lheadobjs,x,y));
 	
-      if(x<-ulx/2||x>ulx/2||y<-uly/2||y>uly/2){
-	printf("WARNING CreateUniverse(): planet out of limits: %f %f\n",x,y); 
+	if(CheckPlanetDistance(lheadobjs,x,y,600)){
+	  valid=0;
+	  n++;
+	}
+	/* planet distribution */
+	d2=(x-x0)*(x-x0)+(y-y0)*(y-y0);
+	r=(float)rand()/RAND_MAX;
+	if(r>5*exp(-d2/(1.44*rg*rg/2.)))valid=0;
+	
+	if(x<-ulx/2||x>ulx/2||y<-uly/2||y>uly/2){
+	  valid=0;
+	}
       }
+      while(valid==0);
+
       obj=NewObj(lheadobjs,PLANET,NULO,x,y,0,0,CANNON0,ENGINE0,0,NULL,NULL);
       if(obj!=NULL){
       
@@ -3207,12 +3268,33 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
       }
     }
   }
+
+  if(np<nplanets){
+    int m=nplanets-np;
+    for(i=0;i<m;i++){
+      x=ulx*Random(-1)-ulx/2;
+      y=uly*Random(-1)-uly/2;
+
+      obj=NewObj(lheadobjs,PLANET,NULO,x,y,0,0,CANNON0,ENGINE0,0,NULL,NULL);
+      if(obj!=NULL){
+	if(i<NUMPLANETNAMES-1 && j==0){
+	  strncpy(obj->name,ptnames[i+1],OBJNAMESMAXLEN);
+	}
+	else{
+	  strncpy(obj->name,ptnames[0],OBJNAMESMAXLEN);
+	}
+	Add2ObjList(lheadobjs,obj);
+	np++;
+      }
+    } 
+  }
+
   if(np!=nplanets){
     printf("WARNING CreateUniverse(): number of planets incorrect: %d\n",np);
+    exit(-1);
   }
-  printf("\tnumber of planets created: %d\n",np);
+  free(gpos);
 }
-
 
 float PlanetAtraction(float *fx,float *fy,float x,float y,float m){
   /*
@@ -3320,7 +3402,7 @@ Object *ChooseInitPlanet(struct HeadObjList lheadobjs){
    */
 
   struct ObjList *ls;
-  int cont=0;
+  int n,cont=0;
   int nplanets=0;
   int rplanet;
 
@@ -3334,19 +3416,25 @@ Object *ChooseInitPlanet(struct HeadObjList lheadobjs){
   }
 
   nplanets=cont;
-  rplanet=(int)(nplanets*Random(-1));
+  n=0;
 
-  ls=lheadobjs.next;
-  cont=0;
-  while(ls!=NULL){
-    if(ls->obj->type==PLANET){
-      if(ls->obj->player==0 && cont==rplanet){  /* a random planet */
-	return(ls->obj);
+  do{
+    rplanet=(int)(nplanets*Random(-1));
+    
+    ls=lheadobjs.next;
+    cont=0;
+    while(ls!=NULL){
+      if(ls->obj->type==PLANET){
+	if(ls->obj->player==0 && cont==rplanet){  /* a random planet */
+	  return(ls->obj);
+	}
       }
+      ls=ls->next;
+      cont++;
     }
-    ls=ls->next;
-    cont++;
+    n++;
   }
+  while(n<10);
 
   cont=0;
   ls=lheadobjs.next;

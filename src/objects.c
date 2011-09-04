@@ -3441,15 +3441,17 @@ int IsPlanetEmpty(Object *planet,Object *obj){
   /* 
      dont take in account obj
      returns:
-     0 if the planet is totally empty
-     1 if there are some ally landed
-     2 if there are some enemy ship landed
+     0 if the planet is totally empty.
+     1 if there are some ally landed.
+     2 if there are some enemy ship landed.
 
   */
 
   struct ObjList *ls;
   if(obj==NULL)return(-1);
   if(planet==NULL)return(-1);
+  if(planet->player==0)return(0); /* planet never conquered */ 
+
 
   ls=listheadobjs.next;
   while(ls!=NULL){
@@ -3767,7 +3769,7 @@ int CreatePilot( Object *obj){
 }
 
 
-int EjectPilots(struct HeadObjList *lh){
+int EjectPilots_00(struct HeadObjList *lh){
   /*
     Eject pilots
     Rescue the transported pilots of dead objs 
@@ -3795,12 +3797,14 @@ int EjectPilots(struct HeadObjList *lh){
       obj=ls->obj;
 
       if(proc==players[obj->player].proc){
-	if(obj->state<=0 && obj->level>=0){
-	  
-	  /***** ship destroyed ****/
 
+	/***** ship destroyed ****/
+	if(obj->state<=0 && obj->level>=0){
+
+	  GetPointsObj(lh,players,obj); //HERE players, must not be global 
 	  CreatePilot(obj);
-	  if(obj->player==actual_player)printf("Ejecting pilot from ship %d\n",obj->pid);
+	  n++;
+	  if(obj->player==actual_player)printf("Ejecting pilot from ship %d (%d)\n",obj->pid,obj->id);
 	  DelAllOrder(obj);
 	  if(GameParametres(GET,GNET,0)==TRUE){
 	    SetModified(obj,SENDOBJALL);
@@ -3917,6 +3921,177 @@ int EjectPilots(struct HeadObjList *lh){
 }
 
 
+int EjectPilots(struct HeadObjList *lh){
+  /*
+    Eject pilots from dead objs
+    Rescue the transported pilots of dead objs 
+    only own pilots, not allied pilots. 
+    returns:
+    the number of pilots ejected.
+   */
+
+  struct ObjList *ls;
+  Object *obj;
+  int n=0;
+  int proc;
+
+  proc=GetProc();
+  ls=lh->next;
+  while(ls!=NULL){
+
+    if(ls->obj->type!=SHIP){ls=ls->next;continue;}
+
+    switch(ls->obj->subtype){
+    case FIGHTER:
+      obj=ls->obj;
+
+      if(proc==players[obj->player].proc){
+
+	/***** ship destroyed ****/
+	if(obj->state<=0 && (obj->items & ITSURVIVAL) ){
+
+	  GetPointsObj(lh,players,obj); //HERE players, must not be global 
+	  if(obj->items & ITPILOT){
+	    EjectPilotsObj(&listheadobjs,obj);
+	    obj->items=obj->items&(~ITPILOT);
+	  }
+	  CreatePilot(obj);
+	  n++;
+	  if(obj->player==actual_player)printf("Ejecting pilot from ship %d (%d)\n",obj->pid,obj->id);
+	  DelAllOrder(obj);
+	  if(GameParametres(GET,GNET,0)==TRUE){
+	    SetModified(obj,SENDOBJALL);
+	    /* check */
+	    if(obj->modified!=SENDOBJALL){
+	      if(obj->modified==SENDOBJKILL){
+		obj->modified=SENDOBJALL;
+	      }
+	      else{
+		printf("Warning:Ejectpilots():  modified:%d\n",obj->modified);
+	      }
+	    }
+	  }
+	}   
+      }
+      break;
+
+    default:
+      break;
+    }
+    ls=ls->next;
+  }
+  return(n);
+}
+
+
+int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
+  /*
+    Eject pilots from ship obj
+    Rescue the transported pilots of dead objs 
+    returns:
+    the number of pilots ejected.
+   */
+
+  struct ObjList *ls;
+  Object *pilot;
+  Segment *s;
+  float r;
+  int n=0;
+  int proc;
+
+
+  if(obj==NULL)return(0);
+  if(lh==NULL)return(0);
+
+  proc=GetProc();
+  ls=lh->next;
+  while(ls!=NULL){
+
+    if(ls->obj->in!=obj){ls=ls->next;continue;}
+
+    if(ls->obj->type!=SHIP){
+      fprintf(stderr,"ERROR EjectPilotsObj() type != SHIP\n");
+      ls=ls->next;continue;
+    }
+    if(proc!=players[ls->obj->player].proc){ls=ls->next;continue;}
+
+
+    /* Ejecting from a landed ship */
+    if(obj->mode==LANDED){
+      
+      pilot=ls->obj;
+      s=LandZone(obj->in->planet);
+      
+      if(s==NULL){
+	fprintf(stderr,"ERROR EjectPilots(): Segment==NULL\n");
+	exit(-1);
+      }
+      r=s->x1-s->x0-2*pilot->radio;
+      pilot->in=obj->in;
+      pilot->habitat=H_PLANET;
+      pilot->experience=0;
+      pilot->planet=NULL;
+      pilot->mode=LANDED;
+      pilot->x=s->x0+pilot->radio+r*(Random(-1));
+      pilot->y=obj->y;
+      pilot->x0=pilot->x;
+      pilot->y0=pilot->y;
+      pilot->accel=0;
+      pilot->ang_v=pilot->ang_a=0;
+      pilot->vx=pilot->vy=0;
+      pilot->a=0;
+      pilot->ai=0;
+      pilot->items=0;
+      //	pilot->selected=FALSE;
+      if(pilot->player==actual_player)printf("Pilot %d (%d) saved in planet %d\n",pilot->pid,pilot->id,pilot->in->id);
+      DelAllOrder(pilot);
+      if(GameParametres(GET,GNET,0)==TRUE){
+	SetModified(pilot,SENDOBJALL);
+      }
+      n++;
+      
+    }
+    /* --Ejecting from a landed ship */
+
+
+    /* Ejecting from a destroyed  ship */
+    else{
+      
+      pilot=ls->obj;
+      
+      pilot->in=obj->in;
+      pilot->planet=NULL;
+      pilot->habitat=obj->habitat;
+      pilot->mode=NAV;
+      pilot->x=obj->x;
+      pilot->y=obj->y;
+      pilot->vx=0.75*obj->vx+6*Random(-1)-3;
+      pilot->vy=0.75*obj->vy+6*Random(-1)-3;
+      if(obj->habitat==H_PLANET)pilot->vy+=10;
+      pilot->a=obj->a;
+      pilot->ai=0;
+      pilot->items=0;
+      if(pilot->player==actual_player)printf("Pilot %d ejected from ship %d\n",pilot->pid,obj->pid);
+      DelAllOrder(pilot);
+      if(GameParametres(GET,GNET,0)==TRUE){
+	SetModified(pilot,SENDOBJALL);
+	if(pilot->modified!=SENDOBJALL){
+	  printf("PILOT EJECT mod: %d\n",pilot->modified);
+	}
+      }
+      n++;
+      
+    }
+    /* --Ejecting from a destroyed  ship */
+    
+    ls=ls->next;
+  }
+  return(n);
+}
+
+
+
+
 int CountSelected(struct HeadObjList *lh,int player){
   /*
     printf the selected ships
@@ -3980,6 +4155,100 @@ Object *FirstSelected(struct HeadObjList *lh,int player){
   return(NULL);
 }
 
+
+void GetPointsObj(struct HeadObjList *lhobjs,struct Player *p,Object *obj){
+  /* 
+     version 0.3    12Dic2010
+     obj   dead object
+     if state is 0 sum points and experience
+  */
+  
+
+  Object *obj2;  /* killer */
+  Object *obj3;  /* who receive points */
+  int il;
+  float factor,points;
+  
+
+  obj2=obj3=NULL;
+
+  /* no points for kill a pilot */
+  if(obj->type==SHIP && obj->subtype==PILOT)return; // HERE no funciona
+
+
+  switch(obj->type){
+  case PROJECTILE:
+    /* points to nobody */
+    
+    break;
+  case SHIP:
+    p[obj->player].ndeaths++;
+    /* points to the killer */
+    if(obj->sw!=0){
+      obj2=SelectObj(lhobjs,(obj->sw));
+      
+      if(obj2!=NULL){
+	obj3=NULL;
+	if(obj2->type==SHIP)obj3=obj2;
+	if(obj3!=NULL){
+	  /* must be a SHIP */
+	  obj3->kills++;
+	  p[obj3->player].nkills++;
+	  
+	  /* Experience for kill an enemy */
+	  il=obj->level - obj3->level;
+	  if(il>3)il=3;
+	  factor=50;
+	  if(il<0)factor/=2;
+	  if(il<-1)factor/=2;
+	  if(il<-2)factor/=2;
+	  if(factor>0){
+	    points=factor*pow(2,obj->level);
+	    if(points<10)points=10;
+	    Experience(obj3,points);
+	  }
+	  /* --Experience for kill an enemy */
+	}
+      }
+    }
+    break;
+  case ASTEROID:
+    if(obj->sw!=0){
+      obj2=SelectObj(lhobjs,(obj->sw));
+      if(obj2!=NULL){
+	obj3=NULL;
+	/* 	    if(obj2->type==PROJECTILE){ */
+	/* 	      obj3=SelectObj(&listheadobjs,obj2->parent->id); */
+	/* 	    } */
+	if(obj2->type==SHIP)obj3=obj2;
+	if(obj3!=NULL){
+	  /* must be a SHIP */
+	  
+	  switch(obj->subtype){
+	  case ASTEROID1:
+	    p[obj3->player].gold+=50;
+	    break;
+	  case ASTEROID2:
+	    p[obj3->player].gold+=100;
+	    break;
+	  case ASTEROID3:
+	    p[obj3->player].gold+=200;
+	    break;
+	  default:
+	    fprintf(stderr,"ERROR in GetGold():asteroid subtype %d unknown\n",obj->subtype);
+	    exit(-1);
+		break;
+	  }
+	}
+      }
+    }
+    break;
+  default:
+	break;
+  }
+    
+  return;
+}
 
 
 

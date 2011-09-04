@@ -99,7 +99,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   if((fp=fopen(optfile,"rt"))==NULL){
 
     if((fp=fopen(optfile,"wt"))==NULL){
-      fprintf(stdout,"I cany create the file: %s\n", optfile);
+      fprintf(stdout,"I cant create the file: %s\n", optfile);
       exit(-1);
     }
     /* file doesnt exists */

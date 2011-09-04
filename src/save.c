@@ -96,12 +96,14 @@ char *CreateSaveFile(int server,int client){
     strcat(file,getenv("HOME"));
     strcat(file,"/");
     strcat(file,SAVEDIR);
+    strcat(file,"/");
     strcat(file,SAVEFILENET);
   }
   else{
     strcat(file,getenv("HOME"));
     strcat(file,"/");
     strcat(file,SAVEDIR);
+    strcat(file,"/");
     strcat(file,SAVEFILE0);
   }
 
@@ -110,6 +112,7 @@ char *CreateSaveFile(int server,int client){
     strcat(file,getenv("HOME"));
     strcat(file,"/");
     strcat(file,SAVEDIR);
+    strcat(file,"/");
     strcat(file,SAVEFILE1);
   }
 
@@ -131,20 +134,21 @@ char *CreateRecordFile(void){
   strcat(file,getenv("HOME"));
   strcat(file,"/");
   strcat(file,SAVEDIR);
+  strcat(file,"/");
   strcat(file,RECORDFILE);
 
 
   if((fprecord=fopen(file,"rt"))==NULL){
 
     if((fprecord=fopen(file,"wt"))==NULL){
-      fprintf(stdout,"No puede abrirse el archivo: %s",file);
+      fprintf(stdout,"Cant open the file: %s",file);
       exit(-1);
     }
     fprintf(fprecord,"%d\n",0);
     fclose(fprecord);
 
     if((fprecord=fopen(file,"rt"))==NULL){
-      fprintf(stdout,"No puede abrirse el archivo: %s", file);
+      fprintf(stdout,"Cant open the file: %s", file);
       exit(-1);
     }
   }
@@ -178,6 +182,7 @@ char *CreateOptionsFile(void){
   strcat(file,getenv("HOME"));
   strcat(file,"/");
   strcat(file,SAVEDIR);
+  strcat(file,"/");
   
   /* Test if the configuration directory exists */
   if(CreateDir(file)!=0){
@@ -1787,7 +1792,7 @@ void SaveParamOptions(char *file,struct Parametres *par){
   FILE *fp;
 
   if((fp=fopen(file,"wt"))==NULL){
-    fprintf(stdout,"No puede abrirse el archivo: %s",file);
+    fprintf(stdout,"Cant open the file: %s",file);
     exit(-1);
   }
   printf("saving options to file: %s\n",file);
@@ -1815,7 +1820,7 @@ void LoadParamOptions(char *file,struct Parametres *par){
   char version[MAXTEXTLEN];
 
   if((fp=fopen(file,"rt"))==NULL){
-    fprintf(stdout,"No puede abrirse el archivo: %s",file);
+    fprintf(stdout,"Cant open the file: %s",file);
     exit(-1);
   }
   fscanf(fp,"%s",version);

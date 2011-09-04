@@ -88,33 +88,45 @@ int InitSound(void){
   ALfloat listenerOri[]={0.0,0.0,-1.0, 0.0,1.0,0.0};/* LookAt then Up */
 
 
-  /* checking file sound directory */
+  /*****
+   checking file sound directory 
+	
+   Sound data dir defined in Makefile.
+   
+   First look in ./dat (no previous instalation or own defined
+   sounds.)
+   
+   If the directory ./dat doesnt exists, look in the directory
+   defined by INSTALL_DATA_DIR
+   
+  *****/ 
 
-  
-  datadir=DATADIR0;
+  datadir=DATADIR;
   strcpy(filesoundnames[0],"");
   strncat(filesoundnames[0],datadir,128);
-  strncat(filesoundnames[0],"sounds/",24);
+  strncat(filesoundnames[0],"/sounds/",24);
   strncat(filesoundnames[0],soundnames[0],24);
   printf("Checking for sound(%d): %s\n",0,filesoundnames[0]);
   
 
   if((fp=fopen(filesoundnames[0],"rb"))==NULL){
-    fprintf(stdout,"No puede abrirse el archivo: %s\n", filesoundnames[0]);
+    fprintf(stdout,"Cant open the file: %s\n", filesoundnames[0]);
     
-    datadir=DATADIR1;
+    datadir=INSTALL_DATA_DIR;
     strcpy(filesoundnames[0],"");
     strncat(filesoundnames[0],datadir,128);
-    strncat(filesoundnames[0],"sounds/",24);
+    strncat(filesoundnames[0],"/sounds/",24);
     strncat(filesoundnames[0],soundnames[0],24);
     printf("checking for sound 2 (%d):%s\n",0,filesoundnames[0]);
     
     if((fp=fopen(filesoundnames[0],"rb"))==NULL){
-      fprintf(stdout,"No puede abrirse el archivo: %s\n", filesoundnames[0]);
+      fprintf(stdout,"Cant open the file: %s\n", filesoundnames[0]);
       Ssoundenabled=FALSE;  
       return(1);
     }
   }
+  printf("Sound(0) file OK\n");
+
   /* --checking file sound directory */
 
 
@@ -178,7 +190,7 @@ int InitSound(void){
   for(i=0;i<NUM_SOUNDS;i++){
     strcpy(filesoundnames[i],"");
     strncat(filesoundnames[i],datadir,128);
-    strncat(filesoundnames[i],"sounds/",24);
+    strncat(filesoundnames[i],"/sounds/",24);
     strncat(filesoundnames[i],soundnames[i],24);
     printf("\tsound(%d): %s\n",i,filesoundnames[i]);
   }

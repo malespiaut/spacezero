@@ -82,10 +82,10 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.29"};
+char version[64]={"0.81.31"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Jul. 2011"};
+char last_revision[]={"Ago. 2011"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -140,6 +140,7 @@ char *recordfile;
 char *optionsfile;
 
 struct MenuHead *menuhead;
+
 
 
 int main(int argc,char *argv[]){
@@ -812,10 +813,16 @@ gint MainLoop(gpointer data){
     swcomm=TRUE;
   }
   
-  GetPoints(listheadobjs,proc,players);/* points and experience */
+  GetPoints(&listheadobjs,proc,players);/* points and experience */
 
   /*** check for pilots ****/
-  EjectPilots(&listheadobjs);
+  {
+    //    int n;
+    //    n=EjectPilots(&listheadobjs);
+    // if(n>0){printf("created %d pilots\n",n);exit(0);}
+
+  }
+
   /*** --check for pilots ****/
 
 
@@ -2589,7 +2596,7 @@ void Collision(struct HeadObjList *lh){
 		  }
 		}
 		if(obj1->player==actual_player){
-		  printf("Pilot %d rescued\n",obj1->pid);
+		  printf("Pilot %d (%d) rescued\n",obj1->pid,obj1->id);
 		}
 		if(GameParametres(GET,GNET,0)==TRUE){
 		  SetModified(obj1,SENDOBJALL);
@@ -2789,7 +2796,10 @@ void Collision(struct HeadObjList *lh){
 		else{/***** ship has landed *****/
 		  if(obj1->vy<0){
 		    obj1->mode=LANDED;
-		    if(obj1->items & ITPILOT)obj1->items=obj1->items&(~ITPILOT);
+		    if(obj1->items & ITPILOT){
+		      EjectPilotsObj(&listheadobjs,obj1);
+		      obj1->items=obj1->items&(~ITPILOT);
+		    }
 		    if(gnet==TRUE){
 		      if(proc==players[obj1->player].proc){
 			SetModified(obj1,SENDOBJAALL);
@@ -3814,7 +3824,7 @@ void NetComm(void){
       /* check if is possible open the dir */ 
       /* checking the file */
       if((fd=open(savefile,O_RDONLY))==-1){
-	fprintf(stdout,"CommServer()[OTSENDLOAD]:No puede abrirse el archivo %s\n",savefile);
+	fprintf(stdout,"CommServer()[OTSENDLOAD]: Cant open the file: %s\n",savefile);
       }
       else{
 	order2thread=OTSENDLOAD;
@@ -4222,7 +4232,7 @@ void GetGold(void){
   }
 }
 
-void GetPoints(struct HeadObjList hol,int proc,struct Player *p){
+void GetPoints(struct HeadObjList *hol,int proc,struct Player *p){
   /* 
      version 0.3    12Dic2010
 
@@ -4233,12 +4243,11 @@ void GetPoints(struct HeadObjList hol,int proc,struct Player *p){
   Object *obj;   /* dead object */
   Object *obj2;  /* killer */
   Object *obj3;  /* who receive points */
-  int il;
-  float factor,points;
+
   int sw=0;
   int gnet;
   
-  ls=hol.next;
+  ls=hol->next;
   gnet=GameParametres(GET,GNET,0);
 
   while(ls!=NULL){
@@ -4251,88 +4260,29 @@ void GetPoints(struct HeadObjList hol,int proc,struct Player *p){
     else{
       if(obj->state<=0)sw=1;
     }
+
     if(sw){
       /* no points for kill a pilot */
       if(obj->type==SHIP && obj->subtype==PILOT)sw=0; // HERE no funciona
     }
 
-
     if(sw){
-      switch(obj->type){
-      case PROJECTILE:
-	/* points to nobody */
+      GetPointsObj(hol,players,obj);/* points and experience */
 
-	break;
-      case SHIP:
-	p[obj->player].ndeaths++;
-	/* points to the killer */
-	if(obj->sw!=0){
-	  obj2=SelectObj(&listheadobjs,(obj->sw));
-
-	  if(obj2!=NULL){
-	    obj3=NULL;
-	    if(obj2->type==SHIP)obj3=obj2;
-	    if(obj3!=NULL){
-	      /* must be a SHIP */
-	      obj3->kills++;
-	      p[obj3->player].nkills++;
-
-	      /* Experience for kill an enemy */
-	      il=obj->level - obj3->level;
-	      if(il>3)il=3;
-	      factor=50;
-	      if(il<0)factor/=2;
-	      if(il<-1)factor/=2;
-	      if(il<-2)factor/=2;
-	      if(factor>0){
-		points=factor*pow(2,obj->level);
-		if(points<10)points=10;
-		Experience(obj3,points);
-	      }
-	      /* --Experience for kill an enemy */
-	    }
-	  }
-	}
-	break;
-      case ASTEROID:
-	if(obj->sw!=0){
-	  obj2=SelectObj(&listheadobjs,(obj->sw));
-	  if(obj2!=NULL){
-	    obj3=NULL;
-/* 	    if(obj2->type==PROJECTILE){ */
-/* 	      obj3=SelectObj(&listheadobjs,obj2->parent->id); */
-/* 	    } */
-	    if(obj2->type==SHIP)obj3=obj2;
-	    if(obj3!=NULL){
-	      /* must be a SHIP */
-
-	      switch(obj->subtype){
-	      case ASTEROID1:
-		p[obj3->player].gold+=50;
-		break;
-	      case ASTEROID2:
-		p[obj3->player].gold+=100;
-		break;
-	      case ASTEROID3:
-		p[obj3->player].gold+=200;
-		break;
-	      default:
-		fprintf(stderr,"ERROR in GetGold():asteroid subtype %d unknown\n",obj->subtype);
-		exit(-1);
-		break;
-	      }
-	    }
-	  }
-	}
-	break;
-      default:
-	break;
+      if(obj->items & ITPILOT){
+	EjectPilotsObj(hol,obj);
+	obj->items=obj->items&(~ITPILOT);
       }
-    } /*  if(sw) */
+
+    }
+
     ls=ls->next;    
   }
   return;
 }
+
+
+
 
 void PrintGameOptions(void){
 

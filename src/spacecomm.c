@@ -420,7 +420,7 @@ void *CommServer(struct Thread_arg *args){
   /* sending file with universe */
 
   if((fd=open(SAVETMPFILE,O_RDONLY))==-1){
-    fprintf(stdout,"Commserver():No puede abrirse el archivo %s\n","/tmp/spacesavetmp");
+    fprintf(stdout,"Commserver():Cant open the file: %s\n","/tmp/spacesavetmp");
     exit(-1);
   }
 
@@ -454,7 +454,7 @@ void *CommServer(struct Thread_arg *args){
       
       /* checking the file */
       if((fd=open(savefile,O_RDONLY))==-1){
-	fprintf(stdout,"CommServer()[OTSENDLOAD]:No puede abrirse el archivo %s\n",savefile);
+	fprintf(stdout,"CommServer()[OTSENDLOAD]: Cant open the file: %s\n",savefile);
 	exit(-1);
       }
       else{
@@ -535,7 +535,7 @@ void *CommClient(struct Thread_arg * args){
   /* receiving file with universe */
 
   if((fd=open(savefile,O_WRONLY|O_CREAT,S_IREAD|S_IWRITE|S_IRGRP|S_IROTH))==-1){
-    fprintf(stdout,"CommClient():No puede abrirse el archivo %s\n",savefile);
+    fprintf(stdout,"CommClient(): Cant open the file: %s\n",savefile);
     exit(-1);
   }
   
@@ -604,7 +604,7 @@ void *CommClient(struct Thread_arg * args){
       /* receiving file with universe */
       
       if((fd=open(savefile,O_WRONLY|O_CREAT,S_IREAD|S_IWRITE|S_IRGRP|S_IROTH))==-1){
-	fprintf(stdout,"CommClient()[OTSENDLOAD]:No puede abrirse el archivo %s\n",savefile);
+	fprintf(stdout,"CommClient()[OTSENDLOAD]: Cant open the file: %s\n",savefile);
 	exit(-1);
       }
       
@@ -1387,6 +1387,7 @@ int ReadObjsfromBuffer(char *buf){
 	    exit(-1);
 	  }
 	}
+
       }
       else{   /* New object or object has been killed in client side*/
 	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJAALL) id: %d doesnt exists\n",
@@ -1436,6 +1437,21 @@ int ReadObjsfromBuffer(char *buf){
       nobj->mass=objall.mass;
       
       nobj->cargo=objall.cargo;
+
+      if(nobj->items & ITPILOT){
+
+	if(!(objall.items & ITPILOT)){
+	  
+	  if(nobj->type==SHIP && nobj->subtype==PILOT){
+	    printf("checking for pilots in %d (%d)\n",nobj->id,nobj->pid);
+	    EjectPilotsObj(&listheadobjs,nobj);
+	    //  nobj->items=nobj->items&(~ITPILOT);
+	  }
+	  
+
+	}
+	
+      }
       nobj->items=objall.items;
       nobj->radio=objall.radio;
       nobj->cost=objall.cost;
@@ -1862,6 +1878,29 @@ int ReadObjsfromBuffer(char *buf){
 	habitat.type=cv->habitat;
 	habitat.obj=cv->in;
       }
+      /* check for pilots */
+      if((nobj->items & ITPILOT)){
+
+	/* when landed */
+	if(nobj->mode==LANDED){
+	  EjectPilotsObj(&listheadobjs,nobj);
+	  nobj->items=nobj->items&(~ITPILOT);
+	}
+
+	/* when destroyed */
+	if(nobj->modified==SENDOBJDEAD){
+	  EjectPilotsObj(&listheadobjs,nobj);
+	}
+      }
+
+      if(0&&nobj->type==SHIP && nobj->subtype==PILOT){
+	printf("checking for pilots in %d (%d)\n",nobj->id,nobj->pid);
+	EjectPilotsObj(&listheadobjs,nobj);
+	nobj->items=nobj->items&(~ITPILOT);
+      }
+
+      /* --check for pilots */
+
     }
     if(0){
       if(nobj!=NULL){
@@ -3206,7 +3245,7 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
       
       /* checking the file */
       if((fd=open(savefile,O_RDONLY))==-1){
-	fprintf(stdout,"CommServer()[OTSENDLOAD]:No puede abrirse el archivo %s\n",savefile);
+	fprintf(stdout,"CommServer()[OTSENDLOAD]: Cant open the file: %s\n",savefile);
 	exit(-1);
       }
       close(fd);

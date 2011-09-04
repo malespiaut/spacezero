@@ -105,8 +105,8 @@
 #define PILOT SHIP7
 
 /* ship items */
-#define ITSURVIVAL 1 
-#define ITPILOT 2
+#define ITSURVIVAL 1  /* has a survival pod */ 
+#define ITPILOT 2     /* transport pilots */
 
 /* weapons types */
 #define CANNON0 0   /* no weapon */
@@ -678,7 +678,8 @@ int ValueCell(int *cell,Object *obj);
 
 int CreatePilot( Object *obj);
 int EjectPilots(struct HeadObjList *lh);
-
+int EjectPilotsObj(struct HeadObjList *lh,Object *obj);
+void GetPointsObj(struct HeadObjList *lhobjs,struct Player *p,Object *obj);
 
 /*************************/
 

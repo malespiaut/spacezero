@@ -3410,7 +3410,7 @@ gint SaveOptions(GtkWidget *widget,gpointer gdata){
 #endif
 
   if((fp=fopen((char *) gdata,"wt"))==NULL){
-    fprintf(stdout,"SaveOptions(): No puede abrirse el archivo: %s",(char *) gdata);
+    fprintf(stdout,"SaveOptions(): Cant open the file: %s",(char *) gdata);
     exit(-1);
   }
 

@@ -108,7 +108,7 @@
 #define SECTORSIZE 1410 // sqrt(RADAR_RANGE2/2)
 
 /* FILES */
-#define SAVEDIR ".spacezero/"
+#define SAVEDIR ".spacezero"
 #define SAVETMPFILE "/tmp/tmpspacezero"
 #define SAVEFILE0 "save"
 #define SAVEFILE1 "savecl"
@@ -116,9 +116,6 @@
 #define SAVEFILESINGLE SAVEFILE0 
 #define RECORDFILE "record"
 #define OPTIONSFILE "options2"
-#define DATADIR0 "./dat/"
-#define DATADIR1 "/usr/local/share/spacezero/" /* tar.gz */
-//#define DATADIR1 "/usr/share/games/spacezero/" /* DEB pkg*/
 
 
 

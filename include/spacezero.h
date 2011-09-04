@@ -77,7 +77,7 @@ void CreateShips(struct HeadObjList *lheadobjs);
 int CheckGame(char *);
 
 void GetGold(void);
-void GetPoints(struct HeadObjList hl,int proc,struct Player *p);
+void GetPoints(struct HeadObjList *hl,int proc,struct Player *p);
 void Density(void);
 void GetUniverse(void);
 void NetComm(void);

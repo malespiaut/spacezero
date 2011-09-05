@@ -82,10 +82,10 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.31"};
+char version[64]={"0.81.32"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Ago. 2011"};
+char last_revision[]={"Sep. 2011"};
 
 
 Object *ship_c; /* ship controled by keyboard */

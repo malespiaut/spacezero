@@ -12,7 +12,7 @@ libopenal_dev
 
 
 
-bugs:(last:117)
+bugs:(last:118)
 ====
 
 -[26] (010910) al pasar al modo manual siempre dispara. (posible disparo a EXPLOSION, objnext no eliminado)
@@ -37,7 +37,6 @@ bugs:(last:117)
 -[115]-geom 1000x-12 check all arguments...
 	    -geom -name hola
 -[117]why dont explore (save08)(the last ship, no unknown planets)
-
 
 Version 0.6: (since 0707)
 ============
@@ -215,6 +214,8 @@ X-(030611)!![105](200511) Queen autopilot: still crash the ship while landing. (
 X-(070611)[110](240511) Explorers dont STOP. save03 (Improved ExecStop())
 X-(170611)[116][regression] autopilot fighters now leave the planet - ID: 3317317 (in low mass planets)(save10)
 X-Size of font.
+X-(050911)[118]explorer doesnt respond to RETREAT and GOTO n (save10)
+	  GOTO n=>Not Allowed. Planet or ship 15 unknown. (15 is a undiscoverd empty nearest planet)
 
 
 /********************************************************************************/

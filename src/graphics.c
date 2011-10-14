@@ -251,7 +251,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_signal_connect(GTK_OBJECT (winabout),"delete_event",
 		     GTK_SIGNAL_FUNC(QuitWindow),winabout);
   gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemabout);
-  snprintf(label,150,"\t SpaceZero %s\t\n\t May 2011\t\n\n\n  Copyrigth mrevenga.  \n  homepage:  http://spacezero.sourceforge.net/   ",version);
+  snprintf(label,150,"\t SpaceZero %s\t\n\t Oct 2011\t\n\n\n  Copyrigth mrevenga.  \n  homepage:  http://spacezero.sourceforge.net/   ",version);
   about1=gtk_label_new(label);
   gtk_widget_show(about1);
   
@@ -306,7 +306,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   strcat(labelhelp,"f6\t\t\tshow game statistics.\n");
   strcat(labelhelp,"m\t\t\tshow space map.\n");
   strcat(labelhelp,"n\t\t\twindow, ship mode view.\n");
-  strcat(labelhelp,"p\t\t\tpause game\n");
+  strcat(labelhelp,"Ctrl-p\t\tpause game\n");
   strcat(labelhelp,"Ctrl-s\t\tsave the game.\n");
   strcat(labelhelp,"Ctrl-l\t\t\tload the saved game.\n");
   strcat(labelhelp,"Ctrl-q\t\tquit game.\n");
@@ -970,10 +970,11 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
     break;
   case 80:
   case 112:
-    if(keys.p==TRUE)
-      keys.p=FALSE;
-    else
-      keys.p=TRUE;
+    keys.p=TRUE;
+    /* if(keys.p==TRUE) */
+    /*   keys.p=FALSE; */
+    /* else */
+    /*   keys.p=TRUE; */
     break;
   case 81:
   case 113:
@@ -1117,6 +1118,10 @@ void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data){
   case 110:
     keys.n=FALSE;
     break;
+  case 80:
+  case 112:
+    keys.p=FALSE;
+    break;
   case 81:
   case 113:
     keys.q=FALSE;
@@ -1133,7 +1138,6 @@ void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data){
   case 121:
     keys.y=FALSE;
     break;
-
   default:
     break;
   }
@@ -1197,8 +1201,6 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
 
   /* last to draw (cv)*/
   int lx=0,ly=0;
-  float la=0,lr=0;
-  int lstate=0,lsubtype=0;
   int lsw=0;
   int cont=0;
   int gwidth,gheight;
@@ -1252,7 +1254,12 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
   
 
   while (ls!=NULL){
-    if(ls->obj->type==SHIP && ls->obj->ttl<MINTTL){ls=ls->next;continue;}
+    if(ls->obj->type==SHIP && ls->obj->ttl<MINTTL){
+      if(ls->obj->subtype==PILOT && ls->obj->pid==201){
+	printf("DrawObjs() ttl: %d (%d)%d\n",ls->obj->ttl,ls->obj->player,ls->obj->pid);
+	  }
+      ls=ls->next;continue;
+    }
     if(ls->obj->state<=0){ls=ls->next;continue;}
     if(ls->obj->habitat!=habitat.type){ls=ls->next;continue;}
 
@@ -1366,10 +1373,6 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
 	if(ls->obj->habitat==H_PLANET && ls->obj==cv && ls->obj->selected==TRUE){
 	  lx=x;
 	  ly=y;
-	  la=a;
-	  lr=r;
-	  lstate=ls->obj->state;
-	  lsubtype=ls->obj->subtype;
 	  lobj=ls->obj;
 	  lsw=1;
 	}
@@ -1708,7 +1711,7 @@ void DrawPlanet(GdkPixmap *pixmap,int x,int y, int r){
    */
   int i,j;
   int dx,dxl,dy;
-  static int desp=0,despr=0,despl=0;
+  static int desp=0,despr=0;
   float inc;
   float coef;
   float radio2;
@@ -1734,19 +1737,15 @@ void DrawPlanet(GdkPixmap *pixmap,int x,int y, int r){
       switch(j){
       case 0:
 	despr=.5*desp;
-	despl=-.5*desp;
 	break;
       case 1:
 	despr=.6*desp;
-	despl=-.6*desp;
 	break;
       case 2:
 	despr=.7*desp;
-	despl=-.7*desp;
 	break;
       default:
 	despr=desp;
-	despl=desp;
 	break;
       }
       dy+=inc*(2+j);
@@ -2006,7 +2005,6 @@ int DrawRadar(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc){
 	break;
       }
 
-
       n++;
       break;
     case PLANET:
@@ -2018,105 +2016,6 @@ int DrawRadar(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc){
  		     TRUE, 
 			 x-1,gheight-y-1, 
  		     3,3);
-      n++;
-      break;
-    case ASTEROID:
-      gc=penRed;
-      gdk_draw_point(pixmap,gc,x,gheight-y);
-
-      break;
-    default:
-      ls=ls->next;continue;
-      break;
-    }
-    ls=ls->next;
-   }
-  return(n);
-}
-
-int DrawRadar_01(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lh){
-  /*
-    version 01 22Feb2011
-    Draw the ship radar with all near ships.
-    returns:
-    the number of objects(ships and planets) drawed in radar.
-  */
-
-  struct ObjList *ls;
-  GdkGC *gc;
-  int x,y,x0,y0;
-  float rx,ry;
-  int d;
-  int n=0;
-  int gheight;
-
-
-  if(obj==NULL)return(0);
-
-
-  gheight=GameParametres(GET,GHEIGHT,0);
-
-  d=30;
-
-  /*  gc=penWhite; */
-  gc=penRed;
-  
-  x0=GameParametres(GET,GWIDTH,0)/2;
-  y0=GameParametres(GET,GHEIGHT,0)/2;
-  
-  gdk_draw_arc(pixmap,gc,FALSE,x0-d,gheight-y0-d,2*d,2*d,0,23040); 
-  
-  x=x0;y=y0;
-  gdk_draw_point(pixmap,gc,x,gheight-y);
-
-  ls=lh->next;
-
-  while (ls!=NULL){
-
-    if(ls->obj->habitat!=H_SPACE){ls=ls->next;continue;}
-    if(ls->obj->type==SHIP && ls->obj->ttl<MINTTL){ls=ls->next;continue;}
-    if(ls->obj==obj){ls=ls->next;continue;}
-
-    rx=(ls->obj->x - obj->x);
-    ry=(ls->obj->y - obj->y);
-
-    if((rx*rx+ry*ry) > (float)obj->radar*(float)obj->radar){
-      ls=ls->next;
-      continue;
-    }
-
-    x=rx*d/(obj->radar)+x0;
-    y=ry*d/(obj->radar)+y0;
-
-    switch(ls->obj->type){
-    case SHIP:
-
-      if(ls->obj->player==obj->player){
-	gc=penWhite;
-      }
-      else{
-	if(players[ls->obj->player].team==players[obj->player].team){
-	  gc=penBlue;
-	}
-	else{
-	  gc=penRed;
-	}
-      }
-      gdk_draw_point(pixmap,gc,x,gheight-y);
-      gdk_draw_point(pixmap,gc,x+1,gheight-y);
-      gdk_draw_point(pixmap,gc,x,gheight-y+1);
-      gdk_draw_point(pixmap,gc,x+1,gheight-y+1);
-      n++;
-      break;
-    case PLANET:
-      gc=penBlue;
-      gc=gcolors[players[ls->obj->player].color];
-
-      gdk_draw_rectangle(pixmap, 
-			 gc, 
-			 TRUE, 
-			 x-1,gheight-y-1, 
-			 3,3);
       n++;
       break;
     case ASTEROID:
@@ -2604,33 +2503,34 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   
   MousePos(GET,&x,&y);
   Window2Sector(cv,&x,&y);
-  if(TEST)distance=Distance(cv,x*SECTORSIZE,y*SECTORSIZE);
+  
+  distance=Distance(cv,x*SECTORSIZE,y*SECTORSIZE);
+  
   sprintf(point,"%d %d",x,y);
   MousePos(GET,&x,&y);
   DrawString(pixmap,gfont,penGreen,x,y,point);
 
-  if(TEST){
-    texth=gdk_text_height(gfont,"Lp",2);
-    sprintf(point,"%d",(int)(distance/SECTORSIZE));
-    DrawString(pixmap,gfont,penGreen,x,y-texth-2,point);
-  }
+  texth=gdk_text_height(gfont,"Lp",2);
+  sprintf(point,"%d",(int)(distance/SECTORSIZE));
+  DrawString(pixmap,gfont,penGreen,x,y-texth-2,point);
+
   /***** --mouse position *****/
 }
 
 
-float Distance(Object *cv,float x,float y){
+float Distance(Object *obj,float x,float y){
   float x1,y1,x2,y2;
   float d;
 
-  if(cv==NULL)return(0);
+  if(obj==NULL)return(0);
 
-  if(cv->habitat!=H_SPACE){
-    x1=cv->in->x;
-    y1=cv->in->y;
+  if(obj->habitat!=H_SPACE){
+    x1=obj->in->x;
+    y1=obj->in->y;
   }
   else{
-    x1=cv->x;
-    y1=cv->y;
+    x1=obj->x;
+    y1=obj->y;
   }
 
   x2=x;
@@ -2697,7 +2597,7 @@ int DrawPlayerInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct Player *p
   return(y);
 }
 
-int DrawPlanetInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *planet,int x0,int y0){
+int DrawPlanetInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *planet,int player,int x0,int y0){
   /*
     Show info about the planet
     returns:
@@ -2720,11 +2620,22 @@ int DrawPlanetInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *planet,i
   DrawString(pixmap,font,color,x0,y,point);
   y+=incy;
 
-  sprintf(point,"GOLD: %.0f",planet->planet->gold);
+  if(planet->player==player){
+    sprintf(point,"GOLD: %.0f",planet->planet->gold);
+  }
+  else{
+    sprintf(point,"GOLD: --");
+  }
+
   DrawString(pixmap,font,color,x0,y,point);
   y+=incy;
 
-  sprintf(point,"RESOURCES: %.1f",planet->planet->A/0.015);
+  if(planet->player==player){
+    sprintf(point,"RESOURCES: %.1f",planet->planet->A/0.015);
+  }
+  else{
+    sprintf(point,"RESOURCES: --");
+  }
   DrawString(pixmap,font,color,x0,y,point);
   y+=incy;
 
@@ -2846,6 +2757,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   x=x0+10;
   if(obj->ai!=0)mode='A';
   if(obj->ai==0)mode='M';
+  if(obj->type==SHIP&&obj->subtype==PILOT)mode='A';
   if(font!=NULL){
     texth=gdk_text_height(font,"Lp",2);
     textw=gdk_text_width(font,"O",1);
@@ -2853,19 +2765,6 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   y=y0+texth;
   incy=texth+1;
   
-  
-  /* accel */
-
-  /* if(obj->engine.a_max==0)n=0; */
-  /* else{ */
-  /*     n=sx*obj->accel/obj->engine.a_max; */
-  /* } */
-  /* gdk_draw_rectangle(pixmap,color,TRUE,x+1,y+1,n,texth-2); */
-  /* gdk_draw_rectangle(pixmap,color,FALSE,x,y,sx,texth-1); */
-  /* DrawString(pixmap,font,color,x+sx+10,y+texth,"ACCEL"); */
-
-  /* y+=incy; */
-
   /* gas */
   if(obj->gas_max==0)n=0;
   else{
@@ -3108,8 +3007,7 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *
   struct TextList *lh;
   int x,y,scroll; 
   GdkGC *gc;
-  int i,m,n,w,h;
-  int sw;
+  int i,m,n,h;
   static int charw=12;
   static int charh=12;
   int textw0,textw;
@@ -3124,7 +3022,6 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *
   incy=charh+2;
 
   h=height/incy;
-  w=(float)width/charw;
 
   n=CountTextList(head);
   m=PosTextList(head,1);
@@ -3137,7 +3034,6 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *
   x=x0+7;
   y=y0+incy;
 
-  sw=0;
   textw=0;
   lh=head->next;
 
@@ -3580,12 +3476,15 @@ gint ShowWindowOptions(GtkWidget *widget,gpointer gdata){
   /*
     version 01 12May11
   */
-  gboolean state;
-  const gchar *text;
+
+
   int value;
   char cad[128];
   int show=0;
-
+#if DEBUG
+  gboolean state;
+  const gchar *text;
+#endif
 
 #if DEBUG
   if(debugoptions)g_print("Reading options from file: %s\n",(char *) gdata);
@@ -3602,67 +3501,75 @@ gint ShowWindowOptions(GtkWidget *widget,gpointer gdata){
   if(show==1){
     value=GameParametres(GET,GKPLANETS,0);
     gtk_toggle_button_set_active((GtkToggleButton *)options1,value);
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options1);
+
 #if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options1);
     if(debugoptions)printf("\tstate Known Universe: %d\n",state);
 #endif    
 
     value=GameParametres(GET,GMUSIC,0);
     gtk_toggle_button_set_active((GtkToggleButton *)options2,!value);
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options2);
+
 #if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options2);
     if(debugoptions)printf("\tstate music: %d\n",state);
 #endif    
 
     value=GameParametres(GET,GSOUND,0);
     gtk_toggle_button_set_active((GtkToggleButton *)options3,!value);
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
+
 #if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
     if(debugoptions)  printf("\tstate sound: %d\n",state);
 #endif    
 
     value=GameParametres(GET,GNPLANETS,0);
     snprintf(cad,128,"%d",value);
     gtk_entry_set_text((GtkEntry *)options5,cad);
-    text=gtk_entry_get_text((GtkEntry *)options5);
 #if DEBUG
+    text=gtk_entry_get_text((GtkEntry *)options5);
     if(debugoptions)  printf("\tplanets: %s\n",text);
 #endif    
 
     value=GameParametres(GET,GNPLAYERS,0);
     snprintf(cad,128,"%d",value);
     gtk_entry_set_text((GtkEntry *)options7,cad);
-    text=gtk_entry_get_text((GtkEntry *)options7);
+
 #if DEBUG
+    text=gtk_entry_get_text((GtkEntry *)options7);
     if(debugoptions)  printf("\tplayers: %s\n",text);
 #endif    
 
     value=GameParametres(GET,GULX,0);
     snprintf(cad,128,"%d",value);
     gtk_entry_set_text((GtkEntry *)options9,cad);
-    text=gtk_entry_get_text((GtkEntry *)options9);
+
 #if DEBUG
+    text=gtk_entry_get_text((GtkEntry *)options9);
     if(debugoptions)  printf("\tUniverse size: %s\n",text);
 #endif    
     
     value=GameParametres(GET,GCOOPERATIVE,0);
     gtk_toggle_button_set_active((GtkToggleButton *)options14,value);
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
+
 #if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
     if(debugoptions) printf("\tCooperative mode: %d\n",state);
 #endif    
 
     value=GameParametres(GET,GCOMPCOOPERATIVE,0);
     gtk_toggle_button_set_active((GtkToggleButton *)options15,value);
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options15);
+
 #if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options15);
     if(debugoptions)  printf("\tComputer cooperative mode: %d\n",state);
 #endif    
 
     value=GameParametres(GET,GQUEEN,0);
     gtk_toggle_button_set_active((GtkToggleButton *)options16,value);
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
+
 #if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
     if(debugoptions)  printf("\tQueen mode: %d\n",state);
 #endif
     }
@@ -3749,7 +3656,7 @@ void SetDefaultKeyValues(struct Keys *key,int action){
   key->up=key->down=key->right=key->left=key->back=FALSE;
   key->space=key->trace=key->tab=key->enter=FALSE;
   key->o=key->s=key->n=key->l=FALSE;
-  key->i=key->h=key->e=key->y=key->u=FALSE;
+  key->i=key->e=key->y=key->u=FALSE;
   key->f1=key->f2=key->f3=key->f4=key->f7=key->f8=FALSE;
   key->p=FALSE;
   key->d=FALSE;
@@ -3845,7 +3752,8 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
       if(obj->type==SHIP){
 	mode=Type(obj);
 	if(obj->ai==0)mode='M';
-	
+	if(obj->type==SHIP && obj->subtype==PILOT)mode='A';	
+
 	if(obj->state<50 || obj->gas<0.5*obj->gas_max){color=2;}
 	if(obj->state<25 || obj->gas<0.25*obj->gas_max){color=3;}
 	
@@ -3887,12 +3795,20 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 	    break;
 	  }
 	}
+	strncpy(tmpcad,cad,MAXTEXTLEN);
 	pid=0;
 	if(obj->in!=NULL){
-	  pid=obj->in->id;
+	  pid=obj->in->pid;
+	  if(obj->in->player!=obj->player){
+	    snprintf(cad,MAXTEXTLEN,"%s IN:(%d)%d",tmpcad,obj->in->player,pid);
+	  }
+	  else{
+	    snprintf(cad,MAXTEXTLEN,"%s IN:%d",tmpcad,pid);
+	  }
 	}
-	strncpy(tmpcad,cad,MAXTEXTLEN);
-	snprintf(cad,MAXTEXTLEN,"%s IN:%d",tmpcad,pid);
+	else{
+	  snprintf(cad,MAXTEXTLEN,"%s IN:%d",tmpcad,pid);
+	}
 	textw=gdk_text_width(gfont,cad,strlen(cad));
 	if(textw>textsw)textsw=textw;
 	Add2TextList(&shiplist,cad,color);

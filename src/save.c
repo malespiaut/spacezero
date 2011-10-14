@@ -1216,6 +1216,7 @@ int FscanfObj(FILE *fp,Object *obj,struct ObjTable *t){
     perror("fscanf");
     exit(-1);
   }
+  obj->pexperience=0;
   obj->selected=FALSE;
   obj->modified=SENDOBJUNMOD;
   if(fscanf(fp,"%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f",

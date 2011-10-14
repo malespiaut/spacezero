@@ -36,7 +36,7 @@
 /*  compile options: */
 #define SOUND 1  // compile with sound
 #define DEBUG 0
-#define TEST 0  // test stuff
+#define TEST 1  // test stuff
 /*  --compile options: */
 
 #define MODI(a) ((a) > 0 ? (a) : (-a))
@@ -54,14 +54,16 @@
 #define LYFACTOR 550   /* normalization factor for surface planets */
 #define PANEL_HEIGHT 20
 
+/* game */
 #define CLOSEDUNIVERSE 0
 #define NUMSTARS 200
 #define GRAVITATION_RANGE2 4000000  /* max. gravity reach */
-#define G .1 /* gravitation constant */
+#define G .1                        /* gravitation constant */
 #define DT .42
-#define RESOURCEFACTOR 1.2 /* velocity factor for getting resource from planets */
-#define COSTFACTOR 1.0     /* multiplicative factor to ships cost */
-#define DAMAGEFACTOR .9;  /* multiplicative factor to weapon damage */
+#define RESOURCEFACTOR 1.2     /* velocity factor for getting resource from planets */
+#define COSTFACTOR 1.0         /* multiplicative factor to ships cost */
+#define DAMAGEFACTOR .9;       /* multiplicative factor to weapon damage */
+#define MINLEVELPILOT 1        /* min level of a ship to have a survival pod, (only fighters)*/
 
 #define PLANETSKNOWN 0
 #define ENEMIESKNOWN 0
@@ -71,9 +73,9 @@
 /* default options */
 #define NUMPLAYERS 2
 #define NUMGALAXIES 1
-#define NUMPLANETS 30 /* num. planets in galaxy */
-#define ULX 100000    /*  universe size */
-#define ULY 100000    /*  universe size */
+#define NUMPLANETS 30   /* num. planets in galaxy */
+#define ULX 100000      /*  universe size */
+#define ULY 100000      /*  universe size */
 
 
 /* max and min option values */
@@ -130,7 +132,7 @@
 #define LANDZONEMINX 175
 
 /* miscelanea */
-#define MINTTL -128 /* with less value ships are forgotten*/
+#define MINTTL -256 /* with less value ships are forgotten*/
 
 /* Game parametres */
 
@@ -159,7 +161,7 @@
 /*    Error codes for all functions */
 
 enum SZ_Error{
-/* Buyship() */
+/* Used in  Buyship() */
   SZ_OK,
   SZ_OBJNULL,
   SZ_UNKNOWNERROR, 
@@ -274,8 +276,7 @@ struct Keys{
   int w;  /* shell */
   int e;  /* shell */
   int u;  /* shell */
-  int h;
-  int d;  /* debug */
+  int d;  /* shell */
   int q;  /* ^Q quit */
   int y;  /* yes */
 };

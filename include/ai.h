@@ -143,7 +143,7 @@ void CreatePirates(struct HeadObjList *lhobjs,int,float,float);
 void CreateAsteroids(struct HeadObjList *lhobjs,int n, float x0,float y0);
 void GetInformation(struct Player *p1,struct Player *p2,Object *obj);
 
-int AreEnemy(struct HeadObjList *lh,int,Object *obj);
+int OtherProc(struct HeadObjList *lh,int,Object *obj);
 
 
 int CCBuy(struct CCDATA *ccdata,struct Player player,int *pid);

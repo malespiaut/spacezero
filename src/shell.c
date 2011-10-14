@@ -44,313 +44,12 @@ extern struct Draw gdraw;
 int debugshell=FALSE;
 #endif
 
-struct Shell{
-  char name[16];
-  char menu[128];
-  char par[128];
-  char options[16];
-  int noptions;
-  int orders[16];
-  int order; 
-};
 
-struct Ordername{
-  int order;
-  char name[12];
-};
-
-
-struct Shell shells[11];
-struct Ordername ordernames[15];
-
-
-void initshell(void){
-  /*
-    Initialize the shell
-    not used TODO
-   */
-
-  ordernames[0].order=GOTO;
-  strncpy(ordernames[0].name,"GOTO",12);
-  ordernames[1].order=GOTO;
-  strncpy(ordernames[1].name,"SELECT",12);
-
-  strncpy(shells[0].name,"main",16);
-  strncpy(shells[0].menu,
-	  "G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D: RETREAT",128);
-  strncpy(shells[0].options,"gxsptrbuwed",16);
-  shells[0].noptions=10;
-  shells[0].orders[0]=GOTO;
-  shells[0].orders[1]=EXPLORE;
-  shells[0].orders[2]=SELECT;
-  shells[0].orders[3]=STOP;
-  shells[0].orders[4]=TAKEOFF;
-  shells[0].orders[5]=REPEAT;
-  shells[0].orders[6]=BUY;
-  shells[0].orders[7]=WRITE;
-  shells[0].orders[8]=SELL;
-  shells[0].orders[9]=UPGRADE;
-  shells[0].orders[10]=RETREAT;
-
-  strcpy(shells[0].par,"");
-  shells[0].order=0;
-
-  strncpy(shells[1].name,"goto",16);
-  strncpy(shells[1].menu,"GOTO: ",128);
-  strcpy(shells[1].par,"");
-  shells[1].order=GOTO;
-
-  strncpy(shells[1].name,"explore",16);
-  strncpy(shells[1].menu,"EXPLORE",128);
-  strcpy(shells[1].par,"");
-  shells[1].order=EXPLORE;
-
-  strncpy(shells[3].name,"select",16);
-  strncpy(shells[3].menu,"SELECT: ",128);
-  strcpy(shells[3].par,"");
-  shells[3].order=SELECT;
-
-  strncpy(shells[4].name,"stop",16);
-  strncpy(shells[4].menu,"STOP",128);
-  strcpy(shells[4].par,"");
-  shells[4].order=STOP;
-
-  strncpy(shells[5].name,"takeoff",16);
-  strncpy(shells[5].menu,"TAKEOFF",128);
-  strcpy(shells[5].par,"");
-  shells[5].order=TAKEOFF;
-
-  strncpy(shells[6].name,"repeat",16);
-  strncpy(shells[6].menu,"REPEAT",128);
-  strcpy(shells[6].par,"");
-  shells[6].order=REPEAT;
-
-  strncpy(shells[7].name,"buy",16);
-  strncpy(shells[7].menu,"BUY",128);
-  strcpy(shells[7].par,"");
-  shells[7].order=BUY;
-
-  strncpy(shells[8].name,"write",16);
-  strncpy(shells[8].menu,"WRITE",128);
-  strcpy(shells[8].par,"");
-  shells[8].order=WRITE;
-
-  strncpy(shells[9].name,"upgrade",16);
-  strncpy(shells[9].menu,"UPGRADE",128);
-  strcpy(shells[9].par,"");
-  shells[9].order=UPGRADE;
-
-  strncpy(shells[10].name,"retreat",16);
-  strncpy(shells[10].menu,"RETREAT",128);
-  strcpy(shells[10].par,"");
-  shells[10].order=RETREAT;
-}
-
-void Shell_02(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadObjList lhead,struct Keys *key,Object **pcv){
-  /*
-    version 02
-    
-  */
-  static GdkGC *gc;
-  static char message[128]="";
-  static char messagetmp[128]="";
-  static char ord[16]="";
-  static char par[MAXTEXTLEN]="";
-  static char lastpar[16]="";
-  static int level=0;
-  static int order=0;
-  static int nn=0;
-  static int lastorder=0;
-  int i;
-  static int swinit=0;
-  static int shellid=0;
-  char c,*d;
-  int option;
-  static int swinput=FALSE;
-  Object *cv;
-
-  cv=*pcv;
-  if(swinit==0){
-    initshell();
-    strncpy(message,shells[0].menu,128);
-    shellid=0;
-    gc=color;
-    swinit=1;
-
-  }
-  if(cv==NULL){
-    printf("There are no ship selected!!\n");
-    key->o=FALSE;
-    level=0;
-    key->esc=FALSE;
-    return;
-  }
-  if(GetPlayerProc(players,cv->player)!=GetProc()){
-    fprintf(stderr,"WARNING proc %d %d \n",GetProc(),GetPlayerProc(players,cv->player));
-    key->esc=TRUE;
-    return;
-  }
-
-  if(GetControl(players,cv->player)!=HUMAN){
-    fprintf(stderr,"ERROR human  id:%d\n",cv->id);
-    exit(-1); /* Never happen this */
-  }
-
-  if(key->esc==TRUE){
-    key->o=FALSE;
-    key->w=FALSE;
-    level=0;
-    shellid=0;
-    key->esc=FALSE;
-    return;
-  }
-
-  if(key->back==TRUE){
-    Keystrokes(DELETELAST,NULL);
-    key->back=FALSE;
-  }
-
-  if(key->enter==TRUE){
-    if(order==REPEAT && order !=0){ 
-       order=lastorder;
-       strcpy(par,"");
-       strncpy(par,lastpar,16);
-    } 
-    if(order==GOTO||order==TAKEOFF)
-      key->i=TRUE;
-
-    /*    printf("order: %d par: %s\n",order,par); */
-    lastorder=order;
-    strcpy(lastpar,"");
-    strncpy(lastpar,par,16);
-
-    strcpy(message,"");
-    strcpy(ord,"");
-    strcpy(par,"");
-    strncpy(message,shells[0].menu,128);
-    swinput=FALSE;
-    shellid=0;
-    order=0;
-    level=0;
-    nn=0;
-    key->enter=FALSE;
-    key->w=FALSE;
-    key->o=FALSE;
-  }
-
-
-  switch(shellid){
-  case 0: /* main */
-
-    option=-1;
-    Keystrokes(RETURNLAST,&c);
-    for(i=0;i<shells[0].noptions;i++){
-      d=&shells[0].options[i];
-      if(c==*d){
-	option=i;
-	break;
-      }
-    }
-
-    if(option!=-1){
-      printf("Error option: %d\n",i);
-    }
-    /*    gsptrbwe */
-    switch(option){
-    case 0: /* g GOTO */
-      Keystrokes(RESET,NULL);
-      sprintf(message,"GOTO");
-      /*      printf("GOTO\n"); */
-      order=GOTO;
-      swinput=TRUE;
-
-      break;
-    case 1: /* s SELECT */
-      Keystrokes(RESET,NULL);
-      sprintf(message,"SELECT");
-      /*      printf("SELECT\n"); */
-      order=SELECT;
-      swinput=TRUE;
-      
-      break;
-    case 2: /* p STOP */
-      Keystrokes(RESET,NULL);
-      sprintf(message,"STOP");
-      /*      printf("STOP\n"); */
-      order=STOP;
-      break;
-    case 3: /* t TAKEOFF */
-      Keystrokes(RESET,NULL);
-      sprintf(message,"TAKEOFF");
-      /*      printf("TAKEOFF\n"); */
-      order=TAKEOFF;
-      break;
-    case 4: /* r REPEAT */
-      break;
-    case 5: /* b BUY */
-      break;
-    case 6: /* w WRITE */
-      Keystrokes(RESET,NULL);
-      sprintf(message,"WRITE");
-      /*      printf("WRITE\n"); */
-      order=WRITE;
-      swinput=TRUE;
-      break;
-    case 7: /* e SELL */
-      break;
-    default:
-      break;  
-    }
-
-    if(swinput){
-      strcpy(par,"");
-      Keystrokes(LOAD,par);
-    }
-
-    if(key->p==TRUE){
-      order=STOP;
-      shellid=3;
-      strcpy(ord,"STOP");
-      key->p=FALSE;
-    }
-    break;
-  case 1: /*goto */
-    strcpy(par,""); 
-    strcpy(ord,"GOTO: ");
-    order=GOTO;
-    Keystrokes(LOAD,par);
-    strcpy(message,"");
-    strcat(message,ord);
-    strcat(message,par);
-    break;
-
-  case 2: /*select */
-    strcpy(par,""); 
-    strcpy(ord,"SELECT: ");
-    order=SELECT;
-    Keystrokes(LOAD,par);
-    strcpy(message,"");
-    strcat(message,ord);
-    strcat(message,par);
-    break;
-
-  default:
-    break;
-  }
-  sprintf(messagetmp,"%s %s",message,par);
-#if DEBUG
-  if(debugshell){
-    printf("message: (%s) par: (%s)\n",message,par); 
-  }
-#endif
-  DrawString(pixmap,font,gc,10,GameParametres(GET,GHEIGHT,0)+GameParametres(GET,GPANEL,0)/2+4,
-		  messagetmp);
-}
 
 
 int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadObjList *lhead,struct Player *ps,struct Keys *key,Object **pcv){
   /*
-    version 02
+    version 04
   */
   static char cad[128]="";
   static char ord[16]="";
@@ -428,7 +127,6 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     return(0);
   }
   if(key->esc|key->tab|key->Pagedown|key->Pageup|key->home){
-    printf("%d %d %d %d %d\n",key->esc,key->tab,key->Pagedown,key->Pageup,key->home); //HERE
     key->o=FALSE;
     key->p=FALSE;
     key->esc=FALSE;
@@ -532,7 +230,6 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
       strcpy(ord,"UPGRADE");
       key->u=FALSE;
     }
-
     if(key->w==TRUE){
       level=2;
       order=WRITE;
@@ -544,7 +241,6 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
       strcpy(ord,"SELL");
       key->e=FALSE;
     }
-
     if(key->d==TRUE){
       level=2;
       order=RETREAT;
@@ -558,8 +254,6 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   }
   /*  printf("last:%d order: %d\n",lastorder,order); */
   if(level==2){
-
-
 
     switch(order){
       
@@ -658,6 +352,9 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     }
   }
 
+
+  /***** Canceling the order *****/
+
   if(key->back==TRUE){
     nn--;
     if(nn<0)nn=0;
@@ -669,7 +366,10 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
 
     Keystrokes(DELETELAST,NULL);
     key->back=FALSE;
+    key->enter=FALSE;
   }
+
+  /**** executing the order *****/
 
   if(key->enter==TRUE){
     if(order==REPEAT && order !=0){ 
@@ -765,6 +465,7 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
   return(0);
 }
 
+
 Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,char *par){
   /*
     version 01 18March11
@@ -780,12 +481,13 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   Object *obj_destb=NULL;
   Object *ret=NULL;
   struct Order ord;
+  int status;
   int price;
   int time;
   float d2,d2b;
   int retreatsw=0;
   int nargs;
-  char arg1[100],arg2[100];
+  char arg1[MAXTEXTLEN],arg2[MAXTEXTLEN];
 
   /* game orders */
   ret=obj;
@@ -836,7 +538,6 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 
   
   nargs=Get2Args(par,&arg1[0],&arg2[0]);
-
   time=GetTime();
 
   ord.id=NOTHING;
@@ -1099,23 +800,51 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     if(obj!=NULL){
       id1=strtol(arg1,NULL,10);
       if(id1>=1 && id1<=3){
+	status=SZ_OK;
 	switch(id1){
 	case 1:
-	  if(BuyShip(players[obj->player],obj,EXPLORER)==SZ_OK){
+	  status=BuyShip(players[obj->player],obj,EXPLORER);
+	  if(status==SZ_OK){
 	    printf("Explorer buyed.\n");
 	  }
 	  break;
 	case 2:
-	  if(BuyShip(players[obj->player],obj,FIGHTER)==SZ_OK){
+	  status=BuyShip(players[obj->player],obj,FIGHTER);
+	  if(status==SZ_OK){
 	    printf("Fighter buyed.\n");
 	  }
 	  break;
 	case 3:
-	  if(BuyShip(players[obj->player],obj,TOWER)==SZ_OK){
+	  status=BuyShip(players[obj->player],obj,TOWER);
+	  if(status==SZ_OK){
 	    printf("Tower buyed.\n");
 	  }
 	  break;
 	default:
+	  break;
+	}
+	switch(status){
+	case SZ_OK:
+	  break;
+	case SZ_OBJNULL:
+	  break;
+	case SZ_UNKNOWNERROR:
+	  break;
+	case SZ_OBJNOTLANDED:
+	  printf("Ship must be landed\n");
+	  break;
+	case SZ_NOTOWNPLANET:
+	  printf("You don't own this planet\n");
+	  break;
+	case SZ_NOTENOUGHGOLD:
+	  printf("You have not enough gold\n");
+	  break;
+	case SZ_NOTALLOWED:
+	  printf("Not allowed\n");
+	  break;
+	case SZ_NOTIMPLEMENTED:
+	default:
+	  fprintf(stderr, "Warning ExecOrder(): (%d) Not implemented\n",status);
 	  break;
 	}
       }
@@ -1168,7 +897,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       //      printf("%s\n",cad);
       printf("=============\n");
       if(GameParametres(GET,GNET,0)==TRUE){
-	SendTextMessage(cad);   
+	SendTextMessage(cad);
       }
       SetDefaultKeyValues(&keys,0);
       
@@ -1182,6 +911,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 
 void SelectionBox(Object **pcv,int reset){
   /* version 01*/
+
   static int sw=0;
   static Region region;
   static Object *cv0=NULL;
@@ -1209,7 +939,6 @@ void SelectionBox(Object **pcv,int reset){
     habitat.type=cv->habitat;
     habitat.obj=cv->in;
     (*pcv)->selected=TRUE;
-    
     sw=0;
     return;
     break;
@@ -1219,11 +948,8 @@ void SelectionBox(Object **pcv,int reset){
     habitat.type=cv->habitat;
     habitat.obj=cv->in;
     (*pcv)->selected=TRUE;
-   
     sw=0;
     return;
-
-
     break;
   default:
     break;
@@ -1468,14 +1194,11 @@ int Get2Args(char *cad,char *arg1,char *arg2){
   int m=0;
   char a;
   int inw=0;
-  int cont=0;
   int endw=0;
   int endl=0;
 
   strncpy(&arg1[0],"\0",1);
   strncpy(&arg2[0],"\0",1);
-
-
   strncpy(&a,&cad[n],1);
 
 
@@ -1504,47 +1227,52 @@ int Get2Args(char *cad,char *arg1,char *arg2){
     }
     n++;
     strncpy(&a,&cad[n],1);
+    if(n==MAXTEXTLEN-1){
+      endw=1;
+      endl=1;
+      strncpy(&arg1[m],"\0",1);
+    }
   }
+
   if(inw)nargs=1;
 
   if(endl){
     return(nargs);
   }
  
-  /* second args, the rest*/
-  cont=0;
+  /* second arg */
+
   inw=0;
-  endw=0;
   m=0;  
   strncpy(&a,&cad[n],1);
   while(!endl){
     switch(a){
     case '\0':
       strncpy(&arg2[m],"\0",1);
-      endw=1;
       endl=1;
       break;
     case ' ':
     case ',':
     case '\t':
       if(inw){
-	strncpy(&arg2[m],&a,1);
-	nargs++;
-	m++;
+	strncpy(&arg1[m],"\0",1);
+	endl=1;
       }
       break;
     default:
       inw=1;
-      if(nargs==1)nargs=2;
+      if(nargs<2)nargs++;
       strncpy(&arg2[m],&a,1);
       m++;
       break;
     }
     n++;
     strncpy(&a,&cad[n],1);
+    if(n==MAXTEXTLEN-1){
+      endl=1;
+      strncpy(&arg1[m],"\0",1);
+    }
   }
-  
-  //  printf("GA final(%s) (%s) (%s)\n",cad,arg1,arg2);
   return(nargs);
 }
 

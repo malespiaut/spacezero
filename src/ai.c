@@ -65,7 +65,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   Object *objt=NULL;
   Segment *segment=NULL;
   Object *ship_enemy;
-  float a,b,ia;
+  float b,ia;
   float d2_enemy;
   float vx,vy,v2;
   char text[MAXTEXTLEN];
@@ -93,7 +93,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   vx=obj->vx;
   vy=obj->vy;
   v2=vx*vx+vy*vy;
-  a=obj->a;
+
   b=atan2(vy,vx);  /* velocity angle */
 
   time=GetTime();
@@ -168,6 +168,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       break;
     case ASTEROID:
       snprintf(text,MAXTEXTLEN,"(%c %d) ASTEROIDS NEAR",Type(obj),obj->pid);
+      value=0;
       break;
     default:
       break;
@@ -937,12 +938,9 @@ void ExecLand(Object *obj,struct Order *ord){
   float fvy;
   float fa;/* 0.125; */
   int swa,swvx,swvy;
-  float ang_min,ang_max;
   int pmass;
   int fabsdx;
 
-  ang_min=0;
-  ang_max=PI;
   b=PI/6; /* max ang */
 
   if(obj->habitat!=H_PLANET){ /* obsolete order */
@@ -1194,8 +1192,11 @@ void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct 
       shot=1;
     }
     break;
+  case SOLD:
+    return;    
+    break;
   default:
-    fprintf(stderr,"mode unknown in ExecAttack()\n");
+    fprintf(stderr,"mode %d unknown in ExecAttack() ship: (%d)%d\n",obj->mode,obj->player,obj->pid);
     exit(-1);
     break;
   }
@@ -1642,7 +1643,7 @@ int CCBuy(struct CCDATA *ccdata,struct Player player,int *planetid){
   struct PlanetInfo *pinfo;
 
   if(ccdata->planetlowdefense!=NULL){
-    if(player.id!=ccdata->planetlowdefense->player){
+    if(player.id!=ccdata->planetlowdefense->player){  //HERE this happens (maybe if in the meanwhile change of owner)
       fprintf(stderr,"WARNING: player: %d planetlow: %d\n",player.id,ccdata->planetlowdefense->id);
       ccdata->planetlowdefense=NULL;
       return(-1);
@@ -2041,6 +2042,9 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
 	    }
 	  }
 	} //if(1)
+	break;
+      case SOLD:
+	ls=ls->next;continue;
 	break;
       default:
 	fprintf(stderr,"ERROR in ControlCenter. mode unknown %d (id:%d)\n",obj->mode,obj->id);
@@ -2721,7 +2725,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
   int i;
   Object *obj;
   float gascost;
-  int sw=1;
+  int enemies=1;
   int n;
 
   //  printf("FIRE\n"); 
@@ -2762,7 +2766,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
   vp=obj1->weapon->projectile.max_vel;
   r=1.2*obj1->radio;
 
-  if(AreEnemy(lhobjs,GetProc(),obj1)==0)sw=0;
+  if(OtherProc(lhobjs,GetProc(),obj1)==0)enemies=0;
 
   n=obj1->weapon->nshots;
   switch(obj1->weapon->type){
@@ -2806,7 +2810,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     }
     Add2ObjList(lhobjs,obj);
     
-    if(sw==0){  /* if there are no enemies dont send */
+    if(enemies==0){  /* if there are no enemies dont send */
       obj->modified=SENDOBJNOTSEND;
     }
     
@@ -2875,7 +2879,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
 	}
       }
       Add2ObjList(lhobjs,obj);
-      if(sw==0){  /* if there are no enemies dont send */
+      if(enemies==0){  /* if there are no enemies dont send */
 	obj->modified=SENDOBJNOTSEND;
       }
       
@@ -2930,7 +2934,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
       }
 
       Add2ObjList(lhobjs,obj);
-      if(sw==0){  /* if there are no enemies dont send */
+      if(enemies==0){  /* if there are no enemies dont send */
 	obj->modified=SENDOBJNOTSEND;
       }
 
@@ -2953,7 +2957,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     }
 
     Add2ObjList(lhobjs,obj);
-    if(sw==0){  /* if there are no enemies dont send */
+    if(enemies==0){  /* if there are no enemies dont send */
       obj->modified=SENDOBJNOTSEND;
     }
 
@@ -2975,7 +2979,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     }
 
     Add2ObjList(lhobjs,obj);
-    if(sw==0){  /* if there are no enemies dont send */
+    if(enemies==0){  /* if there are no enemies dont send */
       obj->modified=SENDOBJNOTSEND;
     }
 
@@ -2997,6 +3001,8 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
   //  Play(obj1,FIRE0,1);
   return(0);
 }
+
+
 void Play(Object *obj,int sid,float vol){
   /*
     play the sound identified by sid at volume vol.
@@ -3381,13 +3387,12 @@ void CreateAsteroids(struct HeadObjList *lhobjs,int n, float x0,float y0){
     Create some Asteroids
   */
   Object *obj; 
-  float a,x,y,vx,vy;
+  float x,y,vx,vy;
   int i,size;
   
   vx=5.0-10.0*rand()/RAND_MAX;
   vy=5.0-10.0*rand()/RAND_MAX;
   for(i=0;i<n;i++){
-    a=i*PI/3;
     x=400.0*rand()/RAND_MAX;
     y=400.0*rand()/RAND_MAX;
     size=(int)(3.0*rand()/RAND_MAX);
@@ -3453,9 +3458,9 @@ void GetInformation(struct Player *p1,struct Player *p2,Object *obj){
 }
 
 
-int AreEnemy(struct HeadObjList *lh,int p,Object *obj0){
+int OtherProc(struct HeadObjList *lh,int p,Object *obj0){
   /*
-    version 0.1
+    version 0.2
     check if there are a near ship belonging to another proccessor  
     only look for SHIPS
     return:
@@ -3465,15 +3470,16 @@ int AreEnemy(struct HeadObjList *lh,int p,Object *obj0){
       2 if its closer than 2 radar range
       3 if its closer than 1 radar range
       4 if its closer than 0.5 radar range
-    
+      5 if there are only landed pilots.
   */
 
   struct ObjList *ls;
   float rx,ry,r2;
   float x0,y0,x1,y1,d2;
   Object *obj1=NULL;
-  int sw=0;
-
+  Object *objtmp;
+  int ret=0;
+  int swpilot=0;
 
   if(obj0==NULL)return(0);
 
@@ -3490,22 +3496,44 @@ int AreEnemy(struct HeadObjList *lh,int p,Object *obj0){
     return(0);
     break;
   default:
-    fprintf(stderr,"ERROR in AreEnemy() habitat unknown\n");
+    fprintf(stderr,"ERROR in OtherProc() habitat unknown\n");
     exit(-1);
   }
 
-  
   ls=lh->next;
-
   while(ls!=NULL){
     obj1=ls->obj;
     if(players[obj1->player].proc==p){ls=ls->next;continue;}
     if(obj1->type!=SHIP && obj1->type!=ASTEROID){ls=ls->next;continue;}
 
+    if(obj1->type==SHIP && obj1->subtype==PILOT && obj1->mode==LANDED){
+      if(obj1->in==obj0->in){
+	swpilot=1; /* there is a pilot in the same planet */
+	ls=ls->next;continue;
+      }
+    }
 
+    /*
+      HERE BUG
+      Ejecting pilot from ship 148 (1722)
+      ERROR in OtherProc() habitat 17092 unknow
+    */
+
+    /*
+      obj1->in = (struct _Object *) 0x0
+
+     */
+
+    objtmp=obj1;
+    
+    if(obj1->habitat==H_SHIP){
+      objtmp=obj1;
+      obj1=obj1->in; // BUG obj1->in can be undefined or NULL 
+    }
+    
     switch(obj1->habitat){
     case H_PLANET:
-      x1=obj1->in->x;
+      x1=obj1->in->x;  /* HERE segfault */
       y1=obj1->in->y;
       break;
     case H_SPACE:
@@ -3513,11 +3541,12 @@ int AreEnemy(struct HeadObjList *lh,int p,Object *obj0){
       y1=obj1->y;
       break;
     case H_SHIP:
-      ls=ls->next;continue;
-      break;
     default:
-      fprintf(stderr,"ERROR in AreEnemy() habitat unknown\n");
-      exit(-1);
+      fprintf(stderr,"ERROR in OtherProc() habitat %d unknown sh: (%d) %d\n",obj1->habitat,obj1->player,obj1->pid);
+      fprintf(stderr,"obj anterior: habitat %d unknown sh: (%d) %d\n",objtmp->habitat,objtmp->player,objtmp->pid);
+      return(4);
+      //      exit(-1);
+      break;
     }
 
     rx=x0 - x1;
@@ -3529,22 +3558,26 @@ int AreEnemy(struct HeadObjList *lh,int p,Object *obj0){
       ls=ls->next;continue;
     }
     if(r2>9*d2){ /* 3 radar */
-      if(sw<1){sw=1;}
+      if(ret<1){ret=1;}
       ls=ls->next;continue;
     }
     if(r2>2.25*d2){  /* 1.5 radar   */ 
-      if(sw<2){sw=2;}
+      if(ret<2){ret=2;}
       ls=ls->next;continue;
     }
     if(r2>810000){  /* 900p. */ 
-      if(sw<3){sw=3;}
+      if(ret<3){ret=3;}
       ls=ls->next;continue;
     }
+
     return(4);
   }
-  return(sw);
-}
 
+  if(ret==0 && swpilot){
+    ret=5;
+  }
+  return(ret);
+}
 
 
 void CalcCCInfo(struct HeadObjList *lhobjs,struct HeadObjList *lhkplanets,int player,struct CCDATA *ccdata){
@@ -3557,9 +3590,6 @@ void CalcCCInfo(struct HeadObjList *lhobjs,struct HeadObjList *lhkplanets,int pl
 
   struct ObjList *ls;
   Object *obj,*planet;
-  struct PlanetInfo *pinfo;
-
-  pinfo=NULL;
 
   ccdata->nkplanets=0;
   ccdata->nplanets=0;
@@ -3601,34 +3631,33 @@ void CalcCCInfo(struct HeadObjList *lhobjs,struct HeadObjList *lhkplanets,int pl
   ls=lhobjs->next;
   while(ls!=NULL){
     obj=ls->obj;
-
+    
     /* only add ally ships */
     if(players[obj->player].team!=players[player].team){ls=ls->next;continue;}
-
+    
     if(obj->type!=SHIP){ls=ls->next;continue;}
     //    if(obj->mode!=LANDED){ls=ls->next;continue;}
-    switch(obj->subtype){
+
+    if(obj->player==player){
+      switch(obj->subtype){
       case EXPLORER:
-	if(obj->player==player)ccdata->nexplorer++;
+	ccdata->nexplorer++;
 	break;
       case FIGHTER:
-	if(obj->player==player){
-	  if(obj->subtype==PILOT){
-	    ccdata->nfighter--;
-	  }
-	  else{
-	    ccdata->nfighter++;
-	  }
-	}
+	ccdata->nfighter++;
 	break;
-     case TOWER:
-	if(obj->player==player)ccdata->ntower++;
+      /* case PILOT: */
+      /* 	ccdata->nfighter-=10; */
+      /* 	break; */
+      case TOWER:
+	ccdata->ntower++;
 	break;
       case QUEEN:
-	if(obj->player==player)ccdata->ncargo++;
+	ccdata->ncargo++;
 	break;
       default:
 	break;
+      }
     }
     AddobjCCData(ccdata,obj);
     ls=ls->next;
@@ -3666,8 +3695,8 @@ int AddobjCCData(struct CCDATA *ccdata,Object *obj){
 
 	if(ccdata->player==obj->player){
 	  strength=(obj->level+1)*(obj->state)/100*(obj->state>75)*(obj->gas>=.80*obj->gas_max)*(obj->weapon0.n>.8*obj->weapon0.max_n)*(obj->mode==LANDED);
-
-	  if(obj->subtype!=TOWER){
+	  if(obj->type==SHIP && obj->subtype==PILOT)strength=-1;/* priority buy ship to pilots */
+	  if(obj->subtype!=TOWER && obj->subtype!=PILOT){
 	    pinfo->strengtha+=strength*(obj->state>95)*(obj->gas>.98*obj->gas_max)*(obj->weapon0.n>=.95*obj->weapon0.max_n);
 	  }
 	}

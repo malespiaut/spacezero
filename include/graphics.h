@@ -99,7 +99,7 @@ void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl);
 int DrawPlayerInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct Player *player,int x0,int y0);
 int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0,int y0);
 int DrawEnemyShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *,int,int);
-int DrawPlanetInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *planet,int x0,int y0);
+int DrawPlanetInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *planet,int player,int x0,int y0);
 void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *,Object *,int);
 
 int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *head,int x0,int y0,int width,int height);

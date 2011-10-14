@@ -43,14 +43,9 @@
 
 
 //#include "menu.h"
-
+/*
 #define SIGNAL0 SIGRTMIN
-
-
-#define MALLOC_CHECK_ 2
-#define NULO 0
-
-
+*/
 
 gint MainLoop(gpointer data);
 gint MenuLoop(gpointer data);
@@ -74,10 +69,12 @@ int PrintfObjInfo(FILE *fp,Object *obj);
 Object *ChooseInitPlanet(struct HeadObjList lheadobjs);
 void CreateShips(struct HeadObjList *lheadobjs);
 
-int CheckGame(char *);
+int CheckGame(char *,int);
 
 void GetGold(void);
 void GetPoints(struct HeadObjList *hl,int proc,struct Player *p);
+void GetPointsObj(struct HeadObjList *lhobjs,struct Player *p,Object *obj);
+
 void Density(void);
 void GetUniverse(void);
 void NetComm(void);

@@ -21,16 +21,18 @@ INSTALL_DATA_DIR=/usr/local/share/spacezero
 
 
 OPENALFLAGS= -lopenal -lalut
+
 GTKFLAGS=`pkg-config --cflags gtk+-2.0`
 GTKLIBS=`pkg-config --libs gtk+-2.0`
+
 GTKLIBS0=`gtk-config --cflags`
 GTKFLAGS0=`gtk-config --libs`
 
 
 LDFLAGS=  -lm -lpthread $(OPENALFLAGS) $(GTKLIBS)
 LDFLAGS0=  -lm -lpthread $(OPENALFLAGS) $(GTKLIBS0)
-CFLAGS=  -Wall -O3 -mtune=generic -I./include -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\"
-CFLAGS0=  -Wall -O3 -mtune=generic -I./include -DGTK12
+CFLAGS=  -Wall -O3  -I./include -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\" 
+CFLAGS0=  -Wall -O3 -I./include -DGTK12
 PROGFLAGS=$(CFLAGS) -pg 
 PROFCC=  $(CC) -pg 
 PROGRAMA=$(BINDIR)/spacezero
@@ -82,8 +84,6 @@ dirs:
 	-if [ ! -d $(BINDIR) ] ; then mkdir $(BINDIR) ; fi
 	-if [ ! -d $(CONFIGDIR) ] ; then mkdir $(CONFIGDIR) ; fi
 	-if [ ! -f $(RECORDFILE) ] ; then touch $(RECORDFILE) ; fi
-#	-if [ ! -d $(DATADIR) ] ; then mkdir $(DATADIR) ; fi
-#	-if [ ! -d $(SOUNDDIR) ] ; then mkdir  $(SOUNDDIR) ; fi
 
 clean: 
 	rm -f src/*.o bin/spacezero
@@ -91,13 +91,13 @@ clean:
 mrproper: clean
 	rm -f src/*~ include/*~
 
-.c.o:	
-		$(CC) -g $(CFLAGS)   $(LDFLAGS) $(GTKFLAGS) -c $< -o  $@ 
+#.c.o:	
+#		$(CC)  $(CFLAGS)   $(LDFLAGS) $(GTKFLAGS) -c $< -o  $@ 
 
 # add -pg for profile
 #.c.o:	
 #		$(CC) -pg  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
 
 # add -g for debug
-#.c.o:	
-#		$(CC) -g  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
+.c.o:	
+		$(CC) -g  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 

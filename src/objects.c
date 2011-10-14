@@ -83,6 +83,7 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
   obj->selected=FALSE;
   obj->radar=RADAR_RANGE;
   obj->experience=0;
+  obj->pexperience=0;
   obj->modified=SENDOBJNEW;
   obj->ttl=0;
   obj->level=0;
@@ -289,7 +290,6 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
     obj->planet->x=obj->x;
     obj->planet->y=obj->y;/*-obj->radio*2; */
     obj->planet->r=obj->radio;
-    /*     obj->planet->gold=2000+8000*(Random(-1)); */
     obj->planet->gold=(int)((MINPLANETGOLD+((MAXPLANETGOLD-MINPLANETGOLD)*
 					    Random(-1))*(float)obj->mass/MAXPLANETMASS)*RESOURCEFACTOR);
     obj->planet->reggold=0.035*((float)obj->mass/MAXPLANETMASS)+0.02+0.02*(Random(-1));
@@ -570,9 +570,9 @@ void NewEngine(Engine *eng,int type){
     eng->a=25;
     eng->a_max=200;
     eng->v_max=40;/* VELMAX; 15; */
-    eng->ang_a=0.0004; /*  missile */
-    eng->ang_a_max=.2;
-    eng->ang_v_max=0.3;
+    eng->ang_a=0.0004; //.0004/*  missile */
+    eng->ang_a_max=.2;//.2
+    eng->ang_v_max=.3;//.3
     eng->gascost=.07;
     eng->mass=20;
     break;
@@ -590,7 +590,7 @@ void NewEngine(Engine *eng,int type){
     eng->a=45;
     eng->a_max=600;
     eng->v_max=24;/* VELMAX; 25; */
-    eng->ang_a=0.03;
+    eng->ang_a=0.03; 
     eng->ang_a_max=.2;
     eng->ang_v_max=0.3;
     eng->gascost=.11;
@@ -709,7 +709,7 @@ int CountModObjs(struct HeadObjList *lh,int type){
 
 
 
-Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0){
+Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p){
   /* 
      version 0.3
      Remove all dead objects from the list lhobjs.
@@ -743,19 +743,34 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0){
       if(ls->obj->state<=0){sw=1;}
     }
 
+    
     if(sw){
-
       freels=ls;
 
-      /* explosion */
       switch(ls->obj->type){
       case ASTEROID:
-	//	printf("REM ASTEROID: %d %d\n",ls->obj->id,ls->obj->modified);
 	swx=1;
+
+	if(ls->obj->habitat==H_PLANET && ls->obj->sw==0){  /* asteroid crashed */
+	  ls->obj->in->planet->gold+=100*pow(2,5-ls->obj->subtype);
+	}
+
 	break;
       case SHIP:
 	swx=1;
 	if(ls->obj->mode==SOLD)swx=0;
+	if(ls->obj->habitat==H_PLANET && swx){
+	  if(ls->obj->sw!=0){ /* ship killed */
+	    ls->obj->in->planet->gold+=0.025*GetPrice(ls->obj,0,0,0);
+	  }
+	  else{ /* ship crashed */
+	    float price,factor;
+	    factor=0.01*ls->obj->state*0.25;
+	    if(factor<.1)factor=.1;  /* at least an 10 percent*/
+	    price=factor*GetPrice(ls->obj,0,0,0);
+	    ls->obj->in->planet->gold+=price;
+	  }
+	}
 
 	break;
       case PROJECTILE:
@@ -766,22 +781,23 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0){
       default:
 	break;
       }
-
-      if(swx){
-	Explosion(lhobjs,ls->obj);
-	/* sound */
-#if SOUND
-	Play(ls->obj,EXPLOSION0,1);
-#endif
-      }
-      /* --explosion */
     }
-
+    if(swx){
+      Explosion(lhobjs,ls->obj);
+      /* sound */
+#if SOUND
+      Play(ls->obj,EXPLOSION0,1);
+#endif
+    }
+    
     if(freels!=NULL){
 
-      if(freels->obj->type==SHIP && freels->obj->player == actual_player){
-	snprintf(text,MAXTEXTLEN,"(%c %d) SHIP DESTROYED\n",Type(freels->obj),freels->obj->pid);
-	Add2TextMessageList(&listheadtext,text,freels->obj->id,freels->obj->player,0,100,0);
+      if(freels->obj->type==SHIP){
+	if(freels->obj->type==SHIP)p[freels->obj->player].ndeaths++;
+	if( freels->obj->player == actual_player){
+	  snprintf(text,MAXTEXTLEN,"(%c %d) SHIP DESTROYED",Type(freels->obj),freels->obj->pid);
+	  Add2TextMessageList(&listheadtext,text,freels->obj->id,freels->obj->player,0,100,0);
+	}
       }
 
       if(freels->obj->subtype==QUEEN){
@@ -796,12 +812,10 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0){
 	  if(freels->obj->player==actual_player0)gameover=TRUE;
 	}
       }
-
-      /*      printf("[K:%d]\n",freels->obj->id); */
       if(freels->obj==cv0)ret=NULL;
 
-      if(freels!=NULL)
-	RemoveObj(lhobjs,freels->obj);
+      RemoveObj(lhobjs,freels->obj);
+
     }
     ls=ls->next;
   }
@@ -1196,15 +1210,13 @@ int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int type,int stype,in
     
     if(ls->obj->habitat==H_PLANET){
       if(ls->obj->in->id==planetid)n++;
+      if(max>0 && n>=max)return(max);
     }
     else{
       if(planetid==0)n++;
+      if(max>0 && n>=max)return(max);
     }
 
-    if(max>0){
-      if(n>=max)return(max);
-    }
-    
     ls=ls->next;
   }
   return(n);
@@ -1421,6 +1433,7 @@ Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int status,float 
     case SHIP:
       if(obj2->ttl<MINTTL){ls=ls->next;continue;}
       if(obj2->subtype==PILOT){
+	ls=ls->next;continue; /* ignoring pilots */
 	if(obj2->mode==LANDED){ls=ls->next;continue;}
 	if(obj2->habitat==H_SHIP){ls=ls->next;continue;}
       }
@@ -1508,12 +1521,10 @@ int NearestObjs(struct HeadObjList *lh,Object *obj,int type,int status,int n,str
   struct ObjList *ls;
   float rx,ry,r2;
   float x0,y0,x1,y1;
-  float r2min;
   int player;
   int sw1p,sw2p;
   int i,j;
   int m;
-  int pheight=0;
 
   if(obj==NULL)return(0);
   /*   printf("obj.type=%d   ID:%d\n",obj->type,obj->id); */
@@ -1521,7 +1532,6 @@ int NearestObjs(struct HeadObjList *lh,Object *obj,int type,int status,int n,str
   if(n>16)n=16;
   
   player=obj->player;
-  r2min=-1;
   obj->dest_r2=-1;
   sw1p=sw2p=FALSE;
 
@@ -1533,7 +1543,6 @@ int NearestObjs(struct HeadObjList *lh,Object *obj,int type,int status,int n,str
 
   if(obj->habitat==H_PLANET){
     sw1p=TRUE;
-    pheight=GameParametres(GET,GHEIGHT,0);
   }
 
   m=0;
@@ -1636,7 +1645,6 @@ void NearestObjAll(struct HeadObjList *lhc,Object *obj,struct NearObject *objs){
   int i,j;
   float rx,ry,r2;
   float x0,y0;
-  float r2min;
   int player;
   float radar2;
   int nlist;
@@ -1652,7 +1660,6 @@ void NearestObjAll(struct HeadObjList *lhc,Object *obj,struct NearObject *objs){
   if(obj->habitat!=H_SPACE && obj->habitat!=H_PLANET)return;
 
   player=obj->player;
-  r2min=-1;
 
   radar2=obj->radar*obj->radar;
 
@@ -2054,24 +2061,33 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
      dest: the destination player. -1 : for all players
      mid: is a message indentifier.
      time: the duration of the message in centiseconds.
+     value: priority.
      returns:
      0 if the message is added to the list
      1 if not, because is already added.
    */
   struct TextMessageList *list;
   struct TextMessageList *lh;
-
+  int n=0;
   /* Add text at the end of the list */
+
+  if(dest!=actual_player && dest!=-1){
+    return(1);
+  }
 
   lh=listhead;
   while(lh->next!=NULL){
+
     if(lh->next->info.source==source && lh->next->info.id==mid && lh->next->info.value==value){ /* already added */
       //      if(value)printf("message (%s)rejected\n",cad);
       return(1);
     }
+
     if(lh->next->info.value<value){ /* added before end */
+      /* printf("BREAK\n"); */
       break;
     }
+    n++;
     lh=lh->next;
   }
 
@@ -2099,7 +2115,9 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
     list->next=lh->next->next;
     lh->next=list;
   }
-  //  if(value)printf("message (%s) added\n",cad);
+  /* printf("message (%s) [%d %d %d %d]added %d %d\n",cad, */
+  /* 	 list->info.source,list->info.dest,list->info.id,list->info.value,n,list->info.duration); */
+
   listhead->info.n++;
   /*   gdk_beep(); */
   return (0);
@@ -2217,14 +2235,16 @@ int GetPrice(Object *obj,int stype,int eng,int weapon){
       return(-1);
     }
 
-    if(obj->type==SHIP && obj->subtype==PILOT){
-      return(-1);
-    }
-
     stype=obj->subtype;
     eng=obj->engine.type;
     weapon=obj->weapon0.type;
     level=obj->level;
+
+    if(obj->type==SHIP && obj->subtype==PILOT){ 
+      eng=ENGINE0;
+      weapon=CANNON0;
+    } 
+
   }
 
   if(stype<SHIP0 || stype>SHIPMAX){
@@ -2243,7 +2263,6 @@ int GetPrice(Object *obj,int stype,int eng,int weapon){
   price+=ship_price[stype];
   price+=engine_price[eng];
   price+=weapon_price[weapon];
-
   price*=(level+1);
 
   return(price);
@@ -2270,8 +2289,8 @@ int BuyShip(struct Player player,Object *obj,int type){
 
   if(obj==NULL)return(SZ_OBJNULL);
   if(obj->mode!=LANDED)return(SZ_OBJNOTLANDED);
-  if(0&&obj->player!=obj->in->player){
-    printf("Warning: Buyship() player: %d planet: %d\n",player.id,obj->in->player);
+  if(obj->player!=obj->in->player && type==TOWER){
+    printf("Warning: Buyship() player: %d planet: %d. No owned.\n",player.id,obj->in->player);
     return(SZ_NOTOWNPLANET);
   }
 
@@ -3115,6 +3134,7 @@ void Experience(Object *obj,float pts){
   }
   if(obj->type!=SHIP)return;
   if(obj->subtype==PILOT)return;
+  //  if(GetProc()!=players[obj->player].proc)return;
 
   players[obj->player].points+=pts;
   if(players[obj->player].points>=record){
@@ -3123,16 +3143,21 @@ void Experience(Object *obj,float pts){
 
   obj->experience+=pts;
 
-
   if(obj->type==SHIP){
     while(obj->experience>=100*pow(2,obj->level)){
       obj->experience-=100*pow(2,obj->level);
       obj->level++;
       //HERE      obj->ttl=0;
+      if(obj->subtype==FIGHTER && obj->level==MINLEVELPILOT) {
+	obj->items=obj->items|ITSURVIVAL;
+      }
+#if TEST
+      //      obj->items=obj->items|ITSURVIVAL;
+#endif
       if(GameParametres(GET,GNET,0)==TRUE){
-	if(GetProc()==players[obj->player].proc){
+	/* if(GetProc()==players[obj->player].proc){ */
 	  SetModified(obj,SENDOBJALL);
-	}
+	/* } */
       }
       if(obj->level > players[obj->player].maxlevel){
 	players[obj->player].maxlevel=obj->level;
@@ -3439,38 +3464,47 @@ int NearMaxLevelObj(Object *obj,struct HeadObjList *lh){
 
 int IsPlanetEmpty(Object *planet,Object *obj){
   /* 
-     dont take in account obj
+     dont count obj
+     dont count pilots
      returns:
      0 if the planet is totally empty.
-     1 if there are some ally landed.
-     2 if there are some enemy ship landed.
+     1 if there are only allies landed.
+     2 if there are enemy ships landed.
 
   */
 
   struct ObjList *ls;
+  int gnet;
+  int ret=0;
+
+  /* PRODUCTION remove messages */
+
   if(obj==NULL)return(-1);
   if(planet==NULL)return(-1);
   if(planet->player==0)return(0); /* planet never conquered */ 
 
-
+  gnet=GameParametres(GET,GNET,0);
   ls=listheadobjs.next;
   while(ls!=NULL){
     if(ls->obj->in==planet){
-      if(ls->obj->type==SHIP && ls->obj->subtype!=PILOT && ls->obj->mode==LANDED){
-	if(ls->obj!=obj){
-	  if(players[ls->obj->player].team!=players[obj->player].team){
-	    return(2);
-	  }
-	  else{
-	    return(1);
-	  }
-	}
+      if(ls->obj->type!=SHIP){ls=ls->next;continue;}
+      if(ls->obj->subtype==PILOT){ls=ls->next;continue;}
+      if(ls->obj->mode!=LANDED){ls=ls->next;continue;}
+      if(ls->obj==obj){ls=ls->next;continue;}
+      if(gnet && ls->obj->ttl<MINTTL){ls=ls->next;continue;}
+      if(players[ls->obj->player].team!=players[obj->player].team){
+	/* printf("IPE: player: %d type: %d stype: %d pid: %d mode: %d planet: %d st: %f ttl: %d\n", */
+	/*        ls->obj->player,ls->obj->type,ls->obj->subtype,ls->obj->pid,ls->obj->mode,ls->obj->in->id,ls->obj->state,ls->obj->ttl); */
+	return(2);
+      }
+      else{
+	if(ls->obj->player!=obj->player)ret=1;
       }
     }
     ls=ls->next;
   }
   //  printf("PLANET EMPTY\n");
-  return(0);
+  return(ret);
 }
 
 int UpdateCell(struct HeadObjList *lh,int *cell){
@@ -3480,7 +3514,7 @@ int UpdateCell(struct HeadObjList *lh,int *cell){
   struct ObjList *ls;
   Object *obj;
   int n=0;
-  int dx,dy,dxdy;
+  int dx,dy;
   int nx0,ny0,nx,ny;
   int nydx;
   int dx2,dy2;
@@ -3490,7 +3524,6 @@ int UpdateCell(struct HeadObjList *lh,int *cell){
 
   dx=GameParametres(GET,GULX,0)/DL;
   dy=GameParametres(GET,GULY,0)/DL;
-  dxdy=dx*dy;  
   dx2=dx/2;
   dy2=dy/2;
   gnet=GameParametres(GET,GNET,0);
@@ -3639,8 +3672,10 @@ void ShipProperties(Object *obj,int stype,Object *in){
     obj->shield=0;
     obj->state=90;
     obj->mass=100;
-    /*    obj->items=obj->items | ITSURVIVAL;*/
-    obj->items=ITSURVIVAL;
+
+    if(stype==FIGHTER && obj->level>=MINLEVELPILOT) {
+      obj->items=obj->items|ITSURVIVAL;
+    }
     obj->cargo=10; /* TODO not implemented */
     obj->radio=10;
     obj->ai=1;
@@ -3723,7 +3758,6 @@ int CreatePilot( Object *obj){
     0 if the ship has not a survival pod
     1 if its created.
    */
-
   if((obj->items & ITSURVIVAL)==0)return(0);
 
   /* check */
@@ -3741,11 +3775,10 @@ int CreatePilot( Object *obj){
     obj->mode=NAV;
   }
   if(obj->habitat==H_SPACE){
-    obj->vx*=.75;
-    obj->vy*=.75;
+    obj->vx=obj->vx*.65+4*Random(-1)-2;
+    obj->vy=obj->vy*.65+4*Random(-1)-2;
   }
   obj->subtype=PILOT;
-  /*  obj->items=obj->items | ITPILOT;*/
   obj->items=0;
 
   obj->ai=0;
@@ -3768,161 +3801,9 @@ int CreatePilot( Object *obj){
   return(1);
 }
 
-
-int EjectPilots_00(struct HeadObjList *lh){
-  /*
-    Eject pilots
-    Rescue the transported pilots of dead objs 
-    only own pilots, not allied pilots. 
-    returns:
-    the number of pilots ejected.
-   */
-
-  struct ObjList *ls;
-  Object *obj,*pilot;
-  Segment *s;
-  float r;
-  int n=0;
-  int proc;
-  int ejectsw=0;
-
-  proc=GetProc();
-  ls=lh->next;
-  while(ls!=NULL){
-
-    if(ls->obj->type!=SHIP){ls=ls->next;continue;}
-
-    switch(ls->obj->subtype){
-    case FIGHTER:
-      obj=ls->obj;
-
-      if(proc==players[obj->player].proc){
-
-	/***** ship destroyed ****/
-	if(obj->state<=0 && obj->level>=0){
-
-	  GetPointsObj(lh,players,obj); //HERE players, must not be global 
-	  CreatePilot(obj);
-	  n++;
-	  if(obj->player==actual_player)printf("Ejecting pilot from ship %d (%d)\n",obj->pid,obj->id);
-	  DelAllOrder(obj);
-	  if(GameParametres(GET,GNET,0)==TRUE){
-	    SetModified(obj,SENDOBJALL);
-	    /* check */
-	    if(obj->modified!=SENDOBJALL){
-	      if(obj->modified==SENDOBJKILL){
-		obj->modified=SENDOBJALL;
-	      }
-	      else{
-		printf("Warning:Ejectpilots():  modified:%d\n",obj->modified);
-	      }
-	    }
-	  }
-	}   
-      }
-      break;
-
-    case PILOT:
-      if(ls->obj->habitat==H_SHIP){
-	if(proc==players[ls->obj->player].proc){
-	  
-	  ejectsw=0;	  
-	  if(ls->obj->in->subtype==PILOT)ejectsw=1;
-
-	  if(ls->obj->in->state<=0 && 
-	     ls->obj->in->level>=0 && 
-	     proc==players[ls->obj->in->player].proc)ejectsw=1; 
-	  
-	  if(players[ls->obj->in->player].proc!=proc && 
-	     (ls->obj->in->modified==SENDOBJDEAD ||ls->obj->in->modified==SENDOBJKILL) && 
-	     ls->obj->in->level>=0)ejectsw=1;
-	     
-	  if(ejectsw){ /* ejecting */
-
-	    pilot=ls->obj;
-	    obj=ls->obj->in;
-
-	    pilot->in=obj->in;
-	    pilot->planet=NULL;
-	    pilot->habitat=obj->habitat;
-	    pilot->mode=NAV;
-	    pilot->x=obj->x;
-	    pilot->y=obj->y;
-	    pilot->vx=0.75*obj->vx+6*Random(-1)-3;
-	    pilot->vy=0.75*obj->vy+6*Random(-1)-3;
-	    if(obj->habitat==H_PLANET)pilot->vy+=10;
-	    pilot->a=obj->a;
-	    pilot->ai=0;
-	    pilot->items=0;
-	    if(pilot->player==actual_player)printf("Pilot %d ejected from ship %d\n",pilot->pid,obj->pid);
-	    DelAllOrder(pilot);
-	    if(GameParametres(GET,GNET,0)==TRUE){
-	      SetModified(pilot,SENDOBJALL);
-	      if(pilot->modified!=SENDOBJALL){
-		printf("PILOT EJECT mod: %d\n",pilot->modified);
-	      }
-	    }
-	    n++;
-	  }
-	  else{
-	    /* when landing rescue pilots */
-	    if(ls->obj->in->mode==LANDED){
-	      pilot=ls->obj;
-	      obj=ls->obj->in;
-	      s=LandZone(obj->in->planet);
-	      
-	      if(proc==players[obj->player].proc){
-		obj->items=obj->items & (~ITPILOT); 
-
-		if(GameParametres(GET,GNET,0)==TRUE){
-		  SetModified(obj,SENDOBJALL);
-		}
-	      }
-
-	      if(s==NULL){
-		fprintf(stderr,"ERROR EjectPilots(): Segment==NULL\n");
-		exit(-1);
-	      }
-	      r=s->x1-s->x0-2*pilot->radio;
-	      pilot->in=obj->in;
-	      pilot->habitat=H_PLANET;
-	      pilot->experience=0;
-	      pilot->planet=NULL;
-	      pilot->mode=LANDED;
-	      pilot->x=s->x0+pilot->radio+r*(Random(-1));
-	      pilot->y=obj->y;
-	      pilot->x0=pilot->x;
-	      pilot->y0=pilot->y;
-	      pilot->accel=0;
-	      pilot->ang_v=pilot->ang_a=0;
-	      pilot->vx=pilot->vy=0;
-	      pilot->a=0;
-	      pilot->ai=0;
-	      pilot->items=0;
-	      //	pilot->selected=FALSE;
-	      if(pilot->player==actual_player)printf("Pilot %d saved in planet %d\n",pilot->pid,pilot->in->id);
-	      DelAllOrder(pilot);
-	      if(GameParametres(GET,GNET,0)==TRUE){
-		SetModified(pilot,SENDOBJALL);
-	      }
-	      n++;
-	    }
-	  }
-	}
-      }
-      /* case pìlot */ 
-      break;
-    default:
-      break;
-    }
-    ls=ls->next;
-  }
-  return(n);
-}
-
-
 int EjectPilots(struct HeadObjList *lh){
   /*
+    version 01
     Eject pilots from dead objs
     Rescue the transported pilots of dead objs 
     only own pilots, not allied pilots. 
@@ -3948,29 +3829,9 @@ int EjectPilots(struct HeadObjList *lh){
       if(proc==players[obj->player].proc){
 
 	/***** ship destroyed ****/
-	if(obj->state<=0 && (obj->items & ITSURVIVAL) ){
-
-	  GetPointsObj(lh,players,obj); //HERE players, must not be global 
-	  if(obj->items & ITPILOT){
-	    EjectPilotsObj(&listheadobjs,obj);
-	    obj->items=obj->items&(~ITPILOT);
-	  }
-	  CreatePilot(obj);
-	  n++;
-	  if(obj->player==actual_player)printf("Ejecting pilot from ship %d (%d)\n",obj->pid,obj->id);
-	  DelAllOrder(obj);
-	  if(GameParametres(GET,GNET,0)==TRUE){
-	    SetModified(obj,SENDOBJALL);
-	    /* check */
-	    if(obj->modified!=SENDOBJALL){
-	      if(obj->modified==SENDOBJKILL){
-		obj->modified=SENDOBJALL;
-	      }
-	      else{
-		printf("Warning:Ejectpilots():  modified:%d\n",obj->modified);
-	      }
-	    }
-	  }
+	if(obj->state<=0 && (obj->items & ITPILOT) ){
+	  n+=EjectPilotsObj(&listheadobjs,obj);
+	  obj->items=obj->items&(~ITPILOT);
 	}   
       }
       break;
@@ -3982,6 +3843,7 @@ int EjectPilots(struct HeadObjList *lh){
   }
   return(n);
 }
+
 
 
 int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
@@ -4002,6 +3864,7 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
 
   if(obj==NULL)return(0);
   if(lh==NULL)return(0);
+  if(!(obj->items & ITPILOT))return(0);
 
   proc=GetProc();
   ls=lh->next;
@@ -4013,7 +3876,8 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
       fprintf(stderr,"ERROR EjectPilotsObj() type != SHIP\n");
       ls=ls->next;continue;
     }
-    if(proc!=players[ls->obj->player].proc){ls=ls->next;continue;}
+    /* BUG HERE delete next line */
+    //    if(proc!=players[ls->obj->player].proc){ls=ls->next;continue;}
 
 
     /* Ejecting from a landed ship */
@@ -4030,6 +3894,7 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
       pilot->in=obj->in;
       pilot->habitat=H_PLANET;
       pilot->experience=0;
+      pilot->pexperience=0;
       pilot->planet=NULL;
       pilot->mode=LANDED;
       pilot->x=s->x0+pilot->radio+r*(Random(-1));
@@ -4055,7 +3920,7 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
 
 
     /* Ejecting from a destroyed  ship */
-    else{
+    if(obj->mode==NAV){
       
       pilot=ls->obj;
       
@@ -4072,6 +3937,12 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
       pilot->ai=0;
       pilot->items=0;
       if(pilot->player==actual_player)printf("Pilot %d ejected from ship %d\n",pilot->pid,obj->pid);
+
+      /* HERE PRODUCTION: delete next lines*/
+      {
+	printf("Pilot %d ejected from ship %d\n",pilot->pid,obj->pid);
+      }
+
       DelAllOrder(pilot);
       if(GameParametres(GET,GNET,0)==TRUE){
 	SetModified(pilot,SENDOBJALL);
@@ -4155,101 +4026,65 @@ Object *FirstSelected(struct HeadObjList *lh,int player){
   return(NULL);
 }
 
+float Distance2(Object *obj1,Object *obj2){
+  /*
+    version 0.2
+    Calc the distance between 2 objects.
+    Returns:
+    distance pow 2
 
-void GetPointsObj(struct HeadObjList *lhobjs,struct Player *p,Object *obj){
-  /* 
-     version 0.3    12Dic2010
-     obj   dead object
-     if state is 0 sum points and experience
   */
-  
 
-  Object *obj2;  /* killer */
-  Object *obj3;  /* who receive points */
-  int il;
-  float factor,points;
-  
+  float x1,x2,y1,y2,rx,ry,r2;
 
-  obj2=obj3=NULL;
+  if(obj1==NULL)return(-1);
+  if(obj2==NULL)return(-1);
 
-  /* no points for kill a pilot */
-  if(obj->type==SHIP && obj->subtype==PILOT)return; // HERE no funciona
+  if(obj1->habitat==H_SHIP)obj1=obj1->in;
+  if(obj2->habitat==H_SHIP)obj2=obj2->in;
 
 
-  switch(obj->type){
-  case PROJECTILE:
-    /* points to nobody */
-    
-    break;
-  case SHIP:
-    p[obj->player].ndeaths++;
-    /* points to the killer */
-    if(obj->sw!=0){
-      obj2=SelectObj(lhobjs,(obj->sw));
-      
-      if(obj2!=NULL){
-	obj3=NULL;
-	if(obj2->type==SHIP)obj3=obj2;
-	if(obj3!=NULL){
-	  /* must be a SHIP */
-	  obj3->kills++;
-	  p[obj3->player].nkills++;
-	  
-	  /* Experience for kill an enemy */
-	  il=obj->level - obj3->level;
-	  if(il>3)il=3;
-	  factor=50;
-	  if(il<0)factor/=2;
-	  if(il<-1)factor/=2;
-	  if(il<-2)factor/=2;
-	  if(factor>0){
-	    points=factor*pow(2,obj->level);
-	    if(points<10)points=10;
-	    Experience(obj3,points);
-	  }
-	  /* --Experience for kill an enemy */
-	}
-      }
-    }
-    break;
-  case ASTEROID:
-    if(obj->sw!=0){
-      obj2=SelectObj(lhobjs,(obj->sw));
-      if(obj2!=NULL){
-	obj3=NULL;
-	/* 	    if(obj2->type==PROJECTILE){ */
-	/* 	      obj3=SelectObj(&listheadobjs,obj2->parent->id); */
-	/* 	    } */
-	if(obj2->type==SHIP)obj3=obj2;
-	if(obj3!=NULL){
-	  /* must be a SHIP */
-	  
-	  switch(obj->subtype){
-	  case ASTEROID1:
-	    p[obj3->player].gold+=50;
-	    break;
-	  case ASTEROID2:
-	    p[obj3->player].gold+=100;
-	    break;
-	  case ASTEROID3:
-	    p[obj3->player].gold+=200;
-	    break;
-	  default:
-	    fprintf(stderr,"ERROR in GetGold():asteroid subtype %d unknown\n",obj->subtype);
-	    exit(-1);
-		break;
-	  }
-	}
-      }
-    }
-    break;
-  default:
-	break;
+  if(obj1->in==obj2->in){
+    x1=obj1->x;
+    y1=obj1->y;
+    x2=obj2->x;
+    y2=obj2->y;
   }
+  else{
+    switch(obj1->habitat){
+    case H_PLANET:
+      x1=obj1->in->x;
+      y1=obj1->in->y;
+      break;
+    case H_SPACE:
+      x1=obj1->x;
+      y1=obj1->y;
+      break;
+    default:
+      fprintf(stderr,"ERROR in AreEnemy() habitat unknown\n");
+      exit(-1);
+    }
     
-  return;
-}
+    switch(obj2->habitat){
+    case H_PLANET:
+      x2=obj2->in->x;
+      y2=obj2->in->y;
+      break;
+    case H_SPACE:
+      x2=obj2->x;
+      y2=obj2->y;
+      break;
+    default:
+      fprintf(stderr,"ERROR in AreEnemy() habitat unknown\n");
+      exit(-1);
+    }
+  }
 
+  rx=x1 - x2;
+  ry=y1 - y2;
+  r2=rx*rx+ry*ry;
+  return(r2);  
+}
 
 
 

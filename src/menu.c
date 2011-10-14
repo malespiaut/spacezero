@@ -308,7 +308,7 @@ struct MenuHead *CreateMenu(void){
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(moptions,&item,"Load Default Options");
+  Add2MenuHead(moptions,&item,"Set Default Options");
 
   /***** menu general options *********/
 

@@ -32,8 +32,8 @@ int SelectSector(struct HeadIntIList *hlist,Object *obj,int *a,int *b){
     Returns a sector in a,b
     Depending of the level of obj:
     level 0: a random sector
-    level 1: possibly an unexplorer sector.
-    level 2: more possibly an unexplorer sector.
+    level 1: possibly an unexplored sector.
+    level 2: more possibly an unexplored sector.
 
    */
 
@@ -106,8 +106,8 @@ int SelectSector(struct HeadIntIList *hlist,Object *obj,int *a,int *b){
   if(n==0){ /* if no sector found, a near random one inside Universe */
     i=j=0;
     if(IsInUniverse(x,y)){
-      i=(int)(7*(Random(-1))-3);
-      j=(int)(7*(Random(-1))-3);
+      i=(int)(6*(Random(-1))-3);
+      j=(int)(6*(Random(-1))-3);
     }
     else{
       float maxx,maxy;
@@ -202,31 +202,41 @@ int NearestSector(struct HeadIntIList *hlist,float a,float b,int n){
   return(rid);
 }
 
+
 int NearRandomSector(struct HeadIntIList *hlist,float a,float b,int n){
   /*
     a,b: sector coordinates.
     returns a random sector near position a,b
-    looks far n sectors 
-    if sector is known return 0
+    looks far n sectors.
+    if sector is known return 0.
+    if sector is out if Universe returns 0 (try 2 times).
   */
   int i,j;
   int id;
   float x,y;
+  int cont=0;
+  int inside=0;
+  int ret=0;
 
-  i=(int)((2*n+1)*(Random(-1))-n);
-  j=(int)((2*n+1)*(Random(-1))-n);
-
-  /* check if is out universe border */
-  x=a+i*SECTORSIZE;
-  y=b+j*SECTORSIZE;
-
-  if(IsInUniverse(x,y)){
+  while(cont<1 && inside==0){ /* avoiding stay on universe border */
+    i=(int)((2*n)*(Random(-1))-n);
+    j=(int)((2*n)*(Random(-1))-n);
+    
+    /* check if is out universe border */
+    x=a+i*SECTORSIZE;
+    y=b+j*SECTORSIZE;
+    
+    inside=IsInUniverse(x,y);
+    cont++;
+  }
+  
+  if(inside){
     id=Quadrant(x,y);
     if(!IsInIntIList(hlist,id)){
-      return(id);
+      ret=id;
     }
   }
-  return(0);
+  return(ret);
 }
 
 

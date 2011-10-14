@@ -72,7 +72,6 @@ Version 0.8 (since 10May2011)
 -!!Improve Risk()
 -send drawmissile in DrawObjs() to DrawShip()
 -!!not enought money
--Review Experience(). save09. training high levels.
 -When select a planet, center map on it , if its known.
 -Measure distances in map view.
 
@@ -112,7 +111,7 @@ AI:
 -When an enemy ship is near a planet send only the necessary ships.
 -Add a different way to attack planets. 
 -!!dont take off when change to automatic mode.
--!!dont allow build towers in ally planets or share the resources. Send resources in planet info.
+
 
 Comm:
 ====
@@ -194,6 +193,11 @@ X-(260711)include CELLON code
 X-(270711)!!rigth click => order GOTO x y
 X-(290711)Added: ships gain experience if discover a planet.
 X-(310711)Fix: initial planets coordinates.
+X-(160911)Exploration reviewed.
+X-(180911)!!Review Experience(). training high levels.
+X-(200911)targeting system for missiles improved.
+X-(280911)!!dont allow build towers in ally planets or share the resources. Send resources in planet info.
+
 
 BUGS version 0.80
 =================
@@ -216,7 +220,7 @@ X-(170611)[116][regression] autopilot fighters now leave the planet - ID: 331731
 X-Size of font.
 X-(050911)[118]explorer doesnt respond to RETREAT and GOTO n (save10)
 	  GOTO n=>Not Allowed. Planet or ship 15 unknown. (15 is a undiscoverd empty nearest planet)
-
+X-(071011)Ctrl-p pause the game
 
 /********************************************************************************/
 DONE:Version 0.78 (since 10 Jan. 2011)

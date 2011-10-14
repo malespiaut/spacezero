@@ -61,6 +61,7 @@ int debugcomm1=0;
 int debugpilot=0;
 
 extern struct HeadObjList listheadobjs;
+struct TextMessageList listheadtext;
 extern struct Habitat habitat;
 extern char *savefile;
 extern sem_t sem_barrier;
@@ -397,9 +398,7 @@ void *CommServer(struct Thread_arg *args){
   */
   int sfd,sfd2;
   int fd;
-  char *buf;
   /*  struct IntList *kp,*ks; */
-  int gkplanets;
   int status;
 
 
@@ -407,9 +406,7 @@ void *CommServer(struct Thread_arg *args){
   int cont=0;
 #endif
 
-  gkplanets=GameParametres(GET,GKPLANETS,0);
 
-  buf=buffer1.data;
   sfd=args->sfd;
   sfd2=args->sfd2;
 
@@ -513,7 +510,6 @@ void *CommClient(struct Thread_arg * args){
   int sfd2;
   int fd;
   int nbytes;
-  int proc;
   int status;
 
   struct MessageHeader messh;
@@ -552,7 +548,6 @@ void *CommClient(struct Thread_arg * args){
 
   /* loop of communication */
 
-  proc=GetProc();
 
   for(;;){ /* client */
 
@@ -584,9 +579,6 @@ void *CommClient(struct Thread_arg * args){
       return((void *)1);
     }
 
-    
-    //    printf("CLIENT ORDER: %d\n",order);
-    
     switch(order){
     case OTSENDOBJS:
       LoadBuffer(order,&buffer1,CLIENT);
@@ -623,16 +615,12 @@ void *CommClient(struct Thread_arg * args){
     }
     
     if(order!=OTSENDLOAD){
-      //    printf("buffid=%d\n",order);
       status=ClientProcessBuffer(&buffer2);
       
       switch(status){
       case OTSENDKILL:
 	printf("SERVER has gone\n");
-	/*      Quit(NULL,NULL); */
-	/*      game.quit=2; */
 	GameParametres(SET,GNET,FALSE);
-	//	GameParametres(SET,GQUIT,2);  
 	SendBuffer(sfd2,&buffer1);
 	close(sfd);
 	close(sfd2);
@@ -654,7 +642,7 @@ void *CommClient(struct Thread_arg * args){
 }
 
 
-void Print_Message(struct Message *mess){
+void PrintTextMessage(struct Message *mess){
 
   printf("\tid: %d\n\tnobjs: %d\n\tnbytes: %d\n",
 	 mess->header.id,mess->header.nobjs,mess->header.nbytes);
@@ -674,6 +662,10 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
   Object *obj;
   int nbytes=0;
   int proc;
+  int i;
+  struct MessageHeader messh;
+  struct NetMess mess;
+  
 
   proc=GetProc();
   ls=hl.next;
@@ -686,7 +678,9 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
       ls=ls->next;continue;
     }
 
-    if(ls->obj->modified==SENDOBJDEAD || ls->obj->modified==SENDOBJNOTSEND){
+    if(ls->obj->modified==SENDOBJDEAD || 
+       ls->obj->modified==SENDOBJNOTSEND || 
+       ls->obj->modified==SENDOBJUNMOD){
       ls=ls->next;continue;
     } 
 
@@ -705,19 +699,17 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
       printf("sending dead: %d\n",obj->id);
     }
     
-    if(obj->type==PLANET){ // HERE , must be this mod 
+    if(obj->type==PLANET){ // HERE , this must be mod 
       obj->modified=SENDOBJPLANET; 
+      //      printf("Copyobj2buffer(): sending planet %d\n",obj->id);
     }
-    /* printf("(ttl:%d) ",obj->ttl); */
+
     nbytes+=CopyObj2Buffer(buffer,obj,obj->modified);
     g_nobjsend++;
     if(obj->type==PROJECTILE){
       g_nshotsend++;
     }
-/*     if(ls->obj->type==PLANET){ */
-/*       printf("[S:%d] mod: %d type: %d stype:%d\n",  */
-/* 	     ls->obj->id,ls->obj->modified,ls->obj->type,ls->obj->subtype);  */
-/*     } */
+
     SetModified(obj,SENDOBJSEND);
     if(obj->modified!=SENDOBJSEND){
       printf("CopyObj2Buffer obj: %d not changed\n",obj->id);
@@ -731,15 +723,16 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
 
     ls=ls->next;
   }
-
+  /**** Sending pending messages *****/
   if(textmen0.time==-1){
     nbytes+=CopyObj2Buffer(buffer,&textmen0,SENDOBJSTR);
     textmen0.time=0;
   }
 
+
+  /***** Send players *****/
   {
-    int i;
-    struct MessageHeader messh;
+
     //HERE continue here      
     for(i=1;i<GameParametres(GET,GNPLAYERS,0)+2;i++){ 
       if(proc==players[i].proc && players[i].modified==SENDPLAYERMOD){
@@ -759,7 +752,19 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
       } 
     } 
   }
+
+
+  /***** Send Messages *****/
   
+  mess.id=mess.a=mess.b=0;
+  while(NetMess(&mess,NMREAD)!=0){
+    messh.id=SENDMESS;
+    messh.nobjs=1;
+    messh.nbytes=0;
+    nbytes+=CopyMessHeader2Buffer(buffer,&messh);
+    nbytes+=CopyNetMess2Buffer(buffer,&mess);
+  }
+
   nbytes+=CopyObj2Buffer(buffer,NULL,SENDEND); /* end of transmision */ 
   return(nbytes);
 }
@@ -789,11 +794,9 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
   int kid;
 
 
-
   /*  if(modtype==SENDOBJKILL)return(0); */
   if(buffer->n+sizeof(struct MessageHeader)+2*sizeof(Object) > buffer->size){
     int newsize;
-    //    fprintf(stderr,"CopyObj2Buffer(): buffer full\n");
     newsize=(int)((buffer->size+sizeof(struct MessageHeader)+2*sizeof(Object))*1.1);
     
     buffer->data=realloc(buffer->data,newsize*sizeof(char));
@@ -802,7 +805,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
       exit(-1);
     } 
     buffer->size=newsize;
-    //    printf("Realloc(copyobj2buffer) %d\n",buffer->size);
   }
 
   n0=buffer->n;
@@ -815,27 +817,11 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
 
   messh.id=modtype;
   obj=(Object *)object;
-  if(0){
-    printf("sending mod: %d\n",modtype);
-    if(modtype<=SENDOBJPLANET){ 
-      printf("\tSEND:%d %d %d %d %d %d\n",
-	     obj->id,obj->modified,obj->type,obj->subtype,obj->ttl,GetTime());
-    }
-  }
   
-  if(modtype<SENDOBJPLANET){
-    if(obj!=NULL){
-
-    }
-  }
-
-  /*  if(proc!=players[obj->player].proc){ */
-  /*  fprintf(stderr,"WARNING: in CopyObj2Buffer() sending no allowed object\n"); */
-  /*} */
-
 
   switch (modtype){
   case SENDOBJUNMOD:
+    fprintf(stderr,"WARNING CopyObj2Buffer() sending ans unmod obj (%d)%d",obj->player,obj->pid);
   case SENDOBJMOD0: /* Object modified send only position */
     messh.nobjs=1;
     messh.nbytes=sizeof(struct Objectpos);
@@ -855,7 +841,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     messh.nobjs=1;
     messh.nbytes=sizeof(struct ObjectAll);
     g_nobjtype[3]++;
-    //    printf("send SENDOBJALL: %d %d %d %d %d\n",obj->id,obj->pid,obj->player,obj->level,obj->engine.v2_max);
     break;
   case SENDOBJNEW: /* new object. */
     messh.nobjs=1;
@@ -874,7 +859,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
   case SENDOBJSTR:
     messh.nobjs=1;
     messh.nbytes=((struct TextMessage *)object)->n;
-    //    printf("ADDED2BUF: %d bytes\n",header.nbytes);
     break;
   case SENDEND: /* end of message */
     messh.nobjs=0;
@@ -939,8 +923,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
       if(obj->in!=NULL){
 	intype=obj->in->type;
       }
-      printf("%d sending pilot(%d): player:%d id: %d pid: %d in: %d type in: %d\n",
-	     GetTime(),modtype,obj->player,odyn.id,obj->pid,odyn.inid,intype);
     }
     
     //aqui    memcpy((struct Objectdynamic *)buf,&odyn,nbytes);
@@ -969,14 +951,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
       if(obj->in!=NULL){
 	intype=obj->in->type;
       }
-      printf("%d sending pilot(%d): player:%d id: %d pid: %d in: %d type in: %d\n",
-	     GetTime(),modtype,obj->player,odyn.id,obj->pid,odyn.inid,intype);
     }
-
-/*     oaall.fx=obj->fx; */
-/*     oaall.fy=obj->fy; */
-/*     oaall.fx0=obj->fx0; */
-/*     oaall.fy0=obj->fy0; */
 
     oaall.a=obj->a;
     oaall.ang_v=obj->ang_v;
@@ -998,8 +973,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
       if(obj->in!=NULL){
 	intype=obj->in->type;
       }
-      printf("%d sending pilot(%d): player:%d id: %d pid: %d in: %d type in: %d\n",
-	     GetTime(),modtype,obj->player,oaall.id,obj->pid,oaall.inid,intype);
     }
 
 
@@ -1050,10 +1023,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     buffer->n+=nbytes;
 
 #if SENDORDERS
-    //    printf("aoo2b 1\n");
     nbytes=AddObjOrders2Buffer(buffer,obj);
-
-    //    buffer->n+=nbytes;
 
 #endif 
 
@@ -1136,17 +1106,13 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
       if(obj->in!=NULL){
 	intype=obj->in->type;
       }
-      printf("%d sending pilot(%d): player:%d id: %d pid: %d in: %d type in: %d\n",
-	     GetTime(),modtype,obj->player,oall.id,obj->pid,oall.inid,intype);
     }
-
 
     //aqui    memcpy((struct ObjectAAll *)buf,&oall,nbytes);
     memcpy(buf,&oall,nbytes);
     buffer->n+=nbytes;
 
 #if SENDORDERS
-    //    printf("aoo2b 2\n");
     nbytes=AddObjOrders2Buffer(buffer,obj);
 #endif 
 
@@ -1159,7 +1125,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     kid=obj->sw; /* id of the killer */
     memcpy(buf+sizeof(int),&kid,nbytes);
     buffer->n+=2*nbytes;
-    /*    printf("send: KILL: %d Killer:%d \n",obj->id,obj->sw); */
     break;
   case SENDOBJPLANET:
     nbytes=2*sizeof(int)+sizeof(float);
@@ -1213,6 +1178,7 @@ int ReadObjsfromBuffer(char *buf){
   struct ObjectAAll objaall;
 
   struct ObjectNew objnew;
+  int gnplayers;
   int id,projid,idkiller;
   int inid;
   int nbytes,tbytes;
@@ -1220,16 +1186,22 @@ int ReadObjsfromBuffer(char *buf){
   char *buf0;
   Data *data;
 
+
+
   header.id=-1;
   buf0=buf;
   tbytes=0;
 
   proc=GetProc();
+  gnplayers=GameParametres(GET,GNPLAYERS,0);
 
   while(header.id!=SENDEND){
 
-  /* read the header */ 
-    /*    printf("Loading obj.\n"); */
+
+    /****** 
+	read the header 
+    ******/ 
+
     memcpy(&header,buf,sizeof(struct MessageHeader));
     buf+=sizeof(struct MessageHeader);
     tbytes+=sizeof(struct MessageHeader);
@@ -1254,6 +1226,7 @@ int ReadObjsfromBuffer(char *buf){
 
 	  nobj->x0=objpos.x;  /* x no x0 */
 	  nobj->y0=objpos.y;
+	  nobj->ttl=0;
 
 	  //	  nobj->a=objpos.a;
       }
@@ -1272,16 +1245,6 @@ int ReadObjsfromBuffer(char *buf){
       if(nobj!=NULL){
 	//aqui	  memcpy(&objdyn,(struct Objectdynamic *)buf,nbytes);
 	  memcpy(&objdyn,buf,nbytes);
-
-	  if(0){
-	    printf("recv SENDOBJMOD: %d %d %d\n",nobj->player,nobj->id,nobj->pid);
-	    printf("\thabitat %d %d\n",nobj->habitat,objdyn.habitat);
-	    printf("\teng vmax %d %d\n",nobj->level, nobj->engine.v_max);
-	    printf("\tx y %f %f %f %f\n",nobj->x,objdyn.x,nobj->y,objdyn.y);
-	    printf("\ta %f %f\n",nobj->a,objdyn.a);
-	    printf("\taccel %f %f\n",nobj->accel,objdyn.accel);
-	    printf("\tvx vy %f %f %f %f\n",nobj->vx,objdyn.vx,nobj->vy,objdyn.vy);
-	  }
 
 	  nobj->level=objdyn.level;
 	  inid=0;
@@ -1318,15 +1281,8 @@ int ReadObjsfromBuffer(char *buf){
 	    if(nobj->in!=NULL){
 	      inid=nobj->in->id;
 	      intype=nobj->in->type;
-	      
-	    }
-	    if(nobj->type==SHIP && nobj->subtype==PILOT){
-	      printf("%d pilot received(%d): player:%d id: %d pid: %d in: %d(%d) type in: %d habitat:%d\n",
-		     GetTime(),header.id,nobj->player,nobj->id,nobj->pid,inid,objdyn.inid,intype,nobj->habitat);
 	    }
 	  }
-	  
-
       }
       else{   /* New object or object has been killed in client side*/
 	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJMOD) id: %d  doesnt exists\n",
@@ -1341,13 +1297,11 @@ int ReadObjsfromBuffer(char *buf){
       nbytes=sizeof(struct ObjectAAll);
       nobj=SelectObj(&listheadobjs,((struct ObjectAAll *)buf)->id);
       if(nobj!=NULL){
-	//aqui	memcpy(&objaall,(struct ObjectAAll *)buf,nbytes);
+
 	memcpy(&objaall,buf,nbytes);
 
 	nobj->id=objaall.id;
-	//	nobj->visible=objaall.visible;
 	nobj->level=objaall.level;
-	//nobj->kills=objaall.kills;
 	nobj->habitat=objaall.habitat;
 	nobj->mode=objaall.mode;
 	nobj->x=objaall.x;
@@ -1390,7 +1344,7 @@ int ReadObjsfromBuffer(char *buf){
 
       }
       else{   /* New object or object has been killed in client side*/
-	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJAALL) id: %d doesnt exists\n",
+	fprintf(stderr,"%d ERROR  ReadObjsfromBuffer(SENDOBJAALL) id: %d doesnt exists\n",GetTime(),
 	       ((struct ObjectAAll *)buf)->id);
 	exit(-1);/*HERE TODO try to do something with this. LINE must not be reached */
       }
@@ -1410,7 +1364,6 @@ int ReadObjsfromBuffer(char *buf){
 	break;
       }
 
-      //aqui      memcpy(&objall,(struct ObjectAll *)buf,nbytes);
       memcpy(&objall,buf,nbytes);
       
       /*      memcpy(&obj0,&nobj,nbytes); */
@@ -1428,6 +1381,7 @@ int ReadObjsfromBuffer(char *buf){
       
       nobj->level=objall.level;
       nobj->experience=objall.experience;
+      nobj->pexperience=0;
       nobj->kills=objall.kills;
       
       nobj->durable=objall.durable;
@@ -1435,23 +1389,20 @@ int ReadObjsfromBuffer(char *buf){
       nobj->selected=objall.selected;
       nobj->radar=objall.radar;
       nobj->mass=objall.mass;
-      
       nobj->cargo=objall.cargo;
 
       if(nobj->items & ITPILOT){
-
 	if(!(objall.items & ITPILOT)){
-	  
 	  if(nobj->type==SHIP && nobj->subtype==PILOT){
-	    printf("checking for pilots in %d (%d)\n",nobj->id,nobj->pid);
+	    if(debugpilot){
+	      printf("checking for pilots in %d (%d)\n",nobj->id,nobj->pid);
+	    }
 	    EjectPilotsObj(&listheadobjs,nobj);
 	    //  nobj->items=nobj->items&(~ITPILOT);
 	  }
-	  
-
 	}
-	
       }
+
       nobj->items=objall.items;
       nobj->radio=objall.radio;
       nobj->cost=objall.cost;
@@ -1525,11 +1476,6 @@ int ReadObjsfromBuffer(char *buf){
 	if(nobj->in!=NULL){
 	  inid=nobj->in->id;
 	  intype=nobj->in->type;
-	  
-	}
-	if(nobj->type==SHIP && nobj->subtype==PILOT){
-	  printf("%d pilot received(%d): player:%d id: %d pid: %d in: %d(%d) type in: %d habitat:%d\n",
-		 GetTime(),header.id,nobj->player,nobj->id,nobj->pid,inid,objall.inid,intype,nobj->habitat);
 	}
       }
 
@@ -1539,6 +1485,9 @@ int ReadObjsfromBuffer(char *buf){
 
 	if(nobj->in->type==PLANET){
 	  nobj->planet=nobj->in->planet;
+	}
+	if(nobj->in->type==SHIP){
+	  nobj->in->items=nobj->in->items| ITPILOT;
 	}
       }
       else{
@@ -1562,7 +1511,6 @@ int ReadObjsfromBuffer(char *buf){
 
       buf+=nbytes;
       tbytes+=nbytes;
-      /*      printf("Bytes readed from buffer: %d\n",nbytes); */
 #endif 
 #if DEBUG
       if(debugcomm1){
@@ -1578,33 +1526,27 @@ int ReadObjsfromBuffer(char *buf){
 	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJPLANET) id: %d doesnt exists\n",id);
 	exit(-1);
       }
+      //	memcpy(&player,buf+sizeof(int),sizeof(int));
+      
+      if(nobj->modified==SENDOBJSEND && nobj->sw){
+	nobj->sw=0;
+      }
       else{
 	memcpy(&(nobj->player),buf+sizeof(int),sizeof(int));
 	memcpy(&(nobj->planet->gold),buf+2*sizeof(int),sizeof(float));
       }
-      /* check if I a have that information */
+      
+      /**** check if I a have that information 
+       received ally conquered planets ****/
 
       if(players[nobj->player].team==players[actual_player].team){
-
 	if(IsInIntList((players[actual_player].kplanets),nobj->id)==0){
 	  players[actual_player].kplanets=Add2IntList((players[actual_player].kplanets),nobj->id);
-	  fprintf(stdout,"PLANET %d discovered\n",nobj->id);
+	  //	  fprintf(stdout,"PLANET %d discovered\n",nobj->id);
 	}
       }
+      
 
-      /*
-	if(obj->mode==LANDED && players[obj->in->player].team!=players[obj->player].team)
-
-	  if(players[actual_player].team==players[nobj->player].team){
-	    players[actual_player].kplanets=Add2IntList((players[i].kplanets),pnt->id);
-	  }
-      */
-
-      /*       printf("PLANET recv %d %d %d",id,GetTime(),nobj->ttl);  */
-      /*       if(nobj!=NULL){ */
-      /* 	printf("\tplayer: %d gold: %f",nobj->player,nobj->planet->gold);  */
-      /*       } */
-      /*       printf("\n");  */
       buf+=nbytes;
       tbytes+=nbytes;
       break;
@@ -1616,7 +1558,6 @@ int ReadObjsfromBuffer(char *buf){
       memcpy(&idkiller,buf,nbytes);
       buf+=nbytes;
       tbytes+=nbytes;
-      /*      printf("load KILL: %d killer %d \n",id,idkiller); */
       nobj=SelectObj(&listheadobjs,id);
       
       if(nobj==NULL){
@@ -1631,7 +1572,7 @@ int ReadObjsfromBuffer(char *buf){
 	  printf("RECV KILL. id %d\n",nobj->id);	
 	}
       }
-
+      
       break;
     case SENDOBJNEW:
       id=g_objid;
@@ -1725,24 +1666,15 @@ int ReadObjsfromBuffer(char *buf){
       if(objt!=NULL){ 
  	nobj->planet=objt->planet; 
       } 
-      if(nobj->parent!=NULL){
-	/*	printf("id:%d %d %d %d damage: %d\n",nobj->id,nobj->parent->id,nobj->type,nobj->subtype,nobj->damage); */
-      }
-      else{
-	/*	printf("id:%d %d %d %d damage: %d\n",nobj->id,0,nobj->type,nobj->subtype,nobj->damage); */
-      }
 
       Add2ObjList(&listheadobjs,nobj);
       buf+=nbytes;
       tbytes+=nbytes;
-      //      printf("RECV NEW. type:%d id %d\n",nobj->type,nobj->id);
-
 
 #if SENDORDERS
       nbytes=CopyObjOrdersfromBuffer(nobj,buf);
       buf+=nbytes;
       tbytes+=nbytes;
-      /*      printf("Bytes readed from buffer: %d\n",nbytes); */
 #endif 
 
       break;
@@ -1856,6 +1788,46 @@ int ReadObjsfromBuffer(char *buf){
       }
       break;
 
+    case SENDMESS:
+      {
+	struct NetMess mess;
+
+	nbytes=sizeof(struct NetMess);
+	memcpy(&mess,buf,nbytes);
+	//	printf("REC MESS: %d %d %d\n",mess.id,mess.a,mess.b);
+	buf+=nbytes;
+	tbytes+=nbytes;
+
+	switch(mess.id){
+	case NMPLANETDISCOVERED:
+	  {
+	    Object *obj,*pnt;
+	    int i;
+	    char text[MAXTEXTLEN];
+	    obj=SelectObj(&listheadobjs,mess.a);
+	    pnt=SelectObj(&listheadobjs,mess.b);
+	    
+	    for(i=0;i<=gnplayers+1;i++){
+	      if((i!=obj->player) && (players[obj->player].team==players[i].team)){
+		if(GetProc()==players[i].proc){
+		  if(IsInIntList((players[i].kplanets),pnt->id)==0){
+		    players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);
+		    snprintf(text,MAXTEXTLEN,"(%s) PLANET %d discovered",players[obj->player].playername,pnt->id);
+		    Add2TextMessageList(&listheadtext,text,obj->id,i,0,100,0);
+		  }
+		}
+	      }
+	    }
+	  }
+	  break;
+	default:
+	  fprintf(stderr,"ERROR. ReadObjsFromBuffer() SENDMESS. Not implemented %d\n",mess.id);
+	  exit(-1);
+	  break;
+	}
+      }
+      break;
+      
     case SENDEND:
       break;
     default:
@@ -1893,20 +1865,8 @@ int ReadObjsfromBuffer(char *buf){
 	}
       }
 
-      if(0&&nobj->type==SHIP && nobj->subtype==PILOT){
-	printf("checking for pilots in %d (%d)\n",nobj->id,nobj->pid);
-	EjectPilotsObj(&listheadobjs,nobj);
-	nobj->items=nobj->items&(~ITPILOT);
-      }
-
       /* --check for pilots */
 
-    }
-    if(0){
-      if(nobj!=NULL){
-	printf("RECV:%d %d %d %d %d %d\n",
-	       nobj->id,nobj->modified,nobj->type,nobj->subtype,nobj->ttl,GetTime());
-      }
     }
   }
   return(tbytes);
@@ -1971,7 +1931,6 @@ int CopyObjOrdersfromBuffer(Object *obj0,char *buf0){
 
   tbytes=0;
   buf=buf0;
-  /*  printf("CopyObjOrdersfromBuffer()\n"); */
 
   /* reading norders*/
   
@@ -1979,8 +1938,6 @@ int CopyObjOrdersfromBuffer(Object *obj0,char *buf0){
   memcpy(&norders,buf,nbytes);
   buf+=nbytes;
   tbytes+=nbytes;
-  
-  /*  printf("Recv id:%d norders:%d\n",obj0->id,norders); */
   
   DelAllOrder(obj0);
   
@@ -2573,11 +2530,9 @@ int SetModifiedAll(struct HeadObjList *lh,int type,int mode,int force){
 
   struct ObjList *ls;
   int n=0;
-  int gnet=0;
   int proc=0;
 
 
-  gnet=GameParametres(GET,GNET,0);
   proc=GetProc();
   ls=lh->next;
   while(ls!=NULL){
@@ -2648,10 +2603,6 @@ int CheckModifiedPre(struct HeadObjList *lh,int proc){
 	  if(obj->modified!=SENDOBJNEW && 
 	     obj->modified!=SENDOBJNOTSEND && 
 	     obj->modified!=SENDOBJDEAD){
-	    /* fprintf(stderr,"WARNING: CheckModifiedPre(): projectile %d with mode: %d\n\t state: %f life: %f\n\t type:%d subtype:%d\n", */
-	    /* 	   obj->id,obj->modified,obj->state,obj->life, */
-	    /* 	   obj->type,obj->subtype); */
-	  //	    printf("\tchanging to mode %d\n",SENDOBJNOTSEND);
 	    SetModified(obj,SENDOBJNOTSEND);
 	  }
 	}
@@ -2707,7 +2658,6 @@ int CheckModifiedPre(struct HeadObjList *lh,int proc){
     case TRACE:
       break;
     default:
-      //      SetModified(obj,SENDOBJUNMOD);
       printf("Warning:CheckModifiedPre() must no reach this line\n");
       break;
     }
@@ -2747,7 +2697,6 @@ int CheckModifiedPost(struct HeadObjList *lh,int proc){
       }
     }
 
-
     if(proc!=players[obj->player].proc){
       if(obj->type==PROJECTILE){ //HERE not neccesary
 	if(obj->state<=0){
@@ -2761,7 +2710,6 @@ int CheckModifiedPost(struct HeadObjList *lh,int proc){
     case SHIP:
     case ASTEROID:
     case PROJECTILE:
-      //      printf("[CMP0:%d] %d\n",obj->id,obj->modified);
       switch(obj->modified){
       case SENDOBJUNMOD:
       case SENDOBJMOD0:
@@ -2809,6 +2757,7 @@ int CheckModifiedPost(struct HeadObjList *lh,int proc){
     case PLANET:
       if(obj->modified==SENDOBJSEND){ 
  	SetModified(obj,SENDOBJUNMOD);
+	obj->sw=0;
  	n++; 
       }
       break;
@@ -2822,15 +2771,16 @@ int CheckModifiedPost(struct HeadObjList *lh,int proc){
       printf("[CMPz:%d] type:%d stype:%d mod:%d\n",obj->id,obj->type,obj->subtype,obj->modified);
     }
 
-    if(obj->modified==SENDOBJSEND){
+
 #if DEBUG
+    if(obj->modified==SENDOBJSEND){
       if(debugcomm1){ 
 	fprintf(stderr,"ERROR SetModifiedPost() %d type:%d stype:%d mod:%d\n",
 		obj->id,obj->type,obj->subtype,obj->modified);
 	exit(-1);
       }
-#endif
     }
+#endif
 
     ls=ls->next;
   }
@@ -2841,25 +2791,29 @@ int CheckModifiedPost(struct HeadObjList *lh,int proc){
 void Setttl0(struct HeadObjList *lh){
   /*
     version 01 (031210)
+    All ships with ttl <=0 will be send. 
     If the object must be send, set ttl to 0
     if it must not be never send, set ttl to 1024
+
+    SERVER:
+      Send near enemies. Reasign its ttl.
+      send allies if ttl<=0.
+
+    CLIENT:
+    send ships with ttl<=0.
+
     return:
     void
    */
 
   struct ObjList *ls;
   Object *obj=NULL;
-  int proc,gmode,enemy;
+  int proc,gmode,gcooperative,otherproc;
   int sw;
 
   proc=GetProc();
   gmode=GameParametres(GET,GMODE,0);
-
-  /***TODO*****/
-  /* calc which team is allied of another proccessor */
-
-  /********/
-
+  gcooperative=GameParametres(GET,GCOOPERATIVE,0);
 
   ls=lh->next;
   while(ls!=NULL){
@@ -2881,166 +2835,82 @@ void Setttl0(struct HeadObjList *lh){
     switch(gmode){
     case SERVER:
     /* server   */ 
-    /* send data if an enemy is near */      
+    /* send data if an ship of another proccesor is near */
       sw=0;
       switch (obj->type){
       case PROJECTILE:
       case ASTEROID:
       case SHIP:
-	/*    players[actual_player].control=HUMAN; */
-	if(1||ENEMIESKNOWN==0){
-	  if(obj->ttl<=0){ /* objects ready to send */
 
-	    if(param.cooperative==TRUE && players[obj->player].control==HUMAN){
-	      if(obj->ttl==0){ /* send object */
-		SetModified(obj,SENDOBJMOD0);
-	      }
-	      if(obj->ttl<0){   /* already send */
-	      sw=1;
-	      }
+	if(obj->ttl<=0){ /* objects ready to send */
+	  sw=1;
+
+	  if(gcooperative==TRUE && players[obj->player].control==HUMAN){
+	    /* send human controled ships periodically */
+	    if(obj->habitat==H_SPACE){
+	      SetModified(obj,SENDOBJMOD0);
+	      obj->ttl=0;
+	      sw=0;
 	    }
-	    else{
-	      sw=1;
+	    if(obj->ttl<=MINTTL){/* send now */
+	      obj->ttl=0;
+	      sw=0;
 	    }
-	    if(sw){ /* reassign  ttl */
-	      enemy=AreEnemy(lh,proc,obj);
-	      switch(enemy){ /*  */
-	      case 0:  /* (4r,inf) */
-		obj->ttl=90+obj->id%20; /* dont send */
-		break;
-	      case 1:  /* (3r,4r) */
-		obj->ttl=58+obj->id%12;    /* dont send */
-		break;
-	      case 2:  /* (1.5r,3r) */
-		obj->ttl=16;  /* dont send */
-		break;
-	      case 3:  /* (900p,1.5r) */
-		if(obj->ttl<0){
-		  obj->ttl=4; /* send */
-		  SetModified(obj,SENDOBJMOD0);
-	      }
-		break;
-	      case 4:  /* (0,900p) */
-	      default:
-		obj->ttl=0;
-		SetModified(obj,SENDOBJMOD);
-		break;
-	      }
-	    }
-	    /*****************************/
-	    /*TODO: ADD if it is allied of another processor send */
-	    
-
-
-
-	    /*****************************/
 	  }
-	}
-	else{
-	  if(obj->ttl==0){ /* objects ready to send */
-	    enemy=AreEnemy(lh,proc,obj);
-	    switch(enemy){ /*  */
+
+	  if(sw){ /* reassign  ttl */
+	    otherproc=OtherProc(lh,proc,obj);   /* double buffer */
+	    switch(otherproc){ /*  */
 	    case 0:  /* (4r,inf) */
-	      obj->ttl=100; /* dont send */
+	      obj->ttl=90+obj->id%20; /* dont send */
 	      break;
 	    case 1:  /* (3r,4r) */
-	      obj->ttl=64;    /* dont send */
+	      obj->ttl=58+obj->id%12;    /* dont send */
 	      break;
 	    case 2:  /* (1.5r,3r) */
 	      obj->ttl=16;  /* dont send */
 	      break;
 	    case 3:  /* (900p,1.5r) */
-	      if(obj->ttl<=0){
-		obj->ttl=4; /* send */
+	      if(obj->ttl<0){
+		obj->ttl=-8; /* send */
 		SetModified(obj,SENDOBJMOD0);
 	      }
 	      break;
 	    case 4:  /* (0,900p) */
+	      if(obj->type==SHIP && obj->subtype==PILOT && obj->mode==LANDED){  
+	       	obj->ttl=-(90+obj->id%20);
+	       	SetModified(obj,SENDOBJMOD0); 
+	      }
+	      else{
+		obj->ttl=0;
+		SetModified(obj,SENDOBJMOD);
+	      }
+	      break;
+	    case 5:
+	      obj->ttl=-(90+obj->id%20);
+	      SetModified(obj,SENDOBJMOD0);
+	      break;
 	    default:
 	      obj->ttl=0;
 	      SetModified(obj,SENDOBJMOD);
 	      break;
 	    }
 	  }
-
 	}
 	break;
-      case PLANET:
 
+      case PLANET:
 	break;
+
       default:
 	break;
       }
 
       break;
     case CLIENT:
-    /* client */
-    /* send data periodically and if an enemy is near */
-      switch (obj->type){
-      case SHIP:
-
-      case PROJECTILE:
-      case ASTEROID:
-
-
-	if(obj->subtype==TOWER){
-	  if(obj->ttl<=0){ /* objects just send */
-	    enemy=AreEnemy(lh,proc,obj);
-	    switch(enemy){ /*  */
-	      
-	    case 0:  /* (4r,inf) */
-	      obj->ttl=200;
-	      break;
-	    case 1:  /* (3r,4r) */
-	      obj->ttl=128; 
-	      break;
-	    case 2:  /* (1.5r,3r) */
-	      obj->ttl=32;
-	      break;
-	    case 3:  /* (900p,1.5r) */
-	      obj->ttl=8;
-	      break;
-	    case 4:  /* (0,900p) */
-	    default:
-	      obj->ttl=0;
-	      SetModified(obj,SENDOBJMOD);
-	      break;
-	    }
-	  }
-	}
-	else{
-	  if(obj->ttl<0){ /* objects just send */
-	    enemy=AreEnemy(lh,proc,obj);
-	    switch(enemy){ /*  */
-	      
-	    case 0:  /* (4r,inf) */
-	      obj->ttl=90+obj->id%20;
-	      break;
-	    case 1:  /* (3r,4r) */
-	      obj->ttl=56+obj->id%16;
-	      break;
-	    case 2:  /* (1.5r,3r) */
-	      obj->ttl=16;
-	      break;
-	    case 3:  /* (900p,1.5r) */
-	      obj->ttl=4;
-	      break;
-	    case 4:  /* (0,900p) */
-	    default:
-	      obj->ttl=0;
-	      SetModified(obj,SENDOBJMOD);
-	      break;
-	    }
-	  }
-	}
-	break;
-      case PLANET:
-	break;
-
-      default:
-	break;
-      }
-
+      /* if(obj->type==SHIP && obj->subtype==PILOT && obj->mode==LANDED){ */
+      /* 	obj->ttl=-(90+obj->id%20); */
+      /* } */
       break;
     default:
       /* PRODUCTION */
@@ -3098,13 +2968,16 @@ void Setttl(struct HeadObjList *lh,int n){
     Adjust ttl parameter used to decide what object send: 
     if ttl == 0 object is just sended (modified must be SENDOBJSEND).
     input param n:
-    if n>=0 all object are set to n
+    if n>=0 all objects ttl is set to n
+
+    SERVER:
+    ally ships: Reasign its ttl.
+    send planets periodically.
 
     CLIENT:
-      Send data periodically.
-    SERVER:
-      server send data when an enemy of other proccessor is near.
-      if there are not near enemies set ttl to a value, dont send till ttl is zero
+    ships: Reasign its ttl.
+    send planets periodically.
+
 
     return:
     void
@@ -3113,9 +2986,11 @@ void Setttl(struct HeadObjList *lh,int n){
   struct ObjList *ls;
   Object *obj=NULL;
   int proc;
+  int otherproc;
   int gmode;
-
+  int gcooperative;
   proc=GetProc();
+  gcooperative=GameParametres(GET,GCOOPERATIVE,0);
 
   if(n>=0){ /* all objects are set to ttl=n */
     ls=lh->next;
@@ -3127,9 +3002,8 @@ void Setttl(struct HeadObjList *lh,int n){
       ls=ls->next;
     }
     return;
-  }
+  }  /*--n<0 */
 
-  /* n<0 */
 
   gmode=GameParametres(GET,GMODE,0);
 
@@ -3139,50 +3013,69 @@ void Setttl(struct HeadObjList *lh,int n){
     if(proc!=players[ls->obj->player].proc){
       ls=ls->next;continue;
     }
-
     obj=ls->obj;
 
+    if(obj->ttl<=0){ /* objects just sended */
 
-    /* server   */ 
-    /* send data if an enemy is near */
-
-    if(gmode==SERVER){
-      switch (obj->type){
-      case PROJECTILE:
-      case ASTEROID:
-      case SHIP:
-	
-	break;
-      case PLANET:
-
-	if(obj->ttl<=0){ /* objects just send */
-	  obj->ttl=400+(obj->id%20);
-	  //SetModified(obj,SENDOBJUNMOD);
-	  //	  printf("SENDING PLANET %d %d\n",obj->id,obj->ttl);
-	}
-	break;
-      default:
-	break;
+      if(obj->ttl<=-4){
+	obj->ttl=-obj->ttl;
+	ls=ls->next;continue;
       }
-    }
 
-    /* client */
-    /* send data periodically and if an enemy is near */
-    if(gmode==CLIENT){
+
       switch (obj->type){
       case PROJECTILE:
       case ASTEROID:
       case SHIP:
+
+	/* only calc ttl for computer controled ships */
+	if(gcooperative==TRUE && players[obj->player].control==HUMAN){
 	
+	  otherproc=OtherProc(lh,proc,obj);
+	  switch(otherproc){ /*  */
+	    
+	  case 0:  /* (4r,inf) */
+	    obj->ttl=90+obj->id%20;
+	    if(obj->mode==LANDED && obj->type==SHIP && obj->subtype==TOWER)obj->ttl*=2; 
+	    break;
+	  case 1:  /* (3r,4r) */
+	    obj->ttl=56+obj->id%20; 
+	    if(obj->mode==LANDED && obj->type==SHIP && obj->subtype==TOWER)obj->ttl*=2; 
+	    break;
+	  case 2:  /* (1.5r,3r) */
+	    obj->ttl=32;
+	    if(obj->mode==LANDED && obj->type==SHIP && obj->subtype==TOWER)obj->ttl*=2; 
+	    break;
+	  case 3:  /* (900p,1.5r) */
+	    obj->ttl=16; // 8
+	    if(obj->mode==LANDED && obj->type==SHIP && obj->subtype==TOWER)obj->ttl*=2; 
+	    break;
+	  case 4:  /* (0,900p) */
+	    if(obj->type==SHIP && obj->subtype==PILOT && obj->mode==LANDED){ 
+	      obj->ttl=(90+obj->id%20);
+	      if(obj->mode==LANDED && obj->type==SHIP && obj->subtype==TOWER)obj->ttl*=2;
+	    } 
+	    else{
+	      obj->ttl=2;//0
+	      if(obj->mode==LANDED)obj->ttl=8;
+	      //	    SetModified(obj,SENDOBJMOD);
+	    }
+	    break;
+	  case 5:
+	    obj->ttl=(90+obj->id%20);
+	    if(obj->mode==LANDED && obj->type==SHIP && obj->subtype==TOWER)obj->ttl*=2; 
+	    break;
+	  default:
+	    break;
+
+	  }
+
+	}
+
 	break;
       case PLANET:
-	if(obj->ttl<=0){ /* objects just send */
-	  obj->ttl=400+(obj->id%20);
-	  //	  SetModified(obj,SENDOBJUNMOD);
-	  //	  printf("SENDING PLANET %d %d\n",obj->id,obj->ttl);
-	}
+	obj->ttl=400+(obj->id%100);
 	break;
-
       default:
 	break;
       }
@@ -3232,9 +3125,7 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
       break;
     case OTSENDOBJS:    /* send modified objects */
 
-
       nbytes=CopyObjs2Buffer(buffer,listheadobjs);
-
       break;
     case OTSENDSAVE:    /* sendallobjects */
       
@@ -3272,20 +3163,10 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
 
       nbytes=CopyObjs2Buffer(buffer,listheadobjs);
 
-/*       for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){ */
-/* 	if(proc!=players[i].proc)continue; */
-/* 	if(players[i].modified==SENDPLAYER){ */
-/* 	  printf("sending player: %d \n",i); */
-/* 	} */
-/*       } */
-      
       break;
     case OTSENDSAVE:    /* sendallobjects */
       /* objects */ 
       nbytes=CopyObjs2Buffer(buffer,listheadobjs);
-
-
-      //      printf("nbytes %d buffern %d\n",nbytes,buffer->n);
 
       /* global variables */
       messh.id=SENDGLOBAL;
@@ -3301,7 +3182,6 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
 
 
 	/* player */
-	//	printf("PLAYER: %d\n",i);
 	
 	messh.id=SENDPLAYER;
 	messh.nobjs=0;
@@ -3324,14 +3204,12 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
 
 	if(nkp>0){
 	  list=players[i].kplanets;
-	  /*	    printf("KPLANETS: (%d)",nkp); */
+
 	  /* planets id */
 	  while(list!=NULL){
-	    /*	      printf("%d ",list->id); */
 	    CopyInt2Buffer(buffer,&(list->id));
 	    list=list->next;
 	  }
-	  /*	    printf("\n"); */
 	}
 
 	/* list of sectors */
@@ -3351,7 +3229,6 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
 	    list=list->next;
 	  }
 	}
-	//	printf("\tnkp: %d nks: %d\n",nkp,players[i].ksectors.n);
       }
       	/* --Loading buffer with known sectors and planets */
 	
@@ -3380,8 +3257,6 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
 
 
 int ServerProcessBuffer(struct Buffer *buffer){
-
-
   struct MessageHeader mess;
   char *buf;
   int nbytes;
@@ -3406,9 +3281,6 @@ int ServerProcessBuffer(struct Buffer *buffer){
   memcpy(&mess,buf,nbytes);
   order=mess.id;
   buf+=nbytes;
-
-  //  printf("order: %d\n",order);
-
 
   switch(order){
   case OTSENDPING:
@@ -3495,8 +3367,6 @@ int ServerProcessBuffer(struct Buffer *buffer){
 	buf+=sizeof(int);
 
 	printf("\trecv PLAYER: %d\n",playerid);
-	printf("\tnkp:%d \n",nkp);
-
 
 	DelIntList((players[playerid].kplanets));
 	players[playerid].kplanets=NULL;/*kp; */
@@ -3504,16 +3374,13 @@ int ServerProcessBuffer(struct Buffer *buffer){
 	for(i=0;i<nkp;i++){
 	  memcpy(&id,buf,sizeof(int));
 	  buf+=sizeof(int);
-	  /*printf("%d ",id); */
 	  players[playerid].kplanets=Add2IntList((players[playerid].kplanets),id);
-
 	}
 	break;
 
       case SENDSECTORLIST:	
 	nks=mess.nobjs;
 	/* copying sectors ids to buffer*/
-	printf("\tnks:%d \n",nks);
 
  	memcpy(&playerid,buf,sizeof(int)); 
  	buf+=sizeof(int); 
@@ -3528,7 +3395,6 @@ int ServerProcessBuffer(struct Buffer *buffer){
 	for(i=0;i<nks;i++){
 	  memcpy(&id,buf,sizeof(int));
 	  buf+=sizeof(int);
-	  /*	      printf("%d ",id); */
 	  if(gkplanets==FALSE){
 	    Add2IntIList(&(players[playerid].ksectors),id);
 	  }
@@ -3563,8 +3429,6 @@ int ServerProcessBuffer(struct Buffer *buffer){
 
 
 int ClientProcessBuffer(struct Buffer *buffer){
-
-
   struct MessageHeader mess;
   char *buf;
   int nbytes;
@@ -3577,9 +3441,6 @@ int ClientProcessBuffer(struct Buffer *buffer){
   memcpy(&mess,buf,nbytes);
   order=mess.id;
   buf+=nbytes;
-
-  //  printf("order: %d\n",order);
-
 
   switch(order){
   case OTSENDPING:
@@ -3607,7 +3468,7 @@ int ClientProcessBuffer(struct Buffer *buffer){
 
 int CopyMessHeader2Buffer(struct Buffer *buffer,  struct MessageHeader *messh){
   int nbytes;
-  //  printf("copy2buffer(1)\n");
+
   nbytes=sizeof(struct MessageHeader);
   if(buffer->n+nbytes>buffer->size){
     int newsize;
@@ -3618,7 +3479,6 @@ int CopyMessHeader2Buffer(struct Buffer *buffer,  struct MessageHeader *messh){
       exit(-1);
     } 
     buffer->size=newsize;
-    //    printf("Realloc(cmh2b) %d\n",buffer->size);
   }
 
   memcpy(buffer->data+buffer->n,messh,nbytes);
@@ -3633,7 +3493,7 @@ int CopyGlobal2Buffer(struct Buffer *buffer){
   struct Global global;
   int nbytes;
   int i;
-  //  printf("copy2buffer(2)\n");
+
   global.actual_player=actual_player;
   global.g_objid=g_objid;
   global.g_projid=g_projid;
@@ -3667,7 +3527,6 @@ int CopyGlobal2Buffer(struct Buffer *buffer){
       exit(-1);
     } 
     buffer->size=newsize;
-    //    printf("Realloc(cg2b) %d\n",buffer->size);
   }
 
   memcpy(buffer->data+buffer->n,&global,nbytes);
@@ -3678,7 +3537,7 @@ int CopyGlobal2Buffer(struct Buffer *buffer){
 int CopyPlayer2Buffer(struct Buffer *buffer,  struct Player *player){
   int nbytes;
   struct PlayerAll *playerall;
-  //  printf("copy2buffer(3)\n");
+
   nbytes=sizeof(struct PlayerAll);
   if(buffer->n+nbytes>buffer->size){
     int newsize;
@@ -3689,12 +3548,9 @@ int CopyPlayer2Buffer(struct Buffer *buffer,  struct Player *player){
       exit(-1);
     } 
     buffer->size=newsize;
-    //    printf("Realloc(cp2b) %d\n",buffer->size);
   }
 
 
-  //  memcpy(buffer->data+buffer->n,player,nbytes);
-  
   playerall=(struct PlayerAll *)(buffer->data+buffer->n);
 
   strncpy(playerall->playername,player->playername,MAXTEXTLEN);
@@ -3743,7 +3599,6 @@ int CopyPlayerMod2Buffer(struct Buffer *buffer,  struct Player *player){
       exit(-1);
     } 
     buffer->size=newsize;
-    //    printf("Realloc(cp2b) %d\n",buffer->size);
   }
 
   pmod.id=player->id;
@@ -3761,11 +3616,9 @@ int CopyPlayerMod2Buffer(struct Buffer *buffer,  struct Player *player){
 }
 
 
-
-
 int CopyOrder2Buffer(struct Buffer *buffer,  struct Order *order){
   int nbytes;
-  //  printf("copy2buffer(3)\n");
+
   nbytes=sizeof(struct Order);
   if(buffer->n+nbytes>buffer->size){
     int newsize;
@@ -3776,7 +3629,6 @@ int CopyOrder2Buffer(struct Buffer *buffer,  struct Order *order){
       exit(-1);
     } 
     buffer->size=newsize;
-    //    printf("Realloc(co2b) %d\n",buffer->size);
   }
 
   memcpy(buffer->data+buffer->n,order,nbytes);
@@ -3788,7 +3640,7 @@ int CopyOrder2Buffer(struct Buffer *buffer,  struct Order *order){
 
 int CopyInt2Buffer(struct Buffer *buffer,int *i){
   int nbytes;
-  //  printf("copy2buffer(4)\n");
+
   nbytes=sizeof(int);
   if(buffer->n+nbytes>buffer->size){
     int newsize;
@@ -3799,7 +3651,6 @@ int CopyInt2Buffer(struct Buffer *buffer,int *i){
       exit(-1);
     } 
     buffer->size=newsize;
-    //    printf("Realloc(ci2b) %d\n",buffer->size);
   }
 
   memcpy(buffer->data+buffer->n,i,nbytes);
@@ -3821,7 +3672,6 @@ int AddObjOrders2Buffer(struct Buffer *buffer,Object *obj){
   int nbytes,tbytes;
   int i,n,no;
 
-  /*  printf("AddObjOrders2Buffer(). obj %d\n",obj->id); */
 
   tbytes=0;
 
@@ -3865,4 +3715,121 @@ int AddObjOrders2Buffer(struct Buffer *buffer,Object *obj){
 }
 
 
+
+int NetMess(struct NetMess *mess,int action){
+  /*
+    A list of messages to be sended between client and server.
+    returns:
+    1 if the operation success
+    0 if no data is readed or writed.
+*/
+
+  static int cont=0;
+  static struct ListNetMess head;
+  static int sw=0;
+  struct ListNetMess *l,*lnewm;
+  int ret,n;
+
+  if(sw==0){
+    head.next=NULL;
+    sw++;
+  }
+
+  ret=0;
+
+  switch(action){
+  case NMADD:
+    if(mess==NULL)return(0);
+    
+    lnewm=malloc(sizeof(struct ListNetMess));
+    if(lnewm==NULL){ 
+      fprintf(stderr,"ERROR in malloc (NetMess)\n"); 
+      exit(-1); 
+    }
+    
+    lnewm->next=head.next;
+    lnewm->mess.id=mess->id;
+    lnewm->mess.a=mess->a;
+    lnewm->mess.b=mess->b;
+    head.next=lnewm;
+
+    cont++;
+    ret=1;
+    break;
+  case NMREAD:
+    if(head.next==NULL){
+      if(cont!=0){
+	fprintf(stderr,"ERROR in NetMess(): no data and cont=%d\n",cont);
+      }
+      ret=0;
+    }
+    else{
+      mess->id=head.next->mess.id;
+      mess->a=head.next->mess.a;
+      mess->b=head.next->mess.b;
+      lnewm=head.next;
+      head.next=head.next->next;
+      free(lnewm);
+      cont--;
+      ret=1;
+    }
+    break;
+  case NMCLEAN:
+    fprintf(stderr,"ERROR NetMess(): action %d not implemented\n",action);
+    ret=0;
+    break;
+  case NMCOUNT:
+    ret=cont;
+    break;
+  case NMPRINT:
+    n=0;
+    l=head.next;
+    while(l!=NULL){
+      printf("%d %d %d\n",l->mess.id,l->mess.a,l->mess.b);
+      n++;
+      l=l->next;
+    }
+    ret=n;
+    break;
+  default:
+    fprintf(stderr,"ERROR NetMess(): action %d not implemented\n",action);
+    exit(-1);
+    break;
+  }
+
+  return(ret);
+}
+
+int CopyNetMess2Buffer(struct Buffer *buffer,  struct NetMess *mess0){
+  /*
+    Copy the list of messages to buffer, ready to be sended between client and server.
+    returns:
+    the number of bytes writed.
+*/
+
+  int nbytes;
+  struct NetMess mess;
+
+  nbytes=sizeof(struct NetMess);
+
+  if(buffer->n+nbytes>buffer->size){
+    int newsize;
+    newsize=buffer->size+1024;
+    buffer->data=realloc(buffer->data,newsize*sizeof(char));
+    if(buffer->data==NULL){ 
+      fprintf(stderr,"ERROR in malloc Copyfile2Buf()\n");
+      exit(-1);
+    } 
+    buffer->size=newsize;
+  }
+
+  mess.id=mess0->id;
+  mess.a=mess0->a;
+  mess.b=mess0->b;
+
+  memcpy(buffer->data+buffer->n,&mess,nbytes);
+  buffer->n+=nbytes;
+  //  printf("SEND MESS: %d %d %d\n",mess.id,mess.a,mess.b);
+  return(nbytes);
+}
 

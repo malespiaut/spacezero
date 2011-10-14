@@ -83,10 +83,8 @@ int recv_buf(int sfd,char *buf){
   int nbytes;
   int a,*b;
   int n,nb;  
-  char *c;
   
   n=0;
-  c=buf;
   b=&a;
 
   nbytes=sizeof(int);

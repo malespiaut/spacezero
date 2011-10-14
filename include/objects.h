@@ -75,27 +75,6 @@
 #define SHIP7 7
 #define SHIPMAX SHIP7
 
-#define PRICESHIP0 100
-#define PRICESHIP1 100
-#define PRICESHIP2 200
-#define PRICESHIP3 300
-#define PRICESHIP4 400
-#define PRICESHIP5 200
-#define PRICESHIP6 200
-#define PRICESHIP7 0
-
-/* projectile subtypes (PROJECTILE) 49-64*/
-#define SHOT0 49
-#define SHOT1 50
-#define SHOT2 51
-#define SHOT3 52  // missile
-#define SHOT4 53  /* laser */
-#define EXPLOSION 54
-#define MISSILE SHOT3
-#define LASER SHOT4
-
-
-
 /* predefined ships */ 
 #define EXPLORER SHIP1
 #define FIGHTER SHIP3
@@ -103,6 +82,26 @@
 #define SATELLITE SHIP5
 #define TOWER SHIP6
 #define PILOT SHIP7
+
+#define PRICESHIP0 0
+#define PRICESHIP1 100
+#define PRICESHIP2 200
+#define PRICESHIP3 300
+#define PRICESHIP4 400
+#define PRICESHIP5 200
+#define PRICESHIP6 200
+#define PRICESHIP7 50
+
+/* projectile subtypes (PROJECTILE) 49-64*/
+#define SHOT0 49
+#define SHOT1 50
+#define SHOT2 51
+#define SHOT3 52  /* missile */
+#define SHOT4 53  /* laser */
+#define EXPLOSION 54
+#define MISSILE SHOT3
+#define LASER SHOT4
+
 
 /* ship items */
 #define ITSURVIVAL 1  /* has a survival pod */ 
@@ -196,7 +195,6 @@ struct Planet{
   float r;           /* radio */
   float gold;        /* (0,...] */
   float reggold;     /* index of gold regeneration */
-  //  int nships;        /* number of ships in planet */
   float A,B;         /* local, tmp variables */
 };
 
@@ -208,7 +206,6 @@ struct Order{
   float a,b,c,d;  /* internal variables */
   float e,f,g,h;
   float i,j,k,l;
-  /*  struct Order *next; */
 };
 
 
@@ -273,7 +270,8 @@ struct _Object{
 
   short subtype;    /* object subtype */
   short level;
-  float experience;
+  float experience; /* experience */
+  float pexperience;/* partial experience */
   int kills;        /*number of enemies killed */
 
   int durable;
@@ -292,7 +290,7 @@ struct _Object{
   short modified;   /* SENDOBJMOD, SENDOBJMOD0, etc, must be updated by net */
   short ttl;        /* if !=0 dont send  */
   short habitat;    /* free space or planet (H_SPACE H_PLANET)*/
-  short mode;       /* LANDED, NAV(EGATING)  */
+  short mode;       /* LANDED, NAV(EGATING), SOLD */
 
   float x,y;        /* position */
   float x0,y0;      /* old position */  
@@ -326,12 +324,12 @@ struct _Object{
   Weapon weapon1;     /* missile */
   Weapon weapon2;     /* laser beam */
   Engine engine;      /* motor */
-  Data *cdata;         /* data base */
+  Data *cdata;        /* data base */
 };
 typedef struct _Object Object;
 
 
-struct ObjectAll{ /* SENDOBJALL */
+struct ObjectAll{   /* SENDOBJALL */
   int id;           /* global identifier */
   int pid;          /* player identifier */
   char name[MAXTEXTLEN];   /* object name */
@@ -378,50 +376,48 @@ struct ObjectAll{ /* SENDOBJALL */
   float state;      /* estate of the ship %[0,100]*/
 
   float dest_r2;    /* distance**2 to the nearest object */
-  int sw;
+  int sw;           /* id of his killer */
   short trace;
  
   int norder;       /* number of pending orders */
   struct Order actorder;
 
-  int parent;     /* pointer to parent obj */
-  int dest;       /* pointer to nearest enemy object */
+  int parent;       /* pointer to parent obj */
+  int dest;         /* pointer to nearest enemy object */
   int inid;         /* Object in which is contained */ 
-  //  struct ListOrder *lorder;
 
-  int weapon;     /*weapon selected 0 1 2*/
-  Weapon weapon0;     /* actual weapon */
-  Weapon weapon1;     /* actual weapon */
-  Weapon weapon2;     /* actual weapon */
-  Engine engine;      /* motor */
-  //  Data *cdata;         /* data base */
+  int weapon;        /*weapon selected 0 1 2*/
+  Weapon weapon0;    /* actual weapon */
+  Weapon weapon1;    /* actual weapon */
+  Weapon weapon2;    /* actual weapon */
+  Engine engine;     /* motor */
 };
 
 
 
 
-struct ObjectNew{ /* SENDOBJNEW */
-  int id;         /* identificador */
+struct ObjectNew{   /* SENDOBJNEW */
+  int id;           /* identificador */
   short player;
   short type;       /* type: SHIP,PLANET,PROJECTILE,... */
 
   short subtype;    /* subtipo de objeto */
   int durable;
-  int radio;      /* ship radio */
-  int damage;     /* damage of the ship */
+  int radio;        /* ship radio */
+  int damage;       /* damage of the ship */
 
   short ai;         /* -1: by keyboard. [0,10] */
   short modified;   /* SENDOBJMOD, SENDOBJMOD0, etc, must be updated by net */
   short habitat;    /* free space or planet (H_SPACE H_PLANET)*/
   short mode;       /* LANDED, NAV(EGATING)  */
 
-  float x,y;      /* position */
-  float vx,vy;    /* velocity */
-  float a;        /* ship angle */
-  float gas;      /* gas */
-  float life;     /* time life */
+  float x,y;        /* coordinates */
+  float vx,vy;      /* velocity */
+  float a;          /* ship angle */
+  float gas;        /* gas */
+  float life;       /* time life */
 
-  int parent;     /* pointer to parent obj */
+  int parent;       /* pointer to parent obj */
   int inid;         /* Object in which is contained */ 
   int planet;
 
@@ -431,22 +427,22 @@ struct ObjectNew{ /* SENDOBJNEW */
 
 
 struct ObjectAAll{  /* SENDOBJAALL */
-  int id;         /* identificador */
+  int id;           /* identificador */
   short level;
   short habitat;    /* free space, planet or ship */
   short mode;       /* LANDED, NAVEGATING  */
-  float x,y;      /* posicion actual */
-  float x0,y0;    /* posicion anterior */  
-  float vx,vy;    /* velocidad actual */  
+  float x,y;        /* actual coordinates */
+  float x0,y0;      /* old coordinates  */  
+  float vx,vy;      /* actual velocity */  
 
-  float a;        /* angulo nave */
-  float ang_v;    /* velocidad angular */
-  float ang_a;    /* angular acceleration */
-  float accel;     /* aceleracion */
+  float a;          /* ship angle */
+  float ang_v;      /* angular velocity */
+  float ang_a;      /* angular acceleration */
+  float accel;      /* acceleration */
 
-  float gas;      /* combustible */
-  float life;     /* tiempo de vida */
-  float state;    /* estado de la nave %[0,100]*/
+  float gas;        /* fuel */
+  float life;       /* life time */
+  float state;      /* ship state %[0,100]*/
 
   int inid;         /* Object id in which is contained */ 
 };
@@ -458,22 +454,19 @@ struct Objectdynamic{ /* SENDOBJMOD */
   short habitat;   /* free space or planet */
   int inid;        /* id of the container */
   short mode;      /* LANDED, NAVEGATING  */
-  float x,y;       /* posicion actual */
-  float x0,y0;     /* posicion anterior */   
-  float vx,vy;     /* velocidad actual */ 
-  float a;         /* angulo nave */
-  float ang_v;     /* velocidad angular */
+  float x,y;       /* actual coordinates */
+  float x0,y0;     /* old coordinates */   
+  float vx,vy;     /* actual velocity */ 
+  float a;         /* ship angle */
+  float ang_v;     /* angular velocity */
   float ang_a;     /* angular acceleration */
-  float accel;     /* aceleracion */
-
-  float state;     /* estado de la nave %[0,100]*/
+  float accel;     /* aceleration */
+  float state;     /* ship state %[0,100]*/
 };
 
-struct Objectpos{  /* SENDOBJMOD0 */
-  int id;         /* identificador */
-  float x,y;      /* posicion actual */
-  //  float x0,y0;    /* posicion anterior */
-  //  float a;        /* angulo nave */
+struct Objectpos{   /* SENDOBJMOD0 */
+  int id;           /* identificador */
+  float x,y;        /* actual coordinates */
 };
 
 struct NearObject{
@@ -521,24 +514,24 @@ struct Global{
 struct Player{
   char playername[MAXTEXTLEN]; /* name of the player */
   short id;          /* player id */
-  int pid;         /* last ship player id  */
+  int pid;           /* last ship player id  */
   short proc;        /* machine that controls it */
   short control;     /* HUMAN or COMPUTER */
   short team;        /* each player belongs to a team */
   short profile;     /* */
   short strategy;    /* */
   short maxlevel;    /* max ship level reached */
-  int color;       /*    */
-  int cv;          /* id of the actual ship */
-  int nplanets;    /* number of players planets */
-  int nships;      /* number of players ships */
-  int nbuildships; /* number of ships created */
-  float gold;      /* actual gold of the player */ 
+  int color;         /*    */
+  int cv;            /* id of the actual ship */
+  int nplanets;      /* number of players planets */
+  int nships;        /* number of players ships */
+  int nbuildships;   /* number of ships created */
+  float gold;        /* actual gold of the player */ 
   float balance;
-  int lastaction;  /* buy or upgrade */
-  int ndeaths;     /* number of casualties */
-  int nkills;      /* number of enemies killed  */
-  int points;      /*  */
+  int lastaction;    /* buy or upgrade */
+  int ndeaths;       /* number of casualties */
+  int nkills;        /* number of enemies killed  */
+  int points;        /*  */
   short modified;    /* used in communication */
   short ttl;
 
@@ -573,15 +566,15 @@ struct PlayerAll{
 
 
 
-struct PlayerMod{  /* Used in communication  */
+struct PlayerMod{    /* Used in communication  */
   short id;
   short nplanets;    /* number of players planets */
   short nships;      /* number of players ships */
   short nbuildships; /* number of ships created */
-  float gold;      /* actual gold of the player */ 
+  float gold;        /* actual gold of the player */ 
   short ndeaths;     /* number of casualties */
   short nkills;      /* number of enemies killed  */
-  int points;      /*  */
+  int points;        /*  */
 };
 
 
@@ -599,7 +592,7 @@ struct Planet *NewPlanet(void);
 int GetSegment(Segment *segment,Object *obj);
 int GetLandedZone(Segment *segment,struct Planet *planet);
 
-Object *RemoveDeadObjs(struct HeadObjList *lhobjs,Object *);
+Object *RemoveDeadObjs(struct HeadObjList *lhobjs,Object *,struct Player *p);
 void RemoveObj(struct HeadObjList *lhobjs,Object *obj2remove);
 
 int CountObjs(struct HeadObjList *lh,int player,int type,int subtype);
@@ -679,7 +672,9 @@ int ValueCell(int *cell,Object *obj);
 int CreatePilot( Object *obj);
 int EjectPilots(struct HeadObjList *lh);
 int EjectPilotsObj(struct HeadObjList *lh,Object *obj);
-void GetPointsObj(struct HeadObjList *lhobjs,struct Player *p,Object *obj);
+
+float Distance2(Object *obj1,Object *obj2);
+
 
 /*************************/
 

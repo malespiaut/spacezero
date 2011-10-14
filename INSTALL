@@ -28,10 +28,12 @@ and as root:
 
 #make install
 
-The necessary executable file is copied to /usr/local/games.
+for a full system instalation.
+The necessary executable file is copied to /usr/local/bin.
 The necessary data files are copied to /usr/local/share/spacezero.
 A config directory is created in your home directory as .spacezero
 
+You can change the default target directories in Makefile.
 
 Miscellaneous Notes
 ===================

@@ -80,8 +80,9 @@
 #define SENDPLANETLIST 22 
 #define SENDSECTORLIST 23
 #define SENDPAUSE 24
-#define SENDOK 25
-#define SENDEND 26
+#define SENDMESS 25
+#define SENDOK 26
+#define SENDEND 27
 
 /* object modify types, used in transmission buffer */
 
@@ -99,6 +100,14 @@
 #define SENDOBJNOTSEND 44 /* dont send */
 
 
+#define NMPLANETDISCOVERED 1
+
+#define NMADD   1
+#define NMREAD  2
+#define NMCLEAN 3
+#define NMCOUNT  4
+#define NMPRINT  5
+
 
 struct Thread_arg{
   int sfd;
@@ -111,8 +120,17 @@ struct Sockfd{
   int sfd,sfd2;
   int nsfd,nsfd2;
 };
+ 
+struct NetMess{
+  int id;
+  int a,b;
+};
 
-  
+struct ListNetMess{
+  struct NetMess mess;
+  struct ListNetMess *next;
+};
+
 /* Declaracion de funciones */
   
 int OpenComm(int mode,struct Parametres param,struct Sockfd *sfd);
@@ -132,10 +150,13 @@ int AddObjOrders2Buffer(struct Buffer *buffer,Object *obj);
 int CopyObjOrdersfromBuffer(Object *obj0,char *buf);
 
 
-void Print_Message(struct Message *mess);
+void PrintTextMessage(struct Message *mess);
 void SendTextMessage(char *mess);
 int PendingTextMessage(void);
 void GetTextMessage(char *mess);
+
+int NetMess(struct NetMess *,int action);
+int CopyNetMess2Buffer(struct Buffer *buffer,  struct NetMess *mess0);
 
 int SetModified(Object *obj,int mode);
 int SetModifiedAll(struct HeadObjList *lh,int type,int mode,int force);

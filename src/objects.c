@@ -1332,7 +1332,7 @@ Object *SelectOneShip(struct HeadObjList *lh,Region reg,Object *cv,int ctrl){
     select the nearest obj to mouse pointer
     return the obj selected
   */
-
+  
   struct ObjList *ls;
   Rectangle rect;
   int x,y;
@@ -1525,6 +1525,7 @@ int NearestObjs(struct HeadObjList *lh,Object *obj,int type,int status,int n,str
   int sw1p,sw2p;
   int i,j;
   int m;
+  int gkplanets;
 
   if(obj==NULL)return(0);
   /*   printf("obj.type=%d   ID:%d\n",obj->type,obj->id); */
@@ -1545,6 +1546,8 @@ int NearestObjs(struct HeadObjList *lh,Object *obj,int type,int status,int n,str
     sw1p=TRUE;
   }
 
+  gkplanets=GameParametres(GET,GKPLANETS,0);
+
   m=0;
   ls=lh->next;
   while(ls!=NULL){
@@ -1554,7 +1557,7 @@ int NearestObjs(struct HeadObjList *lh,Object *obj,int type,int status,int n,str
     if(ls->obj->type==SHIP && ls->obj->ttl<MINTTL){ls=ls->next;continue;}
 
     if(type==PLANET){
-      if(GameParametres(GET,GKPLANETS,0)==FALSE) 
+      if(gkplanets==FALSE) 
 	if(IsInIntList((players[player].kplanets),ls->obj->id)==0){
 	  ls=ls->next;continue;
 	}
@@ -2050,10 +2053,10 @@ int UpdateSectors(struct HeadObjList lh){
 }
 
 int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
-			int source,int dest,int mid,int time,int value){
+			int source,int dest,int mid,int time,int priority){
   /* 
      version 02. April 2 2011
-     add the integer id to the list by priority given by value
+     add the integer id to the list by priority given by priority
      if is not already added.
      where:
      cad: the message.
@@ -2061,7 +2064,7 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
      dest: the destination player. -1 : for all players
      mid: is a message indentifier.
      time: the duration of the message in centiseconds.
-     value: priority.
+     priority: priority.
      returns:
      0 if the message is added to the list
      1 if not, because is already added.
@@ -2078,12 +2081,12 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
   lh=listhead;
   while(lh->next!=NULL){
 
-    if(lh->next->info.source==source && lh->next->info.id==mid && lh->next->info.value==value){ /* already added */
-      //      if(value)printf("message (%s)rejected\n",cad);
+    if(lh->next->info.source==source && lh->next->info.id==mid && lh->next->info.value==priority){ /* already added */
+      //      if(priority)printf("message (%s)rejected\n",cad);
       return(1);
     }
 
-    if(lh->next->info.value<value){ /* added before end */
+    if(lh->next->info.value<priority){ /* added before end */
       /* printf("BREAK\n"); */
       break;
     }
@@ -2101,7 +2104,7 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
   list->info.source=source;
   list->info.dest=dest;
   list->info.id=mid;
-  list->info.value=value;
+  list->info.value=priority;
   list->info.time=GetTime();
   list->info.print=0;
   list->info.duration=time;
@@ -2714,6 +2717,7 @@ int IsInObjList(struct HeadObjList *lhobjs,Object *obj){
   struct ObjList *ls;
   if(lhobjs==NULL)return(-1);
   if(obj==NULL)return(0);
+
   ls=lhobjs->next;
   while(ls!=NULL){
     if(ls->obj==obj)return(1);
@@ -2849,6 +2853,7 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
   int i,n;
   int proc;
   int value0;
+  int gulx,guly;
 
   for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
     if(hcontainer[i].next!=NULL){ 
@@ -2858,6 +2863,9 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
   }
 
   nplanets=GameParametres(GET,GNPLANETS,0);
+  gulx=GameParametres(GET,GULX,0);
+  guly=GameParametres(GET,GULY,0);
+
   proc=GetProc();
 
   ls=lh->next;
@@ -2937,7 +2945,7 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
 	continue;
 	break;
       }
-      if(ValueCell(cell,obj)==value0){
+      if(ValueCell(cell,obj,gulx,guly)==value0){
 	//	printf("type. %d \n",obj->type);
 	ls=ls->next;continue;
       }
@@ -2958,14 +2966,14 @@ int CreatekplanetsLists(struct HeadObjList *lh,struct HeadObjList *hkplanets){
      returns the number of objects of the list.
    */
   struct ObjList *ls;
-  int nplayers;
+  int gnplayers;
   int i;
   int proc;
 
   proc=GetProc();
-  nplayers=GameParametres(GET,GNPLAYERS,0);
+  gnplayers=GameParametres(GET,GNPLAYERS,0);
 
-  for(i=0;i<nplayers+1;i++){
+  for(i=0;i<gnplayers+1;i++){
     if(hkplanets[i].next!=NULL){ 
       fprintf(stderr,"WARNING: CkpL() not NULL\n"); 
     } 
@@ -2977,7 +2985,7 @@ int CreatekplanetsLists(struct HeadObjList *lh,struct HeadObjList *hkplanets){
 
     if(ls->obj->type!=PLANET){ls=ls->next;continue;}
 
-    for(i=0;i<nplayers+2;i++){
+    for(i=0;i<gnplayers+2;i++){
       if(proc==players[i].proc){
 	if(IsInIntList(players[i].kplanets,ls->obj->id)){
 	  Add2ObjList(&hkplanets[i],ls->obj);
@@ -3588,7 +3596,7 @@ int UpdateCell(struct HeadObjList *lh,int *cell){
 }
 
 
-int ValueCell(int *cell,Object *obj){
+int ValueCell(int *cell,Object *obj,int gulx,int guly){
   /*
     HERECOM
   */
@@ -3596,7 +3604,7 @@ int ValueCell(int *cell,Object *obj){
   int dx,dy;
   int nx,ny;
   int index;
-  int gulx,guly;
+
 
   if(cell==NULL){
     fprintf(stderr,"ERROR: ValueCell(): cell NULL\n");
@@ -3609,9 +3617,6 @@ int ValueCell(int *cell,Object *obj){
     return(0);
   }
 
-  gulx=GameParametres(GET,GULX,0);
-  guly=GameParametres(GET,GULY,0);
-  
   dx=gulx/DL;
   dy=guly/DL;
 
@@ -3859,7 +3864,7 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
   Segment *s;
   float r;
   int n=0;
-  int proc;
+  int proc,gnet;
 
 
   if(obj==NULL)return(0);
@@ -3867,6 +3872,7 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
   if(!(obj->items & ITPILOT))return(0);
 
   proc=GetProc();
+  gnet=GameParametres(GET,GNET,0);
   ls=lh->next;
   while(ls!=NULL){
 
@@ -3910,7 +3916,7 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
       //	pilot->selected=FALSE;
       if(pilot->player==actual_player)printf("Pilot %d (%d) saved in planet %d\n",pilot->pid,pilot->id,pilot->in->id);
       DelAllOrder(pilot);
-      if(GameParametres(GET,GNET,0)==TRUE){
+      if(gnet==TRUE){
 	SetModified(pilot,SENDOBJALL);
       }
       n++;
@@ -3938,13 +3944,8 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
       pilot->items=0;
       if(pilot->player==actual_player)printf("Pilot %d ejected from ship %d\n",pilot->pid,obj->pid);
 
-      /* HERE PRODUCTION: delete next lines*/
-      {
-	printf("Pilot %d ejected from ship %d\n",pilot->pid,obj->pid);
-      }
-
       DelAllOrder(pilot);
-      if(GameParametres(GET,GNET,0)==TRUE){
+      if(gnet==TRUE){
 	SetModified(pilot,SENDOBJALL);
 	if(pilot->modified!=SENDOBJALL){
 	  printf("PILOT EJECT mod: %d\n",pilot->modified);

@@ -910,6 +910,7 @@ void ExecGoto(Object *obj,struct Order *ord){
     }
     if(swaccel){
       obj->accel+=obj->engine.a;
+      //      if(obj->mode==LANDED)obj->mode=NAV;
       if(obj->accel > obj->engine.a_max)
 	obj->accel=obj->engine.a_max;
     }
@@ -1750,10 +1751,9 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
   int gnplanets;
 
   struct CCDATA *ccdata;
-  static int cont=0;
-
-
   struct PlanetInfo *pinfo1;
+  int nplanets;
+  static int *shipsinplanet;
 
   pinfo1=NULL;
   no=0;
@@ -1765,6 +1765,17 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
 
 
   /* gathering information */
+  nplanets=GameParametres(GET,GNPLANETS,0)+1;
+
+  shipsinplanet=malloc(nplanets*sizeof(int));
+  if(shipsinplanet==NULL){
+    fprintf(stderr,"ERROR in malloc ControlCenter()\n");
+    exit(-1);
+  }
+
+  for(i=0;i<nplanets;i++){
+    shipsinplanet[i]=-1;
+  }
 
   ccdata=&ccdatap[player.id];
   ccdata->time--;
@@ -1780,16 +1791,12 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
     CalcCCInfo(lhobjs,&listheadkplanets[player.id],player.id,ccdata);
     /* Calc the planet with less towers and weakest. */
     CalcCCPlanetStrength(player.id,ccdata);
+
+
   }
 
   //  printf("player: %d --",player.id);
 
-  if(player.id==2)cont++;
-
-  if(0&&player.id==4){
-    printf("player: %d -- %p\n",player.id, ccdata->planetinfo);   
-    PrintCCPlanetInfo(ccdata);    
-  }
   /* --gathering information */
 
   gnplanets=GameParametres(GET,GNPLANETS,0);
@@ -1857,7 +1864,6 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
     if(obj->habitat==H_PLANET){
       if(players[obj->in->player].team!=players[obj->player].team){
 	CalcEnemyPlanetInfo(lhobjs,ccdata,obj);
-
       }
     }
 
@@ -1887,11 +1893,15 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
       switch(obj->mode){
       case LANDED:
 	/* sending ship to atack or to new planets */
-	if(CountShipsInPlanet(lhobjs,ls->obj->in->id,SHIP,-1,2)<2)break;
+	if(shipsinplanet[ls->obj->in->id] == -1){
+	  shipsinplanet[ls->obj->in->id]=CountShipsInPlanet(lhobjs,ls->obj->in->id,SHIP,-1,2);
+	}
+	if(shipsinplanet[ls->obj->in->id] < 2)break;
+
 
 	/* goto nearest inexplore or empty planet */
 	no=NearestCCPlanets(ccdata,obj,PINEXPLORE,nobjs);
-
+	
 
 	/* if war */
 	if(ccdata->war && obj->subtype==FIGHTER){
@@ -2091,16 +2101,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
       if(obj->cdata->obj[2]!=NULL && obj->cdata->d2[2] < 2*obj->radar*obj->radar){
 	sw+=4; /* just discovered planet */
       }
-/*       if(obj->cdata->obj[2]!=NULL){ */
-/* 	printf("%d np:%d\n",obj->id,obj->cdata->obj[2]->id); */
-/*       } */
-/*       else{ */
-/* 	printf("%d np:NULL\n",obj->id); */
-/*       } */
-/*       if(obj==cv){ */
-/* 	if(obj->cdata->obj[2]!=NULL) */
-/* 	  printf("np:%d\n",obj->cdata->obj[2]->id); */
-/*       } */
+
       if(sw){
 	nplanet=NULL;
 	if(sw>=4){
@@ -2173,6 +2174,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
   if(ordersw>0){
     ccdata->time=0;
   }
+  free(shipsinplanet);
   return;
 }
 
@@ -3415,9 +3417,13 @@ void GetInformation(struct Player *p1,struct Player *p2,Object *obj){
   */
   struct IntList *ks;
   char text[MAXTEXTLEN];  
+  int gnplanets,gnet;
 
   if(p1==NULL||p2==NULL)return;
   if(obj==NULL)return;
+
+  gnplanets=GameParametres(GET,GNPLANETS,0);
+  gnet=GameParametres(GET,GNET,0);
 
   ks=p2->kplanets;
   while(ks!=NULL){
@@ -3430,12 +3436,20 @@ void GetInformation(struct Player *p1,struct Player *p2,Object *obj){
     }
     else{
       /* if are enemies */ 
-      if((2./3*GameParametres(GET,GNPLANETS,0))*((float)rand()/RAND_MAX)<1){
+      if((((obj->level+0.5)/3.)*gnplanets)*((float)rand()/RAND_MAX)<1){
 	if(!IsInIntList(p1->kplanets,ks->id)){
 	  p1->kplanets=Add2IntList(p1->kplanets,ks->id);
 	  snprintf(text,MAXTEXTLEN,"Received info from enemy");
 	  /*	  fprintf(stdout,"Received info from enemy"); */
 	  Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0);
+
+	  if(gnet==TRUE){
+	    struct NetMess mess;
+	    mess.id=NMPLANETDISCOVERED;
+	    mess.a=obj->id;
+	    mess.b=ks->id;
+	    NetMess(&mess,NMADD);
+	  }
 	}
       }
     }

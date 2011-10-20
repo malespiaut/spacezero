@@ -7,6 +7,7 @@
     <title>Spacezero: "A RTS space game"</title>
     <link href="manual_files/cssscreen.css" rel="stylesheet" media="screen">
     <link href="manual_files/cssprint.css" rel="stylesheet" media="print">
+    <link rel="shortcut icon" href="manual_files/space.ico" type="image/ico" >
   </head>
   <body id="manual">
     <div class="rightcolumn">
@@ -195,7 +196,10 @@
 		  <tr>
 		    <td>BUY</td>
 		    <td>You can buy any available ship, if you have
-		      enough gold. The ship must be landed.</td>
+		      enough gold. The ship must be landed. <br> 
+		      If you are not in a planet of your own, you can't
+		      buy Towers.<br>
+		    The Pilots only can buy Figthers.</td>
 		  </tr>
 		  <tr bgcolor="#000000">
 		    
@@ -258,9 +262,9 @@
 	     <ul>
 	  <li>STOP:<br>
 
-	    If the ship is in outer space: stop, doesnt accelerate but can fire. <br>
+	    If the ship is in outer space: stop, doesn't accelerate but can fire. <br>
 
-	    Inner a planet: first land and stay on ground, doesnt take
+	    Inner a planet: first land and stay on ground, doesn't take
             off but can fire. Never take off.<br>
 
 	    The order STOP is applied except in the next case: 
@@ -347,7 +351,7 @@
 	  <hr>
 	  <h3>Window and ship centered view modes.</h3>
 	  
-	  Pressing "n" is possible to change between two
+	  Pressing "Ctrl-n" is possible to change between two
 	  view modes: centered at the ship or centered at the
 	  window.
 	  
@@ -450,7 +454,9 @@
 	    "z" and "Z".
 	    <br>The cursor keys allows you to move along the map.<br>
 	    &lt;space&gt; centers the map in the actual ship.<br>
-	    Mouse pointer shows you the coordinates.
+	    Over the mouse pointer its displayed the space coordinates and the
+	    distance in sectors from the selected ship to the mouse
+	    pointer.
 	  </p>
 	  
 	  
@@ -472,7 +478,6 @@
 		  The explored universe is marked with dark red
 		  crosses. The universe has a limit; beyond that
 		  there are no marks.
-		  
 	      </td>
 	    </tr>
 	  </tbody></table>
@@ -554,7 +559,6 @@
 	    </tr>
 	  </tbody></table>
 	  
-	  
 	  <p>Pressing the "f6" key a sort game
 	    statistics are displayed with the next information:
 	  </p>
@@ -571,7 +575,7 @@
 	    Ships experience increase during the game. When a ship
 	    reaches a maximun it can upgrade to the next
 	    level. This way it can get new arms, better defense
-	    and more power. If a ship is upgrade its state and
+	    and more power. If a ship is upgraded, its state and
 	    energy is restored to the maximun value.<br><br>
 	    
 	    The ships can get experience in any of the following ways:
@@ -579,7 +583,12 @@
 	  <p>
 	    <b>In combat</b>, when a ship is reached by a shot,
 	    destroying an enemy ship and conquering an enemy or
-	    empty planet.
+	    empty planet.<br>
+	   
+	    When a ship conquer a planet there is a probability to
+	    received info from enemy (the coordinates of some
+	    planet). This probability increase with ship's level.
+	    
 	  <p>
 	    <b>Exploring</b>, Discovering new planets.
 	    
@@ -678,9 +687,14 @@
 	    <h3>Loading and saving games:</h3>
 	    
 	    &lt;Ctrl&gt;-s and &lt;Ctrl&gt;-l will save and load a game. Only two
-	    games can be saved: one for single game and another one for a net
-	    game.
+	    games can be saved: one for single games and another one for a net
+	    games.
 	    <br>In a net game only the server can save and load games.
+
+	    <h3>Pausing a game:</h3>
+	    
+	    &lt;Ctrl&gt;-p will paused the game.
+	    
 	    
 	    <h3>Quitting a game:</h3>
 	    
@@ -739,8 +753,8 @@
 	<tr><td>Esc		</td><td>exit from order menu.</td></tr>
 	<tr><td>m		</td><td>show-hide space map.</td></tr>
 	<tr><td>a, i		</td><td>automatic-manual mode.</td></tr>
-	<tr><td>n		</td><td>window, ship mode view</td></tr>
-	<tr><td>p		</td><td>pause game</td></tr>
+	<tr><td>Ctrl-n		</td><td>window, ship mode view</td></tr>
+	<tr><td>Ctrl-p		</td><td>pause game</td></tr>
 	<tr><td>Ctrl-q		</td><td>quit game.</td></tr>
 	<tr><td>Ctrl-s		</td><td>save game.</td></tr>
 	<tr><td>Ctrl-l		</td><td>load game.</td></tr>
@@ -793,6 +807,20 @@
 <p>Not so tested in an internet connection. Maybe doesn't work
   properly.</p>
 
+<p>
+  Please, send bugs using the sourceforge tracking tool:<br>
+  
+  <a href="http://sourceforge.net/tracker/?func=add&group_id=354739&atid=1481717">Send bug</a>
+  
+<p>
+  Use the Feature Request tool from sourceforge
+  to <a href="http://sourceforge.net/tracker/?func=add&group_id=354739&atid=1481720
+	      ">send suggestions</a>
+<p>
+  Or send bugs and suggestions to
+  &lt;mrevenga at users.sourceforge.net&gt;.</p>
+
+
 </div>
 
 <!---------------------------------------------------------------->
@@ -800,7 +828,7 @@
 
 <div class="footer"><hr>
   <p>Copyright © 2010-2011 MRevenga <br>
-    Site last updated Sep 4, 2011</p>
+    Site last updated Oct 18, 2011</p>
 </div>
 </div>
 <div class="leftcolumn">

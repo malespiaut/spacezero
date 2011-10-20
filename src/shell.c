@@ -507,16 +507,26 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   switch(order){
 
   case TAKEOFF:
-    if(obj->engine.type<=ENGINE1)return(NULL);
-    if(obj->type==SHIP && obj->subtype==PILOT)return(NULL);
     if(obj->habitat!=H_PLANET)return(NULL);
+    if(obj->type==SHIP && obj->subtype==PILOT)return(NULL);
+    if(obj->type==SHIP && obj->subtype==TOWER && obj->ai==0){
+      obj->ai=1;
+      return(NULL);
+    }
+    if(obj->engine.type<=ENGINE1)return(NULL);
+
+
     break;
   case RETREAT:
   case EXPLORE:
   case STOP:
   case GOTO:
-    if(obj->engine.type<=ENGINE1)return(NULL);
     if(obj->type==SHIP && obj->subtype==PILOT)return(NULL);
+    if(obj->type==SHIP && obj->subtype==TOWER && obj->ai==0){
+      obj->ai=1;
+      return(NULL);
+    }
+    if(obj->engine.type<=ENGINE1)return(NULL);
     break;
   case SELL:
     if(obj->type==SHIP && obj->subtype==PILOT){
@@ -921,9 +931,18 @@ void SelectionBox(Object **pcv,int reset){
   Object *cv;
   int n;  
 
+  if(0){
+    if(*pcv==NULL){
+      printf("SOS: %p\n",cv0);
+      if(keys.mleft==TRUE){ /* mouse release */
+	cv0=SelectOneShip(&listheadobjs,region,NULL,keys.ctrl);
+	printf("SOS: %p\n",cv0);
+	*pcv=cv0;
+      }
+    }
+  }
 
   if(*pcv==NULL)return;
-
   cv=*pcv;
 
   if(cv0!=cv){
@@ -981,47 +1000,40 @@ void SelectionBox(Object **pcv,int reset){
 	  sw=0;
 
 	  /***** mouse selection, one click *****/
-	  {
-	    //	    keys.esc=TRUE;
-	    if(region.habitat>0){
-	      region.rect.y=GameParametres(GET,GHEIGHT,0)-region.rect.y;
-	    }
-	    
-	    Window2Real(cv,region.habitat,region.rect.x,region.rect.y,&x0,&y0); 
-	    Window2Real(cv,region.habitat,region.rect.x+region.rect.width, 
-			region.rect.y+region.rect.height, 
-			&x1,&y1); 
-	    
-	    region.rect.x=x0; 
-	    region.rect.y=y0; 
-	    region.rect.width=0; 
-	    region.rect.height=0; 
-	   
-	    if(region.habitat>=0){
-	      cv0=SelectOneShip(&listheadobjs,region,cv,keys.ctrl);
-	      if(cv0!=NULL){
-		if(keys.ctrl==TRUE){
-		  if(cv0->selected==TRUE){
-		    if(CountSelected(&listheadobjs,cv->player)>1){
-		      cv0->selected=cv0->selected==TRUE?FALSE:TRUE;
-		      if(cv==cv0 && cv0->selected==FALSE){
-			*pcv=FirstSelected(&listheadobjs,cv->player);
-			habitat.type=(*pcv)->habitat;
-			habitat.obj=(*pcv)->in;
-			(*pcv)->selected=TRUE;
-		      }
+
+	  //	    keys.esc=TRUE;
+	  if(region.habitat>0){
+	    region.rect.y=GameParametres(GET,GHEIGHT,0)-region.rect.y;
+	  }
+	  
+	  Window2Real(cv,region.habitat,region.rect.x,region.rect.y,&x0,&y0); 
+	  Window2Real(cv,region.habitat,region.rect.x+region.rect.width, 
+		      region.rect.y+region.rect.height, 
+		      &x1,&y1); 
+	  
+	  region.rect.x=x0; 
+	  region.rect.y=y0; 
+	  region.rect.width=0; 
+	  region.rect.height=0; 
+	  
+	  if(region.habitat>=0){
+	    cv0=SelectOneShip(&listheadobjs,region,cv,keys.ctrl);
+	    if(cv0==NULL)cv0=cv;
+	    if(cv0!=NULL){
+	      if(keys.ctrl==TRUE){
+		if(cv0->selected==TRUE){
+		  if(CountSelected(&listheadobjs,cv->player)>1){
+		    cv0->selected=cv0->selected==TRUE?FALSE:TRUE;
+		    if(cv==cv0 && cv0->selected==FALSE){
+		      *pcv=FirstSelected(&listheadobjs,cv->player);
+		      habitat.type=(*pcv)->habitat;
+		      habitat.obj=(*pcv)->in;
+		      (*pcv)->selected=TRUE;
 		    }
-		  }
-		  else{
-		    //		    cv->selected=FALSE;
-		    *pcv=cv0;
-		    habitat.type=(*pcv)->habitat;
-		    habitat.obj=(*pcv)->in;
-		    (*pcv)->selected=TRUE;
 		  }
 		}
 		else{
-		  cv->selected=FALSE;
+		  //		    cv->selected=FALSE;
 		  *pcv=cv0;
 		  habitat.type=(*pcv)->habitat;
 		  habitat.obj=(*pcv)->in;
@@ -1029,11 +1041,19 @@ void SelectionBox(Object **pcv,int reset){
 		}
 	      }
 	      else{
-		fprintf(stderr,"WARNING SelectionBox() cv0=NULL\n");
-		//		exit(-1); // HERE PRODUCTION this never must happen
+		cv->selected=FALSE;
+		*pcv=cv0;
+		habitat.type=(*pcv)->habitat;
+		habitat.obj=(*pcv)->in;
+		(*pcv)->selected=TRUE;
 	      }
 	    }
+	    else{
+	      fprintf(stderr,"WARNING SelectionBox() cv0=NULL\n");
+	      //		exit(-1); // HERE PRODUCTION this never must happen
+	    }
 	  }
+	  
 	  /***** --mouse selection, one click *****/
 
 	}

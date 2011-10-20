@@ -69,7 +69,7 @@ extern sem_t sem_barrier1;
 
 extern int order2thread;
 
-extern int actual_player;
+extern int actual_player,actual_player0;
 extern Object *ship_c;
 extern int g_objid;
 extern int g_projid;
@@ -1720,7 +1720,6 @@ int ReadObjsfromBuffer(char *buf){
 	player=&players[playerall.id];
 
 	strncpy(player->playername,playerall.playername,MAXTEXTLEN);
-	printf("received player: %s\n",player->playername); //PRODUCTION delete this line.
 
 	player->id=playerall.id;
 	player->pid=playerall.pid;
@@ -1817,6 +1816,15 @@ int ReadObjsfromBuffer(char *buf){
 		  }
 		}
 	      }
+	    }
+	  }
+	  break;
+	case NMPLANETLOST:
+	  {
+	    char text[MAXTEXTLEN];
+	    if(GetProc()==players[mess.a].proc){
+	      snprintf(text,MAXTEXTLEN,"PLANET %d LOST",mess.b);
+	      Add2TextMessageList(&listheadtext,text,mess.b,mess.a,0,100,2);
 	    }
 	  }
 	  break;
@@ -2878,6 +2886,7 @@ void Setttl0(struct HeadObjList *lh){
 	      break;
 	    case 4:  /* (0,900p) */
 	      if(obj->type==SHIP && obj->subtype==PILOT && obj->mode==LANDED){  
+		/* less than zero tll means: send now and set ttl to -ttl (in Settl())*/
 	       	obj->ttl=-(90+obj->id%20);
 	       	SetModified(obj,SENDOBJMOD0); 
 	      }
@@ -3016,7 +3025,6 @@ void Setttl(struct HeadObjList *lh,int n){
     obj=ls->obj;
 
     if(obj->ttl<=0){ /* objects just sended */
-
       if(obj->ttl<=-4){
 	obj->ttl=-obj->ttl;
 	ls=ls->next;continue;
@@ -3053,7 +3061,6 @@ void Setttl(struct HeadObjList *lh,int n){
 	  case 4:  /* (0,900p) */
 	    if(obj->type==SHIP && obj->subtype==PILOT && obj->mode==LANDED){ 
 	      obj->ttl=(90+obj->id%20);
-	      if(obj->mode==LANDED && obj->type==SHIP && obj->subtype==TOWER)obj->ttl*=2;
 	    } 
 	    else{
 	      obj->ttl=2;//0
@@ -3067,11 +3074,8 @@ void Setttl(struct HeadObjList *lh,int n){
 	    break;
 	  default:
 	    break;
-
 	  }
-
 	}
-
 	break;
       case PLANET:
 	obj->ttl=400+(obj->id%100);
@@ -3331,7 +3335,6 @@ int ServerProcessBuffer(struct Buffer *buffer){
 
 
 	strncpy(player->playername,playerall.playername,MAXTEXTLEN);
-	printf("received player: %s\n",player->playername);
 	player->id=playerall.id;
 	player->pid=playerall.pid;
 	player->proc=playerall.proc;
@@ -3494,7 +3497,7 @@ int CopyGlobal2Buffer(struct Buffer *buffer){
   int nbytes;
   int i;
 
-  global.actual_player=actual_player;
+  global.actual_player=actual_player0;
   global.g_objid=g_objid;
   global.g_projid=g_projid;
   global.ship_c=0;
@@ -3554,7 +3557,6 @@ int CopyPlayer2Buffer(struct Buffer *buffer,  struct Player *player){
   playerall=(struct PlayerAll *)(buffer->data+buffer->n);
 
   strncpy(playerall->playername,player->playername,MAXTEXTLEN);
-  printf("received player: %s\n",player->playername);
   
   playerall->id=player->id;
   playerall->pid=player->pid;

@@ -466,7 +466,7 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "a i\t\t automatic-manual mode.\n");
   (void) fprintf( stdout, 
-		  "n\t\t window, ship mode view.\n");
+		  "Ctrl-n\t\t window, ship mode view.\n");
   (void) fprintf( stdout, 
 		  "Ctrl-p\t\t pause game\n");
   (void) fprintf( stdout, 

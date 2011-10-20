@@ -101,10 +101,11 @@
 
 
 #define NMPLANETDISCOVERED 1
+#define NMPLANETLOST       2
 
-#define NMADD   1
-#define NMREAD  2
-#define NMCLEAN 3
+#define NMADD    1
+#define NMREAD   2
+#define NMCLEAN  3
 #define NMCOUNT  4
 #define NMPRINT  5
 

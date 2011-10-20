@@ -95,9 +95,9 @@ mrproper: clean
 #		$(CC)  $(CFLAGS)   $(LDFLAGS) $(GTKFLAGS) -c $< -o  $@ 
 
 # add -pg for profile
-#.c.o:	
-#		$(CC) -pg  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
+.c.o:	
+		$(CC) -pg  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
 
 # add -g for debug
-.c.o:	
-		$(CC) -g  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
+#.c.o:	
+#		$(CC) -g  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 

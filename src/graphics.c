@@ -305,7 +305,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   strcat(labelhelp,"f5\t\t\tshow a ship list.\n");
   strcat(labelhelp,"f6\t\t\tshow game statistics.\n");
   strcat(labelhelp,"m\t\t\tshow space map.\n");
-  strcat(labelhelp,"n\t\t\twindow, ship mode view.\n");
+  strcat(labelhelp,"Ctrl-n\t\twindow, ship mode view.\n");
   strcat(labelhelp,"Ctrl-p\t\tpause game\n");
   strcat(labelhelp,"Ctrl-s\t\tsave the game.\n");
   strcat(labelhelp,"Ctrl-l\t\t\tload the saved game.\n");
@@ -2313,7 +2313,6 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
       break;
     case SHIP:
       switch(ls->obj->subtype){
-
       case PILOT:
 	{
 	  int interval=20;
@@ -2321,6 +2320,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 	    interval=10;
 	  }
 	  if(GetTime()%interval < interval/2 ){
+	    gc=penRed;
 	    gdk_draw_line(pixmap,gc,
 			  x-4,gheight-y,
 			  x-2,gheight-y);
@@ -4000,9 +4000,8 @@ void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv){
 
   int x0,y0,x1,y1;
 
-
   if(reg.habitat<0){
-    fprintf(stderr,"ERROR: DrawSelectionBox(): reb habitat=%d (<0)",reg.habitat);
+    fprintf(stderr,"ERROR: DrawSelectionBox(): reb habitat=%d (<0)\n",reg.habitat);
     return;
   }
   rect.x=reg.rect.x;

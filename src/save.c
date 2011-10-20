@@ -29,7 +29,7 @@
 #include "save.h"
 
 
-extern int actual_player;
+extern int actual_player,actual_player0;
 extern int record;
 extern int nav_mode;
 extern int g_objid;
@@ -252,7 +252,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
   
   fprintf(fp,"%d %d %d %d %d %d %d %d\n",
 	  GameParametres(GET,GULX,0),GameParametres(GET,GULY,0),
-	  actual_player,record,nav_mode,GetTime(),
+	  actual_player0,record,nav_mode,GetTime(),
 	  g_objid,g_projid);
   
   sc=sv=0;
@@ -270,7 +270,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
   
   fprintf(fp,"%d %d\n",habitat_type,habitat_obj);
   
-  glocal.actual_player=actual_player;
+  glocal.actual_player=actual_player0;
   glocal.g_objid=g_objid;
   glocal.g_projid=g_projid;
   glocal.ship_c=0;
@@ -660,7 +660,7 @@ int ExecLoad(char *nom){
   
   if(fscanf(fp,"%d%d%d%d%d%d%d%d",
 	    &ulx,&uly,
-	    &actual_player,&record,&nav_mode,&gtime,
+	    &actual_player0,&record,&nav_mode,&gtime,
 	    &g_objid,&g_projid)!=8){
     perror("fscanf");
     exit(-1);
@@ -697,7 +697,6 @@ int ExecLoad(char *nom){
     perror("fscanf");
     exit(-1);
   }
-  
   if(fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d",
 	    &gremote.actual_player,
 	    &gremote.g_objid,
@@ -721,13 +720,18 @@ int ExecLoad(char *nom){
   }
 #endif
   if(GameParametres(GET,GMODE,0)==CLIENT){
-    actual_player=gremote.actual_player;
+    actual_player=actual_player0=gremote.actual_player;
     g_objid=gremote.g_objid;
     g_projid=gremote.g_projid;
     habitat.type=gremote.habitat_type;
     for(i=0;i<4;i++){
       fobj[i]=gremote.fobj[i];
     }
+  }
+
+  if(GameParametres(GET,GMODE,0)==SERVER){
+    printf("actplayer: %d actplayer0: %d glocal: %d\n",actual_player,actual_player0,glocal.actual_player);
+    actual_player=actual_player0=glocal.actual_player;
   }
 
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){

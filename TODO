@@ -197,6 +197,7 @@ X-(160911)Exploration reviewed.
 X-(180911)!!Review Experience(). training high levels.
 X-(200911)targeting system for missiles improved.
 X-(280911)!!dont allow build towers in ally planets or share the resources. Send resources in planet info.
+X-(071011)Ctrl-p pause the game
 
 
 BUGS version 0.80
@@ -220,7 +221,7 @@ X-(170611)[116][regression] autopilot fighters now leave the planet - ID: 331731
 X-Size of font.
 X-(050911)[118]explorer doesnt respond to RETREAT and GOTO n (save10)
 	  GOTO n=>Not Allowed. Planet or ship 15 unknown. (15 is a undiscoverd empty nearest planet)
-X-(071011)Ctrl-p pause the game
+X-(181011)Landed ship changes continuously GOTO x <-> NOTHING
 
 /********************************************************************************/
 DONE:Version 0.78 (since 10 Jan. 2011)

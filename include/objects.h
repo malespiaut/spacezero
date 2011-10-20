@@ -286,7 +286,7 @@ struct _Object{
   float cost;       /* cost of the object per unit time*/
   int damage;       /* damage of the ship in collision*/
 
-  short ai;         /* -1: by keyboard. [0,10] */
+  short ai;         /* 0: (manual).(1,10) with AI [0,10] */
   short modified;   /* SENDOBJMOD, SENDOBJMOD0, etc, must be updated by net */
   short ttl;        /* if !=0 dont send  */
   short habitat;    /* free space or planet (H_SPACE H_PLANET)*/
@@ -667,7 +667,7 @@ Object *FirstSelected(struct HeadObjList *lh,int player);
 Object *SelectOneShip(struct HeadObjList *lh,Region region,Object *cv,int ctrl);
 
 int UpdateCell(struct HeadObjList *lh,int *cell);
-int ValueCell(int *cell,Object *obj);
+int ValueCell(int *cell,Object *obj,int x,int y);
 
 int CreatePilot( Object *obj);
 int EjectPilots(struct HeadObjList *lh);

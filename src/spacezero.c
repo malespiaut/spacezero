@@ -82,10 +82,10 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.43"};
+char version[64]={"0.81.47"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Sep. 2011"};
+char last_revision[]={"Oct. 2011"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -546,10 +546,6 @@ gint MainLoop(gpointer data){
     gtime0=time(NULL);
   }
   
-
-  gwidth=GameParametres(GET,GWIDTH,0);
-  gheight=GameParametres(GET,GHEIGHT,0);
-  
   if(!sw){   /* firsttime */
 
     savefile=CreateSaveFile(param.server,param.client);
@@ -566,14 +562,14 @@ gint MainLoop(gpointer data){
     }
 
 
-    if(1){ /* testing net messages */
+    if(0){ /* testing net messages */
       struct NetMess mess;
       int ret=0;
-      mess.a=mess.b=1;
+      mess.id=mess.a=mess.b=1;
       ret=NetMess(&mess,NMADD);
-      mess.a=mess.b=2;
+      mess.id=mess.a=mess.b=2;
       ret=NetMess(&mess,NMADD);
-      mess.a=mess.b=3;
+      mess.id=mess.a=mess.b=3;
       ret=NetMess(&mess,NMADD);
       ret=NetMess(NULL,NMPRINT);
 
@@ -597,9 +593,7 @@ gint MainLoop(gpointer data){
       printf("======\n");
       ret=NetMess(NULL,NMPRINT);
       //      exit(-1);
-
     }
-
 
     InitGameVars(); /* */
 
@@ -902,6 +896,7 @@ gint MainLoop(gpointer data){
       p_time=GetTime();
       gameover=FALSE;
       observeenemies=FALSE;
+      printf("act: %d act0: %d\n",actual_player,actual_player0);
 #if TEST
       observeenemies=TRUE;
 #endif
@@ -1599,7 +1594,7 @@ void key_eval(struct Keys *key){
     }/* if(ship_c!=NULL) */
     
     if(cv!=NULL){
-      if(key->n==TRUE){
+      if(key->ctrl && key->n==TRUE){
 	if(nav_mode==RELATIVE){
 	  nav_mode=ABSOLUTE;
 	  r_rel.x=cv->x;
@@ -1776,12 +1771,10 @@ void UpdateShip(Object *obj){
   float U;
   int time;
   int n;
-
   int proc,width;
 
 
   proc=GetProc();
-
 
   if(obj->habitat==H_SHIP){
     if(obj->in!=NULL){
@@ -1816,7 +1809,10 @@ void UpdateShip(Object *obj){
     }
     break;
   case H_PLANET:
-    fy0=-g*obj->mass*(float)obj->in->mass;
+    if(obj->mode==LANDED){fy0=0;}
+    else{
+      fy0=-g*obj->mass*(float)obj->in->mass;
+    }
     break;
   case H_SHIP:
     fx0=fy0=0;
@@ -1850,7 +1846,10 @@ void UpdateShip(Object *obj){
     PlanetAtraction(&fx,&fy,obj->x,obj->y,obj->mass);
     break;
   case H_PLANET:
-    fy=-g*obj->mass*(float)obj->in->mass;
+    if(obj->mode==LANDED){fy=0;}
+    else{
+      fy=-g*obj->mass*(float)obj->in->mass;
+    }
     break;
   default:
     fx=fy=0;
@@ -1888,14 +1887,18 @@ void UpdateShip(Object *obj){
     vy+=(.5*(fy+fy0))*dtim;
   }
 
-  if(obj->mode==LANDED && vy>0){
-    obj->mode=NAV;
-  } 
-  if(obj->mode==LANDED && vy<0){
-    vy=0;
-    vx=0;
-  } 
 
+  if(obj->mode==LANDED){
+    if(vy<=0){
+      vy=0;
+      vx=0;
+    }
+    else{
+      if(obj->accel>0){
+	obj->mode=NAV;
+      }
+    }
+  }
 
   /***** if max vel is reached, reescaling *****/
 
@@ -2104,7 +2107,6 @@ void UpdateShip(Object *obj){
       }
     }
   }
-  
   return;
 }
 
@@ -2603,7 +2605,7 @@ void Collision(struct HeadObjList *lh){
 	    /*entering planet */
 	    if(gnet==TRUE){
 	      SetModified(obj,SENDOBJAALL);
-	      obj->ttl=MINTTL; /* send now */
+	      obj->ttl=0; /* send now */
 	    }
 	    if(obj==cv){
 	      habitat.type=H_PLANET;
@@ -2675,7 +2677,7 @@ void Collision(struct HeadObjList *lh){
 		if(objt1->player==actual_player){
 		  printf("Pilot %d (%d) rescued\n",objt1->pid,objt1->id);
 		}
-		if(GameParametres(GET,GNET,0)==TRUE){
+		if(gnet==TRUE){
 		  if(proc==players[objt1->player].proc){
 		    SetModified(objt1,SENDOBJALL);
 		  }
@@ -2703,7 +2705,7 @@ void Collision(struct HeadObjList *lh){
 		if(obj1->player==actual_player){
 		  printf("Pilot %d (%d) rescued\n",obj1->pid,obj1->id);
 		}
-		if(GameParametres(GET,GNET,0)==TRUE){
+		if(gnet==TRUE){
 		  SetModified(obj1,SENDOBJALL);
 		  SetModified(obj2,SENDOBJALL);
 		}
@@ -2726,7 +2728,7 @@ void Collision(struct HeadObjList *lh){
 		  if(obj1->player==actual_player){
 		    printf("Pilot %d rescued\n",obj2->pid);
 		  }
-		  if(GameParametres(GET,GNET,0)==TRUE){
+		  if(gnet==TRUE){
 		    SetModified(obj1,SENDOBJALL);
 		    SetModified(obj2,SENDOBJALL);
 		  }
@@ -2919,9 +2921,16 @@ void Collision(struct HeadObjList *lh){
 		      if(players[obj1->in->player].team != 1){//HERE ???
 			GetInformation(&players[obj1->player],&players[obj1->in->player],obj1);
 		      }
-	      
 		      snprintf(text,MAXTEXTLEN,"Planet %d LOST",obj1->in->id);
 		      Add2TextMessageList(&listheadtext,text,obj1->in->id,obj1->in->player,0,100,2);
+
+		      if(gnet==TRUE && proc!=players[obj1->in->player].proc){
+			struct NetMess mess;
+			mess.id=NMPLANETLOST;
+			mess.a=obj1->in->player;
+			mess.b=obj1->in->id;
+			NetMess(&mess,NMADD);
+		      }
 		    }
 
 		    obj1->in->player=obj1->player;
@@ -4040,7 +4049,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   sprintf(point,"record: %d",record);
   DrawString(pixmap,gfont,penGreen,x,y,point);
 
-  if(TEST){/* PRODUCTION */
+#if TEST
     x+=15*charw;
     gc=penRed;
     sprintf(point,"T:%d   S:%d   P:%d   A:%d  T:%d  Pi:%d Ob/s(%.2f)",
@@ -4060,7 +4069,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 	    CountObjs(&listheadobjs,actual_player,SHIP,TOWER));
     
     DrawString(pixmap,gfont,penRed,x,y+15,point);
-  }
+#endif
 
   y+=incy;
   h=(int)(time/(20*60*60));
@@ -4178,6 +4187,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   glen=0;
   while(lh!=NULL){
     strncpy(point,lh->info.text,MAXTEXTLEN);
+    //    fprintf(stdout,"tmp  %s\n",point);
     if(lh->info.dest!=actual_player && lh->info.dest !=-1){
       lh->info.duration=0;
       lsw=1;

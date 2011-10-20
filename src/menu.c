@@ -557,7 +557,15 @@ int MenuEnter(struct MenuHead *mhead){
       }
       if(item->type==MENUITEMACTION){
 	if(item->id==ITEM_server){
-	  strcpy(item->text,"wating for player...");
+	  strcpy(item->text,"Waiting for player...");
+	}
+	if(item->id==ITEM_start){
+	  if(param.server==TRUE){
+	    strcpy(item->text,"Waiting for player...");
+	  }
+	  if(param.client==TRUE){
+	    strcpy(item->text,"Waiting for server...");
+	  }
 	}
 	return(item->id);
       }

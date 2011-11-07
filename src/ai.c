@@ -1125,7 +1125,7 @@ void ExecLand(Object *obj,struct Order *ord){
 
 void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct Order *morder,float d2){
   /*
-    version 04 21Oct2010
+    version 05 07Nov2011
     attack subroutine
   */
   
@@ -1238,8 +1238,7 @@ void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct 
 
     /***** if is near ground: go up *****/
 
-    //    if(obj->y<.5*LYFACTOR){  /* refer to high planet point */
-    if(obj->y<ord->b+.35*LYFACTOR){  /* refer to higher planet point */
+    if(obj->y<ord->b+(.35+.10*obj->in->mass/MAXPLANETMASS)*LYFACTOR){  /* refered to higher planet point */
       ord->time=0;
       if(obj->a<PI/2 && obj->a>-PI/2){
 	obj->ang_a+=obj->engine.ang_a;
@@ -1260,7 +1259,7 @@ void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct 
       if(fabs(ib)<0.5)  /**obj->engine.ang_a*DT*DT*(100./obj->mass))  */
  	obj->ang_a=0; 
 
-      if(obj->vy < 10+(float)obj->in->mass/15000){
+      if(obj->vy < 10+(float)obj->in->mass/MINPLANETMASS){
 	if(obj->engine.a_max){
 	  obj->accel+=obj->engine.a;
 	  if(obj->accel > obj->engine.a_max)

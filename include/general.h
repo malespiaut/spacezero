@@ -36,7 +36,7 @@
 /*  compile options: */
 #define SOUND 1  // compile with sound
 #define DEBUG 0
-#define TEST 1  // test stuff
+#define TEST 0  // test stuff
 /*  --compile options: */
 
 #define MODI(a) ((a) > 0 ? (a) : (-a))

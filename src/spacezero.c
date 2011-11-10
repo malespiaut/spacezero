@@ -82,7 +82,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.48"};
+char version[64]={"0.81.51"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Nov. 2011"};
@@ -509,7 +509,7 @@ gint MainLoop(gpointer data){
     Main gtk loop. executed 24 times by second.
 
 */
-  int i;
+  int i,j;
   int drawmap=FALSE;
   static int cont=0;
   float x0,y0;
@@ -799,12 +799,21 @@ gint MainLoop(gpointer data){
 	for(i=0;i<factor;i++){
 	  x0=ulx*Random(-1)-ulx/2;
 	  y0=uly*Random(-1)-uly/2;
-	  CreateAsteroids(&listheadobjs,6,x0,y0);
-	  
-	  snprintf(text,MAXTEXTLEN,"ASTEROIDS!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));
-	  Add2TextMessageList(&listheadtext,text,0,-1,0,100,0);
-	  if(GameParametres(GET,GNET,0)==TRUE){
-	    SendTextMessage(text);   
+	  /* Only create asteroids close to a ship */
+	  if(Distance2NearestShip(&listheadobjs,-1,x0,y0)<MAXASTEROIDDISTANCE2){ /* 20 sectors */
+	    CreateAsteroids(&listheadobjs,6,x0,y0);
+
+	    for(j=1;j<GameParametres(GET,GNPLAYERS,0)+2;j++){
+
+	      if(Distance2NearestShipLessThan(&listheadobjs,j,x0,y0,MAXASTEROIDDISTANCE2)){
+		snprintf(text,MAXTEXTLEN,"ASTEROIDS!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));
+		Add2TextMessageList(&listheadtext,text,0,j,0,100,0);
+		if(GameParametres(GET,GNET,0)==TRUE){
+		  SendTextMessage(text);   
+		}
+	      }
+	    }
+	    
 	  }
 	}
       }
@@ -1025,11 +1034,12 @@ gint MainLoop(gpointer data){
 			   drawing_area->allocation.width,   
 			   drawing_area->allocation.height);  
       }
-    } 
+    }
     else{ 
       if(gdraw.crash){ 
 	gdk_draw_rectangle(pixmap,   
-			   drawing_area->style->white_gc,   
+			   //drawing_area->style->white_gc,   
+			   penSoftRed,
 			   TRUE,  
 			   0,0,   
 			   drawing_area->allocation.width,   
@@ -1041,22 +1051,22 @@ gint MainLoop(gpointer data){
 #if DEBUGFAST
 
       if(!(cont%120)){
- 	gdk_draw_rectangle(pixmap,     
- 			   drawing_area->style->black_gc,     
- 			   TRUE,    
- 			   0,0,     
- 			   drawing_area->allocation.width,     
+ 	gdk_draw_rectangle(pixmap,
+ 			   drawing_area->style->black_gc,
+ 			   TRUE,
+ 			   0,0,
+ 			   drawing_area->allocation.width,
  			   drawing_area->allocation.height); 
 
       }
 
 #else
 
-      gdk_draw_rectangle(pixmap,     
-			 drawing_area->style->black_gc,     
-			 TRUE,    
-			 0,0,     
-			 drawing_area->allocation.width,     
+      gdk_draw_rectangle(pixmap,
+			 drawing_area->style->black_gc,
+			 TRUE,
+			 0,0,
+			 drawing_area->allocation.width,
 			 drawing_area->allocation.height); 
       
 #endif
@@ -1166,6 +1176,32 @@ gint MainLoop(gpointer data){
   }
   
   /* --Draw Shell */
+
+  if(0&&keys.mleft==TRUE){
+    printf("mouse left (2)\n");
+    //key->mleft=FALSE;
+    if(cv==FALSE){
+      if(gdraw.map==TRUE){
+	int x,y;
+	int rx,ry;
+	Region region;
+	MousePos(GET,&x,&y);
+	printf("x: %d y:%d\n",x,y);
+	//	void Window2Real(Object *cv,int habitat, int wx,int wy,int *rx,int *ry){
+	  Window2Real(NULL,0,x,y,&rx,&ry);
+	  printf("rx: %d ry:%d\n",rx,ry);
+	  region.habitat=0;
+	  region.rect.x=rx; 
+	  region.rect.y=ry; 
+	  region.rect.width=0; 
+	  region.rect.height=0;
+
+	  cv=SelectOneShip(&listheadobjs,region,cv,keys.ctrl);
+      }
+
+    }
+
+  }
 
 
   /*Selection box */
@@ -1375,12 +1411,21 @@ void key_eval(struct Keys *key){
       y0=guly*Random(-1)-guly/2;
       /* CreatePirates(&listheadobjs,4,x0,y0);  */
       /* snprintf(text,MAXTEXTLEN,"PIRATES!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));  */
-      CreateAsteroids(&listheadobjs,6,x0,y0); 
-      snprintf(text,MAXTEXTLEN,"ASTEROIDS!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE)); 
+      if(Distance2NearestShip(&listheadobjs,-1,x0,y0)<MAXASTEROIDDISTANCE2){ /* 20 sectors */
+	CreateAsteroids(&listheadobjs,6,x0,y0); 
+	{int i;
+	  for(i=1;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+	    
+	    if(Distance2NearestShipLessThan(&listheadobjs,i,x0,y0,MAXASTEROIDDISTANCE2)){
+	      snprintf(text,MAXTEXTLEN,"ASTEROIDS!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));
+	      Add2TextMessageList(&listheadtext,text,0,i,0,100,0);
+	      if(GameParametres(GET,GNET,0)==TRUE){
+		SendTextMessage(text);   
+	      }
+	    }
+	  }
+	}
 
-      Add2TextMessageList(&listheadtext,text,0,-1,0,100,0);
-      if(GameParametres(GET,GNET,0)==TRUE){
-	SendTextMessage(text);   
       }
     }
   }
@@ -1406,7 +1451,7 @@ void key_eval(struct Keys *key){
 
   /* mouse */
   if(key->mleft==TRUE){
-    //printf("mouse left\n");
+    //    printf("mouse left\n");
     //key->mleft=FALSE;
   }
   if(key->mright==TRUE){
@@ -4525,7 +4570,9 @@ void CheckPilots(struct HeadObjList *hol){
 	/* GetPointsObj(hol,players,ls->obj);/\* points and experience *\/ */
 	CreatePilot(ls->obj);
 	ls->obj->items=ls->obj->items&(~ITSURVIVAL);
-	if(ls->obj->player==actual_player)printf("Ejecting pilot from ship %d (%d)\n",ls->obj->pid,ls->obj->id);
+	if(ls->obj->player==actual_player){
+	  printf("Ejecting pilot from ship %d\n",ls->obj->pid);
+	}
 	DelAllOrder(ls->obj);
 	if(GameParametres(GET,GNET,0)==TRUE){
 	  ls->obj->modified=SENDOBJALL;

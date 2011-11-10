@@ -87,8 +87,8 @@
 #define MINNUMPLANETS 2   /* num. planets in galaxy */
 #define MAXULX 1000000 
 #define MINULX 10000   
-
 #define MAXNUMTEAMS MAXNUMPLAYERS
+
 
 /* player control */
 #define HUMAN 0
@@ -108,6 +108,7 @@
 #define RADAR_RANGE 2000
 #define RADAR_RANGE2 4000000
 #define SECTORSIZE 1410 // sqrt(RADAR_RANGE2/2)
+#define MAXASTEROIDDISTANCE2 784000000 /* max distance2 an asteroid can be seen (20 sectors )*/
 
 /* FILES */
 #define SAVEDIR ".spacezero"

@@ -1125,7 +1125,7 @@ void ExecLand(Object *obj,struct Order *ord){
 
 void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct Order *morder,float d2){
   /*
-    version 05 07Nov2011
+    version 04 21Oct2010
     attack subroutine
   */
   
@@ -1256,8 +1256,9 @@ void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct 
       if(ib > PI)ib-=2*PI;
       if(ib < -PI)ib+=2*PI;
 
-      if(fabs(ib)<0.5)  /**obj->engine.ang_a*DT*DT*(100./obj->mass))  */
+      if(fabs(ib)<0.5){  /**obj->engine.ang_a*DT*DT*(100./obj->mass))  */
  	obj->ang_a=0; 
+      }
 
       if(obj->vy < 10+(float)obj->in->mass/MINPLANETMASS){
 	if(obj->engine.a_max){

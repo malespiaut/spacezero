@@ -16,6 +16,7 @@
       
       <!---------------------------------------------------------------->
       You can find the last version here: <a href="http://sourceforge.net/projects/spacezero/">SpaceZero homepage</a>
+
       <div class="content">
 	<h2 >Manual:</h2>
 	
@@ -161,8 +162,11 @@
 			  F1, F2, etc. for the selected marked ships
 			  (see <a href="manual.html#selecting">
 			    selecting a ship</a>). Example: GOTO F3.
-			  <li>In map view, a right mouse click will
-			  send the selected ships to the mouse position.
+			  <li>In map view, the right mouse button will
+			  send the selected ships to the mouse
+			  position.  If the pointer is closer to a
+			  planet than 0.5 sectors then will send them
+			  to that planet.
 		      </ul>
 		    </td>
 		  </tr>
@@ -296,8 +300,9 @@
 		spaceship in outer space.
 	      <li>Using the order command SELECT and introducing
 		the ship ID.
-	      <li>With mouse in map view or inner a planet. Left click
-	      selects the nearest ship to mouse pointer.
+	      <li>With mouse in map view or inner a planet. Left
+	      button selects the nearest ship to mouse pointer. This
+	      selected ship can be inside a planet.
 	      <li>There are four rapid access key to select ships:
 		F1, F2, F3 and F4.  If you press Ctrl-F1 the
 		actual selected ship is assigned to the key F1,
@@ -398,9 +403,9 @@
 		    <li>Three status bar: energy,
 		      state and experience of the current selected
 		      ship. The number next to STATE is the
-		      shield. A shield of 0,3 means that the ship
+		      shield. A shield of 0.3 means that the ship
 		      receive the 70% of the damage. The maximum
-		      value is 0,9.
+		      value is 0.9.
 		    <li>Information about the current selected ship as
 		      the type of ship. Its ID. Its mode: Automatic
 		      (A) or Manual (M) and its level.<br> Ammunition of
@@ -477,7 +482,7 @@
 		<p>
 		  The explored universe is marked with dark red
 		  crosses. The universe has a limit; beyond that
-		  there are no marks.
+		  there are no marks and no objects.
 	      </td>
 	    </tr>
 	  </tbody></table>
@@ -565,8 +570,8 @@
 	  <p>
 	    <img SRC="manual_files/statistics.png" alt="game statistics">	    
 	  <p>
-	    Player name, number of ships, (total number of ships
-	    created), planets, enemy ships destroyed and number of
+	    Player name, [max. level reached], number of ships, (total number of ships
+	    created), planets, enemy destroyed ships and number of
 	    lost ships.
 	    <hr>	    
 	    <a name="experiencegold"></a>
@@ -590,7 +595,7 @@
 	    planet). This probability increase with ship's level.
 	    
 	  <p>
-	    <b>Exploring</b>, Discovering new planets.
+	    <b>Exploring</b>: Discovering new planets.
 	    
 	  <p>
 	    <b>Training</b>: all ships with a level equal or
@@ -649,6 +654,26 @@
 	    -Buying, upgrading ships. 
 	    
 	    
+	    <h3>Exploring the Universe:</h3>
+
+
+
+	    The explore skills depends on the level of the ship:
+	    <ul> 
+	      <li> level 0: a random walk. 
+	      <li> level 1: try to find an unknown sector near their
+		position. if there no one: random walk
+	    
+	      <li>level 2 and greater: looks for an unknown sector
+		farer than previous level. If there no one: random
+		walk
+	    </ul> 
+
+	    The explorers increase in one their skill value: an
+	    explorer of level 0 has a level 1 on explorer skill. A
+	    figther of level 0 has a level 0 on explorer skill.
+
+
 	    <h3>Size of the Universe:</h3>
 	    
 	    Its possible to choose the size of the Universe, the
@@ -823,12 +848,22 @@
 
 </div>
 
+
+
+
+
+
+
+
+
+
+
 <!---------------------------------------------------------------->
 
 
 <div class="footer"><hr>
   <p>Copyright © 2010-2011 MRevenga <br>
-    Site last updated Oct 18, 2011</p>
+    Site last updated Nov 10, 2011</p>
 </div>
 </div>
 <div class="leftcolumn">

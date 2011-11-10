@@ -106,11 +106,10 @@ AI:
 -!!Merge  ccdata to  player struct.
 -!! Review buy() and upgrade()
 -!A planet with to many ships, redistribute ships.
--!!if asteroids are near a planet continous take off and return to planet for figthers.
 -!!check rules in ally planet. If is empty: conquer.
 -When an enemy ship is near a planet send only the necessary ships.
 -Add a different way to attack planets. 
--!!dont take off when change to automatic mode.
+
 
 
 Comm:
@@ -118,7 +117,6 @@ Comm:
 -!!Rewrite a server
 -in Object: Change int by boolean (to improve comm)
 -!Compress data.
--!!send allies periodically.
 
 Save
 ====
@@ -198,7 +196,12 @@ X-(180911)!!Review Experience(). training high levels.
 X-(200911)targeting system for missiles improved.
 X-(280911)!!dont allow build towers in ally planets or share the resources. Send resources in planet info.
 X-(071011)Ctrl-p pause the game
-
+X-(071011)Ctrl-n window-center modes
+X-!!send allies periodically.
+X-!!if asteroids are near a planet continous take off and return to planet for figthers.
+X-!!dont take off when change to automatic mode.
+X-(081111)Fix: Asteroids are no more visible everywhere - ID: 3434531
+X-(081111)Fix:  "short" planets advantage towers - ID: 3433655 
 
 BUGS version 0.80
 =================

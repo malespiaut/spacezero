@@ -261,11 +261,23 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
     case GOTO:
 
       if(key->mright==TRUE && gdraw.map==TRUE && *pcv!=NULL){
-	int x,y;
+	int x,y,a,b,pid;
 	MousePos(GET,&x,&y);
 	strcpy(par,"");
-	Window2Sector(*pcv,&x,&y);
-	snprintf(par,12,"%d %d",x,y);
+	//	  printf("mouse:  %d %d\n",x,y);
+	a=x;
+	b=y;
+	W2R(*pcv,&a,&b);
+	pid=IsPlanetNearThan(lhead,player,a,b,500000); /* 0.5 sectors */
+	//	  printf("Window2Real() %d %d %d\n",a,b,pid);
+
+	if(pid!=0){
+	  snprintf(par,12,"%d",pid);
+	}
+	else{
+	  Window2Sector(*pcv,&x,&y);
+	  snprintf(par,12,"%d %d",x,y);
+	}
 	key->mright=FALSE;
 	key->enter=TRUE;
 	
@@ -1297,44 +1309,3 @@ int Get2Args(char *cad,char *arg1,char *arg2){
 }
 
 
-void Window2Sector(Object *cv,int *x,int *y){
-  /*
-    convert the x,y coordinates in sector. 
-  */
-
-  int a,b;
-  int i,j;
-  float ifactor;
-  int gwidth,gheight,ulx;
-  float zoom=1;
-  float cvx,cvy;
-  float objx,objy;
-
-  if(cv==NULL)return;
-
-  gheight=GameParametres(GET,GHEIGHT,0);
-  gwidth=GameParametres(GET,GWIDTH,0);
-  ulx=GameParametres(GET,GULX,0);
-
-  Shift(GET,ulx,cv,&zoom,&cvx,&cvy);
-
-  ifactor=ulx/(gwidth*zoom);
-
-  if(cv->habitat==H_PLANET){
-    objx=cv->in->planet->x;
-    objy=cv->in->planet->y;
-  }
-  else{
-    objx=cv->x;
-    objy=cv->y;
-  }
-  
-  a=(*x-gwidth/2)*ifactor-cvx+objx;
-  b=(gheight-*y-gheight/2)*ifactor-cvy+objy;
-    
-  i=a/SECTORSIZE-(a<0);
-  j=b/SECTORSIZE-(b<0);
-
-  *x=i;
-  *y=j;
-}

@@ -866,8 +866,6 @@ int ExecLoad(char *nom){
       nplanet->segment=NULL;
       FscanfPlanet(fp,nplanet);
       nobj->planet=nplanet;
-
-      //      printf("planet: %d gold: %f\n",nobj->id,nobj->planet->gold);  
     }
     Add2ObjList(&listheadobjs,nobj);
     FscanfOrders(fp,nobj);

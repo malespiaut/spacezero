@@ -295,7 +295,7 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
     obj->planet->reggold=0.035*((float)obj->mass/MAXPLANETMASS)+0.02+0.02*(Random(-1));
     obj->planet->A=0;
     obj->planet->B=0;
-    //    printf("reg:%.4f masss: %d\n",obj->planet->reggold,obj->mass);
+    //    printf("reg:%.4f mass: %d\n",obj->planet->reggold,obj->mass);
     break;
   case TRACKPOINT:
     obj->durable=FALSE;
@@ -1335,16 +1335,16 @@ Object *SelectOneShip(struct HeadObjList *lh,Region reg,Object *cv,int ctrl){
   
   struct ObjList *ls;
   Rectangle rect;
-  int x,y;
+  float x,y;
   Point a;
   int sw1=0; /* first selected */
   Object *ret;
   float d2,d2min=10000;
 
   if(lh==NULL)return(NULL);
-  if(cv==NULL)return(NULL);
+  //  if(cv==NULL)return(NULL);
 
-  ret=cv;
+  ret=NULL;
 
   rect.x=reg.rect.x;
   rect.y=reg.rect.y;
@@ -1360,8 +1360,10 @@ Object *SelectOneShip(struct HeadObjList *lh,Region reg,Object *cv,int ctrl){
 
   ls=lh->next;
   while(ls!=NULL){
-    if(ls->obj->player!=cv->player){ls=ls->next;continue;}
+    if(ls->obj->player!=actual_player){ls=ls->next;continue;}
     if(ls->obj->type!=SHIP){ls=ls->next;continue;}
+    if(ls->obj->habitat!=H_SPACE && ls->obj->habitat!=H_PLANET){ls=ls->next;continue;}
+
 
     if(ctrl==FALSE)ls->obj->selected=FALSE;
 
@@ -1372,13 +1374,14 @@ Object *SelectOneShip(struct HeadObjList *lh,Region reg,Object *cv,int ctrl){
     }
     else{ /* select a region in map view */
       if(ls->obj->habitat==H_PLANET){
-	ls=ls->next;continue;
+	x=ls->obj->in->x;
+	y=ls->obj->in->y;
       }
       else{
 	x=ls->obj->x;
 	y=ls->obj->y;
       }
-      d2=(rect.x-ls->obj->x)*(rect.x-ls->obj->x)+(rect.y-ls->obj->y)*(rect.y-ls->obj->y);
+      d2=(rect.x-x)*(rect.x-x)+(rect.y-y)*(rect.y-y);
     }
 
     if(d2<d2min||sw1==0){
@@ -1389,6 +1392,166 @@ Object *SelectOneShip(struct HeadObjList *lh,Region reg,Object *cv,int ctrl){
     ls=ls->next;
   }
   return(ret);
+}
+
+
+
+float Distance2NearestShip(struct HeadObjList *lh,int player,int x,int y){
+  /*
+
+    Return the distance2 of the nearest SHIP to the point x,y.  x,y
+    are space coordinates, no planet. The nearest obj can be in free
+    space or inside a planet. In this last case the coordinates are
+    the planet ones.
+    if player = -1 match all players
+  */
+
+  float d2;
+  struct ObjList *ls;
+  float rx,ry,r2;
+  float x1,y1;
+  Object *obj=NULL;
+  int sw=0;
+
+/*   if(!PLANETSKNOWN) */
+/*     if(IsInIntList((players[player].kplanets),ls->obj->id)==0)break; */
+
+  d2=-1;
+  
+  ls=lh->next;
+  while(ls!=NULL){
+    if(ls->obj->type!=SHIP){ls=ls->next;continue;}
+    if(ls->obj->player!=player && player !=-1){ls=ls->next;continue;}
+
+    obj=ls->obj;
+
+    switch(obj->habitat){
+    case H_PLANET:
+      x1=obj->in->x;
+      y1=obj->in->y;
+      break;
+    case H_SPACE:
+      x1=obj->x;
+      y1=obj->y;
+      break;
+    default:
+      ls=ls->next;continue;
+      break;
+    }
+
+    rx=x - x1;
+    ry=y - y1;
+    r2=rx*rx+ry*ry;
+
+    if(sw==0|| r2<d2){
+      d2=r2;
+      sw++;
+    }
+    ls=ls->next;
+  }
+  return(d2);
+}
+
+
+float Distance2NearestShipLessThan(struct HeadObjList *lh,int player,int x,int y,float dmin2){
+  /*
+
+    returns 1 if the distance2 to nearest SHIP to the point x,y is less than dmin2.  
+    returns 0 if is greater.
+    x,y are space coordinates, no planet. The nearest obj can be in free
+    space or inside a planet. In this last case the coordinates are
+    the planet ones.
+    if player = -1 match all players
+
+  */
+
+  float d2;
+  struct ObjList *ls;
+  float rx,ry,r2;
+  float x1,y1;
+  Object *obj=NULL;
+  int sw=0;
+
+/*   if(!PLANETSKNOWN) */
+/*     if(IsInIntList((players[player].kplanets),ls->obj->id)==0)break; */
+
+  d2=-1;
+
+  ls=lh->next;
+  while(ls!=NULL){
+    if(ls->obj->type!=SHIP){ls=ls->next;continue;}
+    if(ls->obj->player!=player && player !=-1){ls=ls->next;continue;}
+
+    obj=ls->obj;
+
+    switch(obj->habitat){
+    case H_PLANET:
+      x1=obj->in->x;
+      y1=obj->in->y;
+      break;
+    case H_SPACE:
+      x1=obj->x;
+      y1=obj->y;
+      break;
+    default:
+      ls=ls->next;continue;
+      break;
+    }
+
+    rx=x - x1;
+    ry=y - y1;
+    r2=rx*rx+ry*ry;
+
+    if(sw==0|| r2<d2){
+      d2=r2;
+      if(d2<dmin2)return(1);
+      sw++;
+    }
+    ls=ls->next;
+  }
+  return(0);
+}
+
+int IsPlanetNearThan(struct HeadObjList *lh,int player,int x,int y,float dmin2){
+  /*
+
+    returns:
+    the planet id of first  planet closer than dmin2.
+    0 if there are no planets at that distance.
+
+  */
+
+  struct ObjList *ls;
+  float rx,ry;
+  float x1,y1;
+  Object *obj=NULL;
+
+
+
+  ls=lh->next;
+  while(ls!=NULL){
+    if(ls->obj->type!=PLANET){ls=ls->next;continue;}
+    
+    if(!PLANETSKNOWN){
+      if(IsInIntList((players[player].kplanets),ls->obj->id)==0){
+	ls=ls->next;continue;
+      } 
+    }
+
+    obj=ls->obj;
+ 
+    x1=obj->x;
+    y1=obj->y;
+    
+    rx=x - obj->x;
+    ry=y - obj->y;
+
+    if(rx*rx+ry*ry<dmin2){
+      return(obj->id);
+    }
+    ls=ls->next;
+  }
+  return(0);
 }
 
 
@@ -3914,7 +4077,7 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
       pilot->ai=0;
       pilot->items=0;
       //	pilot->selected=FALSE;
-      if(pilot->player==actual_player)printf("Pilot %d (%d) saved in planet %d\n",pilot->pid,pilot->id,pilot->in->id);
+      if(pilot->player==actual_player)printf("Pilot %d saved in planet %d\n",pilot->pid,pilot->in->id);
       DelAllOrder(pilot);
       if(gnet==TRUE){
 	SetModified(pilot,SENDOBJALL);

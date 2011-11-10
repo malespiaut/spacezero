@@ -251,7 +251,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_signal_connect(GTK_OBJECT (winabout),"delete_event",
 		     GTK_SIGNAL_FUNC(QuitWindow),winabout);
   gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemabout);
-  snprintf(label,150,"\t SpaceZero %s\t\n\t Oct 2011\t\n\n\n  Copyrigth mrevenga.  \n  homepage:  http://spacezero.sourceforge.net/   ",version);
+  snprintf(label,150,"\t SpaceZero %s\t\n\t Nov 2011\t\n\n\n  Copyrigth mrevenga.  \n  homepage:  http://spacezero.sourceforge.net/   ",version);
   about1=gtk_label_new(label);
   gtk_widget_show(about1);
   
@@ -312,13 +312,20 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   strcat(labelhelp,"Ctrl-q\t\tquit game.\n");
   
   strcat(labelhelp,"\nIn map view:\n");
-  //  strcat(labelhelp,"-------------------\n");
+  /*  strcat(labelhelp,"-------------------\n"); */
   strcat(labelhelp,"z Z\t\t\tzoom in out.\n");
   strcat(labelhelp,"arrow keys\tmove map.\n");
   strcat(labelhelp,"space\t\tcenter map in the actual ship.\n");
   strcat(labelhelp,"mouse pointer\tshow coordinates.\n");
-  strcat(labelhelp,"l\t\t\tshow-hide labels.");
-  
+  strcat(labelhelp,"l\t\t\tshow-hide labels.\n");
+  strcat(labelhelp, 
+	 "left mouse \t Select the nearest ship.\nclick\n");
+  strcat(labelhelp, 
+	 "right mouse \t Send the selected ships to that point.\nclick");
+
+#if TEST
+  printf("label help size: %d (<1024)\n  ",strlen(labelhelp)); 
+#endif
   if(strlen(labelhelp)>1024){
     fprintf(stderr,"ERROR InitGraphics(): cad labelhelp too long.\n");
     exit(-1);
@@ -1255,9 +1262,6 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
 
   while (ls!=NULL){
     if(ls->obj->type==SHIP && ls->obj->ttl<MINTTL){
-      if(ls->obj->subtype==PILOT && ls->obj->pid==201){
-	printf("DrawObjs() ttl: %d (%d)%d\n",ls->obj->ttl,ls->obj->player,ls->obj->pid);
-	  }
       ls=ls->next;continue;
     }
     if(ls->obj->state<=0){ls=ls->next;continue;}
@@ -1268,7 +1272,7 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
     
     x=ls->obj->x;
     y=ls->obj->y;
-    
+
     if(ls->obj->habitat==H_PLANET){
       x*=sx;
       y*=sy;
@@ -2012,10 +2016,10 @@ int DrawRadar(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc){
       gc=gcolors[players[ls->obj->player].color];
 
       gdk_draw_rectangle(pixmap, 
- 		     gc, 
- 		     TRUE, 
+			 gc, 
+			 TRUE, 
 			 x-1,gheight-y-1, 
- 		     3,3);
+			 3,3);
       n++;
       break;
     case ASTEROID:
@@ -2218,8 +2222,9 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   
   x0=0.5*gwidth;
   y0=0.5*gheight;
- 
-  Shift(SET,ulx,cv,&zoom,&cvx,&cvy);
+
+  Shift(SET,ulx,cv==NULL?0:cv->id,&zoom,&cvx,&cvy);
+
   factor=gwidth*zoom/ulx;
   ifactor=ulx/(gwidth*zoom);
   sd=SECTORSIZE*factor;
@@ -2462,6 +2467,15 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
       }
       break;
     case ASTEROID:      
+
+      if(ls->obj->type==ASTEROID){ /* dont draw far asteroids */
+	
+	if(Distance2NearestShipLessThan(&hol,player,ls->obj->x,ls->obj->y,MAXASTEROIDDISTANCE2)==0){
+	  ls=ls->next;continue;
+	}
+	
+	
+      }
       gdk_draw_line(pixmap,penWhite,
 		    x,gheight-y-2,
 		    x,gheight-y+2);
@@ -3841,60 +3855,61 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
   return;
 }
 
-void Shift(int action,int ulx,Object *cv,float *z,float *x,float *y){
+void Shift(int action,int ulx,int objid,float *z,float *x,float *y){
   static float cvx=0,cvy=0;
   static float zoom=1;
-  static int id=0;
+  static int id0=0;
+  int id;
 
+  if(objid<0)objid=0;
 
-  if(cv!=NULL){
-    if(id!=cv->id){ 
+  id=objid;
+
+  if(id0!=id){
+    cvx=cvy=0;
+    id0=id;
+  }
+
+  switch(action){
+  case GET:
+    break;
+  case SET:
+    if(keys.z==TRUE){
+      if(keys.may==FALSE){
+	zoom/=1.05;
+	if(zoom<.1)zoom=.1;
+      }
+      else{
+	zoom*=1.05;
+	if(zoom>64)zoom=64;
+      }
+    }
+    
+    if(keys.space==TRUE && keys.o==FALSE){
       cvx=cvy=0;
     }
-    id=cv->id;
-  }
-
-  if(action==GET){
-    *z=zoom;
-    *x=cvx;
-    *y=cvy;
-    return;
-  }
-
-
-  if(keys.z==TRUE){
-    if(keys.may==FALSE){
-      zoom/=1.05;
-      if(zoom<.1)zoom=.1;
+    
+    if(keys.right==TRUE){
+      cvx-=.02*ulx/zoom;
     }
-    else{
-      zoom*=1.05;
-      if(zoom>64)zoom=64;
+    if(keys.left==TRUE){
+      cvx+=.02*ulx/zoom;
     }
+    if(keys.up==TRUE){
+      cvy-=.02*ulx/zoom;
+    }
+    if(keys.down==TRUE){
+      cvy+=.02*ulx/zoom;
+    }
+    break;
+  default:
+    break;
   }
   
-  if(keys.space==TRUE && keys.o==FALSE){
-    cvx=cvy=0;
-  }
-  /* if(keys.space==TRUE){ */
-  /*   cvx=cvy=0; */
-  /* } */
-  if(keys.right==TRUE){
-    cvx-=.02*ulx/zoom;
-  }
-  if(keys.left==TRUE){
-    cvx+=.02*ulx/zoom;
-  }
-  if(keys.up==TRUE){
-    cvy-=.02*ulx/zoom;
-  }
-  if(keys.down==TRUE){
-    cvy+=.02*ulx/zoom;
-  }
-
   *z=zoom;
   *x=cvx;
   *y=cvy;
+
 }
 
 
@@ -3925,7 +3940,7 @@ void Window2Real(Object *cv,int habitat, int wx,int wy,int *rx,int *ry){
     }
   }
   if(habitat==0){  /* free space */
-    Shift(GET,ulx,cv,&zoom,&cvx,&cvy);
+    Shift(GET,ulx,cv==NULL?0:cv->id,&zoom,&cvx,&cvy);
     
     x0=0.5*gwidth;
     y0=0.5*gheight;
@@ -3975,7 +3990,7 @@ void Real2Window(Object *cv,int habitat,int rx,int ry,int *wx,int *wy){
     }
   }
   if(habitat==0){ /* free space */
-    Shift(GET,ulx,cv,&zoom,&cvx,&cvy);
+    Shift(GET,ulx,cv==NULL?0:cv->id,&zoom,&cvx,&cvy);
     
     x0=0.5*gwidth;
     y0=0.5*gheight;
@@ -3992,6 +4007,71 @@ void Real2Window(Object *cv,int habitat,int rx,int ry,int *wx,int *wy){
     *wx=(float)rx*sx + 0.5;
     *wy=(float)ry*sy + 0.5;
   }
+}
+
+void Window2Sector(Object *cv,int *x,int *y){
+  /*
+    convert the window x,y coordinates in sectors. 
+  */
+
+  int a,b;
+
+  if(cv==NULL)return;
+  a=*x;
+  b=*y;
+  //  printf("Window2Sector() %d %d\n",a,b);
+  W2R(cv,&a,&b);
+  // printf("\tWindow2Sector() %d %d\n",a,b);
+  Real2Sector(a,b,x,y);
+}
+
+
+void W2R(Object *obj,int *x,int *y){
+  /*
+    convert the window x,y coordinates in real coordinates. 
+  */
+
+  int a,b;
+  float ifactor;
+  int gwidth,gheight,ulx;
+  float zoom=1;
+  float cvx,cvy;
+  float objx,objy;
+
+  if(obj==NULL)return;
+
+  gheight=GameParametres(GET,GHEIGHT,0);
+  gwidth=GameParametres(GET,GWIDTH,0);
+  ulx=GameParametres(GET,GULX,0);
+
+  Shift(GET,ulx,obj==NULL?0:obj->id,&zoom,&cvx,&cvy);
+
+  ifactor=ulx/(gwidth*zoom);
+
+  if(obj->habitat==H_PLANET){
+    objx=obj->in->planet->x;
+    objy=obj->in->planet->y;
+  }
+  else{
+    objx=obj->x;
+    objy=obj->y;
+  }
+  
+  a=(*x-gwidth/2)*ifactor-cvx+objx;
+  b=(gheight-*y-gheight/2)*ifactor-cvy+objy;
+  *x=a;
+  *y=b;
+
+}
+
+
+void Real2Sector(int x,int y,int *a,int *b){
+  /*
+    convert the real coordinates x,y in sectors a,b.
+  */
+
+  *a=x/SECTORSIZE-(x<0);
+  *b=y/SECTORSIZE-(y<0);
 }
 
 
@@ -4097,8 +4177,11 @@ void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
   /* HERE: send kills and deaths to client */
 
   for(i=1;i<nplayers;i++){
-    snprintf(cad,128,"player: %s , ships: %d (%d), planets: %d , kills: %d , deaths: %d.",
-	     pl[i].playername,pl[i].nships,pl[i].nbuildships,pl[i].nplanets,pl[i].nkills,pl[i].ndeaths);
+    snprintf(cad,128,"player: %s, [L%d], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
+	     pl[i].playername,pl[i].maxlevel,
+	     pl[i].nships,pl[i].nbuildships,
+	     pl[i].nplanets,pl[i].nkills,
+	     pl[i].ndeaths);
     len=strlen(cad);
     if(len>len0){
       len0=len;

@@ -487,7 +487,10 @@ void Usage(char *ver,char *l_rev){
 		  "mouse pointer\t show coordinates.\n");
   (void) fprintf( stdout, 
 		  "l\t\t show-hide labels.\n");
-
+  (void) fprintf( stdout, 
+		  "left mouse \t Select the nearest ship.\nclick\n");
+  (void) fprintf( stdout, 
+		  "right mouse \t Send the selected ships to that point.\nclick\n");
   (void) fprintf( stdout,
 		  "\nversion: %s",ver);
   (void) fprintf( stdout, 

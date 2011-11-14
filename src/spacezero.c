@@ -82,7 +82,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.51"};
+char version[64]={"0.81.52"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Nov. 2011"};
@@ -733,7 +733,6 @@ gint MainLoop(gpointer data){
   
   drawmap=FALSE;
   if(!(cont%2))drawmap=TRUE;
-  
 
   /* ai */
 
@@ -1010,11 +1009,11 @@ gint MainLoop(gpointer data){
     
     if(!(Shell(1,NULL,NULL,NULL,NULL,NULL,NULL,NULL)==2 &&
 	Shell(2,NULL,NULL,NULL,NULL,NULL,NULL,NULL)==WRITE)){
-    
       gdraw.map=gdraw.map==TRUE?FALSE:TRUE;
     }
     keys.m=FALSE;
   }
+  if(cv==NULL)gdraw.map=FALSE;
 
 
   /*--  what to draw */

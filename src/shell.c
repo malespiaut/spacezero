@@ -262,14 +262,17 @@ int Shell(int command, GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadO
 
       if(key->mright==TRUE && gdraw.map==TRUE && *pcv!=NULL){
 	int x,y,a,b,pid;
+	Object *nearobj;
 	MousePos(GET,&x,&y);
 	strcpy(par,"");
 	//	  printf("mouse:  %d %d\n",x,y);
 	a=x;
 	b=y;
 	W2R(*pcv,&a,&b);
-	pid=IsPlanetNearThan(lhead,player,a,b,500000); /* 0.5 sectors */
-	//	  printf("Window2Real() %d %d %d\n",a,b,pid);
+	nearobj=ObjNearThan(lhead,player,a,b,500000); /* 0.5 sectors */
+	if(nearobj!=NULL)pid=nearobj->pid;
+	else pid=0;
+	//	printf("Window2Real() %d %d %d\n",a,b,pid);
 
 	if(pid!=0){
 	  snprintf(par,12,"%d",pid);

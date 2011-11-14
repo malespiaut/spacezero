@@ -92,6 +92,7 @@ Ships:
 AI:    
 ===
 
+-!!When an enemy ship is near a planet send only the necessary ships.
 -Orbit in automatic mode(Take off).
 -When parent dies, send orders to object sons.
 -evasion maneuver.
@@ -107,7 +108,6 @@ AI:
 -!! Review buy() and upgrade()
 -!A planet with to many ships, redistribute ships.
 -!!check rules in ally planet. If is empty: conquer.
--When an enemy ship is near a planet send only the necessary ships.
 -Add a different way to attack planets. 
 
 
@@ -130,7 +130,7 @@ Command shell:
 -!Save several games.
 -Add select x y
 -Add RETREAT n
-
+-Pop up window. Simplify command interface - ID: 3434505
 
 Planets:
 =======
@@ -141,7 +141,7 @@ Version 0.9
 -Add transports, comerce.
 -Missions.=> Missions script files. (XML?)
 -Increase planet terrain. As in "Defender"
--Avoid shocks whith ships.(See earlier ai() version).
+-Avoid shocks whith ships.(See ancient ai() version).
 
 
 Version 1.0

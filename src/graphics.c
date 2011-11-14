@@ -2522,13 +2522,41 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   
   sprintf(point,"%d %d",x,y);
   MousePos(GET,&x,&y);
+  gdk_draw_rectangle(pixmap,penBlack,TRUE,x,y-24,30,24);
   DrawString(pixmap,gfont,penGreen,x,y,point);
 
   texth=gdk_text_height(gfont,"Lp",2);
   sprintf(point,"%d",(int)(distance/SECTORSIZE));
+
+
+  /***** target *****/
+  if(1){
+    int x,y,a,b;
+    int xt,yt;
+    Object *targetobj;
+    MousePos(GET,&x,&y);
+    a=x;
+    b=y;
+    W2R(cv,&a,&b);
+    targetobj=ObjNearThan(&hol,player,a,b,500000); /* 0.5 sectors */
+    if(targetobj!=NULL){
+      sprintf(point,"%d %d ",(int)(distance/SECTORSIZE),targetobj->pid);
+      xt=x0+(targetobj->x-objx+cvx)*factor;
+      yt=y0+(targetobj->y-objy+cvy)*factor;
+      gdk_draw_rectangle(pixmap,penRed,FALSE,xt-6,gheight-yt-6,12,12);
+    }
+    else{
+      sprintf(point,"%d",(int)(distance/SECTORSIZE));
+    }
+    //    printf("Window2Real() %d %d %d\n",a,b,pid);
+  }
+  /***** --target *****/
+
+
   DrawString(pixmap,gfont,penGreen,x,y-texth-2,point);
 
   /***** --mouse position *****/
+
 }
 
 

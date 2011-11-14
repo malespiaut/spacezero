@@ -1512,32 +1512,35 @@ float Distance2NearestShipLessThan(struct HeadObjList *lh,int player,int x,int y
   return(0);
 }
 
-int IsPlanetNearThan(struct HeadObjList *lh,int player,int x,int y,float dmin2){
+Object *ObjNearThan(struct HeadObjList *lh,int player,int x,int y,float d2){
   /*
-
     returns:
-    the planet id of first  planet closer than dmin2.
+    the nearest obj planet id of first  planet closer than dmin2.
     0 if there are no planets at that distance.
-
   */
 
   struct ObjList *ls;
   float rx,ry;
   float x1,y1;
+  float dmin2;
   Object *obj=NULL;
+  Object *retobj=NULL;
 
-
+  dmin2=d2;
 
   ls=lh->next;
   while(ls!=NULL){
-    if(ls->obj->type!=PLANET){ls=ls->next;continue;}
-    
-    if(!PLANETSKNOWN){
-      if(IsInIntList((players[player].kplanets),ls->obj->id)==0){
-	ls=ls->next;continue;
-      } 
-    }
+    if(ls->obj->player!=player && ls->obj->type!=PLANET){ls=ls->next;continue;}
+    if(ls->obj->habitat!=H_SPACE){ls=ls->next;continue;}
+    if(ls->obj->type!=PLANET && ls->obj->type!=SHIP){ls=ls->next;continue;}
 
+    if(ls->obj->type==PLANET){
+      if(!PLANETSKNOWN){
+	if(IsInIntList((players[player].kplanets),ls->obj->id)==0){
+	  ls=ls->next;continue;
+	} 
+      }
+    }
     obj=ls->obj;
  
     x1=obj->x;
@@ -1547,11 +1550,12 @@ int IsPlanetNearThan(struct HeadObjList *lh,int player,int x,int y,float dmin2){
     ry=y - obj->y;
 
     if(rx*rx+ry*ry<dmin2){
-      return(obj->id);
+      dmin2=rx*rx+ry*ry;
+      retobj=obj;
     }
     ls=ls->next;
   }
-  return(0);
+  return(retobj);
 }
 
 

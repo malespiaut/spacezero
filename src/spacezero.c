@@ -82,7 +82,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.52"};
+char version[64]={"0.81.53"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Nov. 2011"};
@@ -1008,7 +1008,7 @@ gint MainLoop(gpointer data){
   if(keys.m==TRUE){
     
     if(!(Shell(1,NULL,NULL,NULL,NULL,NULL,NULL,NULL)==2 &&
-	Shell(2,NULL,NULL,NULL,NULL,NULL,NULL,NULL)==WRITE)){
+	 Shell(2,NULL,NULL,NULL,NULL,NULL,NULL,NULL)==WRITE)){
       gdraw.map=gdraw.map==TRUE?FALSE:TRUE;
     }
     keys.m=FALSE;
@@ -1138,7 +1138,7 @@ gint MainLoop(gpointer data){
 		  gwidth,gheight);
     
     cv0=cv;     /* coordinates center */
-
+    ShellTitle(2,NULL,NULL,NULL,NULL,0,0);
     Shell(0,pixmap,gfont,penGreen,&listheadobjs,&players[actual_player],&keys,&cv);
     if(keys.o==FALSE)gdraw.order=FALSE;
     if(cv!=NULL){
@@ -4146,8 +4146,9 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 
   if(keys.o==FALSE){ 
     gdraw.order=FALSE;
-    DrawString(pixmap,gfont,penRed,10,wheight+GameParametres(GET,GPANEL,0)/2+4, 
-	       "O: Introduce command"); 
+    /* DrawString(pixmap,gfont,penRed,10,wheight+GameParametres(GET,GPANEL,0)/2+4,  */
+    /* 	       "O: Introduce command"); */
+    ShellTitle(0,NULL,pixmap,gfont,penRed,10,wheight+GameParametres(GET,GPANEL,0)/2+4);
   }
     /*
      *    Ship info

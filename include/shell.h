@@ -38,6 +38,7 @@
 /* keystrokes */
 
 void initshell(void);
+void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,int x,int y);
 int Shell(int command,GdkPixmap *pixmap,GdkFont *,GdkGC *,struct HeadObjList *hl,struct Player *players,struct Keys *,Object **cv);
 Object *ExecOrder(struct HeadObjList *hl,Object *obj,int player,int order,char *par);
 void SelectionBox(Object **,int);

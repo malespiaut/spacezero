@@ -202,6 +202,7 @@ X-!!if asteroids are near a planet continous take off and return to planet for f
 X-!!dont take off when change to automatic mode.
 X-(081111)Fix: Asteroids are no more visible everywhere - ID: 3434531
 X-(081111)Fix:  "short" planets advantage towers - ID: 3433655 
+X-(141111)Added: Answers to orders are now showed in orders window.
 
 BUGS version 0.80
 =================

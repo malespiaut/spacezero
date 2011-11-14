@@ -2199,8 +2199,9 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   gheight=GameParametres(GET,GHEIGHT,0);
 
   if(keys.o==FALSE){
-    DrawString(pixmap,gfont,penRed,10,gheight+GameParametres(GET,GPANEL,0)/2+4, 
- 		    "O: Introduce command"); 
+    /* DrawString(pixmap,gfont,penRed,10,gheight+GameParametres(GET,GPANEL,0)/2+4,  */
+    /* 		    "O: Introduce command");  */
+    ShellTitle(0,NULL,pixmap,gfont,penRed,10,gheight+GameParametres(GET,GPANEL,0)/2+4);
     if(cv!=NULL){
       if(cv->habitat==H_PLANET){
 	objx=cv->in->planet->x;

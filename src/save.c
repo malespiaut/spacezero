@@ -66,7 +66,6 @@ int CreateDir(char *dir){
     -1 if some error occurs and is not created.
   */  
 
-
   errno=0;
   if(mkdir(dir,S_IFDIR|S_IRUSR|S_IWUSR|S_IXUSR)==-1){
     if(errno!=EEXIST){
@@ -85,7 +84,7 @@ char *CreateSaveFile(int server,int client){
 
   char *file;
 
-  file=malloc(128*sizeof(char));
+  file=malloc(MAXTEXTLEN*sizeof(char));
   if(file==NULL){
     fprintf(stderr,"ERROR in malloc ExecLoad()\n");
     exit(-1);
@@ -93,27 +92,27 @@ char *CreateSaveFile(int server,int client){
 
   strcpy(file,"");
   if(server==TRUE){
-    strcat(file,getenv("HOME"));
+    strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
     strcat(file,"/");
-    strcat(file,SAVEDIR);
+    strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
     strcat(file,"/");
-    strcat(file,SAVEFILENET);
+    strncat(file,SAVEFILENET,MAXTEXTLEN-strlen(file));
   }
   else{
-    strcat(file,getenv("HOME"));
+    strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
     strcat(file,"/");
-    strcat(file,SAVEDIR);
+    strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
     strcat(file,"/");
-    strcat(file,SAVEFILE0);
+    strncat(file,SAVEFILE0,MAXTEXTLEN-strlen(file));
   }
 
   if(client==TRUE){
     strcpy(file,"");
-    strcat(file,getenv("HOME"));
+    strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
     strcat(file,"/");
-    strcat(file,SAVEDIR);
+    strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
     strcat(file,"/");
-    strcat(file,SAVEFILE1);
+    strncat(file,SAVEFILE1,MAXTEXTLEN-strlen(file));
   }
 
 
@@ -124,18 +123,18 @@ char *CreateRecordFile(void){
   char *file;
   FILE *fprecord;
 
-  file=malloc(128*sizeof(char));
+  file=malloc(MAXTEXTLEN*sizeof(char));
   if(file==NULL){
     fprintf(stderr,"ERROR in malloc ExecLoad()\n");
     exit(-1);
   }
 
   strcpy(file,"");
-  strcat(file,getenv("HOME"));
+  strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
   strcat(file,"/");
-  strcat(file,SAVEDIR);
+  strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
   strcat(file,"/");
-  strcat(file,RECORDFILE);
+  strncat(file,RECORDFILE,MAXTEXTLEN-strlen(file));
 
 
   if((fprecord=fopen(file,"rt"))==NULL){
@@ -179,10 +178,10 @@ char *CreateOptionsFile(void){
   }
 
   strcpy(file,"");
-  strcat(file,getenv("HOME"));
+  strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
   strcat(file,"/");
-  strcat(file,SAVEDIR);
-  strcat(file,"/");
+  strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
+  strncat(file,"/",MAXTEXTLEN-strlen(file));
   
   /* Test if the configuration directory exists */
   if(CreateDir(file)!=0){
@@ -191,7 +190,7 @@ char *CreateOptionsFile(void){
   }
   /* --Test if the directory exists */
 
-  strcat(file,OPTIONSFILE);
+  strncat(file,OPTIONSFILE,MAXTEXTLEN-strlen(file));
   return(file);
 }
 
@@ -421,7 +420,7 @@ int ExecLoad(char *nom){
   struct Global *global;
   int width,height;
   int gtime;
-  char versionfile[64];
+  char versionfile[MAXTEXTLEN];
   int net;
   int tmpint;
   int ulx,uly;
@@ -439,7 +438,7 @@ int ExecLoad(char *nom){
     fprintf(stdout,"ExecLoad(): I cant open file %s\n",nom);return(1);
   }
   /* version */
-  if(fscanf(fp,"%s",versionfile)!=1){ /**/
+  if(fscanf(fp,"%128s",versionfile)!=1){ /**/
     perror("fscanf");
     exit(-1);
   }
@@ -735,7 +734,7 @@ int ExecLoad(char *nom){
   }
 
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    if(fscanf(fp,"%s%hd%d%hd%hd%hd%hd%hd%hd%d%d%d%d%d%f%d%d%d%d%d%d",
+    if(fscanf(fp,"%128s%hd%d%hd%hd%hd%hd%hd%hd%d%d%d%d%d%f%d%d%d%d%d%d",
 	      players[i].playername,
 	      &players[i].id,
 	      &players[i].pid,
@@ -1466,14 +1465,14 @@ int FprintfOrders(FILE *fp,Object *obj){
   n=CountOrders(obj);
   m=obj->norder;
   if(m!=n){
-    fprintf(stderr,"WARNING FprintfOrders(): number of orders dont match norder\n" );
+    fprintf(stderr,"WARNING FprintfOrders(): number of orders don't match norder\n" );
     printf("\tnor: %d norder: %d \n",n,obj->norder);
   }
   fprintf(fp,"O ");
   
   fprintf(fp,"%d ",n);
   
-  /* printf actorder , dont below to the list ?? check this */
+  /* printf actorder , don't below to the list ?? check this */
   /*  printf("\n(%d) norder: %d n:%d\n",obj->id,obj->norder,n); */
   
   lo=obj->lorder;
@@ -1490,7 +1489,7 @@ int FprintfOrders(FILE *fp,Object *obj){
     lo=lo->next;
   }
   if(i!=n){
-    fprintf(stderr,"ERROR FprintfOrders(): number of orders dont match norder\n" );
+    fprintf(stderr,"ERROR FprintfOrders(): number of orders don't match norder\n" );
     fprintf(stderr,"\tnor: %d norder: %d \n",i,n);
     exit(-1);
   }
@@ -1506,7 +1505,7 @@ int FscanfOrders(FILE *fp,Object *obj){
   struct Order order;
   int n;
   char c[10];
-  if(fscanf(fp,"%s",c)!=1){
+  if(fscanf(fp,"%10s",c)!=1){
     perror("fscanf");
     exit(-1);
   }
@@ -1805,7 +1804,7 @@ void SaveParamOptions(char *file,struct Parametres *par){
 	 par->sound,par->music,par->cooperative,par->compcooperative,par->queen,
 	 par->pirates,par->port);
   
-  if(strlen(par->IP)==0)strcpy(par->IP,DEFAULT_IP);
+  if(strlen(par->IP)==0)strncpy(par->IP,DEFAULT_IP,MAXTEXTLEN);
   fprintf(fp,"%s\n",par->IP);
   if(strlen(par->playername)==0)strcpy(par->playername,"player");
   fprintf(fp,"%s\n",par->playername);
@@ -1820,24 +1819,30 @@ void SaveParamOptions(char *file,struct Parametres *par){
 void LoadParamOptions(char *file,struct Parametres *par){
 
   FILE *fp; 
-  char version[MAXTEXTLEN];
+  char version[MAXTEXTLEN]="";
 
   if((fp=fopen(file,"rt"))==NULL){
     fprintf(stdout,"Cant open the file: %s",file);
     exit(-1);
   }
-  fscanf(fp,"%s",version);
+  fscanf(fp,"%128s",version);
   /* HERE check version */
 
   fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d",
 	 &par->ngalaxies,&par->nplanets, &par->nplayers, &par->ul,&par->kplanets,
 	 &par->sound,&par->music,&par->cooperative,&par->compcooperative,&par->queen,
 	 &par->pirates,&par->port);
-  
-  fscanf(fp,"%s",par->IP);
-  fscanf(fp,"%s",par->playername);
-  fscanf(fp,"%s",par->font);
-  fscanf(fp,"%s",par->geom);
+  printf("version: %s\n",version);  
+  printf("num galaxies: %d\n",par->ngalaxies);  
+
+  fscanf(fp,"%128s",par->IP);
+  fscanf(fp,"%128s",par->playername);
+  fscanf(fp,"%128s",par->font);
+  fscanf(fp,"%128s",par->geom);       
+  printf("version1: %s\n",par->IP);	    
+  printf("version2: %s\n",par->playername); 
+  printf("version3: %s\n",par->font);       
+  printf("version4: %s\n",par->geom);       
   fclose(fp);
 } 
 

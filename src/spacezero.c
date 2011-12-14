@@ -82,10 +82,10 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.53"};
+char version[64]={"0.81.55"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Nov. 2011"};
+char last_revision[]={"Dec. 2011"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -111,6 +111,8 @@ struct HeadObjList *listheadcontainer; /* lists of objects that contain objects:
 struct HeadObjList *listheadkplanets;  /* lists of planets known by players */
 struct HeadObjList listheadplayer;     /* list of objects of each player */
 
+struct CharListHead gameloglist;          /* list of all game messages */
+struct Window windowgamelog;
 
 struct TextMessageList listheadtext;
 struct Parametres param;
@@ -135,14 +137,12 @@ struct Draw gdraw;
 void int_handler(int);
 void segfault_handler(int);
 
-void CheckPilots(struct HeadObjList *hol);
 
 char *savefile;
 char *recordfile;
 char *optionsfile;
 
 struct MenuHead *menuhead;
-
 
 
 int main(int argc,char *argv[]){
@@ -349,6 +349,25 @@ int main(int argc,char *argv[]){
 
   /******** --what stuff draw *********/
 
+  /***** game log initialization *****/
+
+  gameloglist.n=0;
+  gameloglist.max=200;
+  gameloglist.first=0;
+  gameloglist.next=NULL;
+
+  windowgamelog.type=0;
+  windowgamelog.active=0;
+  windowgamelog.x=0;
+  windowgamelog.y=0;
+  windowgamelog.width=0;
+  windowgamelog.height=0;
+  windowgamelog.scrollbar.active=1;
+  windowgamelog.scrollbar.width=15;
+  windowgamelog.scrollbar.pos=0;
+  windowgamelog.scrollbar.n=0;
+  windowgamelog.data=&gameloglist;
+
   gtk_timeout_add((int)(DT*50),MenuLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
 #if DEBUGFAST
   gtk_timeout_add((int)(DT*5),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
@@ -383,7 +402,6 @@ gint MenuLoop(gpointer data){
 
   int status;
   static int cont=0;
-  static int textw=14;
   static GdkFont *font,*fontmenu;
   static int swfont=0;
   int swexit=0;
@@ -406,7 +424,6 @@ gint MenuLoop(gpointer data){
 
   if(swfont==0){
     font=InitFontsMenu("");
-    textw=gdk_text_width(font,"Main Menu",9);
     swfont++;
   }
   if(height<400)fontmenu=gfont;
@@ -697,11 +714,13 @@ gint MainLoop(gpointer data){
     sprintf(pointmess,"GAME OVER");
     swmess++;
   }
+
   /* game paused */
   if(GameParametres(GET,GPAUSED,0)==TRUE){
     sprintf(pointmess,"PAUSED    (press p to continue)");
     swmess++;
   }
+
   /* game quit */
   if(GameParametres(GET,GQUIT,0)==1){
     sprintf(pointmess,"Really QUIT?  ( y/n )");
@@ -715,7 +734,7 @@ gint MainLoop(gpointer data){
   if(GameParametres(GET,GPAUSED,0)==TRUE){
     if(swpaused>=NETSTEP){
       //      DestroyObjList(&listheadplayer); // HERE quitar esto? revisar
-      return(TRUE);
+      return(TRUE);   //savepause
     }
     if(GameParametres(GET,GNET,0)==TRUE){
       sprintf(point,"Game PAUSED");
@@ -773,7 +792,9 @@ gint MainLoop(gpointer data){
 	  y0=uly*Random(-1)-uly/2;
 	  CreatePirates(&listheadobjs,4,x0,y0);
 	  snprintf(text,MAXTEXTLEN,"PIRATES!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));
-	  Add2TextMessageList(&listheadtext,text,0,-1,0,100,0);
+	  if(!Add2TextMessageList(&listheadtext,text,0,-1,0,100,0)){
+	    Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
+	  }
 	  if(GameParametres(GET,GNET,0)==TRUE){
 	    SendTextMessage(text);
 	  }
@@ -806,13 +827,14 @@ gint MainLoop(gpointer data){
 
 	      if(Distance2NearestShipLessThan(&listheadobjs,j,x0,y0,MAXASTEROIDDISTANCE2)){
 		snprintf(text,MAXTEXTLEN,"ASTEROIDS!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));
-		Add2TextMessageList(&listheadtext,text,0,j,0,100,0);
+		if(!Add2TextMessageList(&listheadtext,text,0,j,0,100,0)){
+		  Add2CharListWindow(&gameloglist,text,1,&windowgamelog);
+		}
 		if(GameParametres(GET,GNET,0)==TRUE){
 		  SendTextMessage(text);   
 		}
 	      }
 	    }
-	    
 	  }
 	}
       }
@@ -846,9 +868,7 @@ gint MainLoop(gpointer data){
 
       Setttl(&listheadobjs,-1);
       swcomm=TRUE;
-
     }
-
   }
   else{
     swcomm=TRUE;
@@ -899,6 +919,7 @@ gint MainLoop(gpointer data){
     listheadplayer.n=0;  
     listheadplayer.next=NULL;  
 
+  
     if(ExecLoad(savefile)==0){
       loadsw=1;
       p_time=GetTime();
@@ -919,6 +940,7 @@ gint MainLoop(gpointer data){
 	  lh=lh->next;
 	}
       }
+      DestroyCharList(&gameloglist);
       SetDefaultKeyValues(&keys,0);
       CheckGame("Checking game after load...",1);
       printf("done\n");
@@ -928,7 +950,7 @@ gint MainLoop(gpointer data){
   }
 
 
-  if(keys.save==TRUE && swcomm==TRUE){
+  if(keys.save==TRUE && swcomm==TRUE){ //savepause
     char text[MAXTEXTLEN];
     keys.load=FALSE;
     keys.save=FALSE;
@@ -936,7 +958,9 @@ gint MainLoop(gpointer data){
 
     if(ExecSave(listheadobjs,savefile)==0){    
       snprintf(text,MAXTEXTLEN,"GAME SAVED.");
-      Add2TextMessageList(&listheadtext,text,0,-1,0,100,0);
+      if(!Add2TextMessageList(&listheadtext,text,0,-1,0,100,0)){
+	Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
+      }
       if(GameParametres(GET,GNET,0)==TRUE){
 	SendTextMessage(text);   
       }
@@ -983,18 +1007,35 @@ gint MainLoop(gpointer data){
 
   /*  what to draw */
   if(keys.f5==TRUE){
+    keys.f7=FALSE;
     gdraw.shiplist=TRUE;
-    gdraw.info=FALSE;
+    gdraw.gamelog=FALSE;
   }
   else{
     gdraw.shiplist=FALSE;
-    gdraw.info=TRUE;
   }
   if(keys.f6==TRUE){
     gdraw.stats=TRUE;
   }
   else{
     gdraw.stats=FALSE;
+  }
+
+  if(keys.f7==TRUE){
+    windowgamelog.active=TRUE;
+    gdraw.gamelog=TRUE;
+    gdraw.shiplist=FALSE;
+  }
+  else{
+    gdraw.gamelog=FALSE;
+    windowgamelog.active=FALSE;
+    windowgamelog.scrollbar.n=0;
+  }
+  if(gdraw.shiplist||gdraw.gamelog){
+    gdraw.info=FALSE;
+  }
+  else{
+    gdraw.info=TRUE;
   }
 
   if(keys.mright){
@@ -1017,6 +1058,9 @@ gint MainLoop(gpointer data){
 
 
   /*--  what to draw */
+
+
+
 
 
   /* game window*/
@@ -1048,7 +1092,6 @@ gint MainLoop(gpointer data){
       else{  
 
 #if DEBUGFAST
-
       if(!(cont%120)){
  	gdk_draw_rectangle(pixmap,
  			   drawing_area->style->black_gc,
@@ -1058,16 +1101,13 @@ gint MainLoop(gpointer data){
  			   drawing_area->allocation.height); 
 
       }
-
 #else
-
       gdk_draw_rectangle(pixmap,
 			 drawing_area->style->black_gc,
 			 TRUE,
 			 0,0,
 			 drawing_area->allocation.width,
 			 drawing_area->allocation.height); 
-      
 #endif
 
       }  
@@ -1116,6 +1156,14 @@ gint MainLoop(gpointer data){
 
     if(gdraw.shiplist==TRUE){
       DrawPlayerList(pixmap,actual_player,&listheadplayer,cv,loadsw || !(GetTime()%20));
+    }
+
+
+    if(gdraw.gamelog==TRUE){
+      //      PrintCharList(&gamelog);
+      //      DrawCharList(pixmap,gfont,penWhite,&gamelog,10,10);
+      //      DrawWindow(pixmap,gfont,penWhite,10,10,1,(void *)&gameloglist);
+      DrawWindow(pixmap,gfont,penWhite,10,10,1,&windowgamelog);
     }
 
     DrawInfo(pixmap,cv);
@@ -1197,16 +1245,13 @@ gint MainLoop(gpointer data){
 
 	  cv=SelectOneShip(&listheadobjs,region,cv,keys.ctrl);
       }
-
     }
-
   }
 
 
   /*Selection box */
   SelectionBox(&cv,0);
   /* --Selection box */
-
 
 
   /* show window */
@@ -1417,7 +1462,9 @@ void key_eval(struct Keys *key){
 	    
 	    if(Distance2NearestShipLessThan(&listheadobjs,i,x0,y0,MAXASTEROIDDISTANCE2)){
 	      snprintf(text,MAXTEXTLEN,"ASTEROIDS!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));
-	      Add2TextMessageList(&listheadtext,text,0,i,0,100,0);
+	      if(!Add2TextMessageList(&listheadtext,text,0,i,0,100,0)){
+		Add2CharListWindow(&gameloglist,text,1,&windowgamelog);
+	      }
 	      if(GameParametres(GET,GNET,0)==TRUE){
 		SendTextMessage(text);   
 	      }
@@ -1461,6 +1508,20 @@ void key_eval(struct Keys *key){
     //    printf("mouse mdclick\n");
     key->mdclick=FALSE;
   }
+  if(1){
+    int x,y;
+
+    if(key->mleft==TRUE){
+      if(WindowFocus(&windowgamelog)){
+	MousePos(GET,&x,&y);
+	ActWindow(&windowgamelog);
+	key->mleft=FALSE;
+      }
+    }
+  }
+      
+
+
   /* --mouse */
 
   gordermode=FALSE;
@@ -1497,22 +1558,22 @@ void key_eval(struct Keys *key){
     /* observe enemies */
 
     if(observeenemies==TRUE){
-      if(key->f7==TRUE || key->f8==TRUE){
+      if(key->f9==TRUE || key->f10==TRUE){
 	if(cv!=NULL){
 	  players[actual_player].cv=cv->id;
 	}
 	else{
 	  players[actual_player].cv=0;
 	}
-	if(key->f7==TRUE){
-	  key->f7=FALSE;
+	if(key->f9==TRUE){
+	  key->f9=FALSE;
 	  actual_player--;
 	  if(actual_player<1){
 	    actual_player=GameParametres(GET,GNPLAYERS,0)+1;
 	  }
 	}
-	if(key->f8==TRUE){
-	  key->f8=FALSE;
+	if(key->f10==TRUE){
+	  key->f10=FALSE;
 	  actual_player++;
 	  if(actual_player>GameParametres(GET,GNPLAYERS,0)+1){
 	    actual_player=1;
@@ -1572,6 +1633,8 @@ void key_eval(struct Keys *key){
 			ship_c->y-2.5*ship_c->radio*sin(ship_c->a),
 			ship_c->vx,ship_c->vy,
 			CANNON4,ENGINE1,ship_c->player,ship_c,ship_c->in);
+
+	    Add2ObjList(&listheadobjs,nobj);
 	  }
 	  else{
 	    if(cv==ship_c){
@@ -1584,7 +1647,6 @@ void key_eval(struct Keys *key){
 	      }
 	    }
 	  }
-	  //	  Add2ObjList(&listheadobjs,nobj);
 	  
 	  key->s=FALSE;
 	}
@@ -1812,7 +1874,6 @@ void UpdateShip(Object *obj){
   float dtim;
   float a,factor;
   float g=1.2/250000;
-  float U;
   int time;
   int n;
   int proc,width;
@@ -1845,7 +1906,7 @@ void UpdateShip(Object *obj){
   /***** Forces 1*****/
   switch(obj->habitat){
   case H_SPACE:
-    U=PlanetAtraction(&fx0,&fy0,obj->x,obj->y,obj->mass);
+    PlanetAtraction(&fx0,&fy0,obj->x,obj->y,obj->mass);
     if(obj->subtype==SATELLITE){
       if(fx0>0.0000001){
 	obj->life=2400;
@@ -2025,12 +2086,14 @@ void UpdateShip(Object *obj){
 
       /* repair and refuel  */
       if(players[obj->player].gold<5){
-	n=5*Random(-1); /* HERE depend on number of objects */
+	n=5*Random(-1); /* HERE depends on number of damaged objects */
       }
       else{
 	n=0;
       }
 
+
+      /* first repair, then gas and last ammunition */
       if(players[obj->player].gold>0 && n==0){
 	if(obj->state<100){
 	  if(obj->state>0){
@@ -2039,37 +2102,42 @@ void UpdateShip(Object *obj){
 	  if(obj->state>100)obj->state=100;
 	  players[obj->player].gold-=.125; /* total cost 250  */
 	}
-	if(obj->gas < obj->gas_max){
-	  obj->gas+=2;
-	  if(obj->gas>obj->gas_max)obj->gas=obj->gas_max;
-	  players[obj->player].gold-=.2; /* total cost 100 */
-	}
-	if(!(time%4)){
-	  if(obj->weapon0.n<obj->weapon0.max_n){
-	    if(players[obj->player].gold>obj->weapon0.projectile.unitcost){
-	      obj->weapon0.n++;
-	      players[obj->player].gold-=obj->weapon0.projectile.unitcost;
-	    }
+
+	if(obj->state>50){
+	  if(obj->gas < obj->gas_max){
+	    obj->gas+=2;
+	    if(obj->gas>obj->gas_max)obj->gas=obj->gas_max;
+	    players[obj->player].gold-=.2; /* total cost 100 */
 	  }
-	}
-	if(!(time%240)){
-	  if(obj->weapon1.n<obj->weapon1.max_n){
-	    if(players[obj->player].gold>obj->weapon1.projectile.unitcost){
-	      players[obj->player].gold-=obj->weapon1.projectile.unitcost;
-	      obj->weapon1.n++;
+	  if(obj->gas > 0.5*obj->gas_max){
+	    if(!(time%4)){
+	      if(obj->weapon0.n<obj->weapon0.max_n){
+		if(players[obj->player].gold>obj->weapon0.projectile.unitcost){
+		  obj->weapon0.n++;
+		  players[obj->player].gold-=obj->weapon0.projectile.unitcost;
+		}
+	      }
 	    }
-	  }
-	}
-	if(!(time%14)){
-	  if(obj->weapon2.n<obj->weapon2.max_n){
-	    if(players[obj->player].gold>obj->weapon2.projectile.unitcost){
-	      players[obj->player].gold-=obj->weapon2.projectile.unitcost;
-	      obj->weapon2.n++;
+	    if(!(time%240)){
+	      if(obj->weapon1.n<obj->weapon1.max_n){
+		if(players[obj->player].gold>obj->weapon1.projectile.unitcost){
+		  players[obj->player].gold-=obj->weapon1.projectile.unitcost;
+		  obj->weapon1.n++;
+		}
+	      }
+	    }
+	    if(!(time%14)){
+	      if(obj->weapon2.n<obj->weapon2.max_n){
+		if(players[obj->player].gold>obj->weapon2.projectile.unitcost){
+		  players[obj->player].gold-=obj->weapon2.projectile.unitcost;
+		  obj->weapon2.n++;
+		}
+	      }
 	    }
 	  }
 	}
       }
-
+      
       /***** -- repair and refuel *****/
 
       /***** Learning, experience *****/
@@ -2296,7 +2364,6 @@ void Collision(struct HeadObjList *lh){
   Object *obj1,*obj2,*objt1,*objt2;
   Object *obj,*pnt,*shot;
   Object *nobj;
-  struct Planet *planet;
   Segment s;
   float radio2,r,r2,rx,ry;
   float radar1,radar2;
@@ -2309,15 +2376,14 @@ void Collision(struct HeadObjList *lh){
   int gkplanets,gnet,gnplayers;
   int proc;
   int crashsw=0;
-  static int cont=0;
-
+  int time=0;
 
   gkplanets=GameParametres(GET,GKPLANETS,0);
   gnet=GameParametres(GET,GNET,0);
   gnplayers=GameParametres(GET,GNPLAYERS,0);
 
   proc=GetProc();
-
+  time=GetTime();
   /* among objs and ship */
   ls1=lh->next;
 
@@ -2378,8 +2444,8 @@ void Collision(struct HeadObjList *lh){
 	ls2=ls2->next;
       }
     }
+
     while(ls2!=NULL){  /* double loop */
-    
       if(obj1->state<=0){
 	contabilidad[0]++;
 	ls2=ls2->next;
@@ -2446,7 +2512,7 @@ void Collision(struct HeadObjList *lh){
 	      continue;
 	    }
 
-	    /* pilot-projectile dont collide */
+	    /* pilot-projectile don't collide */
 	    if(obj1->type==PROJECTILE||obj2->type==PROJECTILE){
 	      ls2=ls2->next;
 	      contabilidad[3]++;
@@ -2558,11 +2624,11 @@ void Collision(struct HeadObjList *lh){
 
       /***** planets and SHIPS *****/
       if(gkplanets==FALSE){
-	/*	if(r2<RADAR_RANGE2){  planet  discovered  */
+	/*	if(r2<RADAR_RANGE2){  planet discovered  */
 	if((obj1->type==PLANET && obj2->type==SHIP) ||
 	   (obj2->type==PLANET && obj1->type==SHIP)){
 
-	  if(r2<radar1*radar1 || r2<radar2*radar2){ /* planet  discovered */	    
+	  if(r2<radar1*radar1 || r2<radar2*radar2){ /* planet discovered */
 	    if(obj1->type==PLANET){
 	      obj=obj2;
 	      pnt=obj1;
@@ -2571,27 +2637,27 @@ void Collision(struct HeadObjList *lh){
 	      obj=obj1;
 	      pnt=obj2;
 	    }
-	    
-	    if(!((cont+obj->id)%20)){
+	    if(!((time+obj->id)%20)){ 
 	      if(proc==players[obj->player].proc){
 		if(r2<obj->radar*obj->radar){
-		  if(pnt->player!=obj->player){	
+		  if(pnt->player!=obj->player){
 		    if(IsInIntList((players[obj->player].kplanets),pnt->id)==0){
 		      Experience(obj,40);/* Experience for discover a planet */
 		      /* PLANETHERE*/
 		      if(gnet==TRUE){
 			struct NetMess mess;
-			int ret=0;
 			mess.id=NMPLANETDISCOVERED;
 			mess.a=obj->id;
 			mess.b=pnt->id;
-			ret=NetMess(&mess,NMADD);
+			NetMess(&mess,NMADD);
 		      }
 		      for(i=0;i<=gnplayers+1;i++){
 			if(players[obj->player].team==players[i].team){
 			  players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);
 			  snprintf(text,MAXTEXTLEN,"(%d) PLANET %d discovered",obj->pid,pnt->id);
-			  Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0);
+			  if(!Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0)){
+			    Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
+			  }
 			}
 		      }
 		    }
@@ -2809,7 +2875,9 @@ void Collision(struct HeadObjList *lh){
 		
 		if(objt1->player==actual_player && cv!=objt1){
 		  snprintf(text,MAXTEXTLEN,"(%c %d) HELP",Type(objt1),objt1->pid);
-		  Add2TextMessageList(&listheadtext,text,objt1->id,objt1->player,0,100,2);
+		  if(!Add2TextMessageList(&listheadtext,text,objt1->id,objt1->player,0,100,2)){
+		    Add2CharListWindow(&gameloglist,text,1,&windowgamelog);
+		  }
 		}
 	      }
 	    }
@@ -2903,7 +2971,6 @@ void Collision(struct HeadObjList *lh){
     crashsw=0;
     if(obj1->mode!=LANDED && obj1->habitat==H_PLANET){
       //      if(obj1->subtype==PILOT){ls1=ls1->next;continue;}
-      planet=obj1->in->planet;
       if(proc==players[obj1->player].proc || obj1->type==PROJECTILE){
 	contabilidad[13]++;
 	if(!GetSegment(&s,obj1)){
@@ -2966,8 +3033,9 @@ void Collision(struct HeadObjList *lh){
 			GetInformation(&players[obj1->player],&players[obj1->in->player],obj1);
 		      }
 		      snprintf(text,MAXTEXTLEN,"Planet %d LOST",obj1->in->id);
-		      Add2TextMessageList(&listheadtext,text,obj1->in->id,obj1->in->player,0,100,2);
-
+		      if(!Add2TextMessageList(&listheadtext,text,obj1->in->id,obj1->in->player,0,100,2)){
+			Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
+		      }
 		      if(gnet==TRUE && proc!=players[obj1->in->player].proc){
 			struct NetMess mess;
 			mess.id=NMPLANETLOST;
@@ -3030,8 +3098,6 @@ void Collision(struct HeadObjList *lh){
     ls1=ls1->next;
   } /* while(ls1!=NULL) */
 
-  cont++;
-  if(cont>10000)cont=0;
   return;
 }  /* --Colission() */
 
@@ -3773,7 +3839,6 @@ int CheckGame(char *cad,int action){
   struct ObjList *ls;
   struct ListOrder *lo;
   Object *obj;
-  int nord;
   int i;
   int n=0;
   int types[ALLOBJS];
@@ -3800,7 +3865,6 @@ int CheckGame(char *cad,int action){
     types[type]++;
 
     if(proc==players[obj->player].proc){
-      nord=obj->norder;
       n=0;
       lo=obj->lorder;
       while(lo!=NULL){
@@ -3825,8 +3889,11 @@ int CheckGame(char *cad,int action){
       ls=ls->next;continue;
     }
     
-    /* if planet dont belongs to a landed ship */
+    /* if planet don't belongs to a landed ship */
     if(obj->type==SHIP){
+      if(obj->radar<2000){
+	printf("SHIP %d(%d) player: %d with radar: %d\n",obj->pid,obj->id,obj->player,obj->radar);
+      }
       if(obj->mode==LANDED && obj->in==NULL){
 	fprintf(stderr,"\tError CheckGame() obj %d landed and in NULL\n",obj->id);
 	ls=ls->next;continue;
@@ -4104,7 +4171,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 	    CountObjs(&listheadobjs,-1,TRACE,-1),
 	    CountObjs(&listheadobjs,-1,SHIP,PILOT),
 	    (float)(20.0*nobjsend/100));
-    DrawString(pixmap,gfont,penRed,x,y,point);
+    DrawString(pixmap,gfont,gc,x,y,point);
 
     sprintf(point,"T:%d   E:%d   F:%d   T:%d",
 	    CountObjs(&listheadobjs,actual_player,-1,-1),
@@ -4112,7 +4179,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 	    CountObjs(&listheadobjs,actual_player,SHIP,FIGHTER),
 	    CountObjs(&listheadobjs,actual_player,SHIP,TOWER));
     
-    DrawString(pixmap,gfont,penRed,x,y+15,point);
+    DrawString(pixmap,gfont,gc,x,y+15,point);
 #endif
 
   y+=incy;
@@ -4127,7 +4194,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   else{
     sprintf(tmpcad,"%d:",m);
   }
-  strcat(point,tmpcad);
+  strncat(point,tmpcad,MAXTEXTLEN-strlen(point));
 
   if(s<10){
     sprintf(tmpcad,"0%d",s);
@@ -4135,7 +4202,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   else{
     sprintf(tmpcad,"%d",s);
   }
-  strcat(point,tmpcad);
+  strncat(point,tmpcad,MAXTEXTLEN-strlen(point));
   x=wwidth2-7*charw;
   DrawString(pixmap,gfont,penGreen,x,y,point);
 
@@ -4234,12 +4301,12 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
     strncpy(point,lh->info.text,MAXTEXTLEN);
     //    fprintf(stdout,"tmp  %s\n",point);
     if(lh->info.dest!=actual_player && lh->info.dest !=-1){
-      lh->info.duration=0;
+      lh->info.duration=-500;
       lsw=1;
       lh=lh->next;continue;
     }
-    else{
      
+    if(lh->info.duration>0 && i<10){
       switch(lh->info.value){
       case 0:
 	gcmessage=penRed;
@@ -4248,7 +4315,12 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 	gcmessage=penWhite;
 	break;
       }
-
+      /* 
+	 show messages with duration >0
+	 delete messages with duration <= -500
+	 (trying to avoid repetitive messages )
+      */
+      
       DrawString(pixmap,gfont,gcmessage,20,wheight-incy*swgmess+incy*i+5,point);
       textw=gdk_text_width(gfont,point,strlen(point));      
       if(textw>glen)glen=textw;
@@ -4256,15 +4328,17 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 	fprintf(stdout,"%s\n",point);
 	lh->info.print=1;
       }
-
       if(i<3){
 	lh->info.duration--;
-	if(lh->info.duration<=0)lsw=1;
       }
       i++;
     }
-    if(i>9)break;
+    else{
+      lh->info.duration--;
+    }
 
+    if(lh->info.duration<=-500)lsw=1;
+    
     lh=lh->next;
   }
   swgmess=i;  
@@ -4273,7 +4347,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
     /* printf("cleaning the message list\n"); */
     lh=&listheadtext;
     while(lh->next!=NULL){
-      if(lh->next->info.duration<=0){
+      if(lh->next->info.duration<=-500){
 	/* printf("borrando:(%s)\n",lh->next->info.text); */
 	freels=lh->next;
 	lh->next=lh->next->next;
@@ -4401,7 +4475,6 @@ void GetPoints(struct HeadObjList *hol,int proc,struct Player *p){
   
   struct ObjList *ls;
   Object *obj;   /* dead object */
-  Object *obj2;  /* killer */
   Object *obj3;  /* who receive points */
   int sw=0;
   int gnet;
@@ -4412,7 +4485,7 @@ void GetPoints(struct HeadObjList *hol,int proc,struct Player *p){
 
   while(ls!=NULL){
     obj=ls->obj;
-    obj2=obj3=NULL;
+    obj3=NULL;
     sw=0;
     if(gnet==TRUE){
       if(obj->modified==SENDOBJDEAD)sw=1;
@@ -4539,61 +4612,6 @@ void GetPointsObj(struct HeadObjList *lhobjs,struct Player *p,Object *obj){
 }
 
 
-void CheckPilots(struct HeadObjList *hol){
-  /* 
-     check if  destroyed ship has pilots.
-  */
-  
-  struct ObjList *ls;
-  int sw=0;
-  int gnet;
-  int proc=0;  
-  ls=hol->next;
-  gnet=GameParametres(GET,GNET,0);
-  proc=GetProc();
-
-  while(ls!=NULL){
-    sw=0;
-    if(ls->obj->state<=0)sw=1;
-    if(proc!=players[ls->obj->player].proc){ls=ls->next;continue;}
-
-    if(1){
-      
-      if(sw&&(ls->obj->items & ITPILOT)){
-	EjectPilotsObj(hol,ls->obj);
-	ls->obj->items=ls->obj->items&(~ITPILOT);
-      }
-      
-      /***** ship destroyed Create Pilot****/
-      if(sw&&(ls->obj->items & ITSURVIVAL)){
-	sw=0;
-	/* GetPointsObj(hol,players,ls->obj);/\* points and experience *\/ */
-	CreatePilot(ls->obj);
-	ls->obj->items=ls->obj->items&(~ITSURVIVAL);
-	if(ls->obj->player==actual_player){
-	  printf("Ejecting pilot from ship %d\n",ls->obj->pid);
-	}
-	DelAllOrder(ls->obj);
-	if(GameParametres(GET,GNET,0)==TRUE){
-	  ls->obj->modified=SENDOBJALL;
-	  //SetModified(ls->obj,SENDOBJALL);
-	  if(ls->obj->modified!=SENDOBJALL){
-	    printf("ERROR CheckPilots() (%d)%d mod: %d\n",ls->obj->player,ls->obj->pid,ls->obj->modified);
-	  }
-	}
-      }
-    }
-
-    ls=ls->next;    
-  }
-  return;
-}
-
-
-
-
-
-
 void PrintGameOptions(void){
 
   printf("actual game options:\n");
@@ -4717,14 +4735,14 @@ void SetGameParametres(struct Parametres param){
 }
 
 void MakeTitle(struct Parametres param, char *title){
-  strcat(title,TITLE);
+  strncat(title,TITLE,64-strlen(title));
   if(param.server==TRUE)
     strcat(title,"(server)  ");
   if(param.client==TRUE)
     strcat(title,"(client)  ");
-  strcat(title,version);
+  strncat(title,version,64-strlen(title));
   strcat(title,"  ");
-  strcat(title,copyleft);
+  strncat(title,copyleft,64-strlen(title));
 }
 
 void CreateTeams(struct Player *players,struct Parametres param){
@@ -4885,6 +4903,7 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
   }
 }
 
+
 void AddPlanets2List(struct HeadObjList *listheadobjs,struct Player *players){
   /* 
      Add known planets to players list 
@@ -4911,6 +4930,7 @@ void AddPlanets2List(struct HeadObjList *listheadobjs,struct Player *players){
     ls=ls->next;
   }
 }
+
 
 void PrintTeams(struct Player *players){
   int i;
@@ -5133,7 +5153,6 @@ void InitGameVars(void){
       cell[i]=0;
     }
  
-
     /*****--CELLON*****/
     PrintGameOptions();
 }

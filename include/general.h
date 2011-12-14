@@ -71,6 +71,7 @@
 
 
 /* default options */
+#define MAPAUTOCENTER 1
 #define NUMPLAYERS 2
 #define NUMGALAXIES 1
 #define NUMPLANETS 30   /* num. planets in galaxy */
@@ -251,7 +252,7 @@ struct Keys{
   int may,ctrl,esc;
   int home;
   int Pagedown,Pageup;         /* next, previous planet */
-  int f1,f2,f3,f4,f5,f6,f7,f8;   /* choose ship */
+  int f1,f2,f3,f4,f5,f6,f7,f8,f9,f10;   /* choose ship */
   int space;               /* fire */
   int enter;               /* enter command */
   int back;                /* delete last letter */ 

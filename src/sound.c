@@ -38,7 +38,7 @@ version-0.1.5
 int debugsound=0;
 #endif
 
-char filesoundnames[NUM_SOUNDS][128];
+char filesoundnames[NUM_SOUNDS][MAXTEXTLEN];
 
 
 char *soundnames[NUM_SOUNDS]={ 
@@ -96,16 +96,16 @@ int InitSound(void){
    First look in ./dat (no previous instalation or own defined
    sounds.)
    
-   If the directory ./dat doesnt exists, look in the directory
+   If the directory ./dat doesn't exists, look in the directory
    defined by INSTALL_DATA_DIR
    
   *****/ 
 
   datadir=DATADIR;
   strcpy(filesoundnames[0],"");
-  strncat(filesoundnames[0],datadir,128);
-  strncat(filesoundnames[0],"/sounds/",24);
-  strncat(filesoundnames[0],soundnames[0],24);
+  strncat(filesoundnames[0],datadir,MAXTEXTLEN-strlen(filesoundnames[0]));
+  strncat(filesoundnames[0],"/sounds/",MAXTEXTLEN-strlen(filesoundnames[0]));
+  strncat(filesoundnames[0],soundnames[0],MAXTEXTLEN-strlen(filesoundnames[0]));
   printf("Checking for sound(%d): %s\n",0,filesoundnames[0]);
   
 
@@ -114,9 +114,9 @@ int InitSound(void){
     
     datadir=INSTALL_DATA_DIR;
     strcpy(filesoundnames[0],"");
-    strncat(filesoundnames[0],datadir,128);
-    strncat(filesoundnames[0],"/sounds/",24);
-    strncat(filesoundnames[0],soundnames[0],24);
+    strncat(filesoundnames[0],datadir,MAXTEXTLEN-strlen(filesoundnames[0]));
+    strncat(filesoundnames[0],"/sounds/",MAXTEXTLEN-strlen(filesoundnames[0]));
+    strncat(filesoundnames[0],soundnames[0],MAXTEXTLEN-strlen(filesoundnames[0]));
     printf("checking for sound 2 (%d):%s\n",0,filesoundnames[0]);
     
     if((fp=fopen(filesoundnames[0],"rb"))==NULL){
@@ -189,9 +189,9 @@ int InitSound(void){
 
   for(i=0;i<NUM_SOUNDS;i++){
     strcpy(filesoundnames[i],"");
-    strncat(filesoundnames[i],datadir,128);
-    strncat(filesoundnames[i],"/sounds/",24);
-    strncat(filesoundnames[i],soundnames[i],24);
+    strncat(filesoundnames[i],datadir,MAXTEXTLEN-strlen(filesoundnames[i]));
+    strncat(filesoundnames[i],"/sounds/",MAXTEXTLEN-strlen(filesoundnames[i]));
+    strncat(filesoundnames[i],soundnames[i],MAXTEXTLEN-strlen(filesoundnames[i]));
     printf("\tsound(%d): %s\n",i,filesoundnames[i]);
   }
   

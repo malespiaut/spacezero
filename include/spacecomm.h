@@ -86,18 +86,18 @@
 
 /* object modify types, used in transmission buffer */
 
-#define SENDOBJUNMOD   33 /* obj unmodified, dont send */
+#define SENDOBJUNMOD   33 /* obj unmodified, don't send */
 #define SENDOBJMOD0    34 /* obj modified, send only position */
 #define SENDOBJMOD     35 /* obj modified, send more information */
 #define SENDOBJAALL    36 /* obj modified, send almost all info */
 #define SENDOBJALL     37 /* obj modified, send all info */
 #define SENDOBJKILL    38 /* delete the object  */
 #define SENDOBJNEW     39 /* new obj */
-#define SENDOBJDEAD    40 /* dont send and remove */
+#define SENDOBJDEAD    40 /* don't send and remove */
 #define SENDOBJPLANET  41 /* send all info planet */
 #define SENDOBJSTR     42 /* send a text message */
 #define SENDOBJSEND    43 /* object just sended */
-#define SENDOBJNOTSEND 44 /* dont send */
+#define SENDOBJNOTSEND 44 /* don't send */
 
 
 #define NMPLANETDISCOVERED 1

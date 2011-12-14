@@ -41,6 +41,8 @@ extern struct Player *players;
 extern struct HeadObjList listheadobjs;
 extern struct HeadObjList *listheadkplanets; /* lists of planets known by players */
 extern struct TextMessageList listheadtext;
+extern struct CharListHead gameloglist;          /* list of all game messages */
+extern struct Window windowgamelog;
 extern int actual_player,actual_player0;
 extern int g_memused;
 extern int record;
@@ -169,7 +171,7 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
     obj->pid=obj->id;
     g_projid--;
     if(obj->subtype==EXPLOSION){
-      obj->modified=SENDOBJNOTSEND;/* dont send explosion */
+      obj->modified=SENDOBJNOTSEND;/* don't send explosion */
     }
     break;
   default:
@@ -796,7 +798,9 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
 	if(freels->obj->type==SHIP)p[freels->obj->player].ndeaths++;
 	if( freels->obj->player == actual_player){
 	  snprintf(text,MAXTEXTLEN,"(%c %d) SHIP DESTROYED",Type(freels->obj),freels->obj->pid);
-	  Add2TextMessageList(&listheadtext,text,freels->obj->id,freels->obj->player,0,100,0);
+	  if(!Add2TextMessageList(&listheadtext,text,freels->obj->id,freels->obj->player,0,100,0)){
+	    Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
+	  }
 	}
       }
 
@@ -1336,7 +1340,6 @@ Object *SelectOneShip(struct HeadObjList *lh,Region reg,Object *cv,int ctrl){
   struct ObjList *ls;
   Rectangle rect;
   float x,y;
-  Point a;
   int sw1=0; /* first selected */
   Object *ret;
   float d2,d2min=10000;
@@ -1348,15 +1351,6 @@ Object *SelectOneShip(struct HeadObjList *lh,Region reg,Object *cv,int ctrl){
 
   rect.x=reg.rect.x;
   rect.y=reg.rect.y;
-
-  if(reg.habitat>0){ /* select a region inside a planet */
-    a.x=rect.x;
-    a.y=rect.y;
-  }
-  else{ /* select a region in map view */
-    a.x=rect.x;
-    a.y=rect.y;
-  }
 
   ls=lh->next;
   while(ls!=NULL){
@@ -1521,7 +1515,6 @@ Object *ObjNearThan(struct HeadObjList *lh,int player,int x,int y,float d2){
 
   struct ObjList *ls;
   float rx,ry;
-  float x1,y1;
   float dmin2;
   Object *obj=NULL;
   Object *retobj=NULL;
@@ -1543,9 +1536,6 @@ Object *ObjNearThan(struct HeadObjList *lh,int player,int x,int y,float d2){
     }
     obj=ls->obj;
  
-    x1=obj->x;
-    y1=obj->y;
-    
     rx=x - obj->x;
     ry=y - obj->y;
 
@@ -3639,8 +3629,8 @@ int NearMaxLevelObj(Object *obj,struct HeadObjList *lh){
 
 int IsPlanetEmpty(Object *planet,Object *obj){
   /* 
-     dont count obj
-     dont count pilots
+     don't count obj
+     don't count pilots
      returns:
      0 if the planet is totally empty.
      1 if there are only allies landed.
@@ -4031,14 +4021,12 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
   Segment *s;
   float r;
   int n=0;
-  int proc,gnet;
-
+  int gnet;
 
   if(obj==NULL)return(0);
   if(lh==NULL)return(0);
   if(!(obj->items & ITPILOT))return(0);
 
-  proc=GetProc();
   gnet=GameParametres(GET,GNET,0);
   ls=lh->next;
   while(ls!=NULL){
@@ -4049,9 +4037,6 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
       fprintf(stderr,"ERROR EjectPilotsObj() type != SHIP\n");
       ls=ls->next;continue;
     }
-    /* BUG HERE delete next line */
-    //    if(proc!=players[ls->obj->player].proc){ls=ls->next;continue;}
-
 
     /* Ejecting from a landed ship */
     if(obj->mode==LANDED){
@@ -4128,7 +4113,55 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
   return(n);
 }
 
+void CheckPilots(struct HeadObjList *hol){
+  /* 
+     check if  destroyed ship has pilots.
+  */
+  
+  struct ObjList *ls;
+  int sw=0;
+  int gnet;
+  int proc=0;  
+  ls=hol->next;
+  gnet=GameParametres(GET,GNET,0);
+  proc=GetProc();
 
+  while(ls!=NULL){
+    sw=0;
+    if(ls->obj->state<=0)sw=1;
+    if(proc!=players[ls->obj->player].proc){ls=ls->next;continue;}
+
+    if(1){
+      
+      if(sw&&(ls->obj->items & ITPILOT)){
+	EjectPilotsObj(hol,ls->obj);
+	ls->obj->items=ls->obj->items&(~ITPILOT);
+      }
+      
+      /***** ship destroyed Create Pilot****/
+      if(sw&&(ls->obj->items & ITSURVIVAL)){
+	sw=0;
+	/* GetPointsObj(hol,players,ls->obj);/\* points and experience *\/ */
+	CreatePilot(ls->obj);
+	ls->obj->items=ls->obj->items&(~ITSURVIVAL);
+	if(ls->obj->player==actual_player){
+	  printf("Ejecting pilot from ship %d\n",ls->obj->pid);
+	}
+	DelAllOrder(ls->obj);
+	if(gnet==TRUE){
+	  ls->obj->modified=SENDOBJALL;
+	  //SetModified(ls->obj,SENDOBJALL);
+	  if(ls->obj->modified!=SENDOBJALL){
+	    printf("ERROR CheckPilots() (%d)%d mod: %d\n",ls->obj->player,ls->obj->pid,ls->obj->modified);
+	  }
+	}
+      }
+    }
+
+    ls=ls->next;    
+  }
+  return;
+}
 
 
 int CountSelected(struct HeadObjList *lh,int player){
@@ -4302,7 +4335,7 @@ struct ObjTree *Add2ObjTree(struct ObjTree *head,Object *obj){
     /* look for the parent */
     parent=Look4ObjTree(head,obj->in);
     if(parent==NULL){
-      printf("Error: Add2objTree(): container: %d doesnt exist. id: %d not added to tree\n",obj->in->id,obj->id);
+      printf("Error: Add2objTree(): container: %d doesn't exist. id: %d not added to tree\n",obj->in->id,obj->id);
       return(head);
     }
     new=malloc(sizeof(struct ObjTree));

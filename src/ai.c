@@ -35,6 +35,8 @@
 #include "sectors.h"
 
 extern struct TextMessageList listheadtext;
+extern struct CharListHead gameloglist;          /* list of all game messages */
+extern struct Window windowgamelog;
 extern Object *cv;     /* coordenates center */
 extern struct Player *players;
 extern struct CCDATA *ccdatap; 
@@ -173,7 +175,9 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     default:
       break;
     }
-    Add2TextMessageList(&listheadtext,text,objt->id,objt->player,0,100,value);
+    if(!Add2TextMessageList(&listheadtext,text,objt->id,objt->player,0,100,value)){
+      Add2CharListWindow(&gameloglist,text,1,&windowgamelog);
+    }
   }
 
 
@@ -293,7 +297,9 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 		  if(obj->player==act_player && mainord->h==0){
 		    /*		    fprintf(stdout,"(%c %d) HE LLEGADO a %d\n",Type(obj),obj->id,obj->in->id); */
 		    snprintf(text,MAXTEXTLEN,"(%c %d) ARRIVED TO %d",Type(obj),obj->pid,obj->in->id);
-		    Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0);
+		    if(!Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0)){
+		      Add2CharListWindow(&gameloglist,text,1,&windowgamelog);
+		    }
 		  }
 		  mainord->h=1;
 		  order.id=LAND;
@@ -346,7 +352,9 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	      if(obj->player==act_player && mainord->h==0 && mainord->id!=EXPLORE){
 		snprintf(text,MAXTEXTLEN,"(%c %d) ARRIVED TO %d %d",
 			 Type(obj),obj->pid,(int)(mainord->a/SECTORSIZE)-(mainord->a<0),(int)(mainord->b/SECTORSIZE)-(mainord->b<0));
-		Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0);
+		if(!Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0)){
+		  Add2CharListWindow(&gameloglist,text,1,&windowgamelog);
+		}
 	      }
 	      mainord->h=1;
 	      order.id=STOP;
@@ -1637,7 +1645,7 @@ int CCBuy(struct CCDATA *ccdata,struct Player player,int *planetid){
 
     return the type of ship to buy
     in *planetid the planet id where to buy.
-    -1 if dont buy.
+    -1 if don't buy.
    */
 
   int np;
@@ -2261,7 +2269,7 @@ Object *Coordinates(struct HeadObjList *lhobjs,int id,float *x,float *y){
      Load in x and y the coordinates of the object with id id 
      returns:
      a pointer to the object.
-     NULL if the object doesnt exist.
+     NULL if the object doesn't exist.
   */
   Object *ret=NULL;
   struct ObjList *ls;
@@ -2812,7 +2820,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     }
     Add2ObjList(lhobjs,obj);
     
-    if(enemies==0){  /* if there are no enemies dont send */
+    if(enemies==0){  /* if there are no enemies don't send */
       obj->modified=SENDOBJNOTSEND;
     }
     
@@ -2881,7 +2889,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
 	}
       }
       Add2ObjList(lhobjs,obj);
-      if(enemies==0){  /* if there are no enemies dont send */
+      if(enemies==0){  /* if there are no enemies don't send */
 	obj->modified=SENDOBJNOTSEND;
       }
       
@@ -2936,7 +2944,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
       }
 
       Add2ObjList(lhobjs,obj);
-      if(enemies==0){  /* if there are no enemies dont send */
+      if(enemies==0){  /* if there are no enemies don't send */
 	obj->modified=SENDOBJNOTSEND;
       }
 
@@ -2959,7 +2967,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     }
 
     Add2ObjList(lhobjs,obj);
-    if(enemies==0){  /* if there are no enemies dont send */
+    if(enemies==0){  /* if there are no enemies don't send */
       obj->modified=SENDOBJNOTSEND;
     }
 
@@ -2981,7 +2989,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     }
 
     Add2ObjList(lhobjs,obj);
-    if(enemies==0){  /* if there are no enemies dont send */
+    if(enemies==0){  /* if there are no enemies don't send */
       obj->modified=SENDOBJNOTSEND;
     }
 
@@ -3441,8 +3449,9 @@ void GetInformation(struct Player *p1,struct Player *p2,Object *obj){
 	  p1->kplanets=Add2IntList(p1->kplanets,ks->id);
 	  snprintf(text,MAXTEXTLEN,"Received info from enemy");
 	  /*	  fprintf(stdout,"Received info from enemy"); */
-	  Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0);
-
+	  if(!Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0)){
+	    Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
+	  }
 	  if(gnet==TRUE){
 	    struct NetMess mess;
 	    mess.id=NMPLANETDISCOVERED;
@@ -4523,7 +4532,7 @@ int CalcEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object 
 
       if((players[planet->player].team!=players[ccdata->player].team)){
 	if(GetTime()-pinfo->time < 60){
-	  /* dont update so often*/
+	  /* don't update so often*/
 	  return(0);
 	}
 	pinfo->time=GetTime();

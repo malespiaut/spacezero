@@ -31,7 +31,7 @@ GTKFLAGS0=`gtk-config --libs`
 
 LDFLAGS=  -lm -lpthread $(OPENALFLAGS) $(GTKLIBS)
 LDFLAGS0=  -lm -lpthread $(OPENALFLAGS) $(GTKLIBS0)
-CFLAGS=  -Wall -O3  -I./include -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\" 
+CFLAGS=  -Wall -Wunused -O3  -I./include -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\" 
 CFLAGS0=  -Wall -O3 -I./include -DGTK12
 PROGFLAGS=$(CFLAGS) -pg 
 PROFCC=  $(CC) -pg 
@@ -95,9 +95,9 @@ mrproper: clean
 #		$(CC)  $(CFLAGS)   $(LDFLAGS) $(GTKFLAGS) -c $< -o  $@ 
 
 # add -pg for profile
-.c.o:	
-		$(CC) -pg  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
+#.c.o:	
+#		$(CC) -pg  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
 
 # add -g for debug
-#.c.o:	
-#		$(CC) -g  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
+.c.o:	
+		$(CC) -g  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 

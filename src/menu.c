@@ -42,7 +42,7 @@ struct MenuHead *MenuHeadNew(char *title){
     exit(-1);
   }
   strcpy(mh->title,"");
-  strncat(mh->title,title,MAXTEXTLEN);
+  strncat(mh->title,title,MAXTEXTLEN-strlen(mh->title));
   strncpy(&mh->title[MAXTEXTLEN-1],"\0",1);
   mh->n=0;
   mh->nactive=0;
@@ -179,29 +179,29 @@ char *GetOptionValue(int id){
     break;
   case ITEM_ip:
     /* printf("IP:%s\n",param.IP); */
-    sprintf(point,"%s",param.IP);
+    snprintf(point,MAXTEXTLEN,"%s",param.IP);
     break;
   case ITEM_port:
     /* printf("port:%d\n",param.port); */
-    sprintf(point,"%d",param.port);
+    snprintf(point,MAXTEXTLEN,"%d",param.port);
     break;
   case ITEM_name:
-    sprintf(point,"%s",param.playername);
+    snprintf(point,MAXTEXTLEN,"%s",param.playername);
     break;
   case ITEM_p:
-    sprintf(point,"%d",param.nplayers);
+    snprintf(point,MAXTEXTLEN,"%d",param.nplayers);
     break;
   case ITEM_n:
-    sprintf(point,"%d",param.nplanets);
+    snprintf(point,MAXTEXTLEN,"%d",param.nplanets);
     break;
   case ITEM_g:
-    sprintf(point,"%d",param.ngalaxies);
+    snprintf(point,MAXTEXTLEN,"%d",param.ngalaxies);
     break;
   case ITEM_l:
-    sprintf(point,"%d",param.ul);
+    snprintf(point,MAXTEXTLEN,"%d",param.ul);
     break;
   case ITEM_geom:
-    sprintf(point,"%s",param.geom);
+    snprintf(point,MAXTEXTLEN,"%s",param.geom);
     break;
 
   case ITEM_start:
@@ -229,7 +229,7 @@ char *GetTextEntry(struct MenuItem *item,char *text){
   //  strcpy(par,"");
   Keystrokes(LOAD,textentry);
   strcpy(text,"");
-  strcpy(text,textentry);
+  strncpy(text,textentry,MAXTEXTLEN);
   return(text);
 }
 
@@ -289,7 +289,7 @@ struct MenuHead *CreateMenu(void){
   item.id=0;
   item.type=MENUITEMTEXT;
   strcpy(item.text,"");
-  strncat(item.text,"Game Options",MAXTEXTLEN);
+  strncat(item.text,"Game Options",MAXTEXTLEN-strlen(item.text));
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=mgameoptions;/* link with game options menu */

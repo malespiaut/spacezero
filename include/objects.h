@@ -288,7 +288,7 @@ struct _Object{
 
   short ai;         /* 0: (manual).(1,10) with AI [0,10] */
   short modified;   /* SENDOBJMOD, SENDOBJMOD0, etc, must be updated by net */
-  short ttl;        /* if !=0 dont send  */
+  short ttl;        /* if !=0 don't send  */
   short habitat;    /* free space or planet (H_SPACE H_PLANET)*/
   short mode;       /* LANDED, NAV(EGATING), SOLD */
 
@@ -355,7 +355,7 @@ struct ObjectAll{   /* SENDOBJALL */
 
   short ai;         /* -1: by keyboard. [0,10] */
   short modified;   /* SENDOBJMOD, SENDOBJMOD0, etc, must be updated by net */
-  short ttl;        /* if !=0 dont send  */
+  short ttl;        /* if !=0 don't send  */
   short habitat;    /* free space or planet (H_SPACE H_PLANET)*/
   short mode;       /* LANDED, NAV(EGATING)  */
 
@@ -675,6 +675,7 @@ int ValueCell(int *cell,Object *obj,int x,int y);
 int CreatePilot( Object *obj);
 int EjectPilots(struct HeadObjList *lh);
 int EjectPilotsObj(struct HeadObjList *lh,Object *obj);
+void CheckPilots(struct HeadObjList *hol);
 
 float Distance2(Object *obj1,Object *obj2);
 

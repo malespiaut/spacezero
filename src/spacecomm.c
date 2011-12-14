@@ -30,7 +30,7 @@ fondo: 5.8 kB/s
 2 minutes: 53 objects 15 ships, 18 shots   196 KB/s   141007
 2 min 8(4,4) 65 45 0 : MAX: 256.8 kB/s TOT: 25.1 MB => 214 kB/s 
 90 min       56 36 0 : MAX: 792   kB/s TOT: 1021 MB => 194 kB/s 
-dont send projectiles:
+don't send projectiles:
 5 min        45 25 0 : MAX: 213   kB/s TOT: 49 MB =>   167 kB/s, 311 obj/s
 SENDOBJMOD
 9:10 m       32 12 0 : MAX: 52.6  kB/s TOT: 18.8 MB =>  35 kB/s, 194 obj/s
@@ -62,6 +62,8 @@ int debugpilot=0;
 
 extern struct HeadObjList listheadobjs;
 struct TextMessageList listheadtext;
+extern struct CharListHead gameloglist;          /* list of all game messages */
+extern struct Window windowgamelog;
 extern struct Habitat habitat;
 extern char *savefile;
 extern sem_t sem_barrier;
@@ -284,7 +286,7 @@ int StartComm(int mode,struct Sockfd *sockfd){
   
   struct Thread_arg targs; /* arguments sended to the server and client */
 
-  int gkplanets,gnplayers;
+  int gnplayers;
   struct Parametres paramc;
   int npcc,npcs;
 
@@ -301,8 +303,6 @@ int StartComm(int mode,struct Sockfd *sockfd){
   case 0:/* server */
 
 
-    gkplanets=GameParametres(GET,GKPLANETS,0);
-    
     buf1=buffer1.data;
     buf2=buffer2.data;
     
@@ -371,8 +371,7 @@ int StartComm(int mode,struct Sockfd *sockfd){
     
     printf("Game:\n\tnplayers:%d \n\t npcc:%d\n\t npcs:%d\n",
 	   GameParametres(GET,GNPLAYERS,0),
-	   npcc,
-	   GameParametres(GET,GNPLAYERS,0)-npcc);
+	   npcc,npcs);
     
     /*create client thread*/
     targs.sfd=sfd;
@@ -1183,13 +1182,15 @@ int ReadObjsfromBuffer(char *buf){
   int inid;
   int nbytes,tbytes;
   int proc;
-  char *buf0;
   Data *data;
 
+#if COMMDEBUG
+  char *buf0;
+  buf0=buf;
+#endif
 
 
   header.id=-1;
-  buf0=buf;
   tbytes=0;
 
   proc=GetProc();
@@ -1231,7 +1232,7 @@ int ReadObjsfromBuffer(char *buf){
 	  //	  nobj->a=objpos.a;
       }
       else{   /* New object or object has been killed in client side*/
-	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJMOD0) id: %d  type:%d mod: %d doesnt exists\n",
+	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJMOD0) id: %d  type:%d mod: %d doesn't exists\n",
 	       ((Object *)buf)->id,((Object *)buf)->type,((Object *)buf)->modified);
 	exit(-1);/*HERE TODO try to do something with this. LINE must not be reached */
       }
@@ -1285,7 +1286,7 @@ int ReadObjsfromBuffer(char *buf){
 	  }
       }
       else{   /* New object or object has been killed in client side*/
-	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJMOD) id: %d  doesnt exists\n",
+	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJMOD) id: %d  doesn't exists\n",
 	       ((struct Objectdynamic *)buf)->id);
 	exit(-1);/*HERE TODO try to do something with this. LINE must not be reached */
       }
@@ -1344,7 +1345,7 @@ int ReadObjsfromBuffer(char *buf){
 
       }
       else{   /* New object or object has been killed in client side*/
-	fprintf(stderr,"%d ERROR  ReadObjsfromBuffer(SENDOBJAALL) id: %d doesnt exists\n",GetTime(),
+	fprintf(stderr,"%d ERROR  ReadObjsfromBuffer(SENDOBJAALL) id: %d doesn't exists\n",GetTime(),
 	       ((struct ObjectAAll *)buf)->id);
 	exit(-1);/*HERE TODO try to do something with this. LINE must not be reached */
       }
@@ -1356,8 +1357,8 @@ int ReadObjsfromBuffer(char *buf){
       nbytes=sizeof(struct ObjectAll);
       nobj=SelectObj(&listheadobjs,((struct ObjectAll *)buf)->id);
 
-      if(nobj==NULL){    /* the object doesnt exist */
-	fprintf(stderr,"\nERROR en ReadObjsfromBuffer(SENDOBJALL): Object %d doesnt exists\n",((Object *)buf)->id);
+      if(nobj==NULL){    /* the object doesn't exist */
+	fprintf(stderr,"\nERROR en ReadObjsfromBuffer(SENDOBJALL): Object %d doesn't exists\n",((Object *)buf)->id);
 	buf+=nbytes;
 	tbytes+=nbytes;
 	exit(-1);
@@ -1523,7 +1524,7 @@ int ReadObjsfromBuffer(char *buf){
       memcpy(&id,buf,sizeof(int));
       nobj=SelectObj(&listheadobjs,id);
       if(nobj==NULL){
-	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJPLANET) id: %d doesnt exists\n",id);
+	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJPLANET) id: %d doesn't exists\n",id);
 	exit(-1);
       }
       //	memcpy(&player,buf+sizeof(int),sizeof(int));
@@ -1561,7 +1562,7 @@ int ReadObjsfromBuffer(char *buf){
       nobj=SelectObj(&listheadobjs,id);
       
       if(nobj==NULL){
-	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJKILL) id: %d doesnt exists\n",id);
+	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJKILL) id: %d doesn't exists\n",id);
 	//exit(-1); /*HERE TODO try to do something with this. LINE must not be reached */
       }
       else{
@@ -1607,7 +1608,7 @@ int ReadObjsfromBuffer(char *buf){
       }
 
       if(parent==NULL &&nobj->type!=SHIP && nobj->type!=ASTEROID){    /*  */
-	fprintf(stderr,"\nWARNING in ReadObjsfromBuffer(SENDOBJNEW): id:%d type:%d(parent) obj %d doesnt exists\n",nobj->id,nobj->type,((struct ObjectNew *)buf)->parent);
+	fprintf(stderr,"\nWARNING in ReadObjsfromBuffer(SENDOBJNEW): id:%d type:%d(parent) obj %d doesn't exists\n",nobj->id,nobj->type,((struct ObjectNew *)buf)->parent);
 	/*	buf+=sizeof(Object); */
 	/*	exit(-1); */
       }
@@ -1812,7 +1813,9 @@ int ReadObjsfromBuffer(char *buf){
 		  if(IsInIntList((players[i].kplanets),pnt->id)==0){
 		    players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);
 		    snprintf(text,MAXTEXTLEN,"(%s) PLANET %d discovered",players[obj->player].playername,pnt->id);
-		    Add2TextMessageList(&listheadtext,text,obj->id,i,0,100,0);
+		    if(!Add2TextMessageList(&listheadtext,text,obj->id,i,0,100,0)){
+		      Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
+		    }
 		  }
 		}
 	      }
@@ -1824,7 +1827,9 @@ int ReadObjsfromBuffer(char *buf){
 	    char text[MAXTEXTLEN];
 	    if(GetProc()==players[mess.a].proc){
 	      snprintf(text,MAXTEXTLEN,"PLANET %d LOST",mess.b);
-	      Add2TextMessageList(&listheadtext,text,mess.b,mess.a,0,100,2);
+	      if(!Add2TextMessageList(&listheadtext,text,mess.b,mess.a,0,100,2)){
+		Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
+	      }
 	    }
 	  }
 	  break;
@@ -1991,18 +1996,18 @@ int SetModified(Object *obj,int mode){
 
 /* object modify types, used in transmission buffer */
 
-//#define SENDOBJUNMOD   32 /* obj unmodified, dont send */
+//#define SENDOBJUNMOD   32 /* obj unmodified, don't send */
 //#define SENDOBJMOD0    33 /* obj modified, send only position */
 //#define SENDOBJMOD     34 /* obj modified, send more information */
 //#define SENDOBJAALL    35 /* obj modified, send almost all info */
 //#define SENDOBJALL     36 /* obj modified, send all info */
 //#define SENDOBJKILL    37 /* delete the object  */
 //#define SENDOBJNEW     38 /* new obj */
-//#define SENDOBJDEAD    39 /* dont send and remove */
+//#define SENDOBJDEAD    39 /* don't send and remove */
 //#define SENDOBJPLANET  40 /* send all info planet */
 //#define SENDOBJSTR     41 /* send a text message */
 //#define SENDOBJSEND     42 /* object just sended */
-//#define SENDOBJNOTSEND 43 /*dont send */
+//#define SENDOBJNOTSEND 43 /*don't send */
 
   if(obj==NULL)return(2);
 
@@ -2638,7 +2643,7 @@ int CheckModifiedPre(struct HeadObjList *lh,int proc){
 	break;
       case SENDOBJNEW:
 	if(obj->state<=0){
-	  SetModified(obj,SENDOBJDEAD);/* dont send */
+	  SetModified(obj,SENDOBJDEAD);/* don't send */
 	  n++;
 	}
 	break;
@@ -2650,7 +2655,7 @@ int CheckModifiedPre(struct HeadObjList *lh,int proc){
 	break;
       case SENDOBJNOTSEND:
 	if(obj->state<=0){
-	  SetModified(obj,SENDOBJDEAD);/* dont send */
+	  SetModified(obj,SENDOBJDEAD);/* don't send */
 	  n++;
 	}	
 	break;
@@ -2870,13 +2875,13 @@ void Setttl0(struct HeadObjList *lh){
 	    otherproc=OtherProc(lh,proc,obj);   /* double buffer */
 	    switch(otherproc){ /*  */
 	    case 0:  /* (4r,inf) */
-	      obj->ttl=90+obj->id%20; /* dont send */
+	      obj->ttl=90+obj->id%20; /* don't send */
 	      break;
 	    case 1:  /* (3r,4r) */
-	      obj->ttl=58+obj->id%12;    /* dont send */
+	      obj->ttl=58+obj->id%12;    /* don't send */
 	      break;
 	    case 2:  /* (1.5r,3r) */
-	      obj->ttl=16;  /* dont send */
+	      obj->ttl=16;  /* don't send */
 	      break;
 	    case 3:  /* (900p,1.5r) */
 	      if(obj->ttl<0){
@@ -2954,9 +2959,9 @@ void Setttl0(struct HeadObjList *lh){
     case SENDOBJSTR:
       obj->ttl=0;
       break;
-    case SENDOBJNOTSEND: /* dont send these objects*/
+    case SENDOBJNOTSEND: /* don't send these objects*/
     case SENDOBJDEAD:
-      obj->ttl=1024; /* dont send dead objects */
+      obj->ttl=1024; /* don't send dead objects */
       break;
     default:
       /* PRODUCTION Quitar el exit ignorar?? */
@@ -2996,7 +3001,6 @@ void Setttl(struct HeadObjList *lh,int n){
   Object *obj=NULL;
   int proc;
   int otherproc;
-  int gmode;
   int gcooperative;
   proc=GetProc();
   gcooperative=GameParametres(GET,GCOOPERATIVE,0);
@@ -3013,8 +3017,6 @@ void Setttl(struct HeadObjList *lh,int n){
     return;
   }  /*--n<0 */
 
-
-  gmode=GameParametres(GET,GMODE,0);
 
   ls=lh->next;
   while(ls!=NULL){
@@ -3686,7 +3688,7 @@ int AddObjOrders2Buffer(struct Buffer *buffer,Object *obj){
   
   no=obj->norder;
   if(no!=n){
-    fprintf(stderr,"ERROR SendPlayerOrders(): number of orders dont match norder\n" );
+    fprintf(stderr,"ERROR SendPlayerOrders(): number of orders don't match norder\n" );
     fprintf(stderr,"\tnor: %d norder: %d \n",n,obj->norder);
     exit(-1);
   }
@@ -3708,7 +3710,7 @@ int AddObjOrders2Buffer(struct Buffer *buffer,Object *obj){
     lo=lo->next;
   }
   if(i!=n){
-    fprintf(stderr,"ERROR SendPlayerOrders(): number of orders dont match norder\n" );
+    fprintf(stderr,"ERROR SendPlayerOrders(): number of orders don't match norder\n" );
     fprintf(stderr,"\tnor: %d norder: %d \n",i,n);
     exit(-1);
   }

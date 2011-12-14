@@ -399,10 +399,233 @@ int PrintIntIList(struct HeadIntIList head){
 }
 
 
+/* char list with scroll  */
 
-/* 
+int Add2CharList(struct CharListHead *hlist,char *cad,int mode){
+  /* 
+     version 00
+     add the char cad to the end of the list
+     returns:
+     0 if success, item added.
+     1 success,list full, item added and first item deleted.
+     2 if there are some error.
+     3 if is already added.
+   */
+
+  struct CharList *list;
+  int swfull=0;
+  int m=0;
+  int n; 
+
+
+  if(hlist==NULL){
+    fprintf(stderr,"ERROR in Add2CharList(): NULL\n");
+    exit(-1);
+  }
+  if(cad==NULL){
+    fprintf(stderr,"ERROR in Add2CharList(): cad NULL\n");
+    return(2);
+  }
+  n=strlen(cad);
+  if(n>32)n=32; /* max of log messages */
+
+  if(mode==1){ /* check if is recently added => dont add*/
+    m=0;
+    list=hlist->next;
+    while(list!=NULL){
+      if(strncmp(cad,list->cad,32)==0){
+	if(m > hlist->n-20){
+	  return(2);
+	}
+      }
+      m++;
+      list=list->next;
+    }
+  }
+
+  list=hlist->next;
+
+  if(list==NULL){ /* first item */
+    list=malloc(sizeof(struct CharList));
+    g_memused+=sizeof(struct CharList);
+    if(list==NULL){ 
+      fprintf(stderr,"ERROR in malloc (Add2Charlist)\n"); 
+      exit(-1); 
+    } 
+
+    list->cad=malloc((n+1)*sizeof(char));
+    g_memused+=sizeof((n+1)*sizeof(char));
+    if(list->cad==NULL){ 
+      fprintf(stderr,"ERROR in malloc (Add2Charlist)\n"); 
+      exit(-1); 
+    } 
+
+    snprintf(list->cad,n+1,"%s",cad);
+    //    strncpy(list->cad,cad,n+1);
+    list->next=NULL;
+    hlist->next=list;
+    hlist->n++;
+    return(0);
+  }
+
+  /* checking max number of elements */
+  /* if reach its limit delete the first item */
+
+  if(hlist->n==hlist->max){
+    struct CharList *freeitem;
+    int n;
+    freeitem=hlist->next;
+    if(freeitem!=NULL){
+      hlist->next=hlist->next->next;
+      n=strlen(freeitem->cad);
+      free(freeitem->cad);
+      free(freeitem);
+      g_memused-=(sizeof((n+1)*sizeof(char))+sizeof(struct CharList));
+      hlist->n--;
+      swfull++;
+    }
+    else{
+      fprintf(stderr,"ERROR in List (Add2Charlist) not added.\n"); 
+      return(2);
+    }
+  }
+
+
+  /* adding to the end of the list if there are room */
+
+  while(list->next!=NULL)list=list->next;
+
+    list->next=malloc(sizeof(struct CharList));
+    g_memused+=sizeof(struct CharList);
+    if(list->next==NULL){ 
+      fprintf(stderr,"ERROR in malloc (Add2Charlist)\n"); 
+      exit(-1); 
+    } 
+
+    list->next->cad=malloc((n+1)*sizeof(char));
+    g_memused+=sizeof((n+1)*sizeof(char));
+    if(list->next->cad==NULL){ 
+      fprintf(stderr,"ERROR in malloc (Add2Charlist)\n"); 
+      exit(-1); 
+    } 
+    snprintf(list->next->cad,n+1,"%s",cad);
+    //    strncpy(list->next->cad,cad,n+1);
+    list->next->next=NULL;
+    hlist->n++;
+
+    if(swfull)return(1);
+    return(0);
+}
+
+int Add2CharListWindow(struct CharListHead *hlist,char *cad,int mode,struct Window *w){
+  /* 
+     version 00
+     change the scroll bar if a new item is added to hlist.
+     returns:
+     0 if success
+     1 if there are some error
+     2 if is already added
+   */
+
+  int status;
+
+  if(hlist==NULL){
+    fprintf(stderr,"ERROR in Add2CharListWindow(): NULL\n");
+    exit(-1);
+  }
+  if(cad==NULL){
+    fprintf(stderr,"ERROR in Add2CharListwindow(): cad NULL\n");
+    return(1);
+  }
+
+  if(w==NULL)return(1);
+
+  status= Add2CharList(hlist,cad,mode);
+
+  switch(status){
+  case 0:
+  case 1:
+    if(w->scrollbar.n!=0){
+      w->scrollbar.n++;
+    }
+    break;
+  case 2:
+    break;
+  default:
+    break;
+  }
+
+  return(status);
+}
+
+
+
+int PrintCharList(struct CharListHead *hlist){
+  /* 
+     version 00
+     print the list
+     returns:
+     the number of item printed.
+   */
+
+  struct CharList *list;
+  int n=0; 
+
+
+  if(hlist==NULL){
+    fprintf(stderr,"ERROR in Add2CharList(): NULL\n");
+    exit(-1);
+  }
+  
+  list=hlist->next;
+  
+  while(list!=NULL){
+    printf("%d:  %s\n",n,list->cad);
+    list=list->next;
+    n++;
+  }
+  if(n!=hlist->n){
+    printf("ERROR in list n: %d  hlist.n:%d\n",n,hlist->n);
+  }
+  return(n);
+}
+
+
+int DestroyCharList(struct CharListHead *hlist){
+  /* 
+     version 00
+     delete all the list
+     returns:
+     the number of item deleted.
+   */
+
+  struct CharList *freeitem;
+  int n=0; 
+  int cont=0;
+
+  if(hlist==NULL){
+    fprintf(stderr,"ERROR in Add2CharList(): NULL\n");
+    exit(-1);
+  }
+  
+  while(hlist->next!=NULL){
+    freeitem=hlist->next;
+    hlist->next=hlist->next->next;
+    n=strlen(freeitem->cad);
+    free(freeitem->cad);
+    free(freeitem);
+    g_memused-=(sizeof(n*sizeof(char))+sizeof(struct CharList));
+    hlist->n--;
+    cont++;
+  }
+  return(cont);
+}
+
+
+
+/******** 
    Tree 
-*/
+********/
 
 struct IntTree *Add2IntTree(struct IntTree *head,int id){
   /* add the integer id to the tree head

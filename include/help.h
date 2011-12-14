@@ -70,7 +70,7 @@ struct Parametres{
   int port;
   int port2;
   char playername[MAXTEXTLEN];
-  char font[128];
+  char font[MAXTEXTLEN];
   char geom[MAXTEXTLEN];
 };
 

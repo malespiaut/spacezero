@@ -51,7 +51,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
   /*
     version 04
   */
-  static char cad[128]="";
+  static char cad[MAXTEXTLEN]="";
   static char ord[16]="";
   static char par[MAXTEXTLEN]="";
   static char lastpar[MAXTEXTLEN]="";
@@ -153,32 +153,32 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
     if(*pcv!=NULL){
       int textw;
 
-      strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",128); 
+      strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",MAXTEXTLEN); 
       
       textw=gdk_text_width(font,cad,strlen(cad));
       if(textw>GameParametres(GET,GWIDTH,0)){
 	strncpy(cad,"",1);
-	strncpy(cad,"G:GT  X:EXP  S:SLC  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",128); 
+	strncpy(cad,"G:GT  X:EXP  S:SLC  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",MAXTEXTLEN); 
       }
       
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT && CountNSelected(lhead,player)==1){
-	strncpy(cad,"S: SELECT   B: BUY   W: WRITE",128); 
+	strncpy(cad,"S: SELECT   B: BUY   W: WRITE",MAXTEXTLEN); 
 	key->g=key->x=key->p=key->t=key->r=key->e=FALSE;
       }
 
       if(0&&CountNSelected(lhead,player)>1){
-	strncpy(cad,"G: GOTO   X: EXPLORE   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",128); 
+	strncpy(cad,"G: GOTO   X: EXPLORE   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",MAXTEXTLEN); 
 	textw=gdk_text_width(font,cad,strlen(cad));
 	if(textw>GameParametres(GET,GWIDTH,0)){
 	  strncpy(cad,"",1);
-	  strncpy(cad,"G:GT  X:EXP  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",128); 
+	  strncpy(cad,"G:GT  X:EXP  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",MAXTEXTLEN); 
 	}
 	key->s=FALSE;
       }
       
     }
     else{
-      strncpy(cad,"S: SELECT   W: WRITE",128); 
+      strncpy(cad,"S: SELECT   W: WRITE",MAXTEXTLEN); 
       key->g=key->x=key->p=key->t=key->r=key->b=key->u=key->e=FALSE;
     }
 
@@ -292,11 +292,11 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
 	Keystrokes(LOAD,par);
       }
       strcpy(cad,"");
-      strncat(cad,ord,128);
+      strncat(cad,ord,MAXTEXTLEN-strlen(cad));
       
       DelCharFromCad(par,"1234567890,- fnFN");
       
-      strncat(cad,par,128);
+      strncat(cad,par,MAXTEXTLEN-strlen(cad));
       
       break;
     case BUY:
@@ -304,15 +304,15 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
       snprintf(pr1,12,"%d",GetPrice(NULL,SHIP1,ENGINE3,CANNON3));
       snprintf(pr2,12,"%d",GetPrice(NULL,SHIP3,ENGINE4,CANNON4));
       snprintf(pr3,12,"%d",GetPrice(NULL,TOWER,ENGINE1,CANNON4));
-      snprintf(cad,128,"1: EXPLORER(%s)   2: FIGTHER(%s)   3: TOWER(%s)",pr1,pr2,pr3);
+      snprintf(cad,MAXTEXTLEN,"1: EXPLORER(%s)   2: FIGTHER(%s)   3: TOWER(%s)",pr1,pr2,pr3);
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT){
-	snprintf(cad,128,"                  2: FIGTHER(%s)",pr2);
+	snprintf(cad,MAXTEXTLEN,"                  2: FIGTHER(%s)",pr2);
       }
       level=3;
       break;
     case UPGRADE:
       strcpy(cad,"");
-      snprintf(cad,128,"%s %s  %d %s",ord,par,
+      snprintf(cad,MAXTEXTLEN,"%s %s  %d %s",ord,par,
 	      (int)(GetPrice(cv,0,0,0)),"   (Esc to cancel)");
       break;
     case EXPLORE:
@@ -321,11 +321,11 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
     case REPEAT:
     case RETREAT:
       strcpy(cad,"");
-      snprintf(cad,128,"%s %s",ord,par);
+      snprintf(cad,MAXTEXTLEN,"%s %s",ord,par);
       break;
     case SELL:
       strcpy(cad,"");
-      snprintf(cad,128,"%s %s  %d %s",ord,par,
+      snprintf(cad,MAXTEXTLEN,"%s %s  %d %s",ord,par,
 	      (int)(0.5*GetPrice(cv,0,0,0)),"   (Esc to cancel)");
       break;
     case WRITE:
@@ -333,8 +333,8 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
       Keystrokes(LOAD,par);
 
       strcpy(cad,"");
-      strncat(cad,ord,128);
-      strncat(cad,par,128);
+      strncat(cad,ord,MAXTEXTLEN-strlen(cad));
+      strncat(cad,par,MAXTEXTLEN-strlen(cad));
       break;
       
     default:
@@ -379,7 +379,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
     strcpy(par0,"");
     strncpy(par0,par,nn);
     strncpy(&par0[nn],"\0",1);
-    strcpy(par,par0);
+    strncpy(par,par0,MAXTEXTLEN);
 
     Keystrokes(DELETELAST,NULL);
     key->back=FALSE;

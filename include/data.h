@@ -49,6 +49,35 @@ struct HeadIntIList{
   struct IntList *index[NINDEXILIST];
 };
 
+struct CharListHead{
+  int n;                    /* number of elements */
+  int max;                  /* max. number of elements */
+  int first;                /* first item to draw (scroll) */
+  struct CharList *next;    /* first element of the list */
+};
+
+struct CharList{
+  char *cad;
+  struct CharList *next;
+};
+
+struct Scrollbar{
+  int active;
+  int width;
+  int pos;      /* 0 rigth , 1 left */
+  int n;        /* position of item 0..100*/
+};
+
+
+struct Window{ /* basic window */
+  int type;
+  int active;
+  int x,y;
+  int width,height;
+  struct  Scrollbar scrollbar;
+  void *data;
+
+};
 
 
 struct IntTree *Add2IntTree(struct IntTree *head,int id);
@@ -73,7 +102,9 @@ int IsInIntIList(struct HeadIntIList *headlist,int id);
 int DelIntIList(struct HeadIntIList *head);
 int PrintIntIList(struct HeadIntIList headlist);
 
-
-
+int Add2CharList(struct CharListHead *list,char *cad,int mode);
+int Add2CharListWindow(struct CharListHead *list,char *cad,int mode,struct Window *w);
+int PrintCharList(struct CharListHead *hlist);
+int DestroyCharList(struct CharListHead *hlist);
 
 #endif

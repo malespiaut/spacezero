@@ -102,7 +102,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       fprintf(stdout,"I cant create the file: %s\n", optfile);
       exit(-1);
     }
-    /* file doesnt exists */
+    /* file doesn't exists */
     /* default options */   /* check also SetDefaultOptions() in graphics.c */
     fclose(fp);
     SaveParamOptions(optfile,par);
@@ -365,7 +365,6 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
     }
   }
 
-
   return(0);
 }  /* --Arguments()  */
 
@@ -457,6 +456,8 @@ void Usage(char *ver,char *l_rev){
 		  "f5\t\t show a ship list.\n");
   (void) fprintf( stdout, 
 		  "f6\t\t show game statistics.\n");
+  (void) fprintf( stdout, 
+		  "f7\t\t show game messages log.\n");
   (void) fprintf( stdout, 
 		  "o\t\t enter in order menu.\n");
   (void) fprintf( stdout, 
@@ -644,12 +645,12 @@ int GetGeom(char *geom,int *w,int *h){
 
 void PrintWarnings(char *version){
   fprintf(stderr,"**************************************************************\n");
-  fprintf(stderr,"WARNING: This is the development version of SpaceZero (version %s)\nIt can contain bugs.\nNet and saved games can be incompatible with the official release.\nMaybe SpaceZero doesnt work properly.\n", version);
+  fprintf(stderr,"WARNING: This is the development version of SpaceZero (version %s)\nIt can contain bugs.\nNet and saved games can be incompatible with the official release.\nMaybe SpaceZero doesn't work properly.\n", version);
 
   if(sizeof(int)!=4){
-    fprintf(stderr,"\nWARNING: size of int %d bytes\n, maybe SpaceZero doesnt work properly\n",(int)sizeof(int));//HERE warning: format '%d' expects type 'int', but argument 3 has type 'long unsigned int'
+    fprintf(stderr,"\nWARNING: size of int %d bytes\n, maybe SpaceZero doesn't work properly\n",(int)sizeof(int));//HERE warning: format '%d' expects type 'int', but argument 3 has type 'long unsigned int'
   }
-  fprintf(stderr,"\nWARNING: Communication between 64 and 32 bits machines not so tested,\nmaybe SpaceZero doesnt work properly.\n");
+  fprintf(stderr,"\nWARNING: Communication between 64 and 32 bits machines not so tested,\nmaybe SpaceZero doesn't work properly.\n");
 
 
   fprintf(stderr,"**************************************************************\n");

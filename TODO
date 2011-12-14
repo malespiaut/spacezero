@@ -12,7 +12,7 @@ libopenal_dev
 
 
 
-bugs:(last:118)
+bugs:(last:120)
 ====
 
 -[26] (010910) al pasar al modo manual siempre dispara. (posible disparo a EXPLOSION, objnext no eliminado)
@@ -37,6 +37,7 @@ bugs:(last:118)
 -[115]-geom 1000x-12 check all arguments...
 	    -geom -name hola
 -[117]why dont explore (save08)(the last ship, no unknown planets)
+
 
 Version 0.6: (since 0707)
 ============
@@ -203,6 +204,8 @@ X-!!dont take off when change to automatic mode.
 X-(081111)Fix: Asteroids are no more visible everywhere - ID: 3434531
 X-(081111)Fix:  "short" planets advantage towers - ID: 3433655 
 X-(141111)Added: Answers to orders are now showed in orders window.
+X-(071211)Added: log message window.  F7
+X-(151211)[120] Planets are not discovered nor shown in map - ID: 3439466
 
 BUGS version 0.80
 =================
@@ -225,7 +228,8 @@ X-(170611)[116][regression] autopilot fighters now leave the planet - ID: 331731
 X-Size of font.
 X-(050911)[118]explorer doesnt respond to RETREAT and GOTO n (save10)
 	  GOTO n=>Not Allowed. Planet or ship 15 unknown. (15 is a undiscoverd empty nearest planet)
-X-(181011)Landed ship changes continuously GOTO x <-> NOTHING
+X-(181011)[119]Landed ship changes continuously GOTO x <-> NOTHING
+
 
 /********************************************************************************/
 DONE:Version 0.78 (since 10 Jan. 2011)

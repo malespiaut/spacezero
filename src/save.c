@@ -35,7 +35,6 @@ extern int nav_mode;
 extern int g_objid;
 extern int g_projid;
 extern char version[64];
-extern char TITLE[64];
 extern Object *ship_c; /* ship controled by keyboard */
 extern struct HeadObjList listheadobjs;
 extern struct HeadObjList *listheadcontainer; /* lists of objects that contain objects: free space and planets*/
@@ -54,7 +53,7 @@ extern int *cell;
 
 struct Global gremote,glocal;
 #if DEBUG
-int debugsave=1;
+int debugsave=0;
 #endif
 
 
@@ -1799,10 +1798,11 @@ void SaveParamOptions(char *file,struct Parametres *par){
   }
   printf("saving options to file: %s\n",file);
   fprintf(fp,"%s\n",version);
-  fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d\n",
-	 par->ngalaxies,par->nplanets, par->nplayers, par->ul,par->kplanets,
-	 par->sound,par->music,par->cooperative,par->compcooperative,par->queen,
-	 par->pirates,par->port);
+  fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+	  par->ngalaxies,par->nplanets, par->nplayers, par->ul,par->kplanets,
+	  par->sound,par->music,par->soundvol,par->musicvol,
+	  par->cooperative,par->compcooperative,par->queen,
+	  par->pirates,par->port);
   
   if(strlen(par->IP)==0)strncpy(par->IP,DEFAULT_IP,MAXTEXTLEN);
   fprintf(fp,"%s\n",par->IP);
@@ -1816,21 +1816,32 @@ void SaveParamOptions(char *file,struct Parametres *par){
 } 
 
 
-void LoadParamOptions(char *file,struct Parametres *par){
+int LoadParamOptions(char *file,struct Parametres *par){
 
   FILE *fp; 
-  char version[MAXTEXTLEN]="";
+  char optionsversion[MAXTEXTLEN]="";
 
   if((fp=fopen(file,"rt"))==NULL){
     fprintf(stdout,"Cant open the file: %s",file);
     exit(-1);
   }
-  fscanf(fp,"%128s",version);
+  fscanf(fp,"%64s",optionsversion);
   /* HERE check version */
 
-  fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d",
+  if(strcmp(optionsversion,MINOROPTIONSVERSION)>=0){
+    printf("Version:  game:(%s)  options file:(%s) >= %s  ... OK\n",version,optionsversion,MINOROPTIONSVERSION);
+  }
+  else if(strcmp(optionsversion,MINOROPTIONSVERSION)<0){
+    fprintf(stderr,"Error: incompatible versions.\n");
+    printf("Version:  game:(%s)  options file:(%s) < %s\n",version,optionsversion,MINOROPTIONSVERSION);
+    fclose(fp);
+    return(1);
+  }
+
+  fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
 	 &par->ngalaxies,&par->nplanets, &par->nplayers, &par->ul,&par->kplanets,
-	 &par->sound,&par->music,&par->cooperative,&par->compcooperative,&par->queen,
+	 &par->sound,&par->music,&par->soundvol,&par->musicvol,
+	 &par->cooperative,&par->compcooperative,&par->queen,
 	 &par->pirates,&par->port);
   printf("version: %s\n",version);  
   printf("num galaxies: %d\n",par->ngalaxies);  
@@ -1844,14 +1855,16 @@ void LoadParamOptions(char *file,struct Parametres *par){
   printf("version3: %s\n",par->font);       
   printf("version4: %s\n",par->geom);       
   fclose(fp);
+  return(0);
 } 
 
 void PrintParamOptions(struct Parametres *par){
 
   printf("version:\"%s\"\n",version);
-  printf("%d %d %d %d %d %d %d %d %d %d %d %d\n",
+  printf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
 	 par->ngalaxies,par->nplanets, par->nplayers, par->ul,par->kplanets,
-	 par->sound,par->music,par->cooperative,par->compcooperative,par->queen,
+	 par->sound,par->music,par->soundvol,par->musicvol,
+	 par->cooperative,par->compcooperative,par->queen,
 	 par->pirates,par->port);
   
   printf("IP:\"%s\"\n",par->IP);

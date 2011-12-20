@@ -44,6 +44,8 @@ void PrintArguments(struct Parametres param,char *title){
   printf("\tknown planets: %d\n",param.kplanets);
   printf("\tsound: %d\n",param.sound);
   printf("\tmusic: %d\n",param.music);
+  printf("\tsound vol: %d\n",param.soundvol);
+  printf("\tmusic vol: %d\n",param.musicvol);
   printf("\tcooperative mode: %d\n",param.cooperative);
   printf("\tcomputer cooperative mode: %d\n",param.compcooperative);
   printf("\tQueen mode: %d\n",param.queen);
@@ -69,13 +71,14 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   
 
   int i;
-  char arg[25]="";
+  char arg[27]="";
 
   struct Validargum validarg[]={{"h",ARG_h},{"g",ARG_g},{"n",ARG_n},
 				{"p",ARG_p},{"t",ARG_t},{"l",ARG_l},
 				{"s",ARG_s},{"c",ARG_c},{"ip",ARG_ip},
 				{"port",ARG_port},{"name",ARG_name},
 				{"nosound",ARG_sound},{"nomusic",ARG_music},
+				{"soundvol",ARG_soundvol},{"musicvol",ARG_musicvol},
 				{"k",ARG_k},{"font",ARG_font},{"geom",ARG_geom},
 				{"cooperative",ARG_cooperative},
 				{"compcooperative",ARG_compcooperative},
@@ -114,7 +117,17 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
     fclose(fp);
   }
 
-  LoadParamOptions(optfile,par);
+  if(LoadParamOptions(optfile,par)){
+    /* some error in options file. Setting default options */
+    fprintf(stderr,
+	    "ERROR in options file: incorrect version. Overwriting with default options.\n");
+    SaveParamOptions(optfile,par);
+    if(LoadParamOptions(optfile,par)){
+      fprintf(stderr,
+	      "ERROR in options file: unknown error. Exiting...\n");   
+      exit(-1);
+    }
+  }
 
   /****** checking options *******/
 
@@ -126,8 +139,10 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 #endif
     
   }
+
+  /* sound */
   
-  if(par->music!=0 && par->music!=1){
+  if(par->music<0 && par->music>1){
     fsw=3;
     par->music=0;
 #if DEBUG
@@ -135,8 +150,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 #endif
   }
 
-
-  if(par->sound!=0 && par->sound!=1){
+  if(par->sound<0 && par->sound>1){
     fsw=4;
     par->sound=0;
     par->music=0;
@@ -144,6 +158,24 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
     if(debug)fprintf(stderr,"\tsound OFF:ERROR\n"); 
 #endif
   }
+
+  if(par->musicvol<0 || par->musicvol>100){
+    fsw=3;
+    par->musicvol=100;
+#if DEBUG
+    if(debug)fprintf(stderr,"\tmusic OFF:ERROR\n");
+#endif
+  }
+
+  if(par->soundvol<0 || par->soundvol>100){
+    fsw=4;
+    par->soundvol=100;
+    par->musicvol=100;
+#if DEBUG
+    if(debug)fprintf(stderr,"\tsound OFF:ERROR\n"); 
+#endif
+  }
+
 
   if(par->nplanets<MINNUMPLANETS || par->nplanets>MAXNUMPLANETS){
     fsw=5;
@@ -196,11 +228,14 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
     fprintf(stderr,"\t Setting default values.\n");
 
     if(fsw==3){
-      par->music=FALSE;
+      par->music=0;
+      par->musicvol=100;
     }
     if(fsw==4){
-      par->sound=FALSE;
-      par->music=FALSE;
+      par->sound=0;
+      par->music=0;
+      par->soundvol=100;
+      par->musicvol=100;
     }
   }
   /*******  --options file values ******/
@@ -306,6 +341,27 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       case ARG_music: /* nomusic */
 	par->music=0;
 	break;
+
+      case ARG_soundvol: /* sound volume */
+	if(i+1<argc){
+	  par->soundvol=atoi(argv[i+1]);
+	  i++;
+	}
+	else{
+	  return(ARG_soundvol);
+	}
+	break;
+
+      case ARG_musicvol: /* music volume */
+	if(i+1<argc){
+	  par->musicvol=atoi(argv[i+1]);
+	  i++;
+	}
+	else{
+	  return(ARG_musicvol);
+	}
+	break;
+
       case ARG_k: /*k: known planets */
 	par->kplanets=1;
 	break;
@@ -461,11 +517,15 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "o\t\t enter in order menu.\n");
   (void) fprintf( stdout, 
-		  "Esc\t\t exit from order menu. Exit from manual mode.\n");
+		  "Esc\t\t exit from order menu. exit from manual mode.\n\t\t close info windows.\n");
   (void) fprintf( stdout, 
 		  "m\t\t show space map.\n");
   (void) fprintf( stdout, 
 		  "a i\t\t automatic-manual mode.\n");
+
+  (void) fprintf( stdout, 
+		  "Ctrl +/-\t volume up/down.\n");
+
   (void) fprintf( stdout, 
 		  "Ctrl-n\t\t window, ship mode view.\n");
   (void) fprintf( stdout, 
@@ -551,6 +611,26 @@ int CheckArgs(struct Parametres p){
     printf("Invalid port: %d. Must be between (49152,65535).\n",p.port);
     return(1);
   }
+
+  if(p.soundvol<0){
+    printf("sound volume must be >= 0\n");
+    return(1);
+  }
+  if(p.soundvol>100){
+    printf("sound volume must be <= 100\n");
+    return(1);
+  }
+
+  if(p.musicvol<0){
+    printf("music volume must be >= 0\n");
+    return(1);
+  }
+  if(p.musicvol>100){
+    printf("music volume must be <= 100\n");
+    return(1);
+  }
+
+
   /* TODO */
   /***** ip *****/ 
 
@@ -664,8 +744,10 @@ void SetDefaultParamValues(struct Parametres *par){
   par->nteams=2;
   par->ul=ULX;
   par->kplanets=0;
-  par->sound=TRUE;
-  par->music=TRUE;
+  par->sound=1;
+  par->music=1;
+  par->soundvol=100;
+  par->musicvol=100;
 
   par->cooperative=FALSE;
   par->compcooperative=FALSE;

@@ -43,13 +43,15 @@
 #define ARG_name 11
 #define ARG_sound 12
 #define ARG_music 13
-#define ARG_k 14
-#define ARG_cooperative 15
-#define ARG_compcooperative 16
-#define ARG_queen 17
-#define ARG_pirates 18
-#define ARG_font 19
-#define ARG_geom 20
+#define ARG_soundvol 14
+#define ARG_musicvol 15
+#define ARG_k 16
+#define ARG_cooperative 17
+#define ARG_compcooperative 18
+#define ARG_queen 19
+#define ARG_pirates 20
+#define ARG_font 21
+#define ARG_geom 22
 
 struct Parametres{
   int ngalaxies;
@@ -58,8 +60,10 @@ struct Parametres{
   int nteams;
   int ul;
   int kplanets;
-  int sound;
-  int music;
+  int sound; /* on off */
+  int music; /* on off */ 
+  int soundvol; /* 0..100 */
+  int musicvol; /* 0..100 */
   int cooperative;
   int compcooperative;
   int queen;

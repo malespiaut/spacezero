@@ -27,11 +27,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "menu.h"
-
+#include "sound.h"
 
 extern int g_memused;
 extern struct Parametres param;
-
+struct Keys keys;
 
 struct MenuHead *MenuHeadNew(char *title){
   struct MenuHead *mh;
@@ -136,16 +136,10 @@ char *GetOptionValue(int id){
   strcpy(point,"");
   switch(id){
   case ITEM_sound:
-    if(param.sound==TRUE)
-      sprintf(point,"YES");
-    else
-      sprintf(point,"NO");
+    snprintf(point,MAXTEXTLEN,"%d",param.soundvol);
     break;
   case ITEM_music:
-    if(param.music==TRUE)
-      sprintf(point,"YES");
-    else
-      sprintf(point,"NO");
+    snprintf(point,MAXTEXTLEN,"%d",param.musicvol);
     break;
   case ITEM_k:
     if(param.kplanets==TRUE)
@@ -208,7 +202,15 @@ char *GetOptionValue(int id){
   case ITEM_quit:
   case ITEM_0:
     break;
-
+  case ITEM_fire:
+    if(keys.fire.value==32){
+      snprintf(point,MAXTEXTLEN,"SPACE");
+    }
+    else{
+      snprintf(point,MAXTEXTLEN,"%c",keys.fire.value);
+    }
+    printf("getoptionvalue fire: (%c)  %d\n",keys.fire.value,keys.fire.value);
+    break;
   default:
     fprintf(stderr,"WARNING: GetOptionValue() id: %d unknown.\n",id);
     break;
@@ -240,6 +242,8 @@ struct MenuHead *CreateMenu(void){
   struct MenuHead *mmultiplayeroptions;
   struct MenuHead *mgeneraloptions;
   struct MenuHead *mgameoptions;
+  struct MenuHead *mkeyboard;
+
 
   struct MenuItem item;
 
@@ -250,6 +254,7 @@ struct MenuHead *CreateMenu(void){
   mmultiplayeroptions=MenuHeadNew("MULTIPLAYER OPTIONS");
   mgeneraloptions=MenuHeadNew("GENERAL OPTIONS");
   mgameoptions=MenuHeadNew("GAME OPTIONS");
+  mkeyboard=MenuHeadNew("Keyboard");
 
   
   /******* main menu *********/
@@ -295,6 +300,12 @@ struct MenuHead *CreateMenu(void){
   item.nexthead=mgameoptions;/* link with game options menu */
   Add2MenuHead(moptions,&item,"Game Options");
 
+  item.id=0;
+  item.type=MENUITEMTEXT;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=mkeyboard;
+  Add2MenuHead(moptions,&item,"Keyboard (in progress...)");
 
   item.id=0;
   item.type=MENUITEMTEXT;
@@ -320,14 +331,14 @@ struct MenuHead *CreateMenu(void){
   Add2MenuHead(mgeneraloptions,&item,"Name:");
 
   item.id=ITEM_sound;
-  item.type=MENUITEMBOOL;
+  item.type=MENUITEMTEXTENTRY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgeneraloptions,&item,"Sound");
 
   item.id=ITEM_music;
-  item.type=MENUITEMBOOL;
+  item.type=MENUITEMTEXTENTRY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
@@ -405,6 +416,26 @@ struct MenuHead *CreateMenu(void){
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgameoptions,&item,"Queen mode: ");
+
+  /***** Keyboard Options *****/
+  item.id=ITEM_fire;
+  //item.type=MENUITEMGRABKEY;
+  item.type=MENUITEMTEXTENTRY;
+  //  item.type=MENUITEMBOOL;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=NULL;
+  Add2MenuHead(mkeyboard,&item,"Shoot:");
+
+
+  /*  item.id=ITEM_p;
+  item.type=MENUITEMTEXTENTRY;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=NULL;
+  Add2MenuHead(mgameoptions,&item,"Number of players: ");
+  */
+
 
   /***** multiplayer menu options *****/
   item.id=ITEM_ip;
@@ -551,10 +582,20 @@ int MenuEnter(struct MenuHead *mhead){
 	  Keystrokes(LOAD,text);
 	  Funct01(item,text);
 	  break;
+	case MENUITEMACTION:
+	  break;
+	case MENUITEMGRABKEY:
+	  strcpy(text,"");
+	  Keystrokes(LOAD,text);
+	  Funct01(item,text);
+	  break;
 	default:
+	  fprintf(stderr,"ERROR MenuEnter(): type %d not implemented\n",item->type);
+	  exit(-1);
 	  break;
 	}
       }
+
       if(item->type==MENUITEMACTION){
 	if(item->id==ITEM_server){
 	  strcpy(item->text,"Waiting for player...");
@@ -641,12 +682,6 @@ void Funct01(struct MenuItem *item,char *value){
   switch(item->type){
   case MENUITEMBOOL:
     switch(item->id){
-    case ITEM_sound:
-      param.sound=param.sound==TRUE?FALSE:TRUE;
-      break;
-    case ITEM_music:
-      param.music=param.music==TRUE?FALSE:TRUE;
-      break;
     case ITEM_k:
       param.kplanets=param.kplanets==TRUE?FALSE:TRUE;
       break;
@@ -675,6 +710,36 @@ void Funct01(struct MenuItem *item,char *value){
     if(item->active==ITEM_ST_EDIT)Keystrokes(RESET,NULL);
 
     switch(item->id){
+    case ITEM_sound:
+      if(item->active==ITEM_ST_UPDATE){
+	tmparg=param.soundvol;
+	param.soundvol=atoi(value);
+	if(CheckArgs(param)){
+	  fprintf(stderr,"WARNING: Invalid value\n");
+	  param.soundvol=tmparg;
+	}
+	else{
+	  Keystrokes(RESET,NULL);
+	}
+	item->active=ITEM_ST_SHOW;
+      }
+      break;
+    case ITEM_music:
+      if(item->active==ITEM_ST_UPDATE){
+	tmparg=param.musicvol;
+	param.musicvol=atoi(value);
+	if(CheckArgs(param)){
+	  fprintf(stderr,"WARNING: Invalid value\n");
+	  param.musicvol=tmparg;
+	}
+	else{
+	  Keystrokes(RESET,NULL);
+	  SetMusicVolume((float)param.musicvol/100,VOLSET);
+	}
+	item->active=ITEM_ST_SHOW;
+      }
+      break;
+
     case ITEM_name:
       if(item->active==ITEM_ST_UPDATE){
 	strncpy(param.playername,value,MAXTEXTLEN);
@@ -781,14 +846,36 @@ void Funct01(struct MenuItem *item,char *value){
       printf("Starting client\n");
       break;
       
+    case ITEM_fire:
+      if(item->active==ITEM_ST_UPDATE){
+	printf("fire: %s \n",value);
+	keys.fire.value=(int)*value;
+	item->active=ITEM_ST_SHOW;
+      }
+      break;
     default:
-      printf("Funct01()id: %d not defined\n",item->id);
+      fprintf(stderr,"Funct01()id: %d not defined\n",item->id);
+      exit(-1);
       break;
     }
 
     break;
+  case MENUITEMGRABKEY:
+    fprintf(stderr,"Funct01() GRAB in progress...\n");
+    if(item->active==ITEM_ST_UPDATE){
+      char a;
+      //      strncpy(a,value,1);
+      a=*value;
+      Keystrokes(RESET,NULL);
+      item->active=ITEM_ST_SHOW;
+      printf("menu space %c\n",a);
+      keys.fire.value=(int)a;
+
+      }
+    break;
   default:
-    printf("Funct01()type: %d not defined\n",item->type);
+    fprintf(stderr,"Funct01()type: %d not defined\n",item->type);
+    exit(-1);
     break;
     
   }

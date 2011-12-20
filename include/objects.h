@@ -615,7 +615,7 @@ Object *FirstShip(struct HeadObjList *lh,Object *cv0,int pid);
 Object *NextPlanetCv(struct HeadObjList *lh,Object *cv0,int pid);
 Object *PrevPlanetCv(struct HeadObjList *lh,Object *cv0,int pid);
 
-void Explosion(struct HeadObjList *lh,Object *obj);
+void Explosion(struct HeadObjList *lh,Object *obj,int type);
 
 Object *ObjNearThan(struct HeadObjList *lh,int player,int x,int y,float dmin2);
 float Distance2NearestShip(struct HeadObjList *lh,int player,int x,int y);

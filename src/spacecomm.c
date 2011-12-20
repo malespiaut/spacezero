@@ -2577,9 +2577,6 @@ int CheckModifiedPre(struct HeadObjList *lh,int proc){
   Object *obj;
   int n=0;
 
-#if DEBUG
-  printf("CheckModifiedPre()\n");
-#endif
   
   ls=lh->next;
   /*  printf("======\n"); */
@@ -2692,10 +2689,7 @@ int CheckModifiedPost(struct HeadObjList *lh,int proc){
   Object *obj;
   int n=0;
 
-#if DEBUG
-  printf("CheckModifiedPost()\n");
-#endif
-  
+
   ls=lh->next;
   /*  printf("======\n"); */
   while(ls!=NULL){

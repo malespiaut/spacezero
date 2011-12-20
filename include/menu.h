@@ -32,12 +32,13 @@
 #include "shell.h"
 
 /* menu item types */
-#define MENUITEMTEXT 0  /* only show text */
-#define MENUITEMBOOL 1  /* two values: yes ,no */
-#define MENUITEMCHECKBOX 2 /* as ITEMBOOL */
+#define MENUITEMTEXT 0      /* only show text */
+#define MENUITEMBOOL 1      /* two values: TRUE, FALSE */
+#define MENUITEMCHECKBOX 2  /* as ITEMBOOL */
 #define MENUITEMTEXTENTRY 3 /* free text entry */
-#define MENUITEMCOMBO 4  /* combo list */
-#define MENUITEMACTION 5 /* */ 
+#define MENUITEMCOMBO 4     /* combo list */
+#define MENUITEMACTION 5    /* */ 
+#define MENUITEMGRABKEY 6   /* */
 
 /* menu item ids */
 #define ITEM_0 0
@@ -66,6 +67,11 @@
 #define ITEM_server 23 
 #define ITEM_client 24
 #define ITEM_default 25 
+#define ITEM_fire 26
+#define ITEM_left 27
+#define ITEM_right 28
+#define ITEM_accel 29
+
 
 
 /* menu edit state   */

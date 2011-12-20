@@ -82,7 +82,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.55"};
+char version[64]={"0.81.57"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Dec. 2011"};
@@ -316,17 +316,20 @@ int main(int argc,char *argv[]){
   if(InitSound()!=0){
     fprintf(stderr,"Error initializing sound, sound disabled Error id:%d\n",state);
     soundenabled=FALSE;
-    param.sound=FALSE;
-    param.music=FALSE;
+    param.sound=0;
+    param.music=0;
     GameParametres(SET,GMUSIC,param.sound);
     GameParametres(SET,GSOUND,param.music);
     Play(NULL,-1,0); /* disable sound */
   }
 
   if(soundenabled==TRUE){
-    PlaySound(MUSIC,SLOOP,0.75);
+    SetSoundVolume((float)param.soundvol/100,VOLSET);
+    printf("Sound volume: %d\n",param.soundvol);
+    PlaySound(MUSIC,SLOOP,1);
     if(param.music){
-      printf("Music is on (%d)\n",param.music);
+      printf("Music volume: %d\n",param.musicvol);
+      SetMusicVolume((float)param.musicvol/100,VOLSET);
     }
     else{
       Sound(SSTOP,MUSIC);
@@ -345,7 +348,8 @@ int main(int argc,char *argv[]){
   gdraw.stats=FALSE;
   gdraw.order=FALSE;
   gdraw.info=FALSE;
-  gdraw.crash=FALSE;  
+  gdraw.crash=FALSE;
+  gdraw.volume=FALSE;
 
   /******** --what stuff draw *********/
 
@@ -380,7 +384,9 @@ int main(int argc,char *argv[]){
 
   /********* game resume **********/
 
-  printf("\ntotal points: %d record: %d\n",players[1].points,record);
+  if(GameParametres(GET,GNPLAYERS,0)>0){
+    printf("\ntotal points: %d record: %d\n",players[1].points,record);
+  }
   printf("******************************************************\n");
   printf("%sversion %s  %s\n",TITLE,version,last_revision);
   printf("Please, send bugs and suggestions to: mrevenga at users dot sourceforge dot net\n");
@@ -409,7 +415,11 @@ gint MenuLoop(gpointer data){
 
   if(gdraw.menu==FALSE)return(TRUE); 
 
+  if(cont==0){
+    SetDefaultKeyValues(&keys,1);
+  }
   cont++;
+
   if((cont%20)==0){
     gdrawmenu=1;
   }
@@ -464,7 +474,6 @@ gint MenuLoop(gpointer data){
   update_rect.height=drawing_area->allocation.height;
   gtk_widget_draw(drawing_area,&update_rect); /*  deprecated */
 
-  
   switch(status){
   case 0:
     break;
@@ -508,7 +517,6 @@ gint MenuLoop(gpointer data){
     gdraw.menu=FALSE;
     gdraw.main=TRUE;
     Keystrokes(RESET,NULL);
-    SetDefaultKeyValues(&keys,1);
     SetGameParametres(param);
     MakeTitle(param,title);
     gtk_window_set_title(GTK_WINDOW(win_main),title);
@@ -562,7 +570,7 @@ gint MainLoop(gpointer data){
   if(gtime0==0){
     gtime0=time(NULL);
   }
-  
+  //  printf("mainloop space : %d\n",keys.fire.value);
   if(!sw){   /* firsttime */
 
     savefile=CreateSaveFile(param.server,param.client);
@@ -671,7 +679,7 @@ gint MainLoop(gpointer data){
   }
   
   key_eval(&keys);
-  
+
   if(GameParametres(GET,GPAUSED,0)==FALSE){
 
     /* update createplayerlist only if necesary HERE*/
@@ -1006,6 +1014,15 @@ gint MainLoop(gpointer data){
   /* Drawing window */
 
   /*  what to draw */
+  if(keys.esc==TRUE){
+    keys.f5=FALSE;
+    keys.f6=FALSE;
+    keys.f7=FALSE;
+    gdraw.shiplist=FALSE;
+    gdraw.gamelog=FALSE;
+    gdraw.stats=FALSE;
+  }
+
   if(keys.f5==TRUE){
     keys.f7=FALSE;
     gdraw.shiplist=TRUE;
@@ -1056,7 +1073,6 @@ gint MainLoop(gpointer data){
   }
   if(cv==NULL)gdraw.map=FALSE;
 
-
   /*--  what to draw */
 
 
@@ -1078,28 +1094,16 @@ gint MainLoop(gpointer data){
 			   drawing_area->allocation.height);  
       }
     }
-    else{ 
-      if(gdraw.crash){ 
-	gdk_draw_rectangle(pixmap,   
-			   //drawing_area->style->white_gc,   
-			   penSoftRed,
-			   TRUE,  
-			   0,0,   
-			   drawing_area->allocation.width,   
-			   drawing_area->allocation.height);  
-	gdraw.crash=0; 
-      } 
-      else{  
-
+    else{
 #if DEBUGFAST
       if(!(cont%120)){
- 	gdk_draw_rectangle(pixmap,
- 			   drawing_area->style->black_gc,
- 			   TRUE,
- 			   0,0,
- 			   drawing_area->allocation.width,
- 			   drawing_area->allocation.height); 
-
+	gdk_draw_rectangle(pixmap,
+			   drawing_area->style->black_gc,
+			   TRUE,
+			   0,0,
+			   drawing_area->allocation.width,
+			   drawing_area->allocation.height); 
+	
       }
 #else
       gdk_draw_rectangle(pixmap,
@@ -1109,13 +1113,19 @@ gint MainLoop(gpointer data){
 			 drawing_area->allocation.width,
 			 drawing_area->allocation.height); 
 #endif
-
-      }  
     }
-    
-    
     /* --clear window */
 
+    if(gdraw.volume==TRUE){
+      static int contvolume=100;
+      int x,y;
+      if(contvolume==0)contvolume=100;
+      contvolume--;
+      if(contvolume==0)gdraw.volume=FALSE;
+      x=gwidth-65;
+      y=gheight-15;
+      DrawBarBox(pixmap,penRed,x,y,60,10,SetSoundVolume(0,VOLGET));
+    }
        
     if(gdraw.map==TRUE){
       if(drawmap){
@@ -1127,7 +1137,7 @@ gint MainLoop(gpointer data){
 	switch(habitat.type){
 	case H_SPACE:
 	  DrawStars(pixmap,nav_mode,r_rel.x,r_rel.y);
-	  DrawRadar(pixmap,cv,&listheadobjs);
+	  DrawRadar(pixmap,cv,&listheadobjs,gdraw.crash);
 	  break;
 	case H_PLANET:
 	  DrawPlanetSurface(pixmap,habitat.obj->planet,gcolors[players[habitat.obj->player].color]);
@@ -1149,10 +1159,13 @@ gint MainLoop(gpointer data){
 
       if(cv!=NULL){
 	if(cv->accel>0){
-	  Play(cv,THRUST,cv->accel/cv->engine.a_max);
+	  //	  Play(cv,THRUST,0.8*(cv->accel*cv->accel)/(cv->engine.a_max*cv->engine.a_max));
+	  Play(cv,THRUST,1.0*cv->accel/cv->engine.a_max);
 	}
       }
     }
+
+    if(gdraw.crash)gdraw.crash=0;
 
     if(gdraw.shiplist==TRUE){
       DrawPlayerList(pixmap,actual_player,&listheadplayer,cv,loadsw || !(GetTime()%20));
@@ -1169,15 +1182,15 @@ gint MainLoop(gpointer data){
     DrawInfo(pixmap,cv);
   }/* if(paused==0) */
 
-    if(gdraw.stats==TRUE){
-      DrawGameStatistics(pixmap,players);
-    }
-    
-    if(swmess){ 
-      DrawMessageBox(drawing_area,pixmap,gfont,pointmess,gwidth/2,0.3*gheight,MBOXBORDER);
-    } 
-
-
+  if(gdraw.stats==TRUE){
+    DrawGameStatistics(pixmap,players);
+  }
+  
+  if(swmess){ 
+    DrawMessageBox(drawing_area,pixmap,gfont,pointmess,gwidth/2,0.3*gheight,MBOXBORDER);
+  } 
+  
+  
   /* Draw Shell */
   
   if(gdraw.order==TRUE){/* QWERTY */
@@ -1327,7 +1340,7 @@ gint MainLoop(gpointer data){
   cont++;
   return(TRUE);
 
-  } /* MainLoop */
+} /* MainLoop */
 
 gint Quit(GtkWidget *widget,gpointer gdata){
   /*
@@ -1508,6 +1521,23 @@ void key_eval(struct Keys *key){
     //    printf("mouse mdclick\n");
     key->mdclick=FALSE;
   }
+
+  /* sound */
+
+  if(key->ctrl==TRUE && (key->plus==TRUE||key->minus==TRUE)){
+    if(key->plus==TRUE){
+      SetSoundVolume(0.025,VOLINC);
+      gdraw.volume=TRUE;
+    }
+    if(key->minus==TRUE){
+      SetSoundVolume(-0.025,VOLINC);
+      gdraw.volume=TRUE;
+    }
+    param.soundvol=100*SetSoundVolume(0,VOLGET);
+    GameParametres(SET,GSOUNDVOL,param.soundvol);
+
+  }
+
   if(1){
     int x,y;
 
@@ -1519,8 +1549,6 @@ void key_eval(struct Keys *key){
       }
     }
   }
-      
-
 
   /* --mouse */
 
@@ -1636,18 +1664,19 @@ void key_eval(struct Keys *key){
 
 	    Add2ObjList(&listheadobjs,nobj);
 	  }
-	  else{
+
+	  if(0){
 	    if(cv==ship_c){
 	      if(ship_c->type==SHIP && ship_c->mode!=SOLD &&
 		 (ship_c->subtype==FIGHTER||ship_c->subtype==EXPLORER||ship_c->subtype==QUEEN)){
-
+		
 		if(1){
 		  ship_c->state=-1;
 		}
 	      }
 	    }
 	  }
-	  
+
 	  key->s=FALSE;
 	}
 	/* --PRODUCTION DELETE SATELLITES */	
@@ -1658,7 +1687,7 @@ void key_eval(struct Keys *key){
 	if(cv==ship_c){ 
 	  if(ship_c->gas>0 && gdraw.map==FALSE){
 	    if(cv->type==SHIP&&cv->subtype==PILOT){
-	      key->up=key->left=key->right=key->space=FALSE;
+	      key->up=key->left=key->right=key->fire.state=FALSE;
 	    }
 
 	    if(key->up==TRUE){
@@ -1683,7 +1712,7 @@ void key_eval(struct Keys *key){
 	    if(key->left==FALSE  && key->right==FALSE){
 	      ship_c->ang_a=0;
 	    }
-	    if(key->space==TRUE && ship_c->gas > 2){
+	    if(key->fire.state==TRUE && ship_c->gas > 2){
 	      if (!ship_c->weapon->cont1){
 		ChooseWeapon(ship_c);
 		if(proc==players[ship_c->player].proc){
@@ -1714,7 +1743,8 @@ void key_eval(struct Keys *key){
       
       if(TEST||actual_player==actual_player0){ /* PRODUCTION */
 	
-	if(key->i==TRUE || key->esc==TRUE){
+	if(key->i==TRUE){
+	  /* pressing 'i' the selected ship goes to automatic mode */
 	  if(GameParametres(GET,GQUIT,0)==0){
 	    if(cv->type==SHIP && 
 	       (cv->subtype==FIGHTER || 
@@ -1725,18 +1755,17 @@ void key_eval(struct Keys *key){
 	      ship_c->ai=1;
 	      key->a=FALSE;
 	      key->i=FALSE;
-	      key->esc=FALSE;
 	    }
 	  }
 	}
 	
 	if(key->a==TRUE && cv->type==SHIP && 
+	   /* pressing 'a' goes to manual mode */
 	   (cv->subtype==FIGHTER || cv->subtype==EXPLORER || cv->subtype==QUEEN || cv->subtype==TOWER)){
 	  ship_c=cv;
 	  ship_c->ai=0;
 	  key->a=FALSE;
 	  key->i=FALSE;
-	  key->esc=FALSE;
 	}
 
 	if(key->number[1]==TRUE){
@@ -2627,38 +2656,33 @@ void Collision(struct HeadObjList *lh){
 	/*	if(r2<RADAR_RANGE2){  planet discovered  */
 	if((obj1->type==PLANET && obj2->type==SHIP) ||
 	   (obj2->type==PLANET && obj1->type==SHIP)){
-
-	  if(r2<radar1*radar1 || r2<radar2*radar2){ /* planet discovered */
-	    if(obj1->type==PLANET){
-	      obj=obj2;
-	      pnt=obj1;
-	    }
-	    else{
-	      obj=obj1;
-	      pnt=obj2;
-	    }
-	    if(!((time+obj->id)%20)){ 
-	      if(proc==players[obj->player].proc){
-		if(r2<obj->radar*obj->radar){
-		  if(pnt->player!=obj->player){
-		    if(IsInIntList((players[obj->player].kplanets),pnt->id)==0){
-		      Experience(obj,40);/* Experience for discover a planet */
-		      /* PLANETHERE*/
-		      if(gnet==TRUE){
-			struct NetMess mess;
-			mess.id=NMPLANETDISCOVERED;
-			mess.a=obj->id;
-			mess.b=pnt->id;
-			NetMess(&mess,NMADD);
-		      }
-		      for(i=0;i<=gnplayers+1;i++){
-			if(players[obj->player].team==players[i].team){
-			  players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);
-			  snprintf(text,MAXTEXTLEN,"(%d) PLANET %d discovered",obj->pid,pnt->id);
-			  if(!Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0)){
-			    Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
-			  }
-			}
+	  if(obj1->type==PLANET){
+	    obj=obj2;
+	    pnt=obj1;
+	  }
+	  else{
+	    obj=obj1;
+	    pnt=obj2;
+	  }
+	  if(!((time+obj->id)%20)){ 
+	    if(proc==players[obj->player].proc && pnt->player!=obj->player){
+	      if(r2< obj->radar*obj->radar){ /* planet near */
+		if(IsInIntList((players[obj->player].kplanets),pnt->id)==0){
+		  /* planet discovered */
+		  Experience(obj,40);/* Experience for discover a planet */
+		  if(gnet==TRUE){
+		    struct NetMess mess;
+		    mess.id=NMPLANETDISCOVERED;
+		    mess.a=obj->id;
+		    mess.b=pnt->id;
+		    NetMess(&mess,NMADD);
+		  }
+		  for(i=0;i<=gnplayers+1;i++){
+		    if(players[obj->player].team==players[i].team){
+		      players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);
+		      snprintf(text,MAXTEXTLEN,"(%d) PLANET %d discovered",obj->pid,pnt->id);
+		      if(!Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0)){
+			Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
 		      }
 		    }
 		  }
@@ -2864,10 +2888,27 @@ void Collision(struct HeadObjList *lh){
 	    damage=objt2->damage*(1-objt1->shield);
 	    objt1->state-=damage;
 	    
-	    Play(objt1,CRASH,1);
-	    if(objt1==cv)gdraw.crash=1;
+
 	    if(objt1->type==SHIP){
 	      /*receive an impact */
+
+	      Play(objt1,CRASH,1);
+	      if(objt1==cv){
+		gdraw.crash=1;
+	      }	      
+	      if(cv!=NULL){
+		int swexplosion=0;
+		if(cv->habitat==objt1->habitat){
+		  if(cv->habitat==H_PLANET){
+		    if(cv->in==objt1->in)swexplosion++;
+		  }
+		  else{
+		    swexplosion++;
+		  }
+		}
+		if(swexplosion)Explosion(&listheadobjs,objt1,1);
+	      }
+
 	      if(objt1->state>0){
 		if(proc==players[objt1->player].proc){
 		  Experience(objt1,damage/2); /* experience for receive an impact*/
@@ -3943,11 +3984,6 @@ int CheckGame(char *cad,int action){
     
     ls=ls->next;
   }
-#if DEBUG
-  for(i=0;i<ALLOBJS;i++){ 
-    printf("n. obj of type %d: %d\n",i,types[i]); 
-  } 
-#endif
   return(0);
 }
 
@@ -4653,6 +4689,11 @@ void PrintGameOptions(void){
   else
     printf("\tnet game: no\n");
 
+  printf("\tSound: %d  volume: %d\n",
+	 GameParametres(GET,GSOUND,0),GameParametres(GET,GSOUNDVOL,0));
+  printf("\tMusic: %d  volume: %d\n",
+	 GameParametres(GET,GMUSIC,0),GameParametres(GET,GMUSICVOL,0));
+
 }
 
 
@@ -4707,6 +4748,8 @@ void SetGameParametres(struct Parametres param){
 
   GameParametres(SET,GMUSIC,param.music);
   GameParametres(SET,GSOUND,param.sound);
+  GameParametres(SET,GMUSICVOL,param.musicvol);
+  GameParametres(SET,GSOUNDVOL,param.soundvol);
 
   GameParametres(SET,GWIDTH,DEFAULTWIDTH);
   GameParametres(SET,GHEIGHT,DEFAULTHEIGHT);

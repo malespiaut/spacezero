@@ -44,6 +44,7 @@
 
 
 #define MINORSAVEVERSION "0.81.23" /* the save file must be at least this version */
+#define MINOROPTIONSVERSION "0.81.57" /* the options file must be at least this version */
 
 #define MAXTEXTLEN 128
 
@@ -154,10 +155,12 @@
 #define GNPLAYERS  13        /* number of players */
 #define GNPLANETS  14        /* number of planets */
 #define GKPLANETS  15       /* TRUE FALSE planets known or unknown */ 
-#define GMUSIC     16       /* TRUE FALSE game paused */
-#define GSOUND     17       /* TRUE FALSE game paused */
-#define GPAUSED    18       /* TRUE FALSE game paused */
-#define GQUIT      19       /* 0,1,2 really quit? */
+#define GMUSIC     16       /* TRUE FALSE music */
+#define GSOUND     17       /* TRUE FALSE sound */
+#define GMUSICVOL  18       /* 0..100 music volume */
+#define GSOUNDVOL  19       /* 0..100 sound volume */
+#define GPAUSED    20       /* TRUE FALSE game paused */
+#define GQUIT      21       /* 0,1,2 really quit? */
 
 
 /*    Error codes for all functions */
@@ -221,6 +224,8 @@ struct Game{
   int paused;          /* TRUE FALSE game paused */
   int music;           /* music ON OFF */
   int sound;           /* sound ON OFF */
+  int musicvol;        /* music volume */
+  int soundvol;        /* sound volume */
   int quit;            /* 0,1,2 really quit? */
 };
 
@@ -245,6 +250,11 @@ typedef struct{
   int habitat; /* 0 means free space, 1, 2, ... planetid */
 }Region;
 
+typedef struct{
+  int state;
+  int value;
+}key;
+
 struct Keys{
   int load,save;
   int left,right,up,down;  /* move ship */
@@ -253,7 +263,8 @@ struct Keys{
   int home;
   int Pagedown,Pageup;         /* next, previous planet */
   int f1,f2,f3,f4,f5,f6,f7,f8,f9,f10;   /* choose ship */
-  int space;               /* fire */
+  key fire;               /* fire */
+  int centermap;           /* center map */
   int enter;               /* enter command */
   int back;                /* delete last letter */ 
   int trace;               /* trace on/off */ 
@@ -263,9 +274,9 @@ struct Keys{
   int b;     /* buy ships */
   int s;     /* open charge  */
   int m;     /* show map   */
-  int a;     /* activate-deactivate manual control */
+  int a;     /* switch to manual control */
   int n;     /* change navigation mode, no  */
-  int i;
+  int i;     /* switch to automatic control */
   int z;     /* zoom map */
   int l;     /* labels on/off */
   int o;     /* comand shell */
@@ -281,6 +292,8 @@ struct Keys{
   int d;  /* shell */
   int q;  /* ^Q quit */
   int y;  /* yes */
+  int plus;
+  int minus;
 };
 
 

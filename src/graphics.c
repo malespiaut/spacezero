@@ -130,7 +130,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
 
 
   char label[164];
-  char labelhelp[1024];
+  char labelhelp[1088];
 
   GtkTooltips *tooltips;
   GdkGeometry geometry;
@@ -251,7 +251,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_signal_connect(GTK_OBJECT (winabout),"delete_event",
 		     GTK_SIGNAL_FUNC(QuitWindow),winabout);
   gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemabout);
-  snprintf(label,150,"\t SpaceZero %s\t\n\t Nov 2011\t\n\n\n  Copyrigth mrevenga.  \n  homepage:  http://spacezero.sourceforge.net/   ",version);
+  snprintf(label,150,"\t SpaceZero %s\t\n\t Dec 2011\t\n\n\n  Copyrigth mrevenga.  \n  homepage:  http://spacezero.sourceforge.net/   ",version);
   about1=gtk_label_new(label);
   gtk_widget_show(about1);
   
@@ -268,15 +268,17 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
 #ifndef GTK12  
   gtk_window_set_deletable(GTK_WINDOW(winhelp),FALSE);
 #endif
-  /* gtk_window_set_deletable(GTK_WINDOW(winhelp),TRUE); */
+
   menuitemhelp=gtk_menu_item_new_with_label("Help");
   gtk_signal_connect(GTK_OBJECT (menuitemhelp),"activate",
 		     GTK_SIGNAL_FUNC(ShowWindow),winhelp);
 
-  gtk_signal_connect(GTK_OBJECT (winhelp),"destroy",
-		     GTK_SIGNAL_FUNC(QuitWindow),winhelp);
-  gtk_signal_connect(GTK_OBJECT (winhelp),"delete_event",
-		     GTK_SIGNAL_FUNC(QuitWindow),winhelp);
+  gtk_signal_connect(GTK_OBJECT (winhelp),"destroy", 
+		   GTK_SIGNAL_FUNC(QuitWindow),winhelp); 
+
+  gtk_signal_connect(GTK_OBJECT (winhelp),"delete_event", 
+		   GTK_SIGNAL_FUNC(QuitWindow),winhelp); 
+
   gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemhelp);
  
 
@@ -290,7 +292,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   //  strcat(labelhelp,"----------------------------\n");
   strcat(labelhelp,"a i\t\t\tautomatic-manual mode.\n");
   strcat(labelhelp,"o\t\t\tenter in order menu.\n");
-  strcat(labelhelp,"Esc\t\t\texit from order menu. \n\t\t\texit from manual mode.\n");
+  strcat(labelhelp,"Esc\t\t\texit from order menu. \n\t\t\texit from manual mode.\n\t\t\tclose info windows.");
   strcat(labelhelp,"up arrow\t\taccelerate.\n");
   strcat(labelhelp,"left,right arrows\tturn left right.\n");
   strcat(labelhelp,"space\t\tfire.\n");
@@ -306,6 +308,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   strcat(labelhelp,"f6\t\t\tshow game statistics.\n");
   strcat(labelhelp,"f7\t\t\tshow game messages log.\n");
   strcat(labelhelp,"m\t\t\tshow space map.\n");
+  strcat(labelhelp,"Ctrl +/-\t\tvolume up/down.\n");
   strcat(labelhelp,"Ctrl-n\t\twindow, ship mode view.\n");
   strcat(labelhelp,"Ctrl-p\t\tpause game\n");
   strcat(labelhelp,"Ctrl-s\t\tsave the game.\n");
@@ -325,9 +328,9 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
 	 "right mouse \t Send the selected ships to that point.\nclick");
 
 #if TEST
-  printf("label help size: %d (<1024)\n  ",strlen(labelhelp)); 
+  printf("label help size: %d (<1088)\n  ",strlen(labelhelp)); 
 #endif
-  if(strlen(labelhelp)>1024){
+  if(strlen(labelhelp)>1088){
     fprintf(stderr,"ERROR InitGraphics(): cad labelhelp too long.\n");
     exit(-1);
   }
@@ -419,7 +422,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   options11=gtk_button_new_with_label(" Save ");
   gtk_widget_show(options11);
   gtk_signal_connect(GTK_OBJECT (options11),"clicked",
-		     GTK_SIGNAL_FUNC(SaveOptions),optfile);
+		     GTK_SIGNAL_FUNC(SaveWindowOptions),optfile);
 
   options12=gtk_button_new_with_label(" Cancel ");
   gtk_widget_show(options12);
@@ -799,6 +802,37 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
   }
   else{
     switch(event->keyval){
+    case 65456:
+      Keystrokes(ADD,"0");
+      break;
+    case 65457:
+      Keystrokes(ADD,"1");
+      break;
+    case 65458:
+      Keystrokes(ADD,"2");
+      break;
+    case 65459:
+      Keystrokes(ADD,"3");
+      break;
+    case 65460:
+      Keystrokes(ADD,"4");
+      break;
+    case 65461:
+      Keystrokes(ADD,"5");
+      break;
+    case 65462:
+      Keystrokes(ADD,"6");
+      break;
+    case 65463:
+      Keystrokes(ADD,"7");
+      break;
+    case 65464:
+      Keystrokes(ADD,"8");
+      break;
+    case 65465:
+      Keystrokes(ADD,"9");
+      break;
+
     case 65470: /* F1 key */
       Keystrokes(ADD,"F");
       Keystrokes(ADD,"1");
@@ -819,6 +853,11 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
       break;
     }
   }
+
+  if(event->keyval==keys.fire.value){
+    keys.fire.state=TRUE;
+  }
+
   switch (event->keyval){
   case 65360:
     keys.home=TRUE;
@@ -836,6 +875,7 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
     keys.tab=TRUE;
     break;
   case 65293:
+  case 65421:
     keys.enter=TRUE;
     break;
   case 65361:
@@ -905,37 +945,56 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
   case 65508:
     keys.ctrl=TRUE;
     break;
-  case 32:
-    keys.space=TRUE;
+  case 32://keys.space.value:
+    //    keys.space.state=TRUE;
+    keys.centermap=TRUE;
+    break;
+  case 43:
+  case 65451:
+    keys.plus=TRUE;
+    break;
+  case 45:
+  case 65453:
+    keys.minus=TRUE;
     break;
   case 48:
+  case 65456:
     keys.number[0]=TRUE;
     break;
   case 49:
+  case 65457:
     keys.number[1]=TRUE;
     break;
   case 50:
+  case 65458:
     keys.number[2]=TRUE;
     break;
   case 51:
+  case 65459:
     keys.number[3]=TRUE;
     break;
   case 52:
+  case 65460:
     keys.number[4]=TRUE;
     break;
   case 53:
+  case 65461:
     keys.number[5]=TRUE;
     break;
   case 54:
+  case 65462:
     keys.number[6]=TRUE;
     break;
   case 55:
+  case 65463:
     keys.number[7]=TRUE;
     break;
   case 56:
+  case 65464:
     keys.number[8]=TRUE;
     break;
   case 57:
+  case 65465:
     keys.number[9]=TRUE;
     break;
   case 65:
@@ -1054,6 +1113,10 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
 
 void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data){
 
+  if(event->keyval==keys.fire.value){
+    keys.fire.state=FALSE;
+  }
+
   gdrawmenu=TRUE;
   switch (event->keyval){
   case 65360:
@@ -1120,9 +1183,20 @@ void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data){
   case 65508:
     keys.ctrl=FALSE;
     break;
-  case 32:
-    keys.space=FALSE;
+  case 32://keys.space.value: //32
+    keys.fire.state=FALSE;
+    keys.centermap=FALSE;
     break;
+
+  case 43:
+  case 65451:
+    keys.plus=FALSE;
+    break;
+  case 45:
+  case 65453:
+    keys.minus=FALSE;
+    break;
+
   case 65:
   case 97:
     keys.a=FALSE;
@@ -1379,7 +1453,9 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
       case EXPLOSION:
 	//	gcexp=gcolors[-(ls->obj->id)%10];
 	//	gdk_draw_point(pixmap,gcexp,x,gheight-y);
-	gdk_draw_rectangle(pixmap,gcexp,TRUE,x-2,gheight-y-2,4,4);
+	//	gdk_draw_rectangle(pixmap,gcexp,TRUE,x-2,gheight-y-2,4,4);
+	gcexp=gcolors[players[ls->obj->player].color];
+	gdk_draw_rectangle(pixmap,gcexp,TRUE,x-1,gheight-y-1,3,3);
 	break;
       default:
 	fprintf(stderr,"ERROR: DrawObjs() not known\n");
@@ -1925,7 +2001,7 @@ void DrawPlanetSurface(GdkPixmap *pixmap,struct Planet *planet,  GdkGC *color){
   }
 }
 
-int DrawRadar(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc){
+int DrawRadar(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc,int crash){
   /*
     Draw the ship radar with all near ships.
     returns:
@@ -1967,7 +2043,13 @@ int DrawRadar(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc){
   x0=GameParametres(GET,GWIDTH,0)/2;
   y0=GameParametres(GET,GHEIGHT,0)/2;
   
-  gdk_draw_arc(pixmap,gc,FALSE,x0-d,gheight-y0-d,2*d,2*d,0,23040); 
+  if(!crash){
+    gdk_draw_arc(pixmap,gc,FALSE,x0-d,gheight-y0-d,2*d,2*d,0,23040); 
+  }
+  else{
+    gdk_draw_arc(pixmap,penSoftRed,TRUE,x0-d,gheight-y0-d,2*d,2*d,0,23040); 
+  }
+
   
   x=x0;y=y0;
   gdk_draw_point(pixmap,gc,x,gheight-y);
@@ -3175,9 +3257,7 @@ int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,
   charh=gdk_text_height(font,"Lp",2);
   charw=gdk_text_width(font,"O",1);
 
-
   incy=charh+2;
-
   gc=penGreen;
 
   x=x0+7;
@@ -3207,11 +3287,30 @@ int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,
       }
       else{
 	snprintf(point,MAXTEXTLEN,"%s ",item->text);
-	if(cont%2)
+	if(cont%2){
 	  snprintf(point2,MAXTEXTLEN,"%s",GetTextEntry(item,text));
-	else
+	}
+	else{
 	  snprintf(point2,MAXTEXTLEN,"%s_",GetTextEntry(item,text));
+	}
       }
+      break;
+    case MENUITEMGRABKEY:
+      if(item->active<ITEM_ST_EDIT){
+	snprintf(point,MAXTEXTLEN,"%s %s",item->text,GetOptionValue(item->id));
+      }
+      else{
+	snprintf(point,MAXTEXTLEN,"%s ",item->text);
+	if(cont%2){
+	  snprintf(point2,MAXTEXTLEN,"%s",GetTextEntry(item,text));
+	}
+	else{
+	  snprintf(point2,MAXTEXTLEN,"%s_",GetTextEntry(item,text));
+	}
+      }
+      break;
+    default:
+      fprintf(stderr,"ERROR XPrintMenuHead(): type %d not implemented\n",item->type);
       break;
     }
     DrawString(pixmap,font,gc,x,y-scroll*incy,point);
@@ -3351,7 +3450,182 @@ GtkWidget *CreateSubMenu(GtkWidget *menu,char *szName){
 
 }
 
-gint SaveOptions(GtkWidget *widget,gpointer gdata){
+
+gint SetDefaultOptions(GtkWidget *widget,gpointer gdata){
+  /* only show in the window the default options
+     doesn't make changes
+     changes are made when save button is pressed.
+  */
+  gboolean state;
+  const gchar *text;
+  char cad[128];
+  
+  g_print("%s\n",(char *) gdata);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options1,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options1);
+  printf("\tstate Known Universe: %d\n",state);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options2,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options2);
+  printf("\tstate music: %d\n",state);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options3,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
+  printf("\tstate sound: %d\n",state);
+
+  snprintf(cad,MAXTEXTLEN,"%d",NUMPLANETS);
+  gtk_entry_set_text((GtkEntry *)options5,cad);
+  text=gtk_entry_get_text((GtkEntry *)options5);
+  printf("\tplanets: %s\n",text);
+
+  snprintf(cad,MAXTEXTLEN,"%d",NUMPLAYERS);
+  gtk_entry_set_text((GtkEntry *)options7,cad);
+  text=gtk_entry_get_text((GtkEntry *)options7);
+  printf("\tplayers: %s\n",text);
+
+  snprintf(cad,MAXTEXTLEN,"%d",ULX);
+  gtk_entry_set_text((GtkEntry *)options9,cad);
+  text=gtk_entry_get_text((GtkEntry *)options9);
+  printf("\tUniverse size: %s\n",text);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options14,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
+  printf("\tstate cooperative: %d\n",state);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options15,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options15);
+  printf("\tstate computer cooperative: %d\n",state);
+
+  gtk_toggle_button_set_active((GtkToggleButton *)options16,FALSE);
+  state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
+  printf("\tstate Queen mode: %d\n",state);
+
+  return(0);
+}
+
+gint PrintMessage(GtkWidget *widget,gpointer gdata){
+  /* production */
+  return(0);
+  g_print("%s\n",(char *) gdata);
+  return 0;
+}
+
+gint ShowWindowOptions(GtkWidget *widget,gpointer gdata){
+  /*
+    version 01 12May11
+  */
+  int value;
+  char cad[MAXTEXTLEN];
+  int show=0;
+#if DEBUG
+  gboolean state;
+  const gchar *text;
+#endif
+
+#if DEBUG
+  if(debugoptions)g_print("Reading options from file: %s\n",(char *) gdata);
+#endif
+
+  if(GameParametres(GET,GNET,0)==TRUE){
+    if(GameParametres(GET,GMODE,0)==TRUE){ 
+      show=1; // HERE what show 
+    }   
+  }
+
+  show=1;
+
+  if(show==1){
+    value=GameParametres(GET,GKPLANETS,0);
+    gtk_toggle_button_set_active((GtkToggleButton *)options1,value);
+
+#if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options1);
+    if(debugoptions)printf("\tstate Known Universe: %d\n",state);
+#endif    
+
+    value=GameParametres(GET,GMUSIC,0);
+    if(value>0){
+      gtk_toggle_button_set_active((GtkToggleButton *)options2,FALSE);
+    }
+    else{
+      gtk_toggle_button_set_active((GtkToggleButton *)options2,TRUE);
+    }
+#if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options2);
+    if(debugoptions)printf("\tstate music: %d vol: %d\n",state,value);
+#endif    
+
+    value=GameParametres(GET,GSOUND,0);
+    if(value>0){
+      gtk_toggle_button_set_active((GtkToggleButton *)options3,FALSE);
+    }
+    else{
+      gtk_toggle_button_set_active((GtkToggleButton *)options3,TRUE);
+      }
+#if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
+    if(debugoptions)  printf("\tstate sound: %d vol: %d\n",state,value);
+#endif    
+
+    value=GameParametres(GET,GNPLANETS,0);
+    snprintf(cad,MAXTEXTLEN,"%d",value);
+    gtk_entry_set_text((GtkEntry *)options5,cad);
+#if DEBUG
+    text=gtk_entry_get_text((GtkEntry *)options5);
+    if(debugoptions)  printf("\tplanets: %s\n",text);
+#endif    
+
+    value=GameParametres(GET,GNPLAYERS,0);
+    snprintf(cad,MAXTEXTLEN,"%d",value);
+    gtk_entry_set_text((GtkEntry *)options7,cad);
+
+#if DEBUG
+    text=gtk_entry_get_text((GtkEntry *)options7);
+    if(debugoptions)  printf("\tplayers: %s\n",text);
+#endif    
+
+    value=GameParametres(GET,GULX,0);
+    snprintf(cad,MAXTEXTLEN,"%d",value);
+    gtk_entry_set_text((GtkEntry *)options9,cad);
+
+#if DEBUG
+    text=gtk_entry_get_text((GtkEntry *)options9);
+    if(debugoptions)  printf("\tUniverse size: %s\n",text);
+#endif    
+    
+    value=GameParametres(GET,GCOOPERATIVE,0);
+    gtk_toggle_button_set_active((GtkToggleButton *)options14,value);
+
+#if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
+    if(debugoptions) printf("\tCooperative mode: %d\n",state);
+#endif    
+
+    value=GameParametres(GET,GCOMPCOOPERATIVE,0);
+    gtk_toggle_button_set_active((GtkToggleButton *)options15,value);
+
+#if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options15);
+    if(debugoptions)  printf("\tComputer cooperative mode: %d\n",state);
+#endif    
+
+    value=GameParametres(GET,GQUEEN,0);
+    gtk_toggle_button_set_active((GtkToggleButton *)options16,value);
+
+#if DEBUG
+    state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
+    if(debugoptions)  printf("\tQueen mode: %d\n",state);
+#endif
+    }
+
+  /* show window */
+  gtk_widget_show(winoptions);
+  return 0;
+}
+
+
+gint SaveWindowOptions(GtkWidget *widget,gpointer gdata){
   gboolean state,status;
   const gchar *text;
   FILE *fp;
@@ -3368,7 +3642,7 @@ gint SaveOptions(GtkWidget *widget,gpointer gdata){
 #endif
 
   if((fp=fopen((char *) gdata,"wt"))==NULL){
-    fprintf(stdout,"SaveOptions(): Cant open the file: %s",(char *) gdata);
+    fprintf(stdout,"SaveWindowOptions(): Cant open the file: %s",(char *) gdata);
     exit(-1);
   }
 
@@ -3388,7 +3662,12 @@ gint SaveOptions(GtkWidget *widget,gpointer gdata){
   GameParametres(SET,GMUSIC,!state);
   param.music=!state;
   //  fprintf(fp,"%d ",(int)state);
-
+  if(state){
+    SetMusicVolume(0,VOLSET);
+  }
+  else{
+    SetMusicVolume((float)param.musicvol/100,VOLSET);
+  }
 
   state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
   if((int)state!=FALSE && (int)state!=TRUE)state=FALSE;
@@ -3397,6 +3676,16 @@ gint SaveOptions(GtkWidget *widget,gpointer gdata){
 #endif
   GameParametres(SET,GSOUND,!state);
   param.sound=!state;
+
+  if(state){
+    SetMusicVolume(0,VOLSET);
+    SetSoundVolume(0,VOLSET);
+  }
+  else{
+    SetSoundVolume((float)param.soundvol/100,VOLSET);
+  }
+
+
   //  fprintf(fp,"%d ",(int)state);
 
    if(GameParametres(GET,GSOUND,0)==TRUE && GameParametres(GET,GMUSIC,0)==TRUE){
@@ -3478,187 +3767,8 @@ gint SaveOptions(GtkWidget *widget,gpointer gdata){
  }
 
 
- gint SetDefaultOptions(GtkWidget *widget,gpointer gdata){
-   gboolean state;
-  const gchar *text;
-  char cad[128];
-
-  g_print("%s\n",(char *) gdata);
-
-  gtk_toggle_button_set_active((GtkToggleButton *)options1,FALSE);
-  state=gtk_toggle_button_get_active((GtkToggleButton *)options1);
-  printf("\tstate Known Universe: %d\n",state);
-
-  gtk_toggle_button_set_active((GtkToggleButton *)options2,FALSE);
-  state=gtk_toggle_button_get_active((GtkToggleButton *)options2);
-  printf("\tstate music: %d\n",state);
-
-  gtk_toggle_button_set_active((GtkToggleButton *)options3,FALSE);
-  state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
-  printf("\tstate sound: %d\n",state);
-
-  snprintf(cad,128,"%d",NUMPLANETS);
-  gtk_entry_set_text((GtkEntry *)options5,cad);
-  text=gtk_entry_get_text((GtkEntry *)options5);
-  printf("\tplanets: %s\n",text);
-
-  snprintf(cad,128,"%d",NUMPLAYERS);
-  gtk_entry_set_text((GtkEntry *)options7,cad);
-  text=gtk_entry_get_text((GtkEntry *)options7);
-  printf("\tplayers: %s\n",text);
-
-  snprintf(cad,128,"%d",ULX);
-  gtk_entry_set_text((GtkEntry *)options9,cad);
-  text=gtk_entry_get_text((GtkEntry *)options9);
-  printf("\tUniverse size: %s\n",text);
-
-  gtk_toggle_button_set_active((GtkToggleButton *)options14,FALSE);
-  state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
-  printf("\tstate cooperative: %d\n",state);
-
-  gtk_toggle_button_set_active((GtkToggleButton *)options15,FALSE);
-  state=gtk_toggle_button_get_active((GtkToggleButton *)options15);
-  printf("\tstate computer cooperative: %d\n",state);
-
-  gtk_toggle_button_set_active((GtkToggleButton *)options16,FALSE);
-  state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
-  printf("\tstate Queen mode: %d\n",state);
-
-  return(0);
-}
-
-gint PrintMessage(GtkWidget *widget,gpointer gdata){
-  /* production */
-  return(0);
-  g_print("%s\n",(char *) gdata);
-  return 0;
-}
-
-gint ShowWindowOptions(GtkWidget *widget,gpointer gdata){
-  /*
-    version 01 12May11
-  */
-
-
-  int value;
-  char cad[128];
-  int show=0;
-#if DEBUG
-  gboolean state;
-  const gchar *text;
-#endif
-
-#if DEBUG
-  if(debugoptions)g_print("Reading options from file: %s\n",(char *) gdata);
-#endif
-
-  if(GameParametres(GET,GNET,0)==TRUE){
-    if(GameParametres(GET,GMODE,0)==TRUE){ 
-      show=1; // HERE what show 
-    }   
-  }
-
-  show=1;
-
-  if(show==1){
-    value=GameParametres(GET,GKPLANETS,0);
-    gtk_toggle_button_set_active((GtkToggleButton *)options1,value);
-
-#if DEBUG
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options1);
-    if(debugoptions)printf("\tstate Known Universe: %d\n",state);
-#endif    
-
-    value=GameParametres(GET,GMUSIC,0);
-    gtk_toggle_button_set_active((GtkToggleButton *)options2,!value);
-
-#if DEBUG
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options2);
-    if(debugoptions)printf("\tstate music: %d\n",state);
-#endif    
-
-    value=GameParametres(GET,GSOUND,0);
-    gtk_toggle_button_set_active((GtkToggleButton *)options3,!value);
-
-#if DEBUG
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
-    if(debugoptions)  printf("\tstate sound: %d\n",state);
-#endif    
-
-    value=GameParametres(GET,GNPLANETS,0);
-    snprintf(cad,128,"%d",value);
-    gtk_entry_set_text((GtkEntry *)options5,cad);
-#if DEBUG
-    text=gtk_entry_get_text((GtkEntry *)options5);
-    if(debugoptions)  printf("\tplanets: %s\n",text);
-#endif    
-
-    value=GameParametres(GET,GNPLAYERS,0);
-    snprintf(cad,128,"%d",value);
-    gtk_entry_set_text((GtkEntry *)options7,cad);
-
-#if DEBUG
-    text=gtk_entry_get_text((GtkEntry *)options7);
-    if(debugoptions)  printf("\tplayers: %s\n",text);
-#endif    
-
-    value=GameParametres(GET,GULX,0);
-    snprintf(cad,128,"%d",value);
-    gtk_entry_set_text((GtkEntry *)options9,cad);
-
-#if DEBUG
-    text=gtk_entry_get_text((GtkEntry *)options9);
-    if(debugoptions)  printf("\tUniverse size: %s\n",text);
-#endif    
-    
-    value=GameParametres(GET,GCOOPERATIVE,0);
-    gtk_toggle_button_set_active((GtkToggleButton *)options14,value);
-
-#if DEBUG
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
-    if(debugoptions) printf("\tCooperative mode: %d\n",state);
-#endif    
-
-    value=GameParametres(GET,GCOMPCOOPERATIVE,0);
-    gtk_toggle_button_set_active((GtkToggleButton *)options15,value);
-
-#if DEBUG
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options15);
-    if(debugoptions)  printf("\tComputer cooperative mode: %d\n",state);
-#endif    
-
-    value=GameParametres(GET,GQUEEN,0);
-    gtk_toggle_button_set_active((GtkToggleButton *)options16,value);
-
-#if DEBUG
-    state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
-    if(debugoptions)  printf("\tQueen mode: %d\n",state);
-#endif
-    }
-
-  /* show window */
-  gtk_widget_show(winoptions);
-  return 0;
-}
-
-
-gint QuitWindowOptions(GtkWidget *widget,gpointer gdata){
-
-  //  g_print("%s\n",(char *) gdata);
-  gtk_widget_hide((GtkWidget *)winoptions);
-  return TRUE;
-}
-/* --options window */
-
-gint ShowWindowAbout(GtkWidget *widget,gpointer gdata){
-
-  /* show window */
-  gtk_widget_show((GtkWidget *)winabout);
-  return TRUE;
-}
-
 gint ShowWindow(GtkWidget *widget,gpointer gdata){
-
+  
   /* show window */
   gtk_widget_show((GtkWidget *)gdata);
   return TRUE;
@@ -3666,9 +3776,9 @@ gint ShowWindow(GtkWidget *widget,gpointer gdata){
 
 
 gint QuitWindow(GtkWidget *widget,gpointer gdata){
-
+  printf("QUIT 1 window\n");
   gtk_widget_hide((GtkWidget *)gdata);
-  printf("QUIT window\n");
+  printf("QUIT 2 window\n");
   return TRUE;
 }
 
@@ -3677,7 +3787,7 @@ GtkWidget *CreateMenuItem(GtkWidget *menu,
 			  char *Name,char *Accel,char *Tip,
 			  GtkSignalFunc func,
 			  gpointer data){
-
+  
   GtkWidget *menuitem;
   if(Name && strlen(Name)){
     menuitem=gtk_menu_item_new_with_label(Name);
@@ -3687,36 +3797,36 @@ GtkWidget *CreateMenuItem(GtkWidget *menu,
   }else{
     menuitem=gtk_menu_item_new();
   }
-
+  
   gtk_menu_append(GTK_MENU(menu),menuitem);
   gtk_widget_show(menuitem);
-
-
+  
+  
   return(menuitem);
-
+  
 }
 
 GtkWidget *CreateBarSubMenu(GtkWidget *menu,char *szName){
-
+  
   GtkWidget *menuitem;
   GtkWidget *submenu;
-
+  
   menuitem=gtk_menu_item_new_with_label(szName);
   gtk_menu_bar_append(GTK_MENU_BAR(menu),menuitem);
   gtk_widget_show(menuitem);
   submenu=gtk_menu_new();
   gtk_menu_item_set_submenu(GTK_MENU_ITEM(menuitem),submenu);
- 
- return(submenu);
-
+  
+  return(submenu);
+  
 }
 
 void SetDefaultKeyValues(struct Keys *key,int action){
   int i;
-
+  
   key->load=key->save=FALSE;
   key->up=key->down=key->right=key->left=key->back=FALSE;
-  key->space=key->trace=key->tab=key->enter=FALSE;
+  key->fire.state=key->centermap=key->trace=key->tab=key->enter=FALSE;
   key->o=key->s=key->n=key->l=FALSE;
   key->i=key->e=key->y=key->u=FALSE;
   key->f1=key->f2=key->f3=key->f4=key->f7=key->f8=key->f9=key->f10=FALSE;
@@ -3724,9 +3834,11 @@ void SetDefaultKeyValues(struct Keys *key,int action){
   key->d=FALSE;
   key->home=key->Pagedown=key->Pageup=key->may=key->ctrl=FALSE;
   for(i=0;i<10;i++)key->number[i]=FALSE;
+  key->plus=key->minus=FALSE;
 
   /* don't reset this values when load a game */
   if(action){
+    key->fire.value=32;
     key->m=FALSE;
     key->f5=key->f6=FALSE;
   }
@@ -3933,7 +4045,7 @@ void Shift(int action,int ulx,int objid,float *z,float *x,float *y){
       }
     }
     
-    if(keys.space==TRUE && keys.o==FALSE){
+    if(keys.centermap==TRUE && keys.o==FALSE){
       cvx=cvy=0;
     }
     
@@ -4185,7 +4297,7 @@ void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
   int i=0;
   int x,y;
   int gwidth,gheight;
-  char cad[128];
+  char cad[MAXTEXTLEN];
   static int len0=0;
   static int textwidth=0;
   static int textheight=0;
@@ -4219,13 +4331,13 @@ void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
 		     textheight*(nplayers)+4);
 
 
-  snprintf(cad,128,"Game statistics:");
+  snprintf(cad,MAXTEXTLEN,"Game statistics:");
   DrawString(pixmap,gfont,penWhite,x,y+textheight,cad);
 
   /* HERE: send kills and deaths to client */
 
   for(i=1;i<nplayers;i++){
-    snprintf(cad,128,"player: %s, [L%d], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
+    snprintf(cad,MAXTEXTLEN,"player: %s, [L%d], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
 	     pl[i].playername,pl[i].maxlevel,
 	     pl[i].nships,pl[i].nbuildships,
 	     pl[i].nplanets,pl[i].nkills,
@@ -4397,6 +4509,14 @@ void DrawCharList (GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct CharListH
   return;
 }
 
+void DrawBarBox (GdkPixmap *pixmap,GdkGC *color,int x,int y,int w,int h,float value){
+
+  int n;
+  n=value*w;
+  gdk_draw_rectangle(pixmap,color,TRUE,x,y,n,h);
+  gdk_draw_rectangle(pixmap,color,FALSE,x,y,w,h);
+
+}
 
 void DrawWindow(GdkPixmap *pixmap,GdkFont *font,GdkGC *color0,int x0,int y0,int type,struct Window *w){
   struct CharListHead *hlist;

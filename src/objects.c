@@ -785,7 +785,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
       }
     }
     if(swx){
-      Explosion(lhobjs,ls->obj);
+      Explosion(lhobjs,ls->obj,0);
       /* sound */
 #if SOUND
       Play(ls->obj,EXPLOSION0,1);
@@ -1119,7 +1119,7 @@ int GetSegment(Segment *segment,Object *obj){
 
 
 
-void Explosion(struct HeadObjList *lh,Object *obj){
+void Explosion(struct HeadObjList *lh,Object *obj,int type){
   /*
     Create explosion objects.
    */  
@@ -1129,18 +1129,41 @@ void Explosion(struct HeadObjList *lh,Object *obj){
   Object *nobj;
   /*  return; */
   /*  printf("Explosion of object %d type %d stype:%d\n",obj->id,obj->type,obj->subtype); */
-  for(i=0;i<16;i++){  
-    a=2.*PI*(Random(-1));
-    v=2.*VELMAX*(Random(-1)); 
-    vx=2.*v*cos(a) + obj->vx;
-    vy=2.*v*sin(a) + obj->vy;
-    nobj=NewObj(lh,PROJECTILE,EXPLOSION,obj->x,obj->y,vx,vy,
-		CANNON0,ENGINE0,obj->player,obj,obj->in);
-    if(nobj!=NULL){
-      Add2ObjList(lh,nobj);
-      nobj->parent=NULL;
+  switch (type){
+  case 0: /* ship destroyed */
+    for(i=0;i<16;i++){  
+      a=2.*PI*(Random(-1));
+      v=2.*VELMAX*(Random(-1)); 
+      vx=v*cos(a) + obj->vx;
+      vy=v*sin(a) + obj->vy;
+      nobj=NewObj(lh,PROJECTILE,EXPLOSION,obj->x,obj->y,vx,vy,
+		  CANNON0,ENGINE0,obj->player,obj,obj->in);
+      if(nobj!=NULL){
+	Add2ObjList(lh,nobj);
+	nobj->parent=NULL;
+      }
+      /*    printf("%d ",i); */
     }
-    /*    printf("%d ",i); */
+    break;
+  case 1: /* ship hitted */
+    for(i=0;i<4;i++){  
+      a=2.*PI*(Random(-1));
+      v=VELMAX*(Random(-1)); 
+      vx=v*cos(a) + obj->vx;
+      vy=v*sin(a) + obj->vy;
+      nobj=NewObj(lh,PROJECTILE,EXPLOSION,obj->x,obj->y,vx,vy,
+		  CANNON0,ENGINE0,obj->player,obj,obj->in);
+      if(nobj!=NULL){
+	Add2ObjList(lh,nobj);
+	nobj->parent=NULL;
+      }
+      /*    printf("%d ",i); */
+    }
+    break;
+  default:
+    fprintf(stderr,"Error Explosion(): type %d not implemented\n",type);
+    exit(-1);
+    break;
   }
 }
 
@@ -3955,7 +3978,7 @@ int CreatePilot( Object *obj){
   obj->weapon0.n=0;
   obj->weapon1.n=0;
   obj->weapon2.n=0;
-  Explosion(&listheadobjs,obj);
+  Explosion(&listheadobjs,obj,0);
 #if SOUND
   if(obj->habitat==H_PLANET)
     Play(obj,EXPLOSION0,1);

@@ -555,7 +555,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     case GOTO:
     case RETREAT:
 #if DEBUG
-      if(cv==obj )printf("(%d): GOTO  time:%d g:%f\n",obj->id,time,order.h);
+      if(cv==obj && debugai)printf("(%d): GOTO  time:%d g:%f\n",obj->id,time,order.h);
       if(cv==obj && debugai)printf("(%d): GOTO  time:%d\n",obj->id,time);
 #endif
       if(obj->habitat==H_PLANET){

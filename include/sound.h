@@ -44,17 +44,22 @@
 #define NUM_BUFFERS 10
 
 /* sound names */ 
-#define FIRE0 0
-#define EXPLOSION0 1
-#define THRUST 2
-#define CRASH 3
-#define MUSIC 4
+#define MUSIC 0
+#define FIRE0 1
+#define EXPLOSION0 2
+#define THRUST 3
+#define CRASH 4
+
 
 #define SSTOP 0
 #define SPLAY 1
 #define SPAUSE 2
 
+/* sound actions */
 
+#define VOLSET 0
+#define VOLGET 1
+#define VOLINC 2
 
 struct Sourcetable{
   ALuint source;
@@ -69,6 +74,7 @@ int PlaySound(int sid,int mode,float vol);
 int Wait2FinishSound(void);
 int CleanBuffers(void);
 int StopSound(int sid);
-int SetSoundVolume(float Svol);
+float SetSoundVolume(float vol,int action);
+float SetMusicVolume(float vol,int action);
 
 #endif

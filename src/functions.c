@@ -26,7 +26,7 @@
 #include <time.h>
 #include "functions.h"
 #include "general.h"
-
+#include "sound.h"
 
 float Random(int a){
 /*
@@ -211,12 +211,37 @@ int GameParametres(int option,int param,int value){
     case GKPLANETS:        /* TRUE FALSE planets known or unknown */ 
       game.kplanets=value;
       break;
-    case GMUSIC:          /* TRUE FALSE game paused */
+    case GMUSIC:          /* TRUE FALSE music on/off */
       game.music=value;
+      if(game.music==0){
+	SetMusicVolume(0,VOLSET);
+      }
+      else{
+	SetMusicVolume((float)game.musicvol/100,VOLSET);
+      }
       break;
-    case GSOUND:          /* TRUE FALSE game paused */
+    case GSOUND:          /* TRUE FALSE sound on/off */
       game.sound=value;
+      if(game.sound==0){
+	SetMusicVolume(0,VOLSET);
+	SetSoundVolume(0,VOLSET);
+      }
+      else{
+	SetMusicVolume((float)game.musicvol/100,VOLSET);
+	SetSoundVolume((float)game.soundvol/100,VOLSET);
+      }
+
       break;
+    case GMUSICVOL:          /* 0..100 music volume */
+      game.musicvol=value;
+      SetMusicVolume((float)value/100,VOLSET);
+      break;
+    case GSOUNDVOL:          /* 0..100 sound volume */
+      game.soundvol=value;
+      SetSoundVolume((float)value/100,VOLSET);
+      break;
+
+
     case GPAUSED:          /* TRUE FALSE game paused */
       game.paused=value;
       break;
@@ -239,8 +264,8 @@ int GameParametres(int option,int param,int value){
       game.nplayers=NUMPLAYERS;
       game.nplanets=NUMPLANETS;
       game.kplanets=PLANETSKNOWN;
-      game.music=TRUE;
-      game.sound=TRUE;
+      game.music=100;
+      game.sound=100;
       game.paused=FALSE;
       game.quit=0; /*  possible values 0,1,2 */
       break;
@@ -303,6 +328,13 @@ int GameParametres(int option,int param,int value){
     case GSOUND:          /* TRUE FALSE game paused */
       ret=game.sound;
       break;
+    case GMUSICVOL:          /* TRUE FALSE game paused */
+      ret=game.musicvol;
+      break;
+    case GSOUNDVOL:          /* TRUE FALSE game paused */
+      ret=game.soundvol;
+      break;
+
     case GPAUSED:          /* TRUE FALSE game paused */
       ret=game.paused;
       break;

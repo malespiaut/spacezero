@@ -47,6 +47,7 @@ struct Draw{
   int order;
   int info;
   int crash;
+  int volume;
 };
 
 
@@ -68,9 +69,10 @@ void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data);
 GtkWidget *CreateSubMenu(GtkWidget *menu,char *szName);
 gint ShowWindow(GtkWidget *widget,gpointer gdata);
 gint QuitWindow(GtkWidget *widget,gpointer gdata);
-gint ShowWindowOptions(GtkWidget *widget,gpointer gdata);
 
-gint SaveOptions(GtkWidget *widget,gpointer gdata);
+gint ShowWindowOptions(GtkWidget *widget,gpointer gdata);
+gint SaveWindowOptions(GtkWidget *widget,gpointer gdata);
+
 gint SetDefaultOptions(GtkWidget *widget,gpointer gdata);
 gint PrintMessage(GtkWidget *widget,gpointer gdata);
 GtkWidget *CreateMenuItem(GtkWidget *menu,
@@ -92,7 +94,7 @@ void DrawPlanet(GdkPixmap *pixmap,int x,int y, int r);
 void DrawStars(GdkPixmap *pixmap,int,float,float);
 void DrawPlanetSurface(GdkPixmap *pixmap,struct Planet *planet,  GdkGC *color);
 void DrawAsteroid(GdkPixmap *pixmap,int x,int y,Object *obj);
-int DrawRadar(GdkPixmap *pixmap,Object *,struct HeadObjList *);
+int DrawRadar(GdkPixmap *pixmap,Object *,struct HeadObjList *,int crash);
 void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList,Object *cv,int ulx);
 void DrawSpaceShip(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc);
 
@@ -110,6 +112,7 @@ void DrawMessageBox(GtkWidget *d_area,GdkPixmap *pixmap,GdkFont *font,char *cad,
 
 void DrawCharList (GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct CharListHead *hlist,int x0,int y0);
 void DrawWindow (GdkPixmap *pixmap,GdkFont *font,GdkGC *color,int x0,int y0,int type,struct Window *W);
+void DrawBarBox (GdkPixmap *pixmap,GdkGC *color,int x0,int y0,int w,int h,float value);
 int WindowFocus(struct Window *w);
 int ActWindow(struct Window *w);
 

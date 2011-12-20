@@ -42,11 +42,12 @@ char filesoundnames[NUM_SOUNDS][MAXTEXTLEN];
 
 
 char *soundnames[NUM_SOUNDS]={ 
+  "music.wav",
   "bfire.wav",
   "explos.wav",
   "thrust.wav",
-  "crash.wav",
-  "music.wav"};
+  "crash.wav"};
+
 
 
 ALuint sources[NUM_SOURCES];
@@ -292,7 +293,6 @@ int PlaySound(int sid,int mode,float vol){
       return(1);
     }
   }
-
 
   bufferid=-1;
   sourceid=-1;
@@ -647,19 +647,89 @@ int Sound(int mode,int sid){
 }
 
 
-int SetSoundVolume(float Svol){
+int SetSoundVolume_00(float Svol){
   int i;
   ALfloat oldgain;
-
+  printf("SetSoundVolumen(): param: %f\n",Svol);
   if(Svol<0||Svol>1)return(1);
 
   for(i=0;i<NUM_SOURCES;i++){
     alGetSourcef(sources[i],AL_GAIN,&oldgain);
-    /*    printf("SetSoundVolumen(): old gain(%d) %f\n",i,oldgain); */
-    alSourcef(sources[i],AL_GAIN,oldgain*Svol/Ssoundvol);
-    /*    alGetSourcef(sources[i],AL_GAIN,&oldgain); */
-    /*    printf("SetSoundVolumen(): new gain(%d) %f\n",i,oldgain); */
+    printf("SetSoundVolumen(): old gain(%d) %f\n",i,oldgain); 
+    //    alSourcef(sources[i],AL_GAIN,oldgain*Svol/Ssoundvol);
+    alSourcef(sources[i],AL_GAIN,Svol);
+    printf("SetSoundVolumen(): new gain(%d) %f\n",i,oldgain); 
+    printf("--SetSoundVolumen():  %f %f %f\n",Svol,oldgain,Smusicvol);
   }
   Ssoundvol=Svol;
   return(0);
 }
+
+int SetMusicVolume_00(float Svol,int action){
+
+  printf("SetMusicVolumen(): param: %f\n",Svol);
+  if(Svol<0||Svol>1)return(1);
+
+  printf("--SetMusicVolumen():  %f %f\n",Svol,Smusicvol);
+
+  alSourcef(sources[0],AL_GAIN,Svol);
+  Smusicvol=Svol;
+  return(0);
+}
+
+float SetSoundVolume(float vol,int action){
+  int i;
+  ALfloat nvol=0;
+
+  switch(action){
+  case VOLSET:
+    nvol=vol;
+    break;
+  case VOLGET:
+    return(Ssoundvol);
+    break;
+  case VOLINC:
+    nvol=Ssoundvol+vol;
+    break;
+  default:
+    break;
+  }
+  if(nvol>1)nvol=1;
+  if(nvol<0)nvol=0;
+
+  alSourcef(sources[0],AL_GAIN,nvol*Smusicvol); /* music volume */
+  for(i=1;i<NUM_SOURCES;i++){
+    alSourcef(sources[i],AL_GAIN,nvol);
+  }
+  Ssoundvol=nvol;
+  //  printf("Volume: %d\n",(int)(100*nvol));
+  return(Ssoundvol);
+}
+
+
+float SetMusicVolume(float vol,int action){
+  ALfloat nvol=0;
+
+  switch(action){
+  case VOLSET:
+    nvol=vol;
+    break;
+  case VOLGET:
+    return(Smusicvol);
+    break;
+  case VOLINC:
+    if(vol==0)return(Smusicvol);
+    nvol=Smusicvol+vol;
+    break;
+  default:
+    break;
+  }
+  if(nvol>1)nvol=1;
+  if(nvol<0)nvol=0;
+  
+  alSourcef(sources[0],AL_GAIN,nvol);
+
+  Smusicvol=nvol;
+  return(Smusicvol);
+}
+

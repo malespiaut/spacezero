@@ -647,36 +647,6 @@ int Sound(int mode,int sid){
 }
 
 
-int SetSoundVolume_00(float Svol){
-  int i;
-  ALfloat oldgain;
-  printf("SetSoundVolumen(): param: %f\n",Svol);
-  if(Svol<0||Svol>1)return(1);
-
-  for(i=0;i<NUM_SOURCES;i++){
-    alGetSourcef(sources[i],AL_GAIN,&oldgain);
-    printf("SetSoundVolumen(): old gain(%d) %f\n",i,oldgain); 
-    //    alSourcef(sources[i],AL_GAIN,oldgain*Svol/Ssoundvol);
-    alSourcef(sources[i],AL_GAIN,Svol);
-    printf("SetSoundVolumen(): new gain(%d) %f\n",i,oldgain); 
-    printf("--SetSoundVolumen():  %f %f %f\n",Svol,oldgain,Smusicvol);
-  }
-  Ssoundvol=Svol;
-  return(0);
-}
-
-int SetMusicVolume_00(float Svol,int action){
-
-  printf("SetMusicVolumen(): param: %f\n",Svol);
-  if(Svol<0||Svol>1)return(1);
-
-  printf("--SetMusicVolumen():  %f %f\n",Svol,Smusicvol);
-
-  alSourcef(sources[0],AL_GAIN,Svol);
-  Smusicvol=Svol;
-  return(0);
-}
-
 float SetSoundVolume(float vol,int action){
   int i;
   ALfloat nvol=0;

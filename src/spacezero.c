@@ -82,7 +82,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.57"};
+char version[64]={"0.81.58"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Dec. 2011"};
@@ -512,6 +512,9 @@ gint MenuLoop(gpointer data){
   default:
     break;
   }
+
+  if(param.menu==FALSE)swexit++;
+
   if(swexit){
     char title[64]="";
     gdraw.menu=FALSE;

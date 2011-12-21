@@ -71,7 +71,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   
 
   int i;
-  char arg[27]="";
+  char arg[28]="";
 
   struct Validargum validarg[]={{"h",ARG_h},{"g",ARG_g},{"n",ARG_n},
 				{"p",ARG_p},{"t",ARG_t},{"l",ARG_l},
@@ -84,6 +84,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 				{"compcooperative",ARG_compcooperative},
 				{"queen",ARG_queen},
 				{"nopirates",ARG_pirates},
+				{"nomenu",ARG_nomenu},
 				{"",ARG_0}};
   int narg=0;
   FILE *fp;
@@ -399,6 +400,9 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       case ARG_pirates:
 	par->pirates=FALSE;
 	break;
+      case ARG_nomenu:
+	par->menu=FALSE;
+	break;
 
       default:
 	printf("\ninvalid option -%s\n",arg);
@@ -449,6 +453,10 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "\nGENERAL OPTIONS:\n" );
   (void) fprintf( stdout, 
+		  "-soundvol n\t where n is the sound volume. (0..100)\n" );
+  (void) fprintf( stdout, 
+		  "-musicvol n\t where n is the music volume. (0..100)\n" );
+  (void) fprintf( stdout, 
 		  "-nosound\t sound disabled.\n" );
   (void) fprintf( stdout, 
 		  "-nomusic\t music disabled.\n" );
@@ -456,6 +464,8 @@ void Usage(char *ver,char *l_rev){
 		  "-name playername where playername is the name of the player.\n" );
   (void) fprintf( stdout, 
 		  "-f font\t\t change the default font by font.\n" );
+  (void) fprintf( stdout, 
+		  "-nomenu \t Starts automatically, without menu.\n" );
   (void) fprintf( stdout, 
 		  "\nGAME OPTIONS:\n" );
   (void) fprintf( stdout, 
@@ -754,6 +764,7 @@ void SetDefaultParamValues(struct Parametres *par){
   par->queen=FALSE;
 
   par->pirates=TRUE;
+  par->menu=TRUE;
 
   par->server=FALSE;
   par->client=FALSE;

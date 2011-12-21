@@ -52,6 +52,7 @@
 #define ARG_pirates 20
 #define ARG_font 21
 #define ARG_geom 22
+#define ARG_nomenu 23
 
 struct Parametres{
   int ngalaxies;
@@ -68,6 +69,7 @@ struct Parametres{
   int compcooperative;
   int queen;
   int pirates;
+  int menu;
   int server;
   int client;
   char IP[MAXTEXTLEN];

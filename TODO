@@ -33,7 +33,9 @@ bugs:(last:120)
 -[97](150411) torre modificada a SENDOBJALL en distinto procesador
       CheckModifiedPre(): PROC: 0 obj 1782 (159) player: 4 type 1 stype 6 mod: 37 time: 182007
 -[100](060511)enemy state bar greater than 100 (with very close planets, in net game, maybe unknown state)
--[101](105011)32/64 bits Gdk-WARNING **: GdkWindow 0x2e00005 unexpectedly destroyed ??(after ubuntu update, no more)(it continues)(happens after screensaver)
+-[101](105011)32/64 bits Gdk-WARNING **: GdkWindow 0x2e00005
+ unexpectedly destroyed ??(after ubuntu update, no more)(it
+ continues)(happens after screensaver¿?)
 -[115]-geom 1000x-12 check all arguments...
 	    -geom -name hola
 -[117]why dont explore (save08)(the last ship, no unknown planets)
@@ -67,7 +69,7 @@ Version 0.8 (since 10May2011)
 -!!In terminal, messages repite so much.
 -!!In pause mode consumes CPU, redraw every 5 steps..
 -Dont createlists in execload()
--Explosions: add ship parts
+-Explosions: add ship parts.
 -!!Merge UpdateShip() y UpdateAsteroid() ??
 -!!Improve CreateContainerList()
 -!!Improve Risk()
@@ -150,7 +152,7 @@ Version 1.0
 
 -Multiplayer. (+ of two players)
 -3D world interaction.
--Bitmaps??
+-Bitmaps, SDL, opengl??
 
 /*********************************************************************************/
 DONE:Version 0.80 (since 10 May. 2011)
@@ -203,9 +205,15 @@ X-!!if asteroids are near a planet continous take off and return to planet for f
 X-!!dont take off when change to automatic mode.
 X-(081111)Fix: Asteroids are no more visible everywhere - ID: 3434531
 X-(081111)Fix:  "short" planets advantage towers - ID: 3433655 
-X-(141111)Added: Answers to orders are now showed in orders window.
+		X-(141111)Added: Answers to orders are now showed in orders window.
 X-(071211)Added: log message window.  F7
 X-(151211)[120] Planets are not discovered nor shown in map - ID: 3439466
+X-(151211)added: Esc: close info windows.
+X-(171211)remove flash ligth when hit. - ID: 3433714
+X-(171211)added: explosions with pieces blowing up.
+X-(191211)normalized sounds. New thrust sound.
+X-(201211)Added: volume control: Ctrl +, Ctrl -
+X-(211111)Added: -nomenu option
 
 BUGS version 0.80
 =================

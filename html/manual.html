@@ -838,26 +838,52 @@
 	<a name="commandline"></a>	      
 	<h3>Command line options:</h3>
 	
-	<table border="1" width="600"><tbody>
-	  <tr><td>-h.       </td><td>Brief help.</td></tr>
-	  <tr><td>-n n.     </td><td>Where n is the number of planets.(default 30)</td></tr>
-	  <tr><td>-p n.     </td><td>Where n is the number of players.(default 2)</td></tr>
-	  <tr><td>-g n.     </td><td>Where n is the number of galaxies.(default 1)</td></tr>
-	  <tr><td>-l n.     </td><td>Where n is the size of the Universe.(default 100000)</td></tr>
-	  <tr><td>-k.       </td><td>Planets are known by all the players.</td></tr>
-	  <tr><td>-cooperative.         </td><td>Cooperative mode.</td></tr>
-	  <tr><td>-compcooperative.         </td><td>Computer cooperative mode.</td></tr>
-	  <tr><td>-queen.         </td><td>Queen mode.</td></tr>
-	  <tr><td>-nopirates.         </td><td>Don't add a team of pirates.</td></tr>
-	  <tr><td>-nosound.         </td><td>Sound disabled.</td></tr>
-	  <tr><td>-nomusic.         </td><td>Music disabled.</td></tr>
-	  <tr><td>-s, -c.     </td><td>Server,client mode.</td></tr>
-	  <tr><td>-ip IP.   </td><td>Where IP is the ip of the server.</td></tr>
-	  <tr><td>-port n.  </td><td>Where n is the port used for communication.</td></tr>
-	  <tr><td>-name playername. </td><td>Where playername is the name of the player.</td></tr>
-	  <tr><td>-f font.  </td><td>Change the default font by font.</td></tr>
-	  <tr><td>-geom widthxheigth. </td><td>Define the size of the main window.</td></tr>
+	<table border="0" width="700"><tbody>
+	    <tr><td width="80">Usage is:</td><td> spacezero [GENERAL OPTIONS] [GAME OPTIONS]</td></tr>
+	    <tr><td></td><td>spacezero [GENERAL OPTIONS] -s [MULTIPLAYER OPTIONS] [GAME OPTIONS] </td></tr>
+	    <tr><td></td><td>spacezero [GENERAL OPTIONS] -c [MULTIPLAYER OPTIONS]</td></tr>
+	    <tr><td></td><td>          spacezero -h</td></tr>
 	</tbody></table>
+        <br>
+	<table border="0" width="600"><tbody>
+	  <tr><td>-s     </td><td>Server mode. (multiplayer)</td></tr>
+	  <tr><td>-c     </td><td>Client mode. (multiplayer)</td></tr>
+	  <tr><td>-h         </td><td>This help.</td></tr>
+	</tbody></table>
+	<br>
+	<table border="1" width="600"><tbody>
+	    <th>GENERAL OPTIONS</th>
+	    <tr><td>-soundvol n </td><td>where n is the sound volume. (0..100)</td></tr>
+	    <tr><td>-musicvol n </td><td>where n is the music volume. (0..100)</td></tr>
+	    <tr><td>-nosound.         </td><td>Sound disabled.</td></tr>
+	    <tr><td>-nomusic.         </td><td>Music disabled.</td></tr>
+	    <tr><td>-nomenu.         </td><td>Starts automatically, without menu.</td></tr>
+	    <tr><td>-name playername. </td><td>Where playername is the name of the player.</td></tr>
+	    <tr><td>-f font.  </td><td>Change the default font by font.</td></tr>
+	</tbody></table>
+	<br>
+	<table border="1" width="600"><tbody>
+	    <th>GAME OPTIONS</th>
+	    <tr><td>-geom widthxheigth. </td><td>Define the size of the main window.</td></tr>
+	    <tr><td>-n n.     </td><td>Where n is the number of planets.(default 30)</td></tr>
+	    <tr><td>-p n.     </td><td>Where n is the number of players.(default 2)</td></tr>
+	    <tr><td>-g n.     </td><td>Where n is the number of galaxies.(default 1)</td></tr>
+	    <tr><td>-l n.     </td><td>Where n is the size of the Universe.(default 100000)</td></tr>
+	    <tr><td>-k.       </td><td>Planets are known by all the players.</td></tr>
+	    <tr><td>-cooperative.         </td><td>Cooperative mode.</td></tr>
+	    <tr><td>-compcooperative.         </td><td>Computer cooperative mode.</td></tr>
+	    <tr><td>-queen.         </td><td>Queen mode.</td></tr>
+	    <tr><td>-nopirates.         </td><td>Don't add a team of pirates.</td></tr>
+	</tbody></table>
+	
+	<br>
+	<table border="1" width="600"><tbody>
+	    <th>MULTIPLAYER OPTIONS</th>
+	    <tr><td>-ip IP.   </td><td>Where IP is the ip of the server.</td></tr>
+	    <tr><td>-port n.  </td><td>Where n is the port used for communication.</td></tr>
+	</tbody></table>
+	
+
 	
 	<br>
 </td></tr></tbody></table>

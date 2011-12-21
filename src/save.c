@@ -1843,17 +1843,10 @@ int LoadParamOptions(char *file,struct Parametres *par){
 	 &par->sound,&par->music,&par->soundvol,&par->musicvol,
 	 &par->cooperative,&par->compcooperative,&par->queen,
 	 &par->pirates,&par->port);
-  printf("version: %s\n",version);  
-  printf("num galaxies: %d\n",par->ngalaxies);  
-
   fscanf(fp,"%128s",par->IP);
   fscanf(fp,"%128s",par->playername);
   fscanf(fp,"%128s",par->font);
   fscanf(fp,"%128s",par->geom);       
-  printf("version1: %s\n",par->IP);	    
-  printf("version2: %s\n",par->playername); 
-  printf("version3: %s\n",par->font);       
-  printf("version4: %s\n",par->geom);       
   fclose(fp);
   return(0);
 } 

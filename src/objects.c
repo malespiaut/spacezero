@@ -2264,6 +2264,8 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
     if(lh->next->info.source==source && lh->next->info.id==mid && lh->next->info.value==priority){ /* already added */
       //      if(priority)printf("message (%s)rejected\n",cad);
       return(1);
+      /* if(strncmp(cad,lh->info.text,24)==0){ */
+      /* } */
     }
 
     if(lh->next->info.value<priority){ /* added before end */

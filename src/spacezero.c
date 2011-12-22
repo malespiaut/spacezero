@@ -82,7 +82,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.58"};
+char version[64]={"0.81.59"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Dec. 2011"};
@@ -455,7 +455,7 @@ gint MenuLoop(gpointer data){
   x=width/2;
   y=height/9;
   sprintf(point,"SpaceZero");
-  DrawMessageBox(drawing_area,pixmap,font,point,x,y,MBOXDEFAULT);
+  DrawMessageBox(pixmap,font,point,x,y,MBOXDEFAULT);
 
 
   menuhead->active=TRUE;
@@ -739,7 +739,7 @@ gint MainLoop(gpointer data){
   }
   
   if(swmess){
-    DrawMessageBox(drawing_area,pixmap,gfont,pointmess,gwidth/2,0.3*gheight,MBOXBORDER);
+    DrawMessageBox(pixmap,gfont,pointmess,gwidth/2,0.3*gheight,MBOXBORDER);
   }
   
   if(GameParametres(GET,GPAUSED,0)==TRUE){
@@ -1176,9 +1176,6 @@ gint MainLoop(gpointer data){
 
 
     if(gdraw.gamelog==TRUE){
-      //      PrintCharList(&gamelog);
-      //      DrawCharList(pixmap,gfont,penWhite,&gamelog,10,10);
-      //      DrawWindow(pixmap,gfont,penWhite,10,10,1,(void *)&gameloglist);
       DrawWindow(pixmap,gfont,penWhite,10,10,1,&windowgamelog);
     }
 
@@ -1190,7 +1187,7 @@ gint MainLoop(gpointer data){
   }
   
   if(swmess){ 
-    DrawMessageBox(drawing_area,pixmap,gfont,pointmess,gwidth/2,0.3*gheight,MBOXBORDER);
+    DrawMessageBox(pixmap,gfont,pointmess,gwidth/2,0.3*gheight,MBOXBORDER);
   } 
   
   
@@ -4310,7 +4307,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
  /* net message */  
   if(PendingTextMessage()){
     GetTextMessage(point);
-    DrawString(pixmap,gfont,gcframe,wwidth2-incy*6,.25*wheight,point);
+    DrawMessageBox(pixmap,gfont,point,wwidth2,(int)(.25*wheight),MBOXBORDER);
   }
 
   /* game messages */

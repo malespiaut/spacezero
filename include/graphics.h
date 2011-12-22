@@ -108,7 +108,7 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *,Object *,i
 
 int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *head,int x0,int y0,int width,int height);
 void DrawString(GdkDrawable *pixmap,GdkFont *font,GdkGC *gc,gint x,gint y,const gchar *string);
-void DrawMessageBox(GtkWidget *d_area,GdkPixmap *pixmap,GdkFont *font,char *cad,int x0,int y0,int type);
+void DrawMessageBox(GdkPixmap *pixmap,GdkFont *font,char *cad,int x0,int y0,int type);
 
 void DrawCharList (GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct CharListHead *hlist,int x0,int y0);
 void DrawWindow (GdkPixmap *pixmap,GdkFont *font,GdkGC *color,int x0,int y0,int type,struct Window *W);

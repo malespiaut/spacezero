@@ -2406,7 +2406,6 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   ls=listheadnearobjs.next;
 
   while (ls!=NULL){
-
     if(ls->obj->habitat!=H_SPACE){ls=ls->next;continue;}
     x=x0+(ls->obj->x-objx+cvx)*factor;
     if(x<0||x>gwidth){ls=ls->next;continue;}
@@ -2418,6 +2417,11 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
     case PLANET:
       break;
     case SHIP:
+      if(gnet==TRUE){
+	if(proc!=players[ls->obj->player].proc){
+	  if(ls->obj->ttl<MINTTL){ls=ls->next;continue;}
+	  }
+      }
       switch(ls->obj->subtype){
       case PILOT:
 	{
@@ -2443,12 +2447,6 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 	}
 	break;
       default:
-	if(gnet==TRUE){
-	  if(proc!=players[ls->obj->player].proc){
-	    if(ls->obj->ttl<MINTTL){ls=ls->next;continue;}
-	  }
-	}
-	
 	gc=gcolors[players[ls->obj->player].color];
 	gdk_draw_line(pixmap,gc,
 		      x,gheight-y-2,
@@ -2529,7 +2527,12 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 
       break;
     case SHIP:
-     gc=gcolors[players[ls->obj->player].color];
+      gc=gcolors[players[ls->obj->player].color];
+      if(gnet==TRUE){
+	if(proc!=players[ls->obj->player].proc){
+	  if(ls->obj->ttl<MINTTL){ls=ls->next;continue;}
+	}
+      }
      switch(ls->obj->subtype){
      case PILOT:
        {
@@ -4367,12 +4370,11 @@ void DrawString(GdkDrawable *pixmap,GdkFont *font,GdkGC *gc,gint x,gint y,const 
 }
 
 
-
-void DrawMessageBox(GtkWidget *d_area,GdkPixmap *pixmap,GdkFont *font,char *cad,int x0,int y0,int type){
+void DrawMessageBox(GdkPixmap *pixmap,GdkFont *font,char *cad,int x0,int y0,int type){
   /*
     draw a text message centered at x0,y0
 */
-  GdkRectangle update_rect;
+  int x,y,width,height;
   int textw,texth;
 
   if(font!=NULL){
@@ -4383,20 +4385,20 @@ void DrawMessageBox(GtkWidget *d_area,GdkPixmap *pixmap,GdkFont *font,char *cad,
     texth=12;
     textw=12;
   }
-  update_rect.width=textw+2*texth;
-  update_rect.height=2*texth;
+  width=textw+2*texth;
+  height=2*texth;
 
-  update_rect.x=x0-update_rect.width/2;
-  update_rect.y=y0-update_rect.height/2;
-
+  x=x0-width/2;
+  y=y0-height/2;
+  if(x<10)x=10;
   
   gdk_draw_rectangle(pixmap,    
-		     d_area->style->black_gc,    
+		     penBlack,
 		     TRUE,   
-		     update_rect.x,
-		     update_rect.y,
-		     update_rect.width,
-		     update_rect.height);
+		     x,
+		     y,
+		     width,
+		     height);
   switch(type){
   case MBOXDEFAULT:
     break;
@@ -4404,21 +4406,17 @@ void DrawMessageBox(GtkWidget *d_area,GdkPixmap *pixmap,GdkFont *font,char *cad,
     gdk_draw_rectangle(pixmap,    
 		       penGreen,
 		       FALSE,   
-		       update_rect.x,
-		       update_rect.y,
-		       update_rect.width,
-		       update_rect.height);
+		       x,
+		       y,
+		       width,
+		       height);
     break;
   default:
     break;
 
   }  
 
-
-  DrawString(pixmap,font,penGreen,update_rect.x+texth,update_rect.y+1.5*texth,cad);
-  gtk_widget_queue_draw_area(d_area,update_rect.x,update_rect.y,
-			     update_rect.width+1,update_rect.height+1);
-  
+  DrawString(pixmap,font,penGreen,x+texth,y+1.5*texth,cad);
 }
 
 

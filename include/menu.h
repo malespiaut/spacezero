@@ -68,9 +68,13 @@
 #define ITEM_client 24
 #define ITEM_default 25 
 #define ITEM_fire 26
-#define ITEM_left 27
-#define ITEM_right 28
+#define ITEM_turnleft 27
+#define ITEM_turnright 28
 #define ITEM_accel 29
+#define ITEM_automode 30
+#define ITEM_manualmode 31
+#define ITEM_map 32
+#define ITEM_order 33
 
 
 

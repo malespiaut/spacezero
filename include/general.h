@@ -37,6 +37,8 @@
 #define SOUND 1  // compile with sound
 #define DEBUG 0
 #define TEST 0  // test stuff
+#define TESTNET 0 
+#define LATENCY 0 //80000000
 /*  --compile options: */
 
 #define MODI(a) ((a) > 0 ? (a) : (-a))
@@ -121,7 +123,7 @@
 #define SAVEFILESINGLE SAVEFILE0 
 #define RECORDFILE "record"
 #define OPTIONSFILE "options2"
-
+#define KEYBOARDFILE "keymap" 
 
 
 /* planet properties */
@@ -252,18 +254,17 @@ typedef struct{
 
 typedef struct{
   int state;
-  int value;
+  unsigned int value;
 }key;
 
 struct Keys{
   int load,save;
-  int left,right,up,down;  /* move ship */
+  int left,right,up,down;  /* move map */
   int tab;                 /* change to next ship */
   int may,ctrl,esc;
   int home;
   int Pagedown,Pageup;         /* next, previous planet */
   int f1,f2,f3,f4,f5,f6,f7,f8,f9,f10;   /* choose ship */
-  key fire;               /* fire */
   int centermap;           /* center map */
   int enter;               /* enter command */
   int back;                /* delete last letter */ 
@@ -273,13 +274,9 @@ struct Keys{
   int mdclick;             /* mouse double click*/
   int b;     /* buy ships */
   int s;     /* open charge  */
-  int m;     /* show map   */
-  int a;     /* switch to manual control */
   int n;     /* change navigation mode, no  */
-  int i;     /* switch to automatic control */
   int z;     /* zoom map */
   int l;     /* labels on/off */
-  int o;     /* comand shell */
   int p;     /* pause the game */
   int number[10]; /* shell */
   int g;  /* shell */
@@ -294,6 +291,13 @@ struct Keys{
   int y;  /* yes */
   int plus;
   int minus;
+  /* user defined keys  */
+  key fire;               /* fire */
+  key turnleft,turnright;
+  key accel;
+  key automode,manualmode;     /* switch to manual-auto control */
+  key map;
+  key order;
 };
 
 

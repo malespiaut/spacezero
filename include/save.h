@@ -43,8 +43,14 @@ int CreateDir(char *dir);
 char *CreateOptionsFile(void);
 char *CreateSaveFile(int server,int client);
 char *CreateRecordFile(void);
+char *CreateKeyboardFile(void);
+
+void SaveRecord(char *file,struct Player *players,int record);
 
 void SaveParamOptions(char *file,struct Parametres *par);
+void SaveUserKeys(char *file,struct Keys *keys);
+int LoadUserKeys(char *keyfile,struct Keys *keys);
+
 int LoadParamOptions(char *file,struct Parametres *par);
 void PrintParamOptions(struct Parametres *par);
 
@@ -60,11 +66,10 @@ int FprintfOrders(FILE *fp,Object *obj);
 int FscanfOrders(FILE *fp,Object *obj);
 int CountOrders(Object *obj);
 
-
 void FprintfCCData(FILE *fp,struct CCDATA *ccdata);
 void FscanfCCData(FILE *fp,struct CCDATA *ccdata);
-
 int CountPlanetInfoList(struct CCDATA *ccdata);
+
 void FprintfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo);
 void FprintfPlanetInfoList(FILE *fp,struct CCDATA *ccdata);
 void FscanfPlanetInfoList(FILE *fp,struct CCDATA *ccdata);

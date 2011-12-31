@@ -42,7 +42,8 @@ void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkFont *font,GdkGC *colo
 int Shell(int command,GdkPixmap *pixmap,GdkFont *,GdkGC *,struct HeadObjList *hl,struct Player *players,struct Keys *,Object **cv);
 Object *ExecOrder(struct HeadObjList *hl,Object *obj,int player,int order,char *par);
 void SelectionBox(Object **,int);
-int Keystrokes(int mode,char *c);
+int Keystrokes(int mode,guint *val,char *c);
+char Keyval2Char(guint keyval);
 
 int Get2Args(char *cad,char *arg1,char *arg2);
 

@@ -82,7 +82,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.59"};
+char version[64]={"0.81.60"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Dec. 2011"};
@@ -129,8 +129,6 @@ unsigned int contabilidad[15];
 int soundenabled=TRUE;
 /* -- sound */
 
-int gordermode=FALSE; /* FALSE nav mode, TRUE order mode */ 
-
 struct Draw gdraw;
 
 /*void signal_handler(int ,siginfo_t *,void *);*/
@@ -141,6 +139,7 @@ void segfault_handler(int);
 char *savefile;
 char *recordfile;
 char *optionsfile;
+char *keyboardfile;
 
 struct MenuHead *menuhead;
 
@@ -253,7 +252,7 @@ int main(int argc,char *argv[]){
 #endif
 
   for(i=0;i<15;i++)contabilidad[i]=0;
-  Keystrokes(RESET,NULL);
+  Keystrokes(RESET,NULL,NULL);
 
 #if TEST
   observeenemies=TRUE;
@@ -262,7 +261,7 @@ int main(int argc,char *argv[]){
   PrintWarnings(version);
   optionsfile=CreateOptionsFile();
   recordfile=CreateRecordFile();
-
+  keyboardfile=CreateKeyboardFile();
 #if TESTSAVE
     strcat(savefiletmp,"/tmp/tmpsavespacezero");
 #endif
@@ -284,6 +283,13 @@ int main(int argc,char *argv[]){
   PrintArguments(param,"Game arguments:");
   printf("NET: %d\n",GameParametres(GET,GNET,0));
 
+
+  /***** user defined keys ****/
+
+  printf("Setting default user keys\n");
+  SetDefaultUserKeys(&keys);
+  printf("Loading user keys\n");
+  LoadUserKeys(keyboardfile,&keys);
 
   /********** Graphics initialization **********/
   gtk_init(&argc,&argv);
@@ -486,13 +492,14 @@ gint MenuLoop(gpointer data){
     GameParametres(SET,GQUIT,2);
     gdraw.menu=FALSE;
     gdraw.main=TRUE;
-    Keystrokes(RESET,NULL);
+    Keystrokes(RESET,NULL,NULL);
     SetDefaultKeyValues(&keys,1);
     return(TRUE);
     break;
   case ITEM_default:
     printf("loading default \n"); 
     SetDefaultParamValues(&param);
+    SetDefaultUserKeys(&keys);
     break;
   case ITEM_server:
     param.server=TRUE;
@@ -519,12 +526,13 @@ gint MenuLoop(gpointer data){
     char title[64]="";
     gdraw.menu=FALSE;
     gdraw.main=TRUE;
-    Keystrokes(RESET,NULL);
+    Keystrokes(RESET,NULL,NULL);
     SetGameParametres(param);
     MakeTitle(param,title);
     gtk_window_set_title(GTK_WINDOW(win_main),title);
     if(swsaveoptions){
       SaveParamOptions(optionsfile,&param);
+      SaveUserKeys(keyboardfile,&keys);
     }
   }
   return(TRUE);
@@ -1059,20 +1067,20 @@ gint MainLoop(gpointer data){
   }
 
   if(keys.mright){
-    keys.o=TRUE;
+    keys.order.state=TRUE;
     keys.g=TRUE;
   }
 
-  if(keys.o==TRUE){
+  if(keys.order.state==TRUE){
     gdraw.order=TRUE;
   }
-  if(keys.m==TRUE){
+  if(keys.map.state==TRUE){
     
     if(!(Shell(1,NULL,NULL,NULL,NULL,NULL,NULL,NULL)==2 &&
 	 Shell(2,NULL,NULL,NULL,NULL,NULL,NULL,NULL)==WRITE)){
       gdraw.map=gdraw.map==TRUE?FALSE:TRUE;
     }
-    keys.m=FALSE;
+    keys.map.state=FALSE;
   }
   if(cv==NULL)gdraw.map=FALSE;
 
@@ -1201,7 +1209,7 @@ gint MainLoop(gpointer data){
     cv0=cv;     /* coordinates center */
     ShellTitle(2,NULL,NULL,NULL,NULL,0,0);
     Shell(0,pixmap,gfont,penGreen,&listheadobjs,&players[actual_player],&keys,&cv);
-    if(keys.o==FALSE)gdraw.order=FALSE;
+    if(keys.order.state==FALSE)gdraw.order=FALSE;
     if(cv!=NULL){
       if(cv->mode==SOLD){
 	cv=SelectObjInObj(&listheadplayer,cv->in->id,cv->player);
@@ -1421,6 +1429,9 @@ void key_eval(struct Keys *key){
   int gulx,guly;
   int proc;
   int keyf=-1;
+  int navcontrol=TRUE; /* FALSE nav mode, TRUE order mode */ 
+
+
 #if TEST
   Object *nobj;
   float x0,y0;
@@ -1462,7 +1473,7 @@ void key_eval(struct Keys *key){
 
 #if TEST
   /* Create pirates PRODUCTION */
-  if(key->ctrl==TRUE &&  key->i==TRUE){
+  if(key->ctrl==TRUE &&  key->automode.state==TRUE){
     if(proc==players[GameParametres(GET,GNPLAYERS,0)+1].proc){/* Send TO ai */
       x0=gulx*Random(-1)-gulx/2;
       y0=guly*Random(-1)-guly/2;
@@ -1503,8 +1514,8 @@ void key_eval(struct Keys *key){
     key->ctrl=FALSE;
     key->p=FALSE;
     Shell(0,NULL,NULL,NULL,NULL,NULL,NULL,NULL); /* reset shell() */
-    key->o=FALSE; /* aqui01 salir de order mode */
-    gordermode=FALSE;
+    key->order.state=FALSE; /* aqui01 salir de order mode */
+    navcontrol=TRUE;
     Sound(SPAUSE,MUSIC);
   }
 
@@ -1522,6 +1533,19 @@ void key_eval(struct Keys *key){
     key->mdclick=FALSE;
   }
 
+  if(1){
+    int x,y;
+    if(key->mleft==TRUE){
+      if(WindowFocus(&windowgamelog)){
+	MousePos(GET,&x,&y);
+	ActWindow(&windowgamelog);
+	key->mleft=FALSE;
+      }
+    }
+  }
+
+  /* --mouse */
+
   /* sound */
 
   if(key->ctrl==TRUE && (key->plus==TRUE||key->minus==TRUE)){
@@ -1537,25 +1561,22 @@ void key_eval(struct Keys *key){
     GameParametres(SET,GSOUNDVOL,param.soundvol);
 
   }
+  /* --sound */
 
-  if(1){
-    int x,y;
 
-    if(key->mleft==TRUE){
-      if(WindowFocus(&windowgamelog)){
-	MousePos(GET,&x,&y);
-	ActWindow(&windowgamelog);
-	key->mleft=FALSE;
-      }
-    }
+  navcontrol=TRUE;
+  if(key->order.state==TRUE)navcontrol=FALSE;
+  
+  /* in map view dont control the ship*/ 
+  if(gdraw.map==TRUE){
+    key->accel.state=key->turnleft.state=key->turnright.state=key->fire.state=FALSE;
+    key->automode.state=key->manualmode.state=FALSE;
   }
 
-  /* --mouse */
-
-  gordermode=FALSE;
-  if(key->o==TRUE)gordermode=TRUE;
-  switch(gordermode){
-  case FALSE: /* Nav mode */
+  switch(navcontrol){
+  case FALSE: /* order mode */
+    break;
+  case TRUE: /* Nav mode */
     /* f1 f2 f3 f4 */    
     keyf=-1;
     if(key->f1)keyf=0;
@@ -1687,10 +1708,10 @@ void key_eval(struct Keys *key){
 	if(cv==ship_c){ 
 	  if(ship_c->gas>0 && gdraw.map==FALSE){
 	    if(cv->type==SHIP&&cv->subtype==PILOT){
-	      key->up=key->left=key->right=key->fire.state=FALSE;
+	      key->accel.state=key->turnleft.state=key->turnright.state=key->fire.state=FALSE;
 	    }
 
-	    if(key->up==TRUE){
+	    if(key->accel.state==TRUE){
 	      ship_c->accel+=ship_c->engine.a;
 	      if(ship_c->accel>ship_c->engine.a_max)ship_c->accel=ship_c->engine.a_max;
 	      
@@ -1699,17 +1720,17 @@ void key_eval(struct Keys *key){
 	    else{
 	      ship_c->accel=0;
 	    }
-	    if(key->left==TRUE && ship_c->gas > ship_c->engine.gascost){
+	    if(key->turnleft.state==TRUE && ship_c->gas > ship_c->engine.gascost){
 	      ship_c->ang_a+=ship_c->engine.ang_a;
 	      if(ship_c->ang_a > ship_c->engine.ang_a_max)
 		ship_c->ang_a=ship_c->engine.ang_a_max; 
 	    }
-	    if(key->right==TRUE && ship_c->gas>ship_c->engine.gascost){
+	    if(key->turnright.state==TRUE && ship_c->gas>ship_c->engine.gascost){
 	      ship_c->ang_a-=ship_c->engine.ang_a;
 	      if(ship_c->ang_a < -ship_c->engine.ang_a_max) 
 		ship_c->ang_a = -ship_c->engine.ang_a_max; 
 	    }
-	    if(key->left==FALSE  && key->right==FALSE){
+	    if(key->turnleft.state==FALSE  && key->turnright.state==FALSE){
 	      ship_c->ang_a=0;
 	    }
 	    if(key->fire.state==TRUE && ship_c->gas > 2){
@@ -1743,7 +1764,7 @@ void key_eval(struct Keys *key){
       
       if(TEST||actual_player==actual_player0){ /* PRODUCTION */
 	
-	if(key->i==TRUE){
+	if(key->automode.state==TRUE){
 	  /* pressing 'i' the selected ship goes to automatic mode */
 	  if(GameParametres(GET,GQUIT,0)==0){
 	    if(cv->type==SHIP && 
@@ -1753,19 +1774,19 @@ void key_eval(struct Keys *key){
 		cv->subtype==TOWER)){
 	      ship_c=cv;
 	      ship_c->ai=1;
-	      key->a=FALSE;
-	      key->i=FALSE;
+	      key->manualmode.state=FALSE;
+	      key->automode.state=FALSE;
 	    }
 	  }
 	}
 	
-	if(key->a==TRUE && cv->type==SHIP && 
+	if(key->manualmode.state==TRUE && cv->type==SHIP && 
 	   /* pressing 'a' goes to manual mode */
 	   (cv->subtype==FIGHTER || cv->subtype==EXPLORER || cv->subtype==QUEEN || cv->subtype==TOWER)){
 	  ship_c=cv;
 	  ship_c->ai=0;
-	  key->a=FALSE;
-	  key->i=FALSE;
+	  key->manualmode.state=FALSE;
+	  key->automode.state=FALSE;
 	}
 
 	if(key->number[1]==TRUE){
@@ -1787,8 +1808,6 @@ void key_eval(struct Keys *key){
     }
     
     break;
-  case TRUE: /* order mode */
-    break;
   default:
     break;
   }
@@ -1800,8 +1819,8 @@ void key_eval(struct Keys *key){
 
   if(key->Pagedown|key->Pageup|key->home|key->tab){
     Shell(0,NULL,NULL,NULL,NULL,NULL,NULL,NULL); /* reset shell() */
-    key->o=FALSE; /* aqui01 salir de order mode */
-    gordermode=FALSE;
+    key->order.state=FALSE; /* aqui01 salir de order mode */
+    navcontrol=TRUE;
     key->p=FALSE;
     
     if(key->tab==TRUE){
@@ -1968,8 +1987,8 @@ void UpdateShip(Object *obj){
   obj->y0=obj->y;
 
   if(obj->mode==NAV){
-    obj->x+=obj->vx*DT+.5*(fx0)*DT*dtim;
-    obj->y+=obj->vy*DT+.5*(fy0)*DT*dtim;
+    obj->x+=(obj->vx+.5*(fx0)*dtim)*DT;
+    obj->y+=(obj->vy+.5*(fy0)*dtim)*DT;
   }
 
   /*** forces 2 ****/
@@ -2065,7 +2084,6 @@ void UpdateShip(Object *obj){
     if(obj->type==SHIP && obj->subtype!=PILOT) /* HERE TODO add artifact to engine*/
       obj->ang_v*=0.5;
   }
-
 
   ang0=obj->a;
   obj->a+=(obj->ang_v+0.5*obj->ang_a*100.*dtim)*DT;
@@ -2170,7 +2188,7 @@ void UpdateShip(Object *obj){
       /***** -- repair and refuel *****/
 
       /***** Learning, experience *****/
-      if(obj->type==SHIP && obj->subtype!=PILOT){ //HERE TODO pilots has no ship for training. must depend of pilot properties.
+      if(obj->type==SHIP && obj->state>99 && obj->subtype!=PILOT){ //HERE TODO pilots has no ship for training. must depend of pilot properties.
 	int mlevel=0;
 	float incexp;
 	int n;
@@ -4247,7 +4265,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
    *      order info 
    */
 
-  if(keys.o==FALSE){ 
+  if(keys.order.state==FALSE){ 
     gdraw.order=FALSE;
     /* DrawString(pixmap,gfont,penRed,10,wheight+GameParametres(GET,GPANEL,0)/2+4,  */
     /* 	       "O: Introduce command"); */
@@ -4986,27 +5004,6 @@ void PrintTeams(struct Player *players){
   }
 }
 
-
-void SaveRecord(char *file,struct Player *players,int record){
-  int i,j;
-  FILE *fp;
-
-  j=-1;
-  for(i=0;i<GameParametres(GET,GNPLAYERS,0);i++){
-    if(players[i].points>=record){
-      j=i;
-      record=players[i].points;
-    }
-  }
-  if(j!=-1){
-    if((fp=fopen(file,"wt"))==NULL){
-      fprintf(stdout,"I cant open the file: %s",file);
-      exit(-1);
-    }
-    fprintf(fp,"%d",record);
-    fclose(fp);
-  }
-}
 
 
 void InitGameVars(void){

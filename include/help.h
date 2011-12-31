@@ -91,6 +91,7 @@ int SearchArg(char *target,struct Validargum *v);
 void Usage(char *ver,char *l_rev);
 int Arguments(int argc,char *argv[],struct Parametres *,char *optfile);
 void SetDefaultParamValues(struct Parametres *par);
+void SetDefaultUserKeys(struct Keys *keys);
 int CheckArgs(struct Parametres p);
 int GetGeom(char *geom,int *w,int *h);
 

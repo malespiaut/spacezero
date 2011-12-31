@@ -51,13 +51,20 @@ SENDOBJUNMOD0
 #include "ai.h"
 #include "data.h"
 #include "functions.h"
+#include <time.h>
 
 #define SENDORDERS 1
 #define COMMDEBUG 0
 
+
+#if TESTNET
+struct timespec latency;
+#endif
+
 #if DEBUG
 int debugcomm1=0;
 #endif
+
 int debugpilot=0;
 
 extern struct HeadObjList listheadobjs;
@@ -404,8 +411,10 @@ void *CommServer(struct Thread_arg *args){
 #if COMMDEBUG
   int cont=0;
 #endif
-
-
+#if TESTNET
+  latency.tv_sec=0;
+  latency.tv_nsec=LATENCY;
+#endif
   sfd=args->sfd;
   sfd2=args->sfd2;
 
@@ -432,6 +441,7 @@ void *CommServer(struct Thread_arg *args){
 
   /* loop of communication */
   for(;;){ /* server */
+
     /* synchronization with main program  */
     sem_wait(&sem_barrier1); 
 
@@ -441,6 +451,10 @@ void *CommServer(struct Thread_arg *args){
 #endif
 
     SendBuffer(sfd,&buffer1);
+#if TESTNET
+    nanosleep(&latency,NULL);
+#endif
+
     fdatasync(sfd);
 
     switch(order2thread){
@@ -477,6 +491,9 @@ void *CommServer(struct Thread_arg *args){
     }
 
     RecvBuffer(sfd2,&buffer2);
+#if TESTNET
+    nanosleep(&latency,NULL);
+#endif
     status=ServerProcessBuffer(&buffer2);
     switch(status){
     case OTSENDKILL:
@@ -519,6 +536,11 @@ void *CommClient(struct Thread_arg * args){
   int cont=0;
 #endif
 
+#if TESTNET
+  latency.tv_sec=0;
+  latency.tv_nsec=LATENCY;
+#endif
+
   buf=buffer2.data;
   sfd=args->sfd;
   sfd2=args->sfd2;
@@ -554,6 +576,9 @@ void *CommClient(struct Thread_arg * args){
     sem_wait(&sem_barrier1); 
 
     RecvBuffer(sfd,&buffer2);
+#if TESTNET
+    nanosleep(&latency,NULL);
+#endif
       
     nbytes=sizeof(struct MessageHeader);
     
@@ -633,6 +658,9 @@ void *CommClient(struct Thread_arg * args){
     }
 
     SendBuffer(sfd2,&buffer1);
+#if TESTNET
+    nanosleep(&latency,NULL);
+#endif
     fdatasync(sfd2);
     sem_post(&sem_barrier); 
   }

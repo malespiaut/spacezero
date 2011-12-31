@@ -194,6 +194,38 @@ char *CreateOptionsFile(void){
 }
 
 
+char *CreateKeyboardFile(void){
+  /*
+    check if exists the keyborad file.
+    if no, creates it.
+   */
+  char *file;  
+
+  file=malloc(128*sizeof(char));
+  if(file==NULL){
+    fprintf(stderr,"ERROR in malloc ExecLoad()\n");
+    exit(-1);
+  }
+
+  strcpy(file,"");
+  strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
+  strcat(file,"/");
+  strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
+  strncat(file,"/",MAXTEXTLEN-strlen(file));
+  
+  /* Test if the configuration directory exists */
+  if(CreateDir(file)!=0){
+    printf("Cant create directory: %s\n",file);
+    exit(-1);
+  }
+  /* --Test if the directory exists */
+
+  strncat(file,KEYBOARDFILE,MAXTEXTLEN-strlen(file));
+  return(file);
+}
+
+
+
 int ExecSave(struct HeadObjList lh,char *nom){
   /*
     Save all the game to a file
@@ -1825,7 +1857,11 @@ int LoadParamOptions(char *file,struct Parametres *par){
     fprintf(stdout,"Cant open the file: %s",file);
     exit(-1);
   }
-  fscanf(fp,"%64s",optionsversion);
+
+  if(fscanf(fp,"%64s",optionsversion)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
   /* HERE check version */
 
   if(strcmp(optionsversion,MINOROPTIONSVERSION)>=0){
@@ -1838,15 +1874,30 @@ int LoadParamOptions(char *file,struct Parametres *par){
     return(1);
   }
 
-  fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
+  if(fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
 	 &par->ngalaxies,&par->nplanets, &par->nplayers, &par->ul,&par->kplanets,
 	 &par->sound,&par->music,&par->soundvol,&par->musicvol,
 	 &par->cooperative,&par->compcooperative,&par->queen,
-	 &par->pirates,&par->port);
-  fscanf(fp,"%128s",par->IP);
-  fscanf(fp,"%128s",par->playername);
-  fscanf(fp,"%128s",par->font);
-  fscanf(fp,"%128s",par->geom);       
+	    &par->pirates,&par->port)!=14){
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%128s",par->IP)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%128s",par->playername)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%128s",par->font)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%128s",par->geom)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
   fclose(fp);
   return(0);
 } 
@@ -1865,3 +1916,170 @@ void PrintParamOptions(struct Parametres *par){
   printf("font:\"%s\"\n",par->font);
   printf("geom:\"%s\"\n",par->geom);
 } 
+
+
+void SaveUserKeys(char *file,struct Keys *keys){
+
+  FILE *fp;
+
+  if((fp=fopen(file,"wt"))==NULL){
+    fprintf(stdout,"Cant open the file: %s",file);
+    exit(-1);
+  }
+  printf("saving keymap to file: %s\n",file);
+  fprintf(fp,"%s\n",version);
+  fprintf(fp,"fire %d\n",
+	  keys->fire.value);
+  fprintf(fp,"turnleft %d\n",
+	  keys->turnleft.value);
+  fprintf(fp,"turnright %d\n",
+	  keys->turnright.value);
+  fprintf(fp,"accel %d\n",
+	  keys->accel.value);
+  fprintf(fp,"automode %d\n",
+	  keys->automode.value);
+  fprintf(fp,"manualmode %d\n",
+	  keys->manualmode.value);
+  fprintf(fp,"map %d\n",
+	  keys->map.value);
+  fprintf(fp,"order %d\n",
+	  keys->order.value);
+  
+  fclose(fp);
+} 
+
+int LoadUserKeys(char *keyfile,struct Keys *keys){
+  FILE *fp;
+  char cad[MAXTEXTLEN];
+
+  if((fp=fopen(keyfile,"rt"))==NULL){
+    printf("file does not exist\n");
+
+    /* if doesn't exist, create with default values */
+    SaveUserKeys(keyfile,keys);
+
+  }
+  else{
+    fclose(fp);
+  }
+
+  /* Read keys  */
+
+  if((fp=fopen(keyfile,"rt"))==NULL){
+    fprintf(stdout,"I cant open the file: %s", keyfile);
+    exit(-1);
+  }
+    
+  if(fscanf(fp,"%128s",cad)!=1){ /* HERE check version */
+    perror("fscanf");
+    exit(-1);
+  }
+
+  if(strcmp(cad,MINOROPTIONSVERSION)>=0){
+    printf("Version:  game:(%s)  keymap file:(%s) >= %s  ... OK\n",
+	   version,cad,MINOROPTIONSVERSION);
+  }
+  else if(strcmp(cad,MINOROPTIONSVERSION)<0){
+    fprintf(stderr,"Error: incompatible versions.\n");
+    printf("Version:  game:(%s)  keymap file:(%s) < %s\n",
+	   version,cad,MINOROPTIONSVERSION);
+    fclose(fp);
+    return(1);
+  }
+
+  if(fscanf(fp,"%128s",cad)!=1){ 
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%d",&keys->fire.value)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+
+  if(fscanf(fp,"%128s",cad)!=1){ 
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%d",&keys->turnleft.value)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+
+  if(fscanf(fp,"%128s",cad)!=1){ 
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%d",&keys->turnright.value)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+
+  if(fscanf(fp,"%128s",cad)!=1){ 
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%d",&keys->accel.value)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+
+  if(fscanf(fp,"%128s",cad)!=1){ 
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%d",&keys->automode.value)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%128s",cad)!=1){ 
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%d",&keys->manualmode.value)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+
+  if(fscanf(fp,"%128s",cad)!=1){ 
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%d",&keys->map.value)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%128s",cad)!=1){ 
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%d",&keys->order.value)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+
+  fclose(fp);
+  return(0);
+}
+
+
+void SaveRecord(char *file,struct Player *players,int record){
+  int i,j;
+  FILE *fp;
+
+  j=-1;
+  for(i=0;i<GameParametres(GET,GNPLAYERS,0);i++){
+    if(players[i].points>=record){
+      j=i;
+      record=players[i].points;
+    }
+  }
+  if(j!=-1){
+    if((fp=fopen(file,"wt"))==NULL){
+      fprintf(stdout,"I cant open the file: %s",file);
+      exit(-1);
+    }
+    fprintf(fp,"%d",record);
+    fclose(fp);
+  }
+}
+

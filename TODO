@@ -213,7 +213,8 @@ X-(171211)remove flash ligth when hit. - ID: 3433714
 X-(171211)added: explosions with pieces blowing up.
 X-(191211)normalized sounds. New thrust sound.
 X-(201211)Added: volume control: Ctrl +, Ctrl -
-X-(211111)Added: -nomenu option
+X-(211211)Added: nomenu option
+X-(291211)Added: user defined keys.
 
 BUGS version 0.80
 =================

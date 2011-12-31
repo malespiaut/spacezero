@@ -203,14 +203,30 @@ char *GetOptionValue(int id){
   case ITEM_0:
     break;
   case ITEM_fire:
-    if(keys.fire.value==32){
-      snprintf(point,MAXTEXTLEN,"SPACE");
-    }
-    else{
-      snprintf(point,MAXTEXTLEN,"%c",keys.fire.value);
-    }
-    printf("getoptionvalue fire: (%c)  %d\n",keys.fire.value,keys.fire.value);
+    snprintf(point,MAXTEXTLEN,"%s",gdk_keyval_name(keys.fire.value));
     break;
+  case ITEM_turnleft:
+    snprintf(point,MAXTEXTLEN,"%s",gdk_keyval_name(keys.turnleft.value));
+    break;
+  case ITEM_turnright:
+    snprintf(point,MAXTEXTLEN,"%s",gdk_keyval_name(keys.turnright.value));
+    break;
+  case ITEM_accel:
+    snprintf(point,MAXTEXTLEN,"%s",gdk_keyval_name(keys.accel.value));
+    break;
+  case ITEM_automode:
+    snprintf(point,MAXTEXTLEN,"%s",gdk_keyval_name(keys.automode.value));
+    break;
+  case ITEM_manualmode:
+    snprintf(point,MAXTEXTLEN,"%s",gdk_keyval_name(keys.manualmode.value));
+    break;
+  case ITEM_map:
+    snprintf(point,MAXTEXTLEN,"%s",gdk_keyval_name(keys.map.value));
+    break;
+  case ITEM_order:
+    snprintf(point,MAXTEXTLEN,"%s",gdk_keyval_name(keys.order.value));
+    break;
+
   default:
     fprintf(stderr,"WARNING: GetOptionValue() id: %d unknown.\n",id);
     break;
@@ -224,12 +240,11 @@ char *GetTextEntry(struct MenuItem *item,char *text){
   char textentry[MAXTEXTLEN];
   static int id =0;
   if(id!=item->id){
-    printf("reset ks %d %d \n",item->id,id);
-    Keystrokes(RESET,NULL);
+    Keystrokes(RESET,NULL,NULL);
   }
   id=item->id;
   //  strcpy(par,"");
-  Keystrokes(LOAD,textentry);
+  Keystrokes(LOAD,NULL,textentry);
   strcpy(text,"");
   strncpy(text,textentry,MAXTEXTLEN);
   return(text);
@@ -254,7 +269,7 @@ struct MenuHead *CreateMenu(void){
   mmultiplayeroptions=MenuHeadNew("MULTIPLAYER OPTIONS");
   mgeneraloptions=MenuHeadNew("GENERAL OPTIONS");
   mgameoptions=MenuHeadNew("GAME OPTIONS");
-  mkeyboard=MenuHeadNew("Keyboard");
+  mkeyboard=MenuHeadNew("Keyboard: ENTER > press key > ENTER");
 
   
   /******* main menu *********/
@@ -305,7 +320,7 @@ struct MenuHead *CreateMenu(void){
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=mkeyboard;
-  Add2MenuHead(moptions,&item,"Keyboard (in progress...)");
+  Add2MenuHead(moptions,&item,"Keyboard");
 
   item.id=0;
   item.type=MENUITEMTEXT;
@@ -419,22 +434,60 @@ struct MenuHead *CreateMenu(void){
 
   /***** Keyboard Options *****/
   item.id=ITEM_fire;
-  //item.type=MENUITEMGRABKEY;
-  item.type=MENUITEMTEXTENTRY;
-  //  item.type=MENUITEMBOOL;
+  item.type=MENUITEMGRABKEY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mkeyboard,&item,"Shoot:");
 
-
-  /*  item.id=ITEM_p;
-  item.type=MENUITEMTEXTENTRY;
+  item.id=ITEM_turnleft;
+  item.type=MENUITEMGRABKEY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgameoptions,&item,"Number of players: ");
-  */
+  Add2MenuHead(mkeyboard,&item,"Turn left:");
+
+  item.id=ITEM_turnright;
+  item.type=MENUITEMGRABKEY;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=NULL;
+  Add2MenuHead(mkeyboard,&item,"Turn right:");
+
+  item.id=ITEM_accel;
+  item.type=MENUITEMGRABKEY;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=NULL;
+  Add2MenuHead(mkeyboard,&item,"Accel:");
+
+  item.id=ITEM_manualmode;
+  item.type=MENUITEMGRABKEY;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=NULL;
+  Add2MenuHead(mkeyboard,&item,"Manual mode:");
+
+  item.id=ITEM_automode;
+  item.type=MENUITEMGRABKEY;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=NULL;
+  Add2MenuHead(mkeyboard,&item,"Auto mode:");
+
+  item.id=ITEM_map;
+  item.type=MENUITEMGRABKEY;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=NULL;
+  Add2MenuHead(mkeyboard,&item,"Map:");
+
+  item.id=ITEM_order;
+  item.type=MENUITEMGRABKEY;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=NULL;
+  Add2MenuHead(mkeyboard,&item,"Order:");
 
 
   /***** multiplayer menu options *****/
@@ -501,7 +554,7 @@ int UpdateMenu(struct MenuHead *mhead,struct MenuHead *mactual,struct Keys *keys
   }
 
   if(keys->back){
-    Keystrokes(DELETELAST,NULL);
+    Keystrokes(DELETELAST,NULL,NULL);
     keys->back=FALSE;
 
   }
@@ -520,7 +573,7 @@ void MenuDown(struct MenuHead *mhead){
       item->active=ITEM_ST_SHOW;
       return;
     }
-    if(item->active){
+    if(item->active==ITEM_ST_SHOW){
       if(item->next!=NULL){
 	item->active=ITEM_ST_FALSE;
 	sw++;
@@ -540,7 +593,7 @@ void MenuUp(struct MenuHead *mhead){
   item=mhead->firstitem;
   last=item;
   while(item!=NULL){
-    if(item->active){
+    if(item->active==ITEM_ST_SHOW){
       item->active=ITEM_ST_FALSE;
       last->active=ITEM_ST_SHOW;
 
@@ -555,6 +608,7 @@ int MenuEnter(struct MenuHead *mhead){
   struct MenuItem *item;
   int sw=0;
   char text[MAXTEXTLEN];
+  guint keyval;
 
   /* printf("menuenter %s\n",mhead->title); */
 
@@ -565,7 +619,6 @@ int MenuEnter(struct MenuHead *mhead){
       return(0);
     }
     if(item->active){
-
       if(item->nexthead!=NULL){
 	if(item->nexthead->firstitem!=NULL){
 	  item->nexthead->active=ITEM_ST_SHOW;
@@ -579,14 +632,15 @@ int MenuEnter(struct MenuHead *mhead){
 	case MENUITEMTEXTENTRY:
 	case MENUITEMTEXT:
 	  strcpy(text,"");
-	  Keystrokes(LOAD,text);
+	  Keystrokes(LOAD,NULL,text);
 	  Funct01(item,text);
 	  break;
 	case MENUITEMACTION:
 	  break;
 	case MENUITEMGRABKEY:
+
 	  strcpy(text,"");
-	  Keystrokes(LOAD,text);
+	  Keystrokes(RETURNLAST,&keyval,text);
 	  Funct01(item,text);
 	  break;
 	default:
@@ -621,7 +675,7 @@ void MenuEsc(struct MenuHead *mhead){
   struct MenuItem *item;
   int sw=0;
   /* printf("menuesc\n"); */
-  Keystrokes(RESET,NULL);	
+  Keystrokes(RESET,NULL,NULL);	
 
   item=mhead->firstitem;
   while(item!=NULL){
@@ -678,6 +732,8 @@ void Funct01(struct MenuItem *item,char *value){
     Applied the changes.
    */
   int tmparg;
+  char a;
+  guint keyval;
 
   switch(item->type){
   case MENUITEMBOOL:
@@ -707,7 +763,7 @@ void Funct01(struct MenuItem *item,char *value){
     break;
   case MENUITEMTEXTENTRY:
     item->active++;
-    if(item->active==ITEM_ST_EDIT)Keystrokes(RESET,NULL);
+    if(item->active==ITEM_ST_EDIT)Keystrokes(RESET,NULL,NULL);
 
     switch(item->id){
     case ITEM_sound:
@@ -719,7 +775,7 @@ void Funct01(struct MenuItem *item,char *value){
 	  param.soundvol=tmparg;
 	}
 	else{
-	  Keystrokes(RESET,NULL);
+	  Keystrokes(RESET,NULL,NULL);
 	}
 	item->active=ITEM_ST_SHOW;
       }
@@ -733,7 +789,7 @@ void Funct01(struct MenuItem *item,char *value){
 	  param.musicvol=tmparg;
 	}
 	else{
-	  Keystrokes(RESET,NULL);
+	  Keystrokes(RESET,NULL,NULL);
 	  SetMusicVolume((float)param.musicvol/100,VOLSET);
 	}
 	item->active=ITEM_ST_SHOW;
@@ -743,7 +799,7 @@ void Funct01(struct MenuItem *item,char *value){
     case ITEM_name:
       if(item->active==ITEM_ST_UPDATE){
 	strncpy(param.playername,value,MAXTEXTLEN);
-	Keystrokes(RESET,NULL);
+	Keystrokes(RESET,NULL,NULL);
 	item->active=ITEM_ST_SHOW;
       }
       break;
@@ -751,7 +807,7 @@ void Funct01(struct MenuItem *item,char *value){
     case ITEM_geom:
       if(item->active==ITEM_ST_UPDATE){
 	strncpy(param.geom,value,MAXTEXTLEN);
-	Keystrokes(RESET,NULL);
+	Keystrokes(RESET,NULL,NULL);
 	item->active=ITEM_ST_SHOW;
       }
       break;
@@ -765,7 +821,7 @@ void Funct01(struct MenuItem *item,char *value){
 	  param.nplayers=tmparg;
 	}
 	else{
-	  Keystrokes(RESET,NULL);
+	  Keystrokes(RESET,NULL,NULL);
 	}
 	item->active=ITEM_ST_SHOW;
       }
@@ -779,7 +835,7 @@ void Funct01(struct MenuItem *item,char *value){
 	  param.nplanets=tmparg;
 	}
 	else{
-	  Keystrokes(RESET,NULL);
+	  Keystrokes(RESET,NULL,NULL);
 	}
 	item->active=ITEM_ST_SHOW;
       }
@@ -794,7 +850,7 @@ void Funct01(struct MenuItem *item,char *value){
 	  param.ngalaxies=tmparg;
 	}
 	else{
-	  Keystrokes(RESET,NULL);
+	  Keystrokes(RESET,NULL,NULL);
 	}
 	item->active=ITEM_ST_SHOW;
       }
@@ -809,7 +865,7 @@ void Funct01(struct MenuItem *item,char *value){
 	  param.ul=tmparg;
 	}
 	else{
-	  Keystrokes(RESET,NULL);
+	  Keystrokes(RESET,NULL,NULL);
 	}
 	item->active=ITEM_ST_SHOW;
       }
@@ -818,7 +874,7 @@ void Funct01(struct MenuItem *item,char *value){
     case ITEM_ip:
       if(item->active==ITEM_ST_UPDATE){
 	strncpy(param.IP,value,MAXTEXTLEN);
-	Keystrokes(RESET,NULL);
+	Keystrokes(RESET,NULL,NULL);
 	item->active=ITEM_ST_SHOW;
       }
       break;
@@ -832,7 +888,7 @@ void Funct01(struct MenuItem *item,char *value){
 	  param.port=tmparg;
 	}
 	else{
-	  Keystrokes(RESET,NULL);
+	  Keystrokes(RESET,NULL,NULL);
 	}
 	item->active=ITEM_ST_SHOW;
       }
@@ -846,32 +902,78 @@ void Funct01(struct MenuItem *item,char *value){
       printf("Starting client\n");
       break;
       
-    case ITEM_fire:
-      if(item->active==ITEM_ST_UPDATE){
-	printf("fire: %s \n",value);
-	keys.fire.value=(int)*value;
-	item->active=ITEM_ST_SHOW;
-      }
-      break;
     default:
       fprintf(stderr,"Funct01()id: %d not defined\n",item->id);
       exit(-1);
       break;
     }
-
     break;
-  case MENUITEMGRABKEY:
-    fprintf(stderr,"Funct01() GRAB in progress...\n");
-    if(item->active==ITEM_ST_UPDATE){
-      char a;
-      //      strncpy(a,value,1);
-      a=*value;
-      Keystrokes(RESET,NULL);
-      item->active=ITEM_ST_SHOW;
-      printf("menu space %c\n",a);
-      keys.fire.value=(int)a;
 
+  case MENUITEMGRABKEY:
+    item->active++;
+    if(item->active==ITEM_ST_EDIT)Keystrokes(RESET,NULL,NULL);
+
+    if(item->active==ITEM_ST_UPDATE){
+      Keystrokes(RETURNLAST,&keyval,&a);
+      Keystrokes(RESET,NULL,NULL);
+
+      if(keyval>64 && keyval<91){
+	keyval+=32;
       }
+    }
+
+    switch(item->id){
+    case ITEM_fire:
+      if(item->active==ITEM_ST_UPDATE){
+	item->active=ITEM_ST_SHOW;
+	keys.fire.value=keyval;
+      }
+      break;
+    case ITEM_turnleft:
+      if(item->active==ITEM_ST_UPDATE){
+	item->active=ITEM_ST_SHOW;
+	keys.turnleft.value=keyval;
+      }
+      break;
+    case ITEM_turnright:
+      if(item->active==ITEM_ST_UPDATE){
+	item->active=ITEM_ST_SHOW;
+	keys.turnright.value=keyval;
+      }
+      break;
+    case ITEM_accel:
+      if(item->active==ITEM_ST_UPDATE){
+	item->active=ITEM_ST_SHOW;
+	keys.accel.value=keyval;
+      }
+      break;
+    case ITEM_automode:
+      if(item->active==ITEM_ST_UPDATE){
+	item->active=ITEM_ST_SHOW;
+	keys.automode.value=keyval;
+      }
+      break;
+    case ITEM_manualmode:
+      if(item->active==ITEM_ST_UPDATE){
+	item->active=ITEM_ST_SHOW;
+	keys.manualmode.value=keyval;
+      }
+      break;
+    case ITEM_map:
+      if(item->active==ITEM_ST_UPDATE){
+	item->active=ITEM_ST_SHOW;
+	keys.map.value=keyval;
+      }
+      break;
+    case ITEM_order:
+      if(item->active==ITEM_ST_UPDATE){
+	item->active=ITEM_ST_SHOW;
+	keys.order.value=keyval;
+      }
+      break;
+    default:
+      break;
+    }
     break;
   default:
     fprintf(stderr,"Funct01()type: %d not defined\n",item->type);

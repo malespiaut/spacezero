@@ -527,7 +527,7 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "o\t\t enter in order menu.\n");
   (void) fprintf( stdout, 
-		  "Esc\t\t exit from order menu. exit from manual mode.\n\t\t close info windows.\n");
+		  "Esc\t\t cancel actual order.\n\t\t close info windows.\n");
   (void) fprintf( stdout, 
 		  "m\t\t show space map.\n");
   (void) fprintf( stdout, 
@@ -553,7 +553,7 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "arrow keys\t move map.\n");
   (void) fprintf( stdout, 
-		  "space\t\t center map in the actual ship.\n");
+		  "space\t\t center map on actual ship.\n");
   (void) fprintf( stdout, 
 		  "mouse pointer\t show coordinates.\n");
   (void) fprintf( stdout, 
@@ -775,4 +775,15 @@ void SetDefaultParamValues(struct Parametres *par){
   
   strcpy(par->font,"6x13");
   strcpy(par->geom,"1024x550");
+}
+
+void SetDefaultUserKeys(struct Keys *keys){
+  keys->fire.value=32;
+  keys->turnleft.value=65361;
+  keys->turnright.value=65363;
+  keys->accel.value=65362;
+  keys->automode.value=105;
+  keys->manualmode.value=97;
+  keys->map.value=109;
+  keys->order.value=111;
 }

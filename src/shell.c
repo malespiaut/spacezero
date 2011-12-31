@@ -98,7 +98,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
 
   if(0&&*pcv==NULL){
     printf("There are no ship selected!!\n");
-    key->o=FALSE;
+    key->order.state=FALSE;
     level=0;
     key->esc=FALSE;
     return(0);
@@ -115,7 +115,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
   player=ps->id;
   if(ps->proc!=GetProc()){
     fprintf(stderr,"WARNING proc %d %d \n",GetProc(),ps->proc);
-    key->o=FALSE;
+    key->order.state=FALSE;
     level=0;
     key->esc=FALSE;
     return(0);
@@ -123,13 +123,13 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
 
   if(ps->control!=HUMAN){
     fprintf(stderr,"ERROR: computer controlled ship\n");
-    key->o=FALSE;
+    key->order.state=FALSE;
     level=0;
     key->esc=FALSE;
     return(0);
   }
   if(key->esc|key->tab|key->Pagedown|key->Pageup|key->home){
-    key->o=FALSE;
+    key->order.state=FALSE;
     key->p=FALSE;
     key->esc=FALSE;
     level=0;
@@ -250,7 +250,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
       key->d=FALSE;
     }
     
-    Keystrokes(RESET,NULL);
+    Keystrokes(RESET,NULL,NULL);
     
     /*    if(order!=REPEAT)lastorder=order; */
   }
@@ -289,7 +289,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
       }
       else{
 	strcpy(par,"");
-	Keystrokes(LOAD,par);
+	Keystrokes(LOAD,NULL,par);
       }
       strcpy(cad,"");
       strncat(cad,ord,MAXTEXTLEN-strlen(cad));
@@ -330,7 +330,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
       break;
     case WRITE:
       strcpy(par,"");
-      Keystrokes(LOAD,par);
+      Keystrokes(LOAD,NULL,par);
 
       strcpy(cad,"");
       strncat(cad,ord,MAXTEXTLEN-strlen(cad));
@@ -345,7 +345,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
   if(level==3){
     switch(order){
     case BUY:
-      Keystrokes(LOAD,par);
+      Keystrokes(LOAD,NULL,par);
       DelCharFromCad(par,"123");
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT){
 	DelCharFromCad(par,"2");
@@ -375,13 +375,12 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
   if(key->back==TRUE){
     nn--;
     if(nn<0)nn=0;
-
     strcpy(par0,"");
     strncpy(par0,par,nn);
     strncpy(&par0[nn],"\0",1);
     strncpy(par,par0,MAXTEXTLEN);
 
-    Keystrokes(DELETELAST,NULL);
+    Keystrokes(DELETELAST,NULL,NULL);
     key->back=FALSE;
     key->enter=FALSE;
   }
@@ -396,7 +395,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
     } 
 
     if(order==GOTO||order==TAKEOFF||order==EXPLORE||order==STOP||order==RETREAT){
-      key->i=TRUE;
+      key->automode.state=TRUE;
     }
 
     /* game orders */
@@ -468,7 +467,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
     nn=0;
     key->enter=FALSE;
     key->w=FALSE;
-    key->o=FALSE;
+    key->order.state=FALSE;
     for(i=0;i<10;i++){
       key->number[i]=FALSE;
     }
@@ -970,7 +969,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       char text[MAXTEXTLEN];
       char cad[MAXTEXTLEN];
 
-      Keystrokes(LOAD,text);
+      Keystrokes(LOAD,NULL,text);
       snprintf(cad,MAXTEXTLEN,"%s: %s",players[obj->player].playername,text);      
 
       printf("=============\n");
@@ -1226,25 +1225,80 @@ void SelectionBox(Object **pcv,int reset){
 }
 
 
-int Keystrokes(int action,char *c){
+char Keyval2Char(guint keyval){
+  char kname[24];
+  char c=0;
+
+  if(keyval>31 && keyval < 256  ){
+    return((char)keyval);
+  }
+
+  snprintf(kname,24,"%s",gdk_keyval_name(keyval));
+  //  printf("kv2c: (%s)%d\n",kname,keyval);
+
+  if(strlen(kname)==1)return(kname[0]);
+  if(strlen(kname)==0)return((char)0);
+
+
+  switch (keyval){
+  case 65456: // KP_0:
+    c='0';
+    break;
+  case 65457: // KP_1:
+    c='1';
+    break;
+  case 65458: // KP_2:
+    c='2';
+    break;
+  case 65459: // KP_3:
+    c='3';
+    break;
+  case 65460: // KP_4:
+    c='4';
+    break;
+  case 65461: // KP_5:
+    c='5';
+    break;
+  case 65462: // KP_6:
+    c='6';
+    break;
+  case 65463: // KP_7:
+    c='7';
+    break;
+  case 65464: // KP_8:
+    c='8';
+    break;
+  case 65465: // KP_8:
+    c='9';
+    break;
+   }
+  return(c);
+}
+
+int Keystrokes(int action,guint *kval,char *c){
   /* 
      grab all the keystrokes in the cad text
      returns the number of chars manipulated.
    */
+  int i,j;
   static int n=0;
-  static char text[MAXTEXTLEN];
+  static guint val[MAXTEXTLEN];
+  char kname[24];
   int m=0;
   char endln='\0';
+  char d;
 
   switch(action){
   case RESET: /*  RESET to 0 */
     n=0;
     break;
   case ADD: /*  ADD */
-    memcpy(&text[n],c,sizeof(char));
-    n++;
-    if(n>MAXTEXTLEN-1)n=MAXTEXTLEN-1;
-    m=1;
+    if(kval!=NULL){
+      val[n]=*kval;
+      n++;
+      if(n>MAXTEXTLEN-1)n=MAXTEXTLEN-1;
+      m=1;
+    }
     break;
   case DELETELAST: /*  DELETE the last char */
     if(n>=1){
@@ -1255,16 +1309,28 @@ int Keystrokes(int action,char *c){
     break;
   case RETURNLAST: /*  RETURNS the last character */
     if(n>=1){
-      memcpy(c,&text[n-1],sizeof(char));
+      if(kval!=NULL)*kval=val[n-1];
+      if(c!=NULL){
+	snprintf(kname,24,"%s",gdk_keyval_name(val[n-1]));
+	*c=Keyval2Char(val[n-1]);
+	//	memcpy(c,kname,sizeof(char));
+      }
+
       m=1; 
     }
     else m=0;
     break;
-  case LOAD: /*  LOAD */
+  case LOAD: /* returns a cad of all keys pressed */
     if(c!=NULL){
-      memcpy(c,text,n*sizeof(char));
-      memcpy(&c[n*sizeof(char)],&endln,sizeof(char));
-      m=n;
+      for(i=0,j=0;i<n;i++){
+	d=Keyval2Char(val[i]);
+	if(d!=0){
+	  memcpy(&c[j],&d,sizeof(char));
+	  j++;
+	}
+      }
+      memcpy(&c[j],&endln,sizeof(char));
+      m=j;
     }
     break;
   default:
@@ -1272,6 +1338,7 @@ int Keystrokes(int action,char *c){
   }
   return (m);
 }
+
 
 int Get2Args(char *cad,char *arg1,char *arg2){
   /*

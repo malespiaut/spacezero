@@ -292,7 +292,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   //  strcat(labelhelp,"----------------------------\n");
   strcat(labelhelp,"a i\t\t\tautomatic-manual mode.\n");
   strcat(labelhelp,"o\t\t\tenter in order menu.\n");
-  strcat(labelhelp,"Esc\t\t\texit from order menu. \n\t\t\texit from manual mode.\n\t\t\tclose info windows.");
+  strcat(labelhelp,"Esc\t\t\tcancel actual order.\n\t\t\tclose info windows.\n");
   strcat(labelhelp,"up arrow\t\taccelerate.\n");
   strcat(labelhelp,"left,right arrows\tturn left right.\n");
   strcat(labelhelp,"space\t\tfire.\n");
@@ -319,7 +319,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   /*  strcat(labelhelp,"-------------------\n"); */
   strcat(labelhelp,"z Z\t\t\tzoom in out.\n");
   strcat(labelhelp,"arrow keys\tmove map.\n");
-  strcat(labelhelp,"space\t\tcenter map in the actual ship.\n");
+  strcat(labelhelp,"space\t\tcenter map on actual ship.\n");
   strcat(labelhelp,"mouse pointer\tshow coordinates.\n");
   strcat(labelhelp,"l\t\t\tshow-hide labels.\n");
   strcat(labelhelp, 
@@ -791,71 +791,85 @@ void MousePos(int order,int *x,int *y){
 
 
 void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
+
+  guint key,keyval;
   
-  //  g_print("%d, %s, %u\n",event->keyval,event->string,gdk_keyval_to_unicode(event->keyval));   
-  //g_print("%d, %s\n",event->keyval,event->string); 
+  //    g_print("%d, %s, %u\n",event->keyval,event->string,gdk_keyval_to_unicode(event->keyval));   
+/*   g_print("%d, %s, %s, %d\n",event->keyval,event->string,gdk_keyval_name(event->keyval), */
+/* 	  gdk_keyval_from_name(gdk_keyval_name(event->keyval)));  */
   CountKey(1);
   gdrawmenu=TRUE;
 
-  if(event->keyval>31 && event->keyval < 256  ){
-    Keystrokes(ADD,(char *)&(event->keyval));
-  }
-  else{
-    switch(event->keyval){
-    case 65456:
-      Keystrokes(ADD,"0");
-      break;
-    case 65457:
-      Keystrokes(ADD,"1");
-      break;
-    case 65458:
-      Keystrokes(ADD,"2");
-      break;
-    case 65459:
-      Keystrokes(ADD,"3");
-      break;
-    case 65460:
-      Keystrokes(ADD,"4");
-      break;
-    case 65461:
-      Keystrokes(ADD,"5");
-      break;
-    case 65462:
-      Keystrokes(ADD,"6");
-      break;
-    case 65463:
-      Keystrokes(ADD,"7");
-      break;
-    case 65464:
-      Keystrokes(ADD,"8");
-      break;
-    case 65465:
-      Keystrokes(ADD,"9");
-      break;
 
-    case 65470: /* F1 key */
-      Keystrokes(ADD,"F");
-      Keystrokes(ADD,"1");
-      break;
-    case 65471: /* F2 key */
-      Keystrokes(ADD,"F");
-      Keystrokes(ADD,"2");
-      break;
-    case 65472: /* F3 key */
-      Keystrokes(ADD,"F");
-      Keystrokes(ADD,"3");
-      break;
-    case 65473: /* F4 key */
-      Keystrokes(ADD,"F");
-      Keystrokes(ADD,"4");
-      break;
-    default:
-      break;
-    }
+  switch(event->keyval){
+  case 65288: /* BackSpace */ 
+  case 65293: /* enter */
+  case 65421: /* enter */
+    break;
+  case 65470: /* F1 key */
+    key=70;
+    Keystrokes(ADD,&key,NULL); /* F */
+    key=49;
+    Keystrokes(ADD,&key,NULL); /* 1 */
+    break;
+  case 65471: /* F2 key */
+    key=70;
+    Keystrokes(ADD,&key,NULL);
+    key=50;
+    Keystrokes(ADD,&key,NULL);
+    break;
+  case 65472: /* F3 key */
+    key=70;
+    Keystrokes(ADD,&key,NULL);
+    key=51;
+    Keystrokes(ADD,&key,NULL);
+    break;
+  case 65473: /* F4 key */
+    key=70;
+    Keystrokes(ADD,&key,NULL);
+    key=52;
+    Keystrokes(ADD,&key,NULL);
+    break;
+  default:
+    Keystrokes(ADD,&event->keyval,NULL);
+    break;
+  }
+  
+  keyval=event->keyval; /* upper to lowercase */
+  if(event->keyval>64 && event->keyval<91){
+    keyval=event->keyval+32;
   }
 
-  if(event->keyval==keys.fire.value){
+  if(keyval==keys.fire.value){
     keys.fire.state=TRUE;
+  }
+  if(keyval==keys.turnleft.value){
+    keys.turnleft.state=TRUE;
+  }
+  if(keyval==keys.turnright.value){
+    keys.turnright.state=TRUE;
+  }
+  if(keyval==keys.accel.value){
+    keys.accel.state=TRUE;
+  }
+  if(keyval==keys.manualmode.value){
+    keys.manualmode.state=TRUE;
+  }
+  if(keyval==keys.automode.value){
+    keys.automode.state=TRUE;
+  }
+
+  if(keyval==keys.map.value){
+    keys.map.state=TRUE;
+  }
+  if(keyval==keys.order.value){
+    keys.order.state=TRUE;
+    keys.g=FALSE;
+    keys.s=FALSE;
+    keys.p=FALSE;
+    keys.t=FALSE;
+    keys.b=FALSE;
+    keys.r=FALSE;
   }
 
   switch (event->keyval){
@@ -945,8 +959,7 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
   case 65508:
     keys.ctrl=TRUE;
     break;
-  case 32://keys.space.value:
-    //    keys.space.state=TRUE;
+  case 32:
     keys.centermap=TRUE;
     break;
   case 43:
@@ -997,13 +1010,12 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
   case 65465:
     keys.number[9]=TRUE;
     break;
-  case 65:
+  case 65: /* a */
   case 97:
-    keys.a=TRUE;
     break;
   case 66:
   case 98:
-    if(keys.o==TRUE)
+    if(keys.order.state==TRUE)
       keys.b=TRUE;
     break;
   case 68:
@@ -1023,39 +1035,23 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
     break;
   case 104:
     break;
-  case 73:
-  case 105:
-    keys.i=TRUE;
-    break;
   case 76:
   case 108:
     keys.l=TRUE;
     break;
-  case 77:
-  case 109:
-    keys.m=TRUE;
+  case 77:  /* m */
+  case 109:  
     break;
   case 78:
   case 110:
     keys.n=TRUE;
     break;
-  case 79:
-  case 111: /*o */
-    keys.o=TRUE;
-    keys.g=FALSE;
-    keys.s=FALSE;
-    keys.p=FALSE;
-    keys.t=FALSE;
-    keys.b=FALSE;
-    keys.r=FALSE;
-    break;
+  case 79: /* o */
+  case 111:
+    break;  
   case 80:
   case 112:
     keys.p=TRUE;
-    /* if(keys.p==TRUE) */
-    /*   keys.p=FALSE; */
-    /* else */
-    /*   keys.p=TRUE; */
     break;
   case 81:
   case 113:
@@ -1071,7 +1067,7 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
     break;
   case 84:
   case 116:
-    if(keys.o==TRUE){
+    if(keys.order.state==TRUE){
       keys.t=TRUE;
     }else{
       if(keys.trace==TRUE)
@@ -1104,7 +1100,7 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
   default:
     break;
   }
-  if(keys.o==FALSE){
+  if(keys.order.state==FALSE){
     /* keys.enter=FALSE; */
     keys.b=FALSE;
   }
@@ -1112,10 +1108,35 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
 
 
 void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data){
+  guint keyval;
 
-  if(event->keyval==keys.fire.value){
+  keyval=event->keyval; /* upper to lowercase */
+  if(event->keyval>64 && event->keyval<91){
+    keyval=event->keyval+32;
+  }
+
+  if(keyval==keys.fire.value){
     keys.fire.state=FALSE;
   }
+  if(keyval==keys.turnleft.value){
+    keys.turnleft.state=FALSE;
+  }
+  if(keyval==keys.turnright.value){
+    keys.turnright.state=FALSE;
+  }
+  if(keyval==keys.accel.value){
+    keys.accel.state=FALSE;
+  }
+  if(keyval==keys.automode.value){
+    keys.automode.state=FALSE;
+  }
+  if(keyval==keys.manualmode.value){
+    keys.manualmode.state=FALSE;
+  }
+  if(keyval==keys.map.value){
+    keys.map.state=FALSE;
+  }
+
 
   gdrawmenu=TRUE;
   switch (event->keyval){
@@ -1184,7 +1205,6 @@ void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data){
     keys.ctrl=FALSE;
     break;
   case 32://keys.space.value: //32
-    keys.fire.state=FALSE;
     keys.centermap=FALSE;
     break;
 
@@ -1197,25 +1217,19 @@ void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data){
     keys.minus=FALSE;
     break;
 
-  case 65:
+  case 65: /* a */
   case 97:
-    keys.a=FALSE;
     break;
   case 90:
   case 122:
     keys.z=FALSE;
     break;
-  case 73:
-  case 105:
-    keys.i=FALSE;
-    break;
   case 76:
   case 108:
     keys.l=FALSE;
     break;
-  case 77:
+  case 77: /* m */
   case 109:
-    keys.m=FALSE;
     break;
   case 78:
   case 110:
@@ -2302,7 +2316,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   gwidth=GameParametres(GET,GWIDTH,0);
   gheight=GameParametres(GET,GHEIGHT,0);
 
-  if(keys.o==FALSE){
+  if(keys.order.state==FALSE){
     /* DrawString(pixmap,gfont,penRed,10,gheight+GameParametres(GET,GPANEL,0)/2+4,  */
     /* 		    "O: Introduce command");  */
     ShellTitle(0,NULL,pixmap,gfont,penRed,10,gheight+GameParametres(GET,GPANEL,0)/2+4);
@@ -3829,9 +3843,9 @@ void SetDefaultKeyValues(struct Keys *key,int action){
   
   key->load=key->save=FALSE;
   key->up=key->down=key->right=key->left=key->back=FALSE;
-  key->fire.state=key->centermap=key->trace=key->tab=key->enter=FALSE;
-  key->o=key->s=key->n=key->l=FALSE;
-  key->i=key->e=key->y=key->u=FALSE;
+  key->centermap=key->trace=key->tab=key->enter=FALSE;
+  key->s=key->n=key->l=FALSE;
+  key->e=key->y=key->u=FALSE;
   key->f1=key->f2=key->f3=key->f4=key->f7=key->f8=key->f9=key->f10=FALSE;
   key->p=FALSE;
   key->d=FALSE;
@@ -3839,11 +3853,23 @@ void SetDefaultKeyValues(struct Keys *key,int action){
   for(i=0;i<10;i++)key->number[i]=FALSE;
   key->plus=key->minus=FALSE;
 
+  key->fire.state=FALSE;
+  key->turnleft.state=FALSE;
+  key->turnright.state=FALSE;
+  key->accel.state=FALSE;
+  key->automode.state=FALSE;
+  key->manualmode.state=FALSE;
+  key->order.state=FALSE;
+  key->map.state=FALSE;
+
   /* don't reset this values when load a game */
-  if(action){
-    key->fire.value=32;
-    key->m=FALSE;
+  switch(action){
+  case 1:
+    key->map.state=FALSE;
     key->f5=key->f6=FALSE;
+    break;
+  default:
+    break;
   }
 }
 
@@ -4048,7 +4074,7 @@ void Shift(int action,int ulx,int objid,float *z,float *x,float *y){
       }
     }
     
-    if(keys.centermap==TRUE && keys.o==FALSE){
+    if(keys.centermap==TRUE && keys.order.state==FALSE){
       cvx=cvy=0;
     }
     

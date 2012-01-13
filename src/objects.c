@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2011  M.Revenga
+ **  Copyright(C) 2006-2012  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2011 ******************
-		Author: M.Revenga
+/*************  SpaceZero  M.R.H. 2006-2012 ******************
+		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.80 May 2011
+		version 0.82 Jan 2012
 ****/
 
 #include "general.h"
@@ -3338,12 +3338,10 @@ void Experience(Object *obj,float pts){
       obj->experience-=100*pow(2,obj->level);
       obj->level++;
       //HERE      obj->ttl=0;
-      if(obj->subtype==FIGHTER && obj->level==MINLEVELPILOT) {
-	obj->items=obj->items|ITSURVIVAL;
+      if(obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
+	obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
       }
-#if TEST
-      //      obj->items=obj->items|ITSURVIVAL;
-#endif
+
       if(GameParametres(GET,GNET,0)==TRUE){
 	/* if(GetProc()==players[obj->player].proc){ */
 	  SetModified(obj,SENDOBJALL);
@@ -4254,6 +4252,7 @@ Object *FirstSelected(struct HeadObjList *lh,int player){
 
 float Distance2(Object *obj1,Object *obj2){
   /*
+    Not USED
     version 0.2
     Calc the distance between 2 objects.
     Returns:

@@ -20,47 +20,53 @@
       <div class="content">
 	<h2 >Manual:</h2>
 	
-	<table width="600"><tbody><tr><td> At the starting point the player
-	      owns a ship which has landed on a planet.<p>  Your objective is
-		to conquer all space.
+	<table width="600"><tbody><tr><td> 
 		
-	      <p>
-		Your first action must be to buy new ships and send them
-		to explore the Universe to find new planets.
+		SpaceZero is a Real Time Strategy 2D space combat game for two players over a network.
 		
-	      <p>
-		Pressing the "o" key, an orders menu will be displayed
-		at the bottom of the main window. You can buy towers
-		to extract resources and get more gold, explorers and
-		fighters to conquer planets.
-	      <p>
-		After selecting an order press "ENTER" to
-		execute it.
-	      <p>
-		Press "ESC" to cancel it.
-	      <p>
-		Press the "a" key to control the spaceship
-		manually. Press the "i" key to return to automatic mode.
-	      <p>
-		In manual mode you can control every ship independently.
-                To turn the ship right or left use the arrow keys. To
-                accelerate, use the up key arrow. SPACE to fire.  "1",
-                "2", "3", to change armour.
-	      <p>
-		A map of the known Universe is shown pressing the
-		"m" key.
-		
-		<hr>
-		<h3>Ships:</h3>
-		There are four types of ships: Explorer, Fighter, Defense Tower and Queen spaceship.
-		
-		
-		<table width="600"  bgcolor="#222222"><tbody>
-		  <tr>
-		    <td><img SRC="manual_files/explorer0.png" alt="Explorer
-		    ship" bgcolor="#222222"></td>
-		    <td><h4>Explorer</h4></td><td> Useful to explore
-		      the space. It has a low gas cost and poor
+		<br>
+		  Your objective is to conquer all space.
+		<p>
+		  At the starting point the player owns a ship which has
+		  landed on a planet.
+		  
+		<p>
+		  Your first task is to acquire new spaceships and
+		  find new planets in the Galaxy.
+		<p>
+		  By pressing key "o", a command menu will be displayed
+		  at the bottom of the main window. You can buy towers
+		  to extract resources and get more gold, explorers and
+		  fighters to explore and conquer the Galaxy.
+		<p>
+		  After selecting an order press "ENTER" to
+		  execute it.
+		<p>
+		  Press "ESC" to cancel it.
+		<p>
+		  Press the "a" key to control the spaceship
+		  manually. Press the "i" key to return to automatic mode.
+		<p>
+		  In manual mode you can control every spaceship
+                  independently.  To turn the ship right or left use
+                  the arrow keys. In order to accelerate, use the up
+                  key arrow. SPACE to fire.  "1", "2", "3", to change
+                  weapon.
+		<p>
+		  By pressing key "M", a map of the known Universe
+		  will be displayed.
+		  <p>See <a href="#kcontrol">Keyboard control</a> for more options. 
+		  <hr>
+		  <h3>Ships:</h3>
+		  There are four types of ships: Explorer, Fighter, Defense Tower and Queen spaceship.
+		  
+		  
+		  <table width="600"  bgcolor="#222222"><tbody>
+		      <tr>
+			<td><img SRC="manual_files/explorer0.png" alt="Explorer
+								       ship" bgcolor="#222222"></td>
+			<td><h4>Explorer</h4></td><td> Useful to explore
+			  the space. It has a low gas cost and poor
 		      weapons. It has a large radar.</td>
 		  <tr bgcolor="#000000">
 		    <td><img SRC="manual_files/fighter0.png" alt="Fighter
@@ -315,7 +321,7 @@
 	    various ships with the mouse. The next order will
 	    affect all of them. Simply, click with the left
 	    mouse button and, without releasing it, drag and select
-	    the region you want. All ships in that region will
+	    the region you want. All ships in this region will
 	    be selected. 
 	  <p>
 	    You can select multiple individual ships keeping the
@@ -478,7 +484,7 @@
 	    shown.<br> It is possible to zoom in and out with
 	    "z" and "Z".
 	    <br>The cursor keys allow you to move along the map.<br>
-	    &lt;space&gt; centers the map in the actual ship.<br>
+	    &lt;SPACE&gt; centers the map in the actual ship.<br>
 	    Over the mouse pointer the space coordinates and the
 	    distance in sectors from the selected ship to the mouse
 	    pointer are displayed.
@@ -577,8 +583,8 @@
 		    
 		  <li>In which planet is the ship. IN:0 means in outer space.
 		  <!--HERE -->  
-		  <li>In the case that the ship state or energy
-		    are not at 100% shows its value.
+		  <li>If the ship state or energy
+		    are not at 100% it is showed these values.
 		    
 		  <li>In white color its shown the actual
 		    selected ships. Red and yellow colors are for
@@ -616,7 +622,7 @@
 
 	  The ships are repaired, refueled and rearmed while are on
 	  ground. <br>
-	  In space, can be done litle reparations. They gain some energy also.
+	  In space, can be done little reparations. They obtain also some energy.
 	  
 
 
@@ -625,7 +631,7 @@
 	  <h3>Experience and Levels:</h3>
 	  
 	  Ships experience increase during the game. When a ship
-	  reaches a maximun it can upgrade to the next
+	  reaches a maximun is upgraded to the next
 	  level. This way it can get new arms, better defense
 	  and more power. If a ship is upgraded, its state and
 	    energy is restored to the maximun value.<br><br>
@@ -731,18 +737,18 @@
 	    pixels)
 	    
 	    <hr>	      
-	    <a name="netgamming"></a>
+	    <a name="netgaming"></a>
 	    <h3>Net gaming:</h3>
 	    
 	    For two players net game: one must be configured as
 	    the server and the other one as the client. Use the
 	    next command line options: <p>
 	    
-	    $ space -s -ip ipnumber <br>
+	    $ spacezero -s -ip ipnumber <br>
 	    
 	    for the server, and <br><br>
 	    
-	    $ space -c -ip ipnumber <br>
+	    $ spacezero -c -ip ipnumber <br>
 	    
 	    for the client. <p>
 	    
@@ -810,7 +816,7 @@
       <table border="1"><tbody>
 	<tr><td>up arrow	</td><td>accelerate.</td></tr>
 	<tr><td>left,right arrows	</td><td>turn left, right.</td></tr>
-	<tr><td>space		</td><td>fire.</td></tr>
+	<tr><td>SPACE		</td><td>fire.</td></tr>
 	<tr><td>tab		</td><td>change to next ship.</td></tr>
 	<tr><td>Ctrl-tab	</td><td>change to previous ship.</td></tr>
 	<tr><td>PageDown	</td><td>change to next planet.</td></tr>
@@ -839,7 +845,7 @@
 	<table border="1"><tbody>
 	  <tr><td>z Z		</td><td>zoom in out.</td></tr>
 	  <tr><td>arrow keys	</td><td>move map.</td></tr>
-	  <tr><td>space		</td><td>center map in the actual ship.</td></tr>
+	  <tr><td>SPACE		</td><td>center map in the actual ship.</td></tr>
 	  <tr><td>mouse pointer	</td><td>show coordinates.</td></tr>
 	  <tr><td>l		</td><td>show-hide labels.</td></tr>
 	</tbody></table>
@@ -874,10 +880,10 @@
 	<table border="1" width="600"><tbody>
 	    <th>GAME OPTIONS</th>
 	    <tr><td>-geom widthxheigth. </td><td>Define the size of the main window.</td></tr>
-	    <tr><td>-n n.     </td><td>Where n is the number of planets.(default 30)</td></tr>
-	    <tr><td>-p n.     </td><td>Where n is the number of players.(default 2)</td></tr>
-	    <tr><td>-g n.     </td><td>Where n is the number of galaxies.(default 1)</td></tr>
-	    <tr><td>-l n.     </td><td>Where n is the size of the Universe.(default 100000)</td></tr>
+	    <tr><td>-n n.     </td><td>Where n is the number of planets.(2..200, default 30)</td></tr>
+	    <tr><td>-p n.     </td><td>Where n is the number of players.(2..8, default 2)</td></tr>
+	    <tr><td>-g n.     </td><td>Where n is the number of galaxies.(1..10, default 1)</td></tr>
+	    <tr><td>-l n.     </td><td>Where n is the size of the Universe.(10000..1000000, default 100000)</td></tr>
 	    <tr><td>-k.       </td><td>Planets are known by all the players.</td></tr>
 	    <tr><td>-cooperative.         </td><td>Cooperative mode.</td></tr>
 	    <tr><td>-compcooperative.         </td><td>Computer cooperative mode.</td></tr>
@@ -927,8 +933,8 @@
 
 
 <div class="footer"><hr>
-  <p>Copyright © 2010-2011 MRevenga <br>
-    Site last updated Dec 20, 2011</p>
+  <p>Copyright © 2010-2012 MRevenga <br>
+    Site last updated Jan. 09, 2012</p>
 </div>
 </div>
 <div class="leftcolumn">
@@ -942,7 +948,7 @@
       <li><a href="#gamemodes">Game modes</a></li>
       <li><a href="#infowindows">Information windows</a></li>
       <li><a href="#experiencegold">Experience, gold</a></li>
-      <li><a href="#netgamming">Net gaming</a></li>
+      <li><a href="#netgaming">Net gaming</a></li>
       <li><a href="#loadsave">Load and save</a></li>
   </ul>
   

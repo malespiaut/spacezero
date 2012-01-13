@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2011  M.Revenga
+ **  Copyright(C) 2006-2012  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2011 ******************
-		Author: M.Revenga
+/*************  SpaceZero  M.R.H. 2006-2012 ******************
+		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.80 May 2011
+		version 0.82 Jan 2012
 ****/
 
 #include <string.h>
@@ -504,7 +504,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   int retreatsw=0;
   int nargs;
   char arg1[MAXTEXTLEN],arg2[MAXTEXTLEN];
-  char stmess[64];
+  char stmess[MAXTEXTLEN];
 
   /* game orders */
   ret=obj;
@@ -532,7 +532,6 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     }
     if(obj->engine.type<=ENGINE1)return(NULL);
 
-
     break;
   case RETREAT:
   case EXPLORE:
@@ -548,7 +547,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   case SELL:
     if(obj->type==SHIP && obj->subtype==PILOT){
       printf("You can't sell pilots\n");
-      snprintf(stmess,64,"You can't sell pilots");
+      snprintf(stmess,MAXTEXTLEN,"You can't sell pilots");
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       return(NULL);
     }
@@ -556,7 +555,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   case UPGRADE:
     if(obj->mode!=LANDED){
       printf("You must be landed.\n");
-      snprintf(stmess,64,"You must be landed.");
+      snprintf(stmess,MAXTEXTLEN,"You must be landed.");
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       return(NULL);
     }
@@ -566,6 +565,24 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   }
 
   /* --forbidden orders */
+
+  /** change manual to auto mode **/
+
+  switch(order){
+
+  case TAKEOFF:
+  case RETREAT:
+  case EXPLORE:
+  case STOP:
+  case GOTO:
+    obj->ai=1;
+    break;
+  case SELL:
+  case BUY:
+  case UPGRADE:
+  default:
+    break;
+  }
 
   
   nargs=Get2Args(par,&arg1[0],&arg2[0]);
@@ -641,13 +658,13 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	case PLANET: /* if planet is unknown*/
 	  if(IsInIntList((players[obj->player].kplanets),id1)==0){
 	    printf("Not Allowed. Planet or ship %d unknown.\n",obj_dest->pid);
-	    snprintf(stmess,64,"Not Allowed. Planet or ship %d unknown.",obj_dest->pid);
+	    snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or ship %d unknown.",obj_dest->pid);
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	    obj_dest=NULL;
 	  }
 	  else{
 	    printf("(%c %d) going to planet %d.\n",Type(obj),obj->pid,obj_dest->pid);
-	    snprintf(stmess,64,"(%c %d) going to planet %d.",Type(obj),obj->pid,obj_dest->pid);
+	    snprintf(stmess,MAXTEXTLEN,"(%c %d) going to planet %d.",Type(obj),obj->pid,obj_dest->pid);
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  break;
@@ -655,14 +672,14 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  if(obj_dest->player!=obj->player){
 	    obj_dest=NULL;
 	    printf("Not Allowed. Destiny is an enemy ship.\n");
-	    snprintf(stmess,64,"Not Allowed. Destiny is an enemy ship.");
+	    snprintf(stmess,MAXTEXTLEN,"Not Allowed. Destiny is an enemy ship.");
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  else{
 	    if(obj_dest==obj){
 	      printf("(%c %d) Not Allowed. Destiny %d is equal than origin.\n",
 		     Type(obj),obj->pid,obj_dest->pid);
-	    snprintf(stmess,64,"(%c %d) Not Allowed. Destiny %d is equal than origin.",
+	    snprintf(stmess,MAXTEXTLEN,"(%c %d) Not Allowed. Destiny %d is equal than origin.",
 		     Type(obj),obj->pid,obj_dest->pid);
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	      obj_dest=NULL;
@@ -670,7 +687,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	    else{
 	      printf("(%c %d) going to ship %d.\n",
 		     Type(obj),obj->pid,obj_dest->pid);
-	      snprintf(stmess,64,"(%c %d) going to ship %d.",
+	      snprintf(stmess,MAXTEXTLEN,"(%c %d) going to ship %d.",
 		       Type(obj),obj->pid,obj_dest->pid);
 	      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	    }
@@ -682,7 +699,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       }
       else{
 	printf("Not Allowed. Planet or ship unknown.\n");
-	snprintf(stmess,64,"Not Allowed. Planet or ship unknown.");
+	snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or ship unknown.");
 	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       }
       
@@ -727,12 +744,12 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       AddOrder(obj,&ord);
 
       printf("(%c %d) going to sector %d %d.\n",Type(obj),obj->pid,id1,id2);
-      snprintf(stmess,64,"(%c %d) going to sector %d %d.",Type(obj),obj->pid,id1,id2);
+      snprintf(stmess,MAXTEXTLEN,"(%c %d) going to sector %d %d.",Type(obj),obj->pid,id1,id2);
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       break;
     default:
       printf("shell() invalid entry\n");
-      snprintf(stmess,64,"shell() invalid entry.");
+      snprintf(stmess,MAXTEXTLEN,"shell() invalid entry.");
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       break;
     }
@@ -754,7 +771,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     DelAllOrder(obj);
     AddOrder(obj,&ord);
     printf("(%c %d) going to explore.\n",Type(obj),obj->pid);
-    snprintf(stmess,64,"(%c %d) going to explore.",Type(obj),obj->pid);
+    snprintf(stmess,MAXTEXTLEN,"(%c %d) going to explore.",Type(obj),obj->pid);
     ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
     break;
 
@@ -800,7 +817,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	obj_dest->selected=TRUE;
 	ret=obj_dest;
 	printf("(%c %d) selected.\n",Type(obj_dest),obj_dest->pid);
-	snprintf(stmess,64,"(%c %d) selected.",Type(obj_dest),obj_dest->pid);
+	snprintf(stmess,MAXTEXTLEN,"(%c %d) selected.",Type(obj_dest),obj_dest->pid);
 	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       }
     }
@@ -850,7 +867,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       DelAllOrder(obj_dest);
       AddOrder(obj_dest,&ord);
       printf("(%c %d) taking off.\n",Type(obj),obj->pid);
-      snprintf(stmess,64,"(%c %d) taking off.",Type(obj),obj->pid);
+      snprintf(stmess,MAXTEXTLEN,"(%c %d) taking off.",Type(obj),obj->pid);
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
     }
     break;
@@ -865,7 +882,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  status=BuyShip(players[obj->player],obj,EXPLORER);
 	  if(status==SZ_OK){
 	    printf("Explorer buyed.\n");
-	    snprintf(stmess,64,"Explorer buyed.");
+	    snprintf(stmess,MAXTEXTLEN,"Explorer buyed.");
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  break;
@@ -873,7 +890,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  status=BuyShip(players[obj->player],obj,FIGHTER);
 	  if(status==SZ_OK){
 	    printf("Fighter buyed.\n");
-	    snprintf(stmess,64,"Fighter buyed.");
+	    snprintf(stmess,MAXTEXTLEN,"Fighter buyed.");
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  break;
@@ -881,7 +898,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  status=BuyShip(players[obj->player],obj,TOWER);
 	  if(status==SZ_OK){
 	    printf("Tower buyed.\n");
-	    snprintf(stmess,64,"Tower buyed.");
+	    snprintf(stmess,MAXTEXTLEN,"Tower buyed.");
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  break;
@@ -897,22 +914,22 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  break;
 	case SZ_OBJNOTLANDED:
 	  printf("Ship must be landed.\n");
-	  snprintf(stmess,64,"Ship must be landed.");
+	  snprintf(stmess,MAXTEXTLEN,"Ship must be landed.");
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  break;
 	case SZ_NOTOWNPLANET:
 	  printf("You don't own this planet\n");
-	  snprintf(stmess,64,"You don't own this planet.");
+	  snprintf(stmess,MAXTEXTLEN,"You don't own this planet.");
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  break;
 	case SZ_NOTENOUGHGOLD:
 	  printf("You have not enough gold\n");
-	  snprintf(stmess,64,"You have not enough gold.");
+	  snprintf(stmess,MAXTEXTLEN,"You have not enough gold.");
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  break;
 	case SZ_NOTALLOWED:
 	  printf("Not allowed\n");
-	  snprintf(stmess,64,"Not allowed.");
+	  snprintf(stmess,MAXTEXTLEN,"Not allowed.");
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  break;
 	case SZ_NOTIMPLEMENTED:
@@ -925,7 +942,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     break;
   case SELL:
     printf("Selling ship with id: %d\n",obj->pid);
-    snprintf(stmess,64,"Selling ship with id: %d",obj->pid);
+    snprintf(stmess,MAXTEXTLEN,"Selling ship with id: %d",obj->pid);
     ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
     price=.5*GetPrice(obj,0,0,0);
     if(price>0){
@@ -947,12 +964,12 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  players[obj->player].gold-=price;
 	  Experience(obj,(int)(100*pow(2,obj->level) - obj->experience+1));
 	  printf("(%c %d) upgrade to level %d.\n",Type(obj),obj->pid,obj->level);
-	  snprintf(stmess,64,"(%c %d) upgrade to level %d.",Type(obj),obj->pid,obj->level);
+	  snprintf(stmess,MAXTEXTLEN,"(%c %d) upgrade to level %d.",Type(obj),obj->pid,obj->level);
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	}
 	else{
 	  printf("You have not enough gold\n");
-	  snprintf(stmess,64,"You have not enough gold.");
+	  snprintf(stmess,MAXTEXTLEN,"You have not enough gold.");
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  ret=NULL;
 	}
@@ -960,6 +977,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     }
     else{
       printf("You can upgrade until level %d\n",players[obj->player].maxlevel-1);
+      snprintf(stmess,MAXTEXTLEN,"You can upgrade until level %d",players[obj->player].maxlevel-1);
+      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       ret=NULL;
     }
     break;
@@ -1186,8 +1205,7 @@ void SelectionBox(Object **pcv,int reset){
 	region.rect.x=x;
 	region.rect.y=y;
 	region.rect.width=region.rect.height=0;
-	
-	region.habitat=-1;
+	region.habitat=-1; /* nothing selected */
 	if(gdraw.map==TRUE){
 	  region.habitat=0;
 	}

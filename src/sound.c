@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2011  M.Revenga
+ **  Copyright(C) 2006-2012  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2011 ******************
-		Author: M.Revenga
+/*************  SpaceZero  M.R.H. 2006-2012 ******************
+		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.80 May 2011
+		version 0.82 Jan 2012
 ****/
 
 /*
@@ -203,7 +203,7 @@ int InitSound(void){
   for(i=0,j=0;i<NUM_BUFFERS && i<NUM_SOUNDS;i++){
     data=alutLoadMemoryFromFile(filesoundnames[i],&format,&size,&frequency);
     if(data==NULL){
-      printf("Warning: file not found or corrupted: %s\n",filesoundnames[i]); 
+      fprintf(stderr,"Warning: file not found or corrupted: %s\n",filesoundnames[i]); 
       Ssoundenabled=FALSE;
       return(4);
     }
@@ -327,7 +327,7 @@ int PlaySound(int sid,int mode,float vol){
     /* load the buffer */
     data=alutLoadMemoryFromFile(filesoundnames[sid],&format,&size,&frequency);
     if(data==NULL){
-      printf("Warning: file not found or corrupted: %s\n",filesoundnames[bufferfree]); 
+      fprintf(stderr,"Warning: file not found or corrupted: %s\n",filesoundnames[bufferfree]); 
       return(4);
     }
     

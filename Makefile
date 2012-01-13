@@ -19,24 +19,22 @@ INSTALL_DATA_DIR=/usr/local/share/spacezero
 #INSTALL_DATA_DIR=/usr/share/spacezero
 
 
-
 OPENALFLAGS= -lopenal -lalut
 
 GTKFLAGS=`pkg-config --cflags gtk+-2.0`
 GTKLIBS=`pkg-config --libs gtk+-2.0`
 
-GTKLIBS0=`gtk-config --cflags`
-GTKFLAGS0=`gtk-config --libs`
+GTKLIBS12=`gtk-config --cflags`
+GTKFLAGS12=`gtk-config --libs`
 
 
 LDFLAGS=  -lm -lpthread $(OPENALFLAGS) $(GTKLIBS)
-LDFLAGS0=  -lm -lpthread $(OPENALFLAGS) $(GTKLIBS0)
+LDFLAGS12=  -lm -lpthread $(OPENALFLAGS) $(GTKLIBS12)
 CFLAGS=  -Wall -O3  -I./include -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\" 
-CFLAGS0=  -Wall -O3 -I./include -DGTK12
+CFLAGS12=  -Wall -O3 -I./include -DGTK12 -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\" 
 PROGFLAGS=$(CFLAGS) -pg 
 PROFCC=  $(CC) -pg 
 PROGRAMA=$(BINDIR)/spacezero
-PROGRAMA0=$(BINDIR)/spacezero0
 
 
 SOUND_OBJS= $(SRCPATH)sound.o
@@ -54,7 +52,7 @@ spacezero: $(PROGRAMA_OBJS)
 	$(CC) $(PROGRAMA_OBJS)  $(LDFLAGS) $(CFLAGS) -g -o $(PROGRAMA)
 
 gtk12: $(PROGRAMA_SRCS) 
-	$(CC) `gtk-config --cflags` $(PROGRAMA_SRCS)  $(LDFLAGS0) $(CFLAGS0) -g -o $(PROGRAMA) `gtk-config --libs`
+	$(CC) `gtk-config --cflags` $(PROGRAMA_SRCS)  $(LDFLAGS12) $(CFLAGS12) -g -o $(PROGRAMA) `gtk-config --libs`
 
 static: $(PROGRAMA_OBJS) 
 	$(CC) -static $(GTKFLAGS) $(PROGRAMA_OBJS)  $(LDFLAGS) $(CFLAGS) -o $(PROGRAMA) 

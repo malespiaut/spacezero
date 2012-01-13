@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2011  M.Revenga
+ **  Copyright(C) 2006-2012  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2011 ******************
-		Author: M.Revenga
+/*************  SpaceZero  M.R.H. 2006-2012 ******************
+		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.80 May 2011
+		version 0.82 Jan 2012
 ****/
 
 /* Comm Perfomance :
@@ -358,8 +358,7 @@ int StartComm(int mode,struct Sockfd *sockfd){
     
     /* sending game options to server */
     
-    printf("buf1 %p\n",buf1);
-    printf("HELLO CLIENT %p\n",clientname);
+    printf("HELLO CLIENT\n");
     
     printf("sending client parametres:\n\tnplayers:%d\n\tname: %s\n",
 	   param.nplayers,param.playername);
@@ -556,7 +555,7 @@ void *CommClient(struct Thread_arg * args){
     exit(-1);
   }
   
-  printf("Receiving file...%s",savefile);
+  printf("Receiving file...%s\n",savefile);
   
   RecvFile(fd,sfd);
   close(fd);
@@ -3120,7 +3119,6 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
    */
 
   struct MessageHeader messh;
-  int nbytes;
   int i;
   int nkp;
   int proc;
@@ -3152,8 +3150,7 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
     case OTSENDPING:  /* not used */
       break;
     case OTSENDOBJS:    /* send modified objects */
-
-      nbytes=CopyObjs2Buffer(buffer,listheadobjs);
+      CopyObjs2Buffer(buffer,listheadobjs);
       break;
     case OTSENDSAVE:    /* sendallobjects */
       
@@ -3188,13 +3185,11 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
     case OTSENDPING:  /* not used */
       break;
     case OTSENDOBJS:    /* send modified objects */
-
-      nbytes=CopyObjs2Buffer(buffer,listheadobjs);
-
+      CopyObjs2Buffer(buffer,listheadobjs);
       break;
     case OTSENDSAVE:    /* sendallobjects */
       /* objects */ 
-      nbytes=CopyObjs2Buffer(buffer,listheadobjs);
+      CopyObjs2Buffer(buffer,listheadobjs);
 
       /* global variables */
       messh.id=SENDGLOBAL;
@@ -3202,7 +3197,7 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
       messh.nbytes=0;
       CopyMessHeader2Buffer(buffer,&messh);
 
-      nbytes=CopyGlobal2Buffer(buffer);
+      CopyGlobal2Buffer(buffer);
 
       /* Loading buffer with known sectors and planets */
       for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){

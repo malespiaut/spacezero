@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyleft (C) 2006-2011  M.Revenga
+ **  Copyleft (C) 2006-2012  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2011 ******************
-		Author: M.Revenga
+/*************  SpaceZero  M.R.H. 2006-2012 ******************
+		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.80 May 2011
+		version 0.82 Jan 2012
 ****/
 
 #ifndef _GENERAL_
@@ -78,8 +78,8 @@
 #define NUMPLAYERS 2
 #define NUMGALAXIES 1
 #define NUMPLANETS 30   /* num. planets in galaxy */
-#define ULX 100000      /*  universe size */
-#define ULY 100000      /*  universe size */
+#define ULX 100000      /*  default universe size */
+#define ULY 100000      /*  default universe size */
 
 
 /* max and min option values */
@@ -89,8 +89,8 @@
 #define MINNUMGALAXIES 1
 #define MAXNUMPLANETS 200 /* num. planets in galaxy */
 #define MINNUMPLANETS 2   /* num. planets in galaxy */
-#define MAXULX 1000000 
-#define MINULX 10000   
+#define MAXULX 1000000    /*  max. universe size */
+#define MINULX 10000      /*  min. universe size */
 #define MAXNUMTEAMS MAXNUMPLAYERS
 
 

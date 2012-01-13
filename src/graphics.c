@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2011  M.Revenga
+ **  Copyright(C) 2006-2012  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2011 ***1**************
-		Author: M.Revenga
+/*************  SpaceZero  M.R.H. 2006-2012 ***1**************
+		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.80 May 2011
+		version 0.82 Jan 2012
 ****/
 
 #include <stdio.h>
@@ -140,14 +140,8 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_window_set_title(GTK_WINDOW(win_main),title);
 
 #ifndef GTK12  
-  gtk_window_set_resizable(GTK_WINDOW(win_main),FALSE);
-#endif
   gtk_window_set_resizable(GTK_WINDOW(win_main),TRUE);
-
-  /* fullscreen */
-  /* gtk_widget_realize (win_main);   */
-  /* gtk_window_fullscreen((GtkWindow *)win_main);    */
-  /* --fullscreen */
+#endif
 
 
   vbox=gtk_vbox_new(FALSE,0);
@@ -155,8 +149,6 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   d_a=gtk_drawing_area_new();
 
   gtk_drawing_area_size(GTK_DRAWING_AREA(d_a),w,h);  
-  //  gtk_container_add (GTK_CONTAINER (win_main), d_a);
-
 
   geometry.min_width=480;
   geometry.min_height=300;
@@ -251,7 +243,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_signal_connect(GTK_OBJECT (winabout),"delete_event",
 		     GTK_SIGNAL_FUNC(QuitWindow),winabout);
   gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemabout);
-  snprintf(label,150,"\t SpaceZero %s\t\n\t Dec 2011\t\n\n\n  Copyrigth mrevenga.  \n  homepage:  http://spacezero.sourceforge.net/   ",version);
+  snprintf(label,150,"\t SpaceZero %s\t\n\t Jan 2012\t\n\n\n  Copyrigth mrevenga.  \n  homepage:  http://spacezero.sourceforge.net/   ",version);
   about1=gtk_label_new(label);
   gtk_widget_show(about1);
   
@@ -541,9 +533,9 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_widget_show(vbox3);
   gtk_widget_show(vbox4);
 
-
+#ifndef GTK12
   gtk_window_resize(GTK_WINDOW(win_main),w,h);
-
+#endif
 
 
 
@@ -4548,12 +4540,11 @@ void DrawWindow(GdkPixmap *pixmap,GdkFont *font,GdkGC *color0,int x0,int y0,int 
   GdkGC *color;
   int n=0; 
   int i;
-  int wwidth,wheight;
+  int wheight;
   int incy;
   int textw;
   char point[MAXTEXTLEN];
   struct Window window;
-  static int charw=10;
   static int charh=10;
   static int swgmess=0;
   static int glen=0;
@@ -4564,11 +4555,9 @@ void DrawWindow(GdkPixmap *pixmap,GdkFont *font,GdkGC *color0,int x0,int y0,int 
   if(sw==0){
     if(font!=NULL){
       charh=gdk_text_height(font,"pL",2);
-      charw=gdk_text_width(font,"O",1);
     }
     else{
       charh=12;
-      charw=12;
     }
     sw++;
   }
@@ -4580,7 +4569,6 @@ void DrawWindow(GdkPixmap *pixmap,GdkFont *font,GdkGC *color0,int x0,int y0,int 
   window.height=0;
 
   incy=charh;
-  wwidth=GameParametres(GET,GWIDTH,0);
   wheight=GameParametres(GET,GHEIGHT,0);
 
   

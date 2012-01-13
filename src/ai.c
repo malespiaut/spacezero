@@ -1,6 +1,6 @@
 /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2011  M.Revenga
+ **  Copyright(C) 2006-2012  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2011 ******************
-		Author: M.Revenga
+/*************  SpaceZero  M.R.H. 2006-2012 ******************
+		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.80 May 2011
+		version 0.82 Jan 2012
 ****/
 
 
@@ -2363,7 +2363,7 @@ int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
   /********************************/
 
   planet_enemy=obj->cdata->obj[1];
-  d2_enemy=obj->cdata->d2[1];
+  d2_enemy=obj->cdata->d2[1]; /* HERE not used */
 
   planet_inexplore=obj->cdata->obj[2];
   d2_inexplore=obj->cdata->d2[2];
@@ -3519,7 +3519,7 @@ int OtherProc(struct HeadObjList *lh,int p,Object *obj0){
     return(0);
     break;
   default:
-    fprintf(stderr,"ERROR in OtherProc() habitat unknown\n");
+    fprintf(stderr,"ERROR in OtherProc() habitat (%d) %d unknown\n",obj0->id,obj0->habitat);
     exit(-1);
   }
 
@@ -3535,17 +3535,6 @@ int OtherProc(struct HeadObjList *lh,int p,Object *obj0){
 	ls=ls->next;continue;
       }
     }
-
-    /*
-      HERE BUG
-      Ejecting pilot from ship 148 (1722)
-      ERROR in OtherProc() habitat 17092 unknow
-    */
-
-    /*
-      obj1->in = (struct _Object *) 0x0
-
-     */
 
     objtmp=obj1;
     
@@ -3772,10 +3761,13 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
     Only planets with one or more ships are included.(planets that can build).
    */
 
-  struct PlanetInfo *pinfo,*pinfolow;
+  struct PlanetInfo *pinfo;
   int ntowers=0;
   int strength=0;
   int sw=0;
+#if DEBUG
+  struct PlanetInfo *pinfolow;
+#endif
 
   if(ccdata->planetinfo==NULL){
     /* there are no known planets */
@@ -3785,7 +3777,9 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
 
   ccdata->planetlowdefense=NULL;
   ccdata->planetweak=NULL;
+#if DEBUG
   pinfolow=NULL;
+#endif
   pinfo=ccdata->planetinfo;
 
   while(pinfo!=NULL){ /* known planets */
@@ -3798,14 +3792,18 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
 	ccdata->planetlowdefense=pinfo->planet;
 	strength=pinfo->strength;
 	ccdata->planetweak=pinfo->planet;
+#if DEBUG
 	pinfolow=pinfo;
+#endif
 	sw++;
       }
       else{
 	if(pinfo->ntower < ntowers){
 	  ntowers=pinfo->ntower;
 	  ccdata->planetlowdefense=pinfo->planet;
+#if DEBUG
 	  pinfolow=pinfo;
+#endif
 	}
 	if(pinfo->strength<strength){
 	  strength=pinfo->strength;

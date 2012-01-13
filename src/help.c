@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2011  M.Revenga
+ **  Copyright(C) 2006-2012  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2011 ******************
-		Author: M.Revenga
+/*************  SpaceZero  M.R.H. 2006-2012 ******************
+		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.80 May 2011
+		version 0.82 Jan 2012
 ****/
 
 #include <stdlib.h>
@@ -471,13 +471,13 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "-geom WIDTHxHEIGHT define the size of the main window.\n" );
   (void) fprintf( stdout, 
-		  "-n n\t\t where n is the number of planets.(default %d)\n",NUMPLANETS);
+		  "-n n\t\t where n is the number of planets.(%d..%d, default %d)\n",MINNUMPLANETS,MAXNUMPLANETS,NUMPLANETS);
   (void) fprintf( stdout, 
-		  "-p n\t\t where n is the number of players.(default %d)\n",NUMPLAYERS);
+		  "-p n\t\t where n is the number of players.(%d..%d, default %d)\n",MINNUMPLAYERS,MAXNUMPLAYERS,NUMPLAYERS);
   (void) fprintf( stdout, 
-		  "-g n\t\t where n is the number of galaxies.(default %d)\n",NUMGALAXIES);
+		  "-g n\t\t where n is the number of galaxies.(%d..%d, default %d)\n",MINNUMGALAXIES,MAXNUMGALAXIES,NUMGALAXIES);
   (void) fprintf( stdout, 
-		  "-l n\t\t where n is the size of the Universe.\n" );
+		  "-l n\t\t where n is the size of the Universe.(%d..%d, default %d)\n",MINULX,MAXULX,ULX);
   (void) fprintf( stdout, 
 		  "-k\t\t planets are known by all the players.\n" );
   (void) fprintf( stdout, 

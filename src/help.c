@@ -487,7 +487,7 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "-queen\t\t Queen mode.\n" );
   (void) fprintf( stdout, 
-		  "-nopirates\t Dont add a team of pirates.\n" );
+		  "-nopirates\t Don't add a team of pirates.\n" );
   (void) fprintf( stdout, 
 		  "\nMULTIPLAYER OPTIONS:\n" );
   (void) fprintf( stdout, 

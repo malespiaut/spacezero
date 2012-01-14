@@ -82,7 +82,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.61"};
+char version[64]={"0.81.63"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Jan. 2012"};
@@ -3315,7 +3315,12 @@ int UpdateObjs(void){
 	  float dist=sqrt((cv->x-obj->x)*(cv->x-obj->x)+(cv->y-obj->y)*(cv->y-obj->y));
 	  printf("dist: %f \n",dist);
 	}
-
+	/*
+	obj->x0=obj->x;
+	obj->y0=obj->y;	
+	obj->x+=10;
+	obj->y+=10;
+	*/
 	obj->planet->A=obj->planet->reggold;
 	break;
 	
@@ -4178,7 +4183,9 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 #endif
 
   if(sw==0){
+#if TEST
     gc=penGreen;
+#endif
     sw=1;
 #if TEST
     nobjsend=g_nobjsend;

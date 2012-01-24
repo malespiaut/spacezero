@@ -38,7 +38,7 @@
 #define DEBUG 0
 #define TEST 0  // test stuff
 #define TESTNET 0 
-#define LATENCY 0 //80000000
+#define LATENCY 0//8000000
 /*  --compile options: */
 
 #define MODI(a) ((a) > 0 ? (a) : (-a))
@@ -62,7 +62,7 @@
 #define NUMSTARS 200
 #define GRAVITATION_RANGE2 4000000  /* max. gravity reach */
 #define G .1                        /* gravitation constant */
-#define DT .42
+#define DT .42//.35 //.42
 #define RESOURCEFACTOR 1.2     /* velocity factor for getting resource from planets */
 #define COSTFACTOR 1.0         /* multiplicative factor to ships cost */
 #define DAMAGEFACTOR .9;       /* multiplicative factor to weapon damage */

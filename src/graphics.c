@@ -282,11 +282,11 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   strcat(labelhelp,"Manual:  http://spacezero.sourceforge.net/   ");
   strcat(labelhelp,"\n\nKeyboard Controls:\n");
   //  strcat(labelhelp,"----------------------------\n");
-  strcat(labelhelp,"a i\t\t\tautomatic-manual mode.\n");
+  strcat(labelhelp,"up/down arrows manual/automatic mode.\n");
   strcat(labelhelp,"o\t\t\tenter in order menu.\n");
   strcat(labelhelp,"Esc\t\t\tcancel actual order.\n\t\t\tclose info windows.\n");
-  strcat(labelhelp,"up arrow\t\taccelerate.\n");
-  strcat(labelhelp,"left,right arrows\tturn left right.\n");
+  strcat(labelhelp,"up arrow\t\taccelerate/manual mode.\n");
+  strcat(labelhelp,"left/right arrows\tturn left/right.\n");
   strcat(labelhelp,"space\t\tfire.\n");
   strcat(labelhelp,"tab\t\t\tchange to next ship.\n");
   strcat(labelhelp,"Ctrl-tab\t\tchange to previous ship.\n");
@@ -786,7 +786,7 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
 
   guint key,keyval;
   
-  //    g_print("%d, %s, %u\n",event->keyval,event->string,gdk_keyval_to_unicode(event->keyval));   
+  //  g_print("%d, %s, %u\n",event->keyval,event->string,gdk_keyval_to_unicode(event->keyval));   
 /*   g_print("%d, %s, %s, %d\n",event->keyval,event->string,gdk_keyval_name(event->keyval), */
 /* 	  gdk_keyval_from_name(gdk_keyval_name(event->keyval)));  */
   CountKey(1);

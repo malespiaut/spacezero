@@ -51,6 +51,7 @@ SENDOBJUNMOD0
 #include "ai.h"
 #include "data.h"
 #include "functions.h"
+#include "clock.h"
 #include <time.h>
 
 #define SENDORDERS 1
@@ -437,12 +438,20 @@ void *CommServer(struct Thread_arg *args){
   
   sem_post(&sem_barrier);
 
-
+  /* set clocks to zero */
+#if TESTNET
+  Clock(1,CL_CLEAR);
+#endif
   /* loop of communication */
   for(;;){ /* server */
 
     /* synchronization with main program  */
     sem_wait(&sem_barrier1); 
+
+#if TESTNET
+    Clock(1,CL_CLEAR);
+    Clock(1,CL_START);
+#endif
 
 #if COMMDEBUG
     printf("[%d]\n",cont);
@@ -509,6 +518,11 @@ void *CommServer(struct Thread_arg *args){
       break;
     }
 
+#if TESTNET
+    Clock(1,CL_STOP);
+    printf("clock 1: %3.5f\n",Clock(1,CL_READ));
+#endif 
+
     sem_post(&sem_barrier); 
   }
   return((void *)0);
@@ -545,7 +559,7 @@ void *CommClient(struct Thread_arg * args){
   sfd2=args->sfd2;
 
   sem_post(&sem_barrier); 
-  sem_wait(&sem_barrier1); 
+  sem_wait(&sem_barrier1);
 
 
   /* receiving file with universe */
@@ -568,13 +582,23 @@ void *CommClient(struct Thread_arg * args){
 
   /* loop of communication */
 
+  /* set clocks to zero */
+#if  TESTNET
+  Clock(1,CL_CLEAR);
+#endif
 
   for(;;){ /* client */
 
   /* synchronization with main program  */
     sem_wait(&sem_barrier1); 
-
+#if  TESTNET
+    Clock(1,CL_CLEAR);
+    Clock(1,CL_START);
+#endif
     RecvBuffer(sfd,&buffer2);
+#if  TESTNET
+    printf("clock 1: %3.5f\n",Clock(1,CL_READ));
+#endif
 #if TESTNET
     nanosleep(&latency,NULL);
 #endif
@@ -657,10 +681,16 @@ void *CommClient(struct Thread_arg * args){
     }
 
     SendBuffer(sfd2,&buffer1);
+
 #if TESTNET
     nanosleep(&latency,NULL);
 #endif
     fdatasync(sfd2);
+
+#if TESTNET
+    Clock(1,CL_STOP);
+    printf("clock 1: %3.5f\n",Clock(1,CL_READ));
+#endif
     sem_post(&sem_barrier); 
   }
   

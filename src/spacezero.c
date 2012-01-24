@@ -32,10 +32,13 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
+#include <sys/time.h>
 #include "spacezero.h"
+#include "clock.h"
 
 #define TESTSAVE FALSE
 #define DEBUGFAST FALSE
+
 
 int TESTSAVESTEP=1000;
 
@@ -96,11 +99,12 @@ sem_t sem_barrier,sem_barrier1;
 
 int g_cont;
 time_t gtime0;
+double fps; /* frames / second*/
 
 int order2thread;
 
 int *cell;
-
+static struct timeval init_time;
 
 extern struct Keys keys;
 extern struct Buffer buffer1,buffer2; /* buffers used in comm. */
@@ -189,8 +193,8 @@ int main(int argc,char *argv[]){
 
   /******** --signals ***********/
 
-  sem_init(&sem_barrier,1,0);
-  sem_init(&sem_barrier1,1,0);
+  sem_init(&sem_barrier,0,0);
+  sem_init(&sem_barrier1,0,0);
 
 
   /* tests */
@@ -291,6 +295,9 @@ int main(int argc,char *argv[]){
   printf("Loading user keys\n");
   LoadUserKeys(keyboardfile,&keys);
 
+  Clock(0,CL_CLEAR);
+  Clock(0,CL_START);
+
   /********** Graphics initialization **********/
   gtk_init(&argc,&argv);
 
@@ -382,9 +389,14 @@ int main(int argc,char *argv[]){
 #if DEBUGFAST
   gtk_timeout_add((int)(DT*5),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
 #else
-  gtk_timeout_add((int)(DT*100),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
+  if(0&&GameParametres(GET,GNET,0)){
+    gtk_timeout_add((int)(.36*100),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
+  }
+  else{
+    gtk_timeout_add((int)(DT*100),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
+  }
 #endif
-  
+  gettimeofday(&init_time,NULL);  
   gtk_main();
 
 
@@ -567,6 +579,9 @@ gint MainLoop(gpointer data){
   static int sw=0;
   int nx,ny;
 
+  double fpst=0;
+  static double fpstt=0;
+  static int fpscont=0;
 
   if(gdraw.main==FALSE)return(TRUE);
 
@@ -581,9 +596,8 @@ gint MainLoop(gpointer data){
   if(gtime0==0){
     gtime0=time(NULL);
   }
-  //  printf("mainloop space : %d\n",keys.fire.value);
-  if(!sw){   /* firsttime */
 
+  if(!sw){   /* firsttime */
     savefile=CreateSaveFile(param.server,param.client);
     
     fprintf(stdout,"save file: %s\n",savefile);
@@ -659,6 +673,33 @@ gint MainLoop(gpointer data){
     gdraw.menu=FALSE;
     sw++;
   }
+
+  /***** fps *****/
+    Clock(0,CL_STOP);
+    fpst=Clock(0,CL_READ);
+    fpstt+=fpst;
+    fpscont++;
+    //    printf("clock 0: %3.5f\n",fpst);
+    Clock(0,CL_CLEAR);
+    Clock(0,CL_START);
+    fps=fpscont/fpstt;
+    if(fpscont==20){
+      fpscont=10;
+      fpstt/=2;
+    }
+  /***** --fps *****/  
+
+#if TEST
+  if(GameParametres(GET,GNET,0)==FALSE){
+    struct timespec latency;
+    latency.tv_sec=0;
+    latency.tv_nsec=40000000;
+    //    latency.tv_nsec=280000000;
+    //    nanosleep(&latency,NULL);
+  }
+#endif
+
+
 
   ulx=GameParametres(GET,GULX,0);
   uly=GameParametres(GET,GULY,0);
@@ -744,7 +785,7 @@ gint MainLoop(gpointer data){
 
   /* game quit */
   if(GameParametres(GET,GQUIT,0)==1){
-    sprintf(pointmess,"Really QUIT?  ( y/n )");
+      sprintf(pointmess,"Really QUIT?  ( y/n )");
     swmess++;
   }
   
@@ -753,6 +794,32 @@ gint MainLoop(gpointer data){
   }
   
   if(GameParametres(GET,GPAUSED,0)==TRUE){
+    int x,y,width,height;
+    int textw,texth;
+
+    /* update window */
+    if(swmess){
+      if(gfont!=NULL){
+	textw=gdk_text_width(gfont,pointmess,strlen(pointmess));
+	texth=gdk_text_height(gfont,pointmess,strlen(pointmess));
+      }
+      else{
+	texth=12;
+	textw=12;
+      }
+      width=textw+2*texth+1;
+      height=2*texth;
+      
+      x=gwidth/2-width/2;
+      y=0.3*gheight-height/2;
+      if(x<10)x=10;
+      
+      update_rect.x=x;
+      update_rect.y=y;
+      update_rect.width=width;
+      update_rect.height=height;
+      gtk_widget_draw(drawing_area,&update_rect);
+    }
     if(swpaused>=NETSTEP){
       //      DestroyObjList(&listheadplayer); // HERE quitar esto? revisar
       return(TRUE);   //savepause
@@ -766,11 +833,9 @@ gint MainLoop(gpointer data){
   else{
     swpaused=0;
   }
-  
-  if(GameParametres(GET,GQUIT,0)==1){
-    //    return(TRUE);
-  }
-  
+
+  /****************** if not paused *****************/
+
   drawmap=FALSE;
   if(!(cont%2))drawmap=TRUE;
 
@@ -880,16 +945,20 @@ gint MainLoop(gpointer data){
 
   swcomm=FALSE;
   if(GameParametres(GET,GNET,0)==TRUE){
+
     if( !(cont%NETSTEP)){  
+      
       CheckModifiedPre(&listheadobjs,proc);
       Setttl0(&listheadobjs);
-
+      
       NetComm();     /* net communication */
-      CheckModifiedPost(&listheadobjs,proc);
 
+      CheckModifiedPost(&listheadobjs,proc);
       Setttl(&listheadobjs,-1);
       swcomm=TRUE;
+
     }
+
   }
   else{
     swcomm=TRUE;
@@ -1189,6 +1258,7 @@ gint MainLoop(gpointer data){
     DrawInfo(pixmap,cv);
   }/* if(paused==0) */
 
+
   if(gdraw.stats==TRUE){
     DrawGameStatistics(pixmap,players);
   }
@@ -1318,6 +1388,7 @@ gint MainLoop(gpointer data){
   if(GameParametres(GET,GPAUSED,0)==FALSE){
     IncTime();
   }
+
 
   loadsw=0;
 
@@ -2822,10 +2893,11 @@ void Collision(struct HeadObjList *lh){
 		  }
 		}
 		*/
-
+		
 		if(objt1->player==actual_player){
 		  printf("Pilot %d (%d) rescued\n",objt1->pid,objt1->id);
 		}
+
 		if(gnet==TRUE){
 		  if(proc==players[objt1->player].proc){
 		    SetModified(objt1,SENDOBJALL);
@@ -4176,7 +4248,6 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   int incy;
 
 #if TEST
-  static GdkGC *gc;
   static int time0=0;
   static int nobjsend0=0;
   static int nobjsend=0;
@@ -4225,14 +4296,15 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 #if TEST
     x+=15*charw;
     gc=penRed;
-    sprintf(point,"T:%d   S:%d   P:%d   A:%d  T:%d  Pi:%d Ob/s(%.2f)",
+    sprintf(point,"T:%d   S:%d   P:%d   A:%d  T:%d  Pi:%d Ob/s(%.2f) FPS:%.1f",
 	    CountObjs(&listheadobjs,-1,-1,-1),
 	    CountObjs(&listheadobjs,-1,SHIP,-1),
 	    CountObjs(&listheadobjs,-1,PROJECTILE,-1),
 	    CountObjs(&listheadobjs,-1,ASTEROID,-1),
 	    CountObjs(&listheadobjs,-1,TRACE,-1),
 	    CountObjs(&listheadobjs,-1,SHIP,PILOT),
-	    (float)(20.0*nobjsend/100));
+	    (float)(20.0*nobjsend/100),
+	    fps);
     DrawString(pixmap,gfont,gc,x,y,point);
 
     sprintf(point,"T:%d   E:%d   F:%d   T:%d",
@@ -4242,7 +4314,15 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 	    CountObjs(&listheadobjs,actual_player,SHIP,TOWER));
     
     DrawString(pixmap,gfont,gc,x,y+15,point);
+#else
+    /* fps */
+    x=wwidth-10*charw;
+    sprintf(point,"FPS:%.1f",fps);
+    DrawString(pixmap,gfont,penRed,x,y,point);
+    /* --fps */
 #endif
+
+
 
   y+=incy;
   h=(int)(time/(20*60*60));

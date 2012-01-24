@@ -4089,6 +4089,7 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
       pilot->ai=0;
       pilot->items=0;
       //	pilot->selected=FALSE;
+      Experience(obj,pilot->level*30); /* experience for rescue a pilot*/
       if(pilot->player==actual_player)printf("Pilot %d saved in planet %d\n",pilot->pid,pilot->in->id);
       DelAllOrder(pilot);
       if(gnet==TRUE){

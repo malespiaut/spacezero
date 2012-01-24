@@ -390,7 +390,7 @@ int RecvBuffer(int sfd,struct Buffer *buffer){
   if(nbytes>buffer->size){
     buffer->data=realloc(buffer->data,nbytes*sizeof(char));
     if(buffer->data==NULL){ 
-      fprintf(stderr,"ERROR in malloc Copyfile2Buf()\n");
+      fprintf(stderr,"ERROR in malloc RecvBuffer() nbytes: %d\n",nbytes);
       exit(-1);
     } 
     buffer->size=nbytes;

@@ -497,9 +497,9 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "\nKeyboard controls:\n==================\n");
   (void) fprintf( stdout, 
-		  "up arrow\t accelerate.\n");
+		  "up arrow\t accelerate/manual mode.\n");
   (void) fprintf( stdout, 
-		  "left,right arrows turn left right.\n");
+		  "left/right arrows turn left/right.\n");
   (void) fprintf( stdout, 
 		  "space\t\t fire.\n");
   (void) fprintf( stdout, 
@@ -531,7 +531,7 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "m\t\t show space map.\n");
   (void) fprintf( stdout, 
-		  "a i\t\t automatic-manual mode.\n");
+		  "up/down arrows\t manual/automatic mode.\n");
 
   (void) fprintf( stdout, 
 		  "Ctrl +/-\t volume up/down.\n");
@@ -782,8 +782,12 @@ void SetDefaultUserKeys(struct Keys *keys){
   keys->turnleft.value=65361;
   keys->turnright.value=65363;
   keys->accel.value=65362;
-  keys->automode.value=105;
-  keys->manualmode.value=97;
+  /*
+    keys->automode.value=105; 
+    keys->manualmode.value=97; 
+  */
+  keys->automode.value=65364;
+  keys->manualmode.value=65362;
   keys->map.value=109;
   keys->order.value=111;
 }

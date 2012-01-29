@@ -38,7 +38,6 @@ double Clock(int id,int action){
 
   switch(action){
   case CL_CLEAR:
-    //  gettimeofday(&clock[id].starttime,NULL);
     clock[id].time=0;
     break;
   case CL_START:
@@ -48,7 +47,6 @@ double Clock(int id,int action){
     gettimeofday(&now,NULL);
     decr_timeval(&now,&clock[id].starttime);
     clock[id].time+= (double) (now.tv_sec+now.tv_usec/1.0e6);
-    //    printf("clock 0 (CL_STOP): %3.3f\n",Clock(0,CL_READ));
       break;
   case CL_READ:
     return(clock[id].time);

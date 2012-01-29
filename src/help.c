@@ -553,15 +553,15 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "arrow keys\t move map.\n");
   (void) fprintf( stdout, 
-		  "space\t\t center map on actual ship.\n");
+		  "space\t\t center map on current ship.\n");
   (void) fprintf( stdout, 
 		  "mouse pointer\t show coordinates.\n");
   (void) fprintf( stdout, 
 		  "l\t\t show-hide labels.\n");
   (void) fprintf( stdout, 
-		  "left mouse \t Select the nearest ship.\nclick\n");
+		  "left mouse \t Select the nearest ship.\nbutton\n");
   (void) fprintf( stdout, 
-		  "right mouse \t Send the selected ships to that point.\nclick\n");
+		  "right mouse \t Send the selected ships to that point.\nbutton\n");
   (void) fprintf( stdout,
 		  "\nversion: %s",ver);
   (void) fprintf( stdout, 

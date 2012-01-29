@@ -83,6 +83,16 @@
 #define TOWER SHIP6
 #define PILOT SHIP7
 
+/* cost of the spaceships */
+
+#define COSTEXPLORER 0.01
+#define COSTFIGHTER 0.01
+#define COSTQUEEN 0.04
+#define COSTSATELLITE 0.005
+#define COSTTOWER 0.0
+#define COSTPILOT 0.0
+
+
 #define PRICESHIP0 0
 #define PRICESHIP1 100
 #define PRICESHIP2 200
@@ -91,6 +101,8 @@
 #define PRICESHIP5 200
 #define PRICESHIP6 200
 #define PRICESHIP7 50
+
+
 
 /* projectile subtypes (PROJECTILE) 49-64*/
 #define SHOT0 49
@@ -521,6 +533,7 @@ struct Player{
   short profile;     /* */
   short strategy;    /* */
   short maxlevel;    /* max ship level reached */
+  short level;       /* sum of ships level */
   int color;         /*    */
   int cv;            /* id of the actual ship */
   int nplanets;      /* number of players planets */

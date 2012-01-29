@@ -311,13 +311,13 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   /*  strcat(labelhelp,"-------------------\n"); */
   strcat(labelhelp,"z Z\t\t\tzoom in out.\n");
   strcat(labelhelp,"arrow keys\tmove map.\n");
-  strcat(labelhelp,"space\t\tcenter map on actual ship.\n");
+  strcat(labelhelp,"space\t\tcenter map on current ship.\n");
   strcat(labelhelp,"mouse pointer\tshow coordinates.\n");
   strcat(labelhelp,"l\t\t\tshow-hide labels.\n");
   strcat(labelhelp, 
-	 "left mouse \t Select the nearest ship.\nclick\n");
+	 "left mouse \t Select the nearest ship.\nbutton\n");
   strcat(labelhelp, 
-	 "right mouse \t Send the selected ships to that point.\nclick");
+	 "right mouse \t Send the selected ships to that point.\nbutton");
 
 #if TEST
   printf("label help size: %d (<1088)\n  ",strlen(labelhelp)); 
@@ -4358,8 +4358,8 @@ void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
   /* HERE: send kills and deaths to client */
 
   for(i=1;i<nplayers;i++){
-    snprintf(cad,MAXTEXTLEN,"player: %s, [L%d], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
-	     pl[i].playername,pl[i].maxlevel,
+    snprintf(cad,MAXTEXTLEN,"player: %s, [L%d : %1.1f], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
+	     pl[i].playername,pl[i].maxlevel,(float)pl[i].level/(pl[i].nships+0.0001),
 	     pl[i].nships,pl[i].nbuildships,
 	     pl[i].nplanets,pl[i].nkills,
 	     pl[i].ndeaths);

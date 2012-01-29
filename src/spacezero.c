@@ -85,7 +85,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.63"};
+char version[64]={"0.81.64"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Jan. 2012"};
@@ -585,6 +585,9 @@ gint MainLoop(gpointer data){
 
   if(gdraw.main==FALSE)return(TRUE);
 
+  Clock(2,CL_CLEAR);
+  Clock(2,CL_START);
+
 #if DEBUG
   if(debugmem){
     if(!(cont%100)){
@@ -687,6 +690,9 @@ gint MainLoop(gpointer data){
       fpscont=10;
       fpstt/=2;
     }
+#if TESTTIMES
+    printf("%d %f %f %f\n",fpscont,fpst,fpstt,fps);
+#endif
   /***** --fps *****/  
 
 #if TEST
@@ -1416,6 +1422,23 @@ gint MainLoop(gpointer data){
   }
 
   cont++;
+  if(1){
+    static double t=0,tt=0;
+    static int c=0;
+    Clock(2,CL_STOP);
+    t=Clock(2,CL_READ);
+    tt+=t;
+    c++;
+    if(c==20){
+#if TESTTIMES
+      printf("clock 2: %3.5f\n",tt/c);
+#endif
+      tt=0;
+      c=0;
+    }
+  }
+    
+
   return(TRUE);
 
 } /* MainLoop */
@@ -4032,6 +4055,14 @@ int CheckGame(char *cad,int action){
 	  printf("Error ship %d level: %d items: %d  => Removed survival pod.\n",obj->id,obj->level,obj->items);
 	  obj->items=obj->items&(~ITSURVIVAL);
 	}
+
+
+	if(fabs(obj->cost - COSTFIGHTER*COSTFACTOR*pow(2,obj->level))>0.01){
+	  printf("Error ship %d (%d-%d) level: %d cost: %f ->  %f \n",obj->id,obj->player,obj->pid,obj->level,obj->cost,0.01*COSTFACTOR*pow(2,obj->level));
+	  obj->cost=0.01*COSTFACTOR*pow(2,obj->level);
+	}
+
+
       }
       if(obj->mode==LANDED && obj->in==NULL){
 	fprintf(stderr,"\tError CheckGame() obj %d landed and in NULL\n",obj->id);
@@ -4506,7 +4537,6 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 
 void GetGold(void){
   /*
-    version 03 21Dic2010
     Count the number of planets that belongs to each player    
     Increase players gold 
    */
@@ -4522,11 +4552,11 @@ void GetGold(void){
   proc=GetProc();
   nplayers=GameParametres(GET,GNPLAYERS,0);
 
-
   for(i=0;i<nplayers+2;i++){
     players[i].nplanets=0;
     players[i].nships=0;
     players[i].balance=0;
+    players[i].level=0;
   }
 
   ls=listheadobjs.next;
@@ -4537,6 +4567,7 @@ void GetGold(void){
       break;
     case SHIP:
       players[ls->obj->player].nships++;
+      players[ls->obj->player].level+=ls->obj->level;
       break;
     default:
       ls=ls->next;continue;

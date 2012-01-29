@@ -960,7 +960,6 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       price=GetPrice(obj,0,0,0);
       if(price>0){
 	if(players[obj->player].gold>price){
-	  //      obj->level++;
 	  players[obj->player].gold-=price;
 	  Experience(obj,(int)(100*pow(2,obj->level) - obj->experience+1));
 	  printf("(%c %d) upgrade to level %d.\n",Type(obj),obj->pid,obj->level);

@@ -2512,6 +2512,7 @@ int BuyShip(struct Player player,Object *obj,int type){
   if(obj->type==SHIP && obj->subtype==PILOT){ /* pilot buy a ship */
     float shield=obj->shield;
     ShipProperties(obj,type,obj->in);
+    obj->cost*=pow(2,obj->level);
     obj->subtype=type;
     obj->shield=shield;
     obj->a=PI/2;
@@ -3357,7 +3358,6 @@ void Experience(Object *obj,float pts){
       obj->engine.gascost-=.01;
       obj->engine.v_max++;
       obj->cost*=2.0;
-      //      if(obj->cost==0)obj->cost=0.01;
 
       mulshots=1+1./(obj->level);
 
@@ -3836,7 +3836,7 @@ void ShipProperties(Object *obj,int stype,Object *in){
 
    */
   switch(stype){
-  case SHIP1: /* EXPLORER */
+  case EXPLORER: /* EXPLORER */
     obj->radar=2*RADAR_RANGE;
     obj->gas_max=1000;
     obj->gas=obj->gas_max;
@@ -3847,11 +3847,12 @@ void ShipProperties(Object *obj,int stype,Object *in){
     obj->radio=10;
     obj->ai=1;
     obj->damage=25;
-    obj->cost=0.01;
+    obj->cost=COSTEXPLORER*COSTFACTOR;
     break;
   case SHIP0: /* not used */
+    /* HERE there are SHIP0 */
   case SHIP2: /* not used */
-  case SHIP3: /*  FIGHTER */
+  case FIGHTER: /*  FIGHTER */
     obj->gas_max=1000;
     obj->gas=obj->gas_max;
     obj->shield=0;
@@ -3865,12 +3866,12 @@ void ShipProperties(Object *obj,int stype,Object *in){
     obj->radio=10;
     obj->ai=1;
     obj->damage=25;
-    obj->cost=0.01;
+    obj->cost=COSTFIGHTER*COSTFACTOR;
 
     /*       NewWeapon(&obj->weapon1,CANNON8); */
     /*       NewWeapon(&obj->weapon2,CANNON9); */
     break;
-  case SHIP4: /*  cargo queen ship */
+  case QUEEN: /*  cargo queen ship */
     obj->gas_max=2000;
     obj->gas=obj->gas_max;
     obj->shield=0.9;
@@ -3880,10 +3881,10 @@ void ShipProperties(Object *obj,int stype,Object *in){
     obj->radio=20;
     obj->ai=1;
     obj->damage=25;
-    obj->cost=0.04;
+    obj->cost=COSTQUEEN*COSTFACTOR;
     break;
     
-  case SHIP5: /* SATELLITE: */
+  case SATELLITE: /* SATELLITE: */
     obj->durable=TRUE;
     obj->life=2400;
     obj->gas_max=500;
@@ -3897,9 +3898,9 @@ void ShipProperties(Object *obj,int stype,Object *in){
     obj->habitat=obj->parent->habitat;
     obj->in=in;
     obj->planet=NULL;
-    obj->cost=0.005;
+    obj->cost=COSTSATELLITE*COSTFACTOR;
     break;
-  case SHIP6: /* TOWER: */
+  case TOWER: /* TOWER: */
     /*       obj->radar=8*RADAR_RANGE; */
     obj->gas_max=1000;
     obj->gas=obj->gas_max;
@@ -3910,9 +3911,9 @@ void ShipProperties(Object *obj,int stype,Object *in){
     obj->ai=1;
     obj->in=in;
     obj->damage=25;
-    obj->cost=0;
+    obj->cost=COSTTOWER*COSTFACTOR;
       break;
-  case SHIP7: /* PILOT */
+  case PILOT: /* PILOT */
     obj->gas_max=0;
     obj->gas=obj->gas_max;
     obj->shield=0;
@@ -3924,10 +3925,10 @@ void ShipProperties(Object *obj,int stype,Object *in){
     obj->habitat=obj->parent->habitat;
     obj->in=in;
     obj->damage=5;
-    obj->cost=0.0;
+    obj->cost=COSTPILOT*COSTFACTOR;
     break;
   default:
-    fprintf(stderr,"ERROR ShipProperties(): unknown subtype\n");
+    fprintf(stderr,"ERROR ShipProperties(): unknown subtype %d\n",stype);
     exit(-1);
     break;
   }

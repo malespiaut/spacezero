@@ -85,7 +85,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.81.64"};
+char version[64]={"0.83.01"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Jan. 2012"};
@@ -321,7 +321,17 @@ int main(int argc,char *argv[]){
   menuhead=CreateMenu();
 
   menuhead->active=TRUE;
+
+  if(param.fontlist){
+    printf("==============\n");
+    printf("system font list:\n");
+    PrintFontNames(10000);
+    printf("==============\n");
+  }
+
   /********** --Graphics initialization *********/
+
+
 
 #if SOUND
   /********* sound initialization *********/ 
@@ -1327,7 +1337,7 @@ gint MainLoop(gpointer data){
       if(gdraw.map==TRUE){
 	int x,y;
 	int rx,ry;
-	Region region;
+	Space region;
 	MousePos(GET,&x,&y);
 	printf("x: %d y:%d\n",x,y);
 	//	void Window2Real(Object *cv,int habitat, int wx,int wy,int *rx,int *ry){

@@ -251,7 +251,7 @@ typedef struct{
 typedef struct{
   Rectangle rect;
   int habitat; /* 0 means free space, 1, 2, ... planetid */
-}Region;
+}Space;
 
 typedef struct{
   int state;

@@ -53,6 +53,7 @@
 #define ARG_font 21
 #define ARG_geom 22
 #define ARG_nomenu 23
+#define ARG_fontlist 24
 
 struct Parametres{
   int ngalaxies;
@@ -78,6 +79,7 @@ struct Parametres{
   char playername[MAXTEXTLEN];
   char font[MAXTEXTLEN];
   char geom[MAXTEXTLEN];
+  int fontlist;
 };
 
 struct Validargum{

@@ -1354,7 +1354,7 @@ Object *SelectpObjInObj(struct HeadObjList *lh,int pid,int player){
 }
 
 
-Object *SelectOneShip(struct HeadObjList *lh,Region reg,Object *cv,int ctrl){ 
+Object *SelectOneShip(struct HeadObjList *lh,Space reg,Object *cv,int ctrl){ 
   /*
     select the nearest obj to mouse pointer
     return the obj selected
@@ -3487,7 +3487,7 @@ char *TypeCad(Object *obj){
 }
 
 
-Object *MarkObjs(struct HeadObjList *lh,Region reg,Object *cv,int ctrl){
+Object *MarkObjs(struct HeadObjList *lh,Space reg,Object *cv,int ctrl){
   /*
     Set the selected mark on in all ship inside the region reg.
     return a pointer to the first selected obj

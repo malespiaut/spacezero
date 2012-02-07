@@ -1010,7 +1010,7 @@ void SelectionBox(Object **pcv,int reset){
   /* version 01*/
 
   static int sw=0;
-  static Region region;
+  static Space region;
   static Object *cv0=NULL;
   int x,y;
   int x0,y0;

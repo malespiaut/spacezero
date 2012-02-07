@@ -127,7 +127,7 @@ void Shift(int action,int ulx,int cvid,float *z,float *x,float *y);
 
 void MousePos(int order,int *x,int *y);
 
-void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv);
+void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Space reg,Object *cv);
 void Real2Window(Object *,int habitat,int rx,int ry,int *wx,int *wy);
 void Real2Sector(int x,int y,int *a,int *b);
 void Window2Real(Object *,int habitat,int wx,int wy,int *rx,int *ry);
@@ -136,4 +136,6 @@ void W2R(Object *cv,int *x,int *y);
 
 int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,int y0);
 
+void PrintFontNames(int n);
+void PrintFontName(char *fname,int n);
 #endif

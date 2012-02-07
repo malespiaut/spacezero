@@ -672,7 +672,7 @@ int GetPrice(Object *obj,int sid,int eng,int weapon);
 int BuyShip(struct Player player,Object *obj,int type);
 
 
-Object *MarkObjs(struct HeadObjList *lh,Region reg,Object *cv,int ctrl);
+Object *MarkObjs(struct HeadObjList *lh,Space reg,Object *cv,int ctrl);
 void UnmarkObjs(struct HeadObjList *lh);
 int PrintSelected(struct HeadObjList *lh);
 int CountSelected(struct HeadObjList *lh,int player);
@@ -680,7 +680,7 @@ int CountNSelected(struct HeadObjList *lh,int player);
 int NearMaxLevelObj(Object *obj,struct HeadObjList *lh);
 int IsPlanetEmpty(Object *planet,Object *obj);
 Object *FirstSelected(struct HeadObjList *lh,int player);
-Object *SelectOneShip(struct HeadObjList *lh,Region region,Object *cv,int ctrl);
+Object *SelectOneShip(struct HeadObjList *lh,Space region,Object *cv,int ctrl);
 
 int UpdateCell(struct HeadObjList *lh,int *cell);
 int ValueCell(int *cell,Object *obj,int x,int y);

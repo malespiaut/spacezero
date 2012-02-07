@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
+#include <gdk/gdkx.h>
+#include <X11/Xlib.h>
 #include <gtk/gtk.h>
 
 #include "general.h"
@@ -106,7 +108,6 @@ struct Keys keys;
 GtkWidget *d_a;
 
 float Distance(Object *cv,float x0,float y0);
-
 
 GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres param){
 
@@ -3399,7 +3400,10 @@ GdkFont *InitFonts(char *fname){
       exit(-1);
     }
   }
-  printf("using font: %s\n",fontname);
+  //  printf("using font: %s\n",fontname);
+  printf("using font: ");
+  PrintFontName(fontname,1);
+  printf("\n");
   return(font);
 }
 
@@ -4256,7 +4260,7 @@ void Real2Sector(int x,int y,int *a,int *b){
 }
 
 
-void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Region reg,Object *cv){
+void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Space reg,Object *cv){
   Rectangle rect;
 
   int x0,y0,x1,y1;
@@ -4358,8 +4362,8 @@ void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
   /* HERE: send kills and deaths to client */
 
   for(i=1;i<nplayers;i++){
-    snprintf(cad,MAXTEXTLEN,"player: %s, [L%d : %1.1f], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
-	     pl[i].playername,pl[i].maxlevel,(float)pl[i].level/(pl[i].nships+0.0001),
+    snprintf(cad,MAXTEXTLEN,"player: %s, [L%d : %d : %1.1f], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
+	     pl[i].playername,pl[i].maxlevel,pl[i].level,(float)pl[i].level/(pl[i].nships+0.0001),
 	     pl[i].nships,pl[i].nbuildships,
 	     pl[i].nplanets,pl[i].nkills,
 	     pl[i].ndeaths);
@@ -4777,3 +4781,32 @@ int ActWindow(struct Window *w){
   return(FALSE);
 }
 
+void PrintFontNames(int n){
+  char **fnames;
+  int nfonts;
+  int i;
+
+  fnames=XListFonts(GDK_DISPLAY(),"*",n,&nfonts);
+
+  for(i=0;i<nfonts;i++){
+    printf("%d     %s \n",i,fnames[i]);
+  }
+
+  XFreeFontNames(fnames);
+
+}
+
+void PrintFontName(char *fname,int n){
+  char **fnames;
+  int nfonts;
+  int i;
+
+  fnames=XListFonts(GDK_DISPLAY(),fname,n,&nfonts);
+
+  for(i=0;i<nfonts;i++){
+    printf("%s",fnames[i]);
+  }
+
+  XFreeFontNames(fnames);
+
+}

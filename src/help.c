@@ -29,7 +29,6 @@
 #include "help.h"
 #include "spacecomm.h"
 
-
 void PrintArguments(struct Parametres param,char *title){
 
   printf("%s\n",title);
@@ -71,7 +70,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   
 
   int i;
-  char arg[28]="";
+  char arg[29]="";
 
   struct Validargum validarg[]={{"h",ARG_h},{"g",ARG_g},{"n",ARG_n},
 				{"p",ARG_p},{"t",ARG_t},{"l",ARG_l},
@@ -85,6 +84,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 				{"queen",ARG_queen},
 				{"nopirates",ARG_pirates},
 				{"nomenu",ARG_nomenu},
+				{"fontlist",ARG_fontlist},
 				{"",ARG_0}};
   int narg=0;
   FILE *fp;
@@ -403,7 +403,9 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       case ARG_nomenu:
 	par->menu=FALSE;
 	break;
-
+      case ARG_fontlist:
+	par->fontlist=TRUE;
+	break;
       default:
 	printf("\ninvalid option -%s\n",arg);
 	printf("\ntry 'spacezero -h' for help\n");

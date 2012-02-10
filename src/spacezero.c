@@ -4292,6 +4292,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
   static int time0=0;
   static int nobjsend0=0;
   static int nobjsend=0;
+  GdkGC *gc;
 #endif
 
   if(sw==0){

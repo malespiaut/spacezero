@@ -4870,9 +4870,12 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
   int buyid;
   static int buyupgradesw=0; /*0: nothing , 1: buy, 2: upgrade */
   float cut=.5;
+  int nships;
 
 
   np=(player.nplanets);
+  if(np==0)return(0); /* HERE this dont allow to pilots to buy when no planets */
+  nships=ccdata->nfighter+ccdata->ntower;
   buyid=-1;
   cut=.5;
 
@@ -4894,6 +4897,14 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
 	}
       }
       
+      if(player.level<nships*(player.maxlevel-1)){
+	cut+=.2*(cut);
+
+	if(2*player.level<nships*(player.maxlevel-1)){
+	  cut+=.4*(cut);
+	}
+      }
+
       if((float)ccdata->ntower/np<2){
 	cut-=.2*(cut);
       }
@@ -4906,11 +4917,13 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
       if((float)ccdata->nexplorer<5){
 	cut-=.2*(cut);
       }
+      /* printf("(%d) maxlevel: %d cut: %f %f %d %d\n", */
+      /* 	     player.id,player.maxlevel,cut,(float)ccdata->ntower/np,player.level,nships*(player.maxlevel-1)); */
     }
     
     buyupgradesw=0;
     
-    if(100*Random(-1)>cut){
+    if(Random(-1)>cut){
       buyupgradesw=1; /* buy */
     }
     else{
@@ -4989,6 +5002,7 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
 	  Experience(obj2up,(int)(100*pow(2,obj2up->level) - obj2up->experience+1));
 	  player.lastaction=0;
 	  ret=2;
+
 #if DEBUG
 	  if(debugshop){
 	    printf("player: %d OBJ UPGRADED to level: %d type: %d id: %d price: %d\n",

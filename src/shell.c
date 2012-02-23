@@ -74,6 +74,8 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
   Object *obj=NULL,*obj0;
   Object *firstselobj=NULL;
   int sw=0;
+  int textw;
+
 
   switch(command){
   case 0:
@@ -151,11 +153,16 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
   
   if(level==1){
     if(*pcv!=NULL){
-      int textw;
+
 
       strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",MAXTEXTLEN); 
       
-      textw=gdk_text_width(font,cad,strlen(cad));
+      if(font!=NULL){
+	textw=gdk_text_width(font,cad,strlen(cad));
+      }
+      else{
+	textw=12*strlen(cad);
+      }
       if(textw>GameParametres(GET,GWIDTH,0)){
 	strncpy(cad,"",1);
 	strncpy(cad,"G:GT  X:EXP  S:SLC  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",MAXTEXTLEN); 
@@ -168,7 +175,13 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
 
       if(0&&CountNSelected(lhead,player)>1){
 	strncpy(cad,"G: GOTO   X: EXPLORE   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",MAXTEXTLEN); 
-	textw=gdk_text_width(font,cad,strlen(cad));
+
+	if(font!=NULL){
+	  textw=gdk_text_width(font,cad,strlen(cad));
+	}
+	else{
+	  textw=12*strlen(cad);
+	}
 	if(textw>GameParametres(GET,GWIDTH,0)){
 	  strncpy(cad,"",1);
 	  strncpy(cad,"G:GT  X:EXP  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",MAXTEXTLEN); 

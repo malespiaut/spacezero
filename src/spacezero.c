@@ -85,10 +85,10 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.01"};
+char version[64]={"0.83.02"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Jan. 2012"};
+char last_revision[]={"Feb. 2012"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -135,17 +135,18 @@ int soundenabled=TRUE;
 
 struct Draw gdraw;
 
-/*void signal_handler(int ,siginfo_t *,void *);*/
-void int_handler(int);
-void segfault_handler(int);
-
-
 char *savefile;
 char *recordfile;
 char *optionsfile;
 char *keyboardfile;
 
 struct MenuHead *menuhead;
+
+
+/*void signal_handler(int ,siginfo_t *,void *);*/
+void int_handler(int);
+void segfault_handler(int);
+int GameOver(struct HeadObjList *lhead,struct Player *players,int actual_player);
 
 
 int main(int argc,char *argv[]){
@@ -767,27 +768,14 @@ gint MainLoop(gpointer data){
   
   
   /* GAME OVER */
-  if(actual_player==actual_player0){
-    
-    static int n=1;
-    static int player=0;
-    if(player!=actual_player){
-      n=0;
-      player=actual_player;
-    }
-    if(GameParametres(GET,GPAUSED,0)==FALSE){
-      if(n<=0){
-	n=CountObjs(&listheadplayer,-1,SHIP,-1);
-	n*=10;
-      }
-      if(n<=0){
-	gameover=TRUE;
-	observeenemies=TRUE;
-      }
-      n--;
+
+  if(GameParametres(GET,GPAUSED,0)==FALSE){
+    if(GameOver(&listheadplayer,players,actual_player)){
+      gameover=TRUE;
+      observeenemies=TRUE;
     }
   }
-  
+
   if(gameover==TRUE){
     sprintf(pointmess,"GAME OVER");
     swmess++;
@@ -4506,7 +4494,12 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
       */
       
       DrawString(pixmap,gfont,gcmessage,20,wheight-incy*swgmess+incy*i+5,point);
-      textw=gdk_text_width(gfont,point,strlen(point));      
+      if(gfont!=NULL){
+	textw=gdk_text_width(gfont,point,strlen(point));
+      }
+      else{
+	textw=charw*strlen(point);
+      }
       if(textw>glen)glen=textw;
       if(lh->info.print==0){
 	fprintf(stdout,"%s\n",point);
@@ -5325,3 +5318,31 @@ void InitGameVars(void){
     PrintGameOptions();
 }
 
+int GameOver(struct HeadObjList *lhead,struct Player *players,int actual_player){
+    /* 
+       Conditions for GAME OVER :
+       -no ships or (only pilots and gold less than 1100)
+    */
+  
+  static int n=1;
+  static int player=0;
+  
+  if(player!=actual_player){
+    n=0;
+    player=actual_player;
+  }
+  n--;  
+  if(n>0)return(0);
+
+  n=CountObjs(lhead,-1,SHIP,-1);
+  if(n==0)return(1);
+
+  if(players[player].gold<GetPrice(NULL,SHIP3,ENGINE4,CANNON4)){
+    if(n==CountObjs(lhead,-1,SHIP,PILOT)){ /* there are only pilots */
+      return(1);
+    }
+  }
+  n*=20;
+
+  return(0);
+}

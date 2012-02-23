@@ -2636,7 +2636,12 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   gdk_draw_rectangle(pixmap,penBlack,TRUE,x,y-24,30,24);
   DrawString(pixmap,gfont,penGreen,x,y,point);
 
-  texth=gdk_text_height(gfont,"Lp",2);
+  if(gfont!=NULL){
+    texth=gdk_text_height(gfont,"Lp",2);
+  }
+  else{
+    texth=12;
+  }
   snprintf(point,MAXTEXTLEN,"%d",(int)(distance/SECTORSIZE));
 
 
@@ -4517,8 +4522,6 @@ void DrawCharList (GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct CharListH
     textw=gdk_text_width(font,point,strlen(point));    
     if(textw>glen)glen=textw;
     
-
-    //    printf("%d:  %s\n",n,list->cad);
     list=list->next;
     i++;n++;
     swgmess=n;
@@ -4556,7 +4559,10 @@ void DrawWindow(GdkPixmap *pixmap,GdkFont *font,GdkGC *color0,int x0,int y0,int 
   int first,last,max,scrolln,dif;
 
 
+  if(font==NULL)return;
+
   if(sw==0){
+
     if(font!=NULL){
       charh=gdk_text_height(font,"pL",2);
     }

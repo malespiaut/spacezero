@@ -2289,20 +2289,28 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   static int lastplayer;
   int time;
   float distance;
+  int genemyknown=0;
 
   time=GetTime();
-  if(time>lasttime+10 || time<lasttime || player!=lastplayer){
-    createnearobjsw=1;
-  }
-  
-  if(createnearobjsw){
-    DestroyObjList(&listheadnearobjs);
-    listheadnearobjs.n=0;
-    listheadnearobjs.next=NULL;
-    CreateNearObjsList(&hol,&listheadnearobjs,player);
-    lasttime=GetTime();
-    lastplayer=player;
+  genemyknown=GameParametres(GET,GENEMYKNOWN,0);
+
+  if(genemyknown){
     createnearobjsw=0;
+  }  
+  else{
+    if(time>lasttime+10 || time<lasttime || player!=lastplayer){
+      createnearobjsw=1;
+    }
+    if(createnearobjsw){
+      DestroyObjList(&listheadnearobjs);
+      listheadnearobjs.n=0;
+      listheadnearobjs.next=NULL;
+      CreateNearObjsList(&hol,&listheadnearobjs,player);
+      lasttime=GetTime();
+      lastplayer=player;
+      createnearobjsw=0;
+    }
+    
   }
 
 
@@ -2326,7 +2334,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
       }
     }
 
-    if(keys.l==TRUE){
+    if(keys.l==TRUE && keys.ctrl==FALSE ){
       label++;
       if(label>3)
 	label=0;
@@ -2409,9 +2417,10 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 
   gnet=GameParametres(GET,GNET,0);
   proc=GetProc();
-  
   ls=listheadnearobjs.next;
-
+  if(genemyknown){
+    ls=NULL;
+  }
   while (ls!=NULL){
     if(ls->obj->habitat!=H_SPACE){ls=ls->next;continue;}
     x=x0+(ls->obj->x-objx+cvx)*factor;
@@ -2489,7 +2498,8 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
     switch(ls->obj->type){
     case SHIP:
       if(ls->obj->habitat!=H_SPACE){ls=ls->next;continue;}
-      if(!ENEMIESKNOWN){
+
+      if(!genemyknown){
 	if(players[ls->obj->player].team!=players[player].team){
 	  ls=ls->next;continue;
 	}
@@ -2522,6 +2532,8 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 			 x-1,gheight-y-1,
 			 3,3);
 
+
+
       if(label&1){
 	if(strcmp(ls->obj->name,"x")!=0)
 	  snprintf(point,MAXTEXTLEN,"%d  %s",ls->obj->id,ls->obj->name);
@@ -2531,7 +2543,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 	/*	DrawString(pixmap,gfont,penRed,x+5,game.height-y,point); */
 	DrawString(pixmap,gfont,gc,x+5,gheight-y,point);
       }
-
+      
       break;
     case SHIP:
       gc=gcolors[players[ls->obj->player].color];
@@ -2572,11 +2584,13 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 		     x+2,gheight-y);
        break;
      }
-      if(label&1){
-	snprintf(point,MAXTEXTLEN,"%d",ls->obj->pid);
-	DrawString(pixmap,gfont,gc,x+5,gheight-y,point);
-      }
-      break;
+     if(players[ls->obj->player].team==players[player].team){
+       if(label&1){
+	 snprintf(point,MAXTEXTLEN,"%d",ls->obj->pid);
+	 DrawString(pixmap,gfont,gc,x+5,gheight-y,point);
+       }
+     }
+     break;
     case ASTEROID:      
 
       if(ls->obj->type==ASTEROID){ /* don't draw far asteroids */
@@ -2584,7 +2598,6 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 	if(Distance2NearestShipLessThan(&hol,player,ls->obj->x,ls->obj->y,MAXASTEROIDDISTANCE2)==0){
 	  ls=ls->next;continue;
 	}
-	
 	
       }
       gdk_draw_line(pixmap,penWhite,
@@ -2674,7 +2687,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 
   /***** --mouse position *****/
 
-  }
+} //DrawMap
 
 
 float Distance(Object *obj,float x,float y){
@@ -4367,12 +4380,21 @@ void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
   /* HERE: send kills and deaths to client */
 
   for(i=1;i<nplayers;i++){
-    snprintf(cad,MAXTEXTLEN,"player: %s, [L%d : %d : %1.1f], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
-	     pl[i].playername,pl[i].maxlevel,pl[i].level,(float)pl[i].level/(pl[i].nships+0.0001),
-	     pl[i].nships,pl[i].nbuildships,
-	     pl[i].nplanets,pl[i].nkills,
-	     pl[i].ndeaths);
-    len=strlen(cad);
+    if(pl[i].status==PLAYERACTIVE){
+      snprintf(cad,MAXTEXTLEN,"player: %s, [L%d : %d : %1.1f], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
+	       pl[i].playername,pl[i].maxlevel,pl[i].level,(float)pl[i].level/(pl[i].nships+0.0001),
+	       pl[i].nships,pl[i].nbuildships,
+	       pl[i].nplanets,pl[i].nkills,
+	       pl[i].ndeaths);
+    }
+    else if(pl[i].status==PLAYERDEAD){
+      snprintf(cad,MAXTEXTLEN,"player: %s, [L%d] GAMEOVER, ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
+	       pl[i].playername,pl[i].maxlevel,
+	       pl[i].nships,pl[i].nbuildships,
+	       pl[i].nplanets,pl[i].nkills,
+	       pl[i].ndeaths);
+    }
+      len=strlen(cad);
     if(len>len0){
       len0=len;
       textwidth=gdk_text_width(gfont,cad,len0);

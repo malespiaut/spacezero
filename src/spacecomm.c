@@ -1865,7 +1865,7 @@ int ReadObjsfromBuffer(char *buf){
 	    pnt=SelectObj(&listheadobjs,mess.b);
 	    
 	    for(i=0;i<=gnplayers+1;i++){
-	      if((i!=obj->player) && (players[obj->player].team==players[i].team)){
+	      if( (i!=obj->player) && ((players[obj->player].team==players[i].team) || GameParametres(GET,GENEMYKNOWN,0)) ){
 		if(GetProc()==players[i].proc){
 		  if(IsInIntList((players[i].kplanets),pnt->id)==0){
 		    players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);
@@ -2872,12 +2872,13 @@ void Setttl0(struct HeadObjList *lh){
 
   struct ObjList *ls;
   Object *obj=NULL;
-  int proc,gmode,gcooperative,otherproc;
+  int proc,gmode,gcooperative,otherproc, genemyknown;
   int sw;
 
   proc=GetProc();
   gmode=GameParametres(GET,GMODE,0);
   gcooperative=GameParametres(GET,GCOOPERATIVE,0);
+  genemyknown=GameParametres(GET,GENEMYKNOWN,0);
 
   ls=lh->next;
   while(ls!=NULL){
@@ -2921,12 +2922,24 @@ void Setttl0(struct HeadObjList *lh){
 	      sw=0;
 	    }
 	  }
+	  if(genemyknown){
+	    /* if enemy is known send ships in outer space periodically */
+	    if(obj->habitat==H_SPACE){
+	      SetModified(obj,SENDOBJMOD0);
+	      obj->ttl=0;
+	      sw=0;
+	    }
+	    if(obj->ttl<=MINTTL){/* send now */
+	      obj->ttl=0;
+	      sw=0;
+	    }
+	  }
 
 	  if(sw){ /* reassign  ttl */
 	    otherproc=OtherProc(lh,proc,obj);   /* double buffer */
 	    switch(otherproc){ /*  */
-	    case 0:  /* (4r,inf) */
-	      obj->ttl=90+obj->id%20; /* don't send */
+	    case 0:  /* (4r,inf) r: radar range*/
+	      obj->ttl=150+obj->id%20; /* (90) don't send */
 	      break;
 	    case 1:  /* (3r,4r) */
 	      obj->ttl=58+obj->id%12;    /* don't send */
@@ -3053,8 +3066,11 @@ void Setttl(struct HeadObjList *lh,int n){
   int proc;
   int otherproc;
   int gcooperative;
+  int genemyknown;
+
   proc=GetProc();
   gcooperative=GameParametres(GET,GCOOPERATIVE,0);
+  genemyknown=GameParametres(GET,GENEMYKNOWN,0);
 
   if(n>=0){ /* all objects are set to ttl=n */
     ls=lh->next;
@@ -3090,13 +3106,13 @@ void Setttl(struct HeadObjList *lh,int n){
       case SHIP:
 
 	/* only calc ttl for computer controled ships */
-	if(gcooperative==TRUE && players[obj->player].control==HUMAN){
+	if((gcooperative==TRUE && players[obj->player].control==HUMAN)||  genemyknown){
 	
 	  otherproc=OtherProc(lh,proc,obj);
 	  switch(otherproc){ /*  */
 	    
 	  case 0:  /* (4r,inf) */
-	    obj->ttl=90+obj->id%20;
+	    obj->ttl=150+obj->id%20; /* (old value: 90)*/
 	    if(obj->mode==LANDED && obj->type==SHIP && obj->subtype==TOWER)obj->ttl*=2; 
 	    break;
 	  case 1:  /* (3r,4r) */
@@ -3122,7 +3138,7 @@ void Setttl(struct HeadObjList *lh,int n){
 	    }
 	    break;
 	  case 5:
-	    obj->ttl=(90+obj->id%20);
+	    obj->ttl=(150+obj->id%20); /* old value: 90*/
 	    if(obj->mode==LANDED && obj->type==SHIP && obj->subtype==TOWER)obj->ttl*=2; 
 	    break;
 	  default:

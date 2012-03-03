@@ -724,10 +724,18 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
 
   struct ObjList *ls,*freels;
   Object *ret;
+  int i;
   char text[MAXTEXTLEN];
   int sw=0;
   int swx=0;
   int gnet;
+  int rofplayer[MAXNUMPLAYERS];
+  int nplayers;
+
+  nplayers=GameParametres(GET,GNPLAYERS,0);
+  for(i=0;i<nplayers;i++){
+    rofplayer[i]=0;
+  }
 
   ret=cv0;
   gnet=GameParametres(GET,GNET,0);
@@ -754,7 +762,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
 	swx=1;
 
 	if(ls->obj->habitat==H_PLANET && ls->obj->sw==0){  /* asteroid crashed */
-	  ls->obj->in->planet->gold+=100*pow(2,5-ls->obj->subtype);
+	  ls->obj->in->planet->gold+=50*pow(2,5-ls->obj->subtype);
 	}
 
 	break;
@@ -818,11 +826,22 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
       }
       if(freels->obj==cv0)ret=NULL;
 
+      //      printf("%d\n",freels->obj->player);
+      rofplayer[freels->obj->player]=1;
       RemoveObj(lhobjs,freels->obj);
-
     }
     ls=ls->next;
   }
+
+  /* for(i=0;i<nplayers;i++){ */
+  /*   if(1||rofplayer[i]){ */
+  /*     //      printf("enter0 GAMEOVER\n"); */
+  /*     if(GameOver(lhobjs,p,i)){ */
+  /* 	//	printf("enter GAMEOVER\n"); */
+  /* 	p[i].status=PLAYERDEAD; */
+  /*     } */
+  /*   } */
+  /* } */
   return(ret);
 }
 
@@ -964,11 +983,11 @@ struct Planet *NewPlanet(void){
   s=planet->segment;
   
   x=0;y=0;
-  y=50*Random(-1);
+  y=50*((float)rand()/RAND_MAX);
   s->x0=0;
-  s->y0=50*Random(-1);
-  s->x1=20*Random(-1);
-  s->y1=s->y0+40*(Random(-1))-20;
+  s->y0=50*((float)rand()/RAND_MAX);
+  s->x1=20*((float)rand()/RAND_MAX);
+  s->y1=s->y0+40*((float)rand()/RAND_MAX)-20;
   if(s->y1<0)s->y1=0;
   s->type=TERRAIN;
 
@@ -976,27 +995,27 @@ struct Planet *NewPlanet(void){
   y=s->y1;
   
   /* size and position of landing zone */
-  l=FACTORLANDZONESIZE*(Random(-1))+LANDZONEMINSIZE;
+  l=FACTORLANDZONESIZE*((float)rand()/RAND_MAX)+LANDZONEMINSIZE;
   if(l>width-x)l=width-x;
 
-  x0=(width-LANDZONEMINX-l)*(Random(-1))+LANDZONEMINX;
+  x0=(width-LANDZONEMINX-l)*((float)rand()/RAND_MAX)+LANDZONEMINX;
 
   if(x0<x)x0=x;
 
 
   while(x < width){
     
-    ix =20*(Random(-1));
-    iy =40*(Random(-1))-20;
+    ix =20*((float)rand()/RAND_MAX);
+    iy =40*((float)rand()/RAND_MAX)-20;
 
     if(x>width-100){
       if(y-planet->segment->y0 > 100)factor=2;
 
       if(y>planet->segment->y0){
-	iy =-factor*20*(Random(-1));
+	iy =-factor*20*((float)rand()/RAND_MAX);
       }
       else{
-	iy =20*(Random(-1));
+	iy =20*((float)rand()/RAND_MAX);
       }
     }
 
@@ -3263,7 +3282,6 @@ void CreateNearObjsList(struct HeadObjList *lh,struct HeadObjList *lhn,int playe
       ls1=ls1->next;continue;
     }
 
-
     if(obj1->type!=SHIP){
       ls1=ls1->next;continue;
     }
@@ -4666,3 +4684,19 @@ void DestroyVerletList(struct VerletList *hvl){
   g_memused-=sizeof(struct VerletList);
 }
 
+int GameOver(struct HeadObjList *lhead,struct Player *players,int player){
+    /* 
+       Conditions for GAME OVER :
+       -no ships or (only pilots and gold less than 1100)
+    */
+  int n=0;  
+  n=CountObjs(lhead,player,SHIP,-1);
+  if(n==0)return(1);
+
+  if(players[player].gold<GetPrice(NULL,SHIP3,ENGINE4,CANNON4)){
+    if(n==CountObjs(lhead,player,SHIP,PILOT)){ /* there are only pilots */
+      return(1);
+    }
+  }
+  return(0);
+}

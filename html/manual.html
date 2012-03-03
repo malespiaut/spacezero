@@ -762,6 +762,11 @@
 	    50101.
 	    
 	    <hr>
+
+	    <h3>Saving game options:</h3> By default the options are
+	    saved when the game starts. A new game starts with the
+	    previous game options.
+
 	    <a name="loadsave"></a>
 	    <h3>Loading and saving games:</h3>
 	    
@@ -770,11 +775,12 @@
 	    games.
 	    <br>In a net game only the server can save and load games.
 
+
 	    <h3>Pausing a game:</h3>
 	    
 	    &lt;Ctrl&gt;-p will pause the game.
 	    
-	    
+
 	    <h3>Quitting a game:</h3>
 	    
 	    &lt;Ctrl&gt;-q will quit the game.
@@ -828,7 +834,7 @@
 	<tr><td>f1, f2, f3, f4	</td><td>select a previous marked ship.</td></tr>
 	<tr><td>f5		</td><td>show a ship list.</td></tr>
 	<tr><td>f6		</td><td>show game statistics.</td></tr>
-	<tr><td>f7		</td><td>show game message log.</td></tr>
+	<tr><td>f7		</td><td>show game messages log.</td></tr>
 	<tr><td>o		</td><td>enter in order menu.</td></tr>
 	<tr><td>Esc		</td><td>exit from order menu.<br>cancel an order.<br>close info windows.</td></tr>
 	<tr><td>m		</td><td>show-hide space map.</td></tr>
@@ -849,6 +855,9 @@
 	  <tr><td>SPACE		</td><td>center map on the current ship.</td></tr>
 	  <tr><td>mouse pointer	</td><td>show coordinates.</td></tr>
 	  <tr><td>l		</td><td>show-hide labels.</td></tr>
+	  <tr><td>left mouse button</td><td>selects the nearest ship to mouse pointer.</td></tr>
+	  <tr><td>right mouse button</td><td>send selected ships to pointer coordinates.</td></tr>
+
 	</tbody></table>
 	
 	<a name="commandline"></a>	      
@@ -889,7 +898,10 @@
 	    <tr><td>-cooperative.         </td><td>Cooperative mode.</td></tr>
 	    <tr><td>-compcooperative.         </td><td>Computer cooperative mode.</td></tr>
 	    <tr><td>-queen.         </td><td>Queen mode.</td></tr>
+	    <tr><td>-pirates.         </td><td>Add a team of pirates (default).</td></tr>
 	    <tr><td>-nopirates.         </td><td>Don't add a team of pirates.</td></tr>
+	    <tr><td>-enemyknown.         </td><td>All enemies are known.</td></tr>
+	    <tr><td>-noenemyknown.         </td><td>All enemies are unknown (default).</td></tr>
 	</tbody></table>
 	
 	<br>
@@ -898,8 +910,6 @@
 	    <tr><td>-ip IP.   </td><td>Where IP is the ip of the server.</td></tr>
 	    <tr><td>-port n.  </td><td>Where n and n+1 are the ports used. (default 50100).</td></tr>
 	</tbody></table>
-	
-
 	
 	<br>
 </td></tr></tbody></table>
@@ -935,7 +945,7 @@
 
 <div class="footer"><hr>
   <p>Copyright © 2010-2012 MRevenga <br>
-    Site last updated Jan. 29, 2012</p>
+    Site last updated Mar. 3, 2012</p>
 </div>
 </div>
 <div class="leftcolumn">

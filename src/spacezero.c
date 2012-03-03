@@ -85,7 +85,7 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.02"};
+char version[64]={"0.83.03"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Feb. 2012"};
@@ -146,8 +146,6 @@ struct MenuHead *menuhead;
 /*void signal_handler(int ,siginfo_t *,void *);*/
 void int_handler(int);
 void segfault_handler(int);
-int GameOver(struct HeadObjList *lhead,struct Player *players,int actual_player);
-
 
 int main(int argc,char *argv[]){
   /*
@@ -770,10 +768,21 @@ gint MainLoop(gpointer data){
   /* GAME OVER */
 
   if(GameParametres(GET,GPAUSED,0)==FALSE){
-    if(GameOver(&listheadplayer,players,actual_player)){
+
+    /*    if(GameOver(&listheadplayer,players,actual_player)){ 
+      gameover=TRUE; 
+      observeenemies=TRUE; 
+    } 
+    */
+    if(players[actual_player].status==PLAYERDEAD) {
       gameover=TRUE;
       observeenemies=TRUE;
     }
+    else{
+       gameover=FALSE; 
+      /* observeenemies=FALSE; */
+    }
+
   }
 
   if(gameover==TRUE){
@@ -1034,7 +1043,7 @@ gint MainLoop(gpointer data){
 	}
       }
       DestroyCharList(&gameloglist);
-      SetDefaultKeyValues(&keys,0);
+      //HERECTRL      SetDefaultKeyValues(&keys,0);
       CheckGame("Checking game after load...",1);
       printf("done\n");
     }
@@ -1419,6 +1428,16 @@ gint MainLoop(gpointer data){
     }
   }
 
+  /* Check for GAMEOVER */
+
+  for(i=1;i<GameParametres(GET,GNPLAYERS,0)+1;i++){
+    if(!((cont+i)%30) && players[i].status==PLAYERACTIVE){
+      if(GameOver(&listheadobjs,players,i)){
+	players[i].status=PLAYERDEAD;
+      }
+    }
+  }
+
   cont++;
   if(1){
     static double t=0,tt=0;
@@ -1679,7 +1698,7 @@ void key_eval(struct Keys *key){
     
     if(keyf>=0) {
       if(key->ctrl==TRUE){
-	key->ctrl=FALSE;
+      	key->ctrl=FALSE;
 	if(cv!=NULL)
 	  fobj[keyf]=cv->id;
       }
@@ -2780,16 +2799,20 @@ void Collision(struct HeadObjList *lh){
 		  if(gnet==TRUE){
 		    struct NetMess mess;
 		    mess.id=NMPLANETDISCOVERED;
-		    mess.a=obj->id;
-		    mess.b=pnt->id;
+		    mess.a=obj->id; /*  */
+		    mess.b=pnt->id; /*  */
 		    NetMess(&mess,NMADD);
 		  }
 		  for(i=0;i<=gnplayers+1;i++){
-		    if(players[obj->player].team==players[i].team){
+		    if(players[obj->player].team==players[i].team || 
+		       (GameParametres(GET,GENEMYKNOWN,0) && players[obj->player].team > 1)){
 		      players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);
-		      snprintf(text,MAXTEXTLEN,"(%d) PLANET %d discovered",obj->pid,pnt->id);
-		      if(!Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0)){
-			Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
+
+		      if(players[obj->player].team==players[i].team ){
+			snprintf(text,MAXTEXTLEN,"(%d) PLANET %d discovered",obj->pid,pnt->id);
+			if(!Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0)){
+			  Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
+			}
 		      }
 		    }
 		  }
@@ -3188,8 +3211,8 @@ void Collision(struct HeadObjList *lh){
 		      if(gnet==TRUE && proc!=players[obj1->in->player].proc){
 			struct NetMess mess;
 			mess.id=NMPLANETLOST;
-			mess.a=obj1->in->player;
-			mess.b=obj1->in->id;
+			mess.a=obj1->in->player; /* player that conquer */
+			mess.b=obj1->in->id;     /* id of the planet */
 			NetMess(&mess,NMADD);
 		      }
 		    }
@@ -4326,7 +4349,7 @@ void DrawInfo(GdkPixmap *pixmap,Object *obj){
 #if TEST
     x+=15*charw;
     gc=penRed;
-    sprintf(point,"T:%d   S:%d   P:%d   A:%d  T:%d  Pi:%d Ob/s(%.2f) FPS:%.1f",
+    sprintf(point,"T:%d   S:%d   P:%d   A:%d  T:%d  Pi:%d Ob/s(%.1f) FPS:%.1f",
 	    CountObjs(&listheadobjs,-1,-1,-1),
 	    CountObjs(&listheadobjs,-1,SHIP,-1),
 	    CountObjs(&listheadobjs,-1,PROJECTILE,-1),
@@ -4790,9 +4813,10 @@ void GetPointsObj(struct HeadObjList *lhobjs,struct Player *p,Object *obj){
 void PrintGameOptions(void){
 
   printf("actual game options:\n");
-  printf("\tNUM GALAXIES: %d\n",GameParametres(GET,GNGALAXIES,0));
-  printf("\tNUM PLANETS: %d\n",GameParametres(GET,GNPLANETS,0));
-  printf("\tNUM PLAYERS: %d\n",GameParametres(GET,GNPLAYERS,0));
+  printf("\tUniverse size: %d\n",GameParametres(GET,GULX,0));
+  printf("\tNumber of Galaxies: %d\n",GameParametres(GET,GNGALAXIES,0));
+  printf("\tNumber of planets: %d\n",GameParametres(GET,GNPLANETS,0));
+  printf("\tNumber of players: %d\n",GameParametres(GET,GNPLAYERS,0));
   if(GameParametres(GET,GKPLANETS,0)==TRUE){
     printf("\tPlanets are known by all the players.\n");
   }
@@ -4820,8 +4844,12 @@ void PrintGameOptions(void){
     printf("\tpirates: yes\n");
   else
     printf("\tpirates: no\n");
-  
-  printf("\tUniverse size: %d\n",GameParametres(GET,GULX,0));
+
+  if(GameParametres(GET,GENEMYKNOWN,0))
+    printf("\tEnemy are known: yes\n");
+  else
+    printf("\tEnemy are known: no\n");
+ 
 
   if(GameParametres(GET,GNET,0))
     printf("\tnet game: yes\n");
@@ -4874,6 +4902,12 @@ void SetGameParametres(struct Parametres param){
   if(param.pirates==FALSE){
     GameParametres(SET,GPIRATES,FALSE);
   }
+
+  if(param.enemyknown==TRUE){
+    GameParametres(SET,GENEMYKNOWN,TRUE);
+  }
+
+
 #if DEBUG
   if(debuginit){
     printf("\tpirates: %d %d\n",param.pirates,GameParametres(GET,GPIRATES,0));
@@ -5000,6 +5034,7 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
     snprintf(players[i].playername,MAXTEXTLEN,"player%d",i);
     players[i].id=i;
+    players[i].status=PLAYERACTIVE;
     players[i].pid=GameParametres(GET,GNPLANETS,0)+1;
     players[i].proc=0;
     players[i].control=COMPUTER;
@@ -5094,7 +5129,7 @@ void AddPlanets2List(struct HeadObjList *listheadobjs,struct Player *players){
   int i;
 
   if(listheadobjs==NULL || players==NULL){
-    fprintf(stderr,"ERROR in AddPlanet2List()\n");
+    fprintf(stderr,"ERROR in AddPlanets2List()\n");
     exit(-1);
   }
 
@@ -5104,7 +5139,7 @@ void AddPlanets2List(struct HeadObjList *listheadobjs,struct Player *players){
       for(i=0;i<GameParametres(GET,GNPLAYERS,0)+1;i++){
 	if(GameParametres(GET,GKPLANETS,0)==TRUE ||
 	   players[ls->obj->player].team==players[i].team ||
-	   (ENEMIESKNOWN==TRUE && players[ls->obj->player].team > 1) ){
+	   (GameParametres(GET,GENEMYKNOWN,0)==TRUE && players[ls->obj->player].team > 1) ){
 	  players[i].kplanets=Add2IntList((players[i].kplanets),ls->obj->id);
 	}
       }
@@ -5318,31 +5353,3 @@ void InitGameVars(void){
     PrintGameOptions();
 }
 
-int GameOver(struct HeadObjList *lhead,struct Player *players,int actual_player){
-    /* 
-       Conditions for GAME OVER :
-       -no ships or (only pilots and gold less than 1100)
-    */
-  
-  static int n=1;
-  static int player=0;
-  
-  if(player!=actual_player){
-    n=0;
-    player=actual_player;
-  }
-  n--;  
-  if(n>0)return(0);
-
-  n=CountObjs(lhead,-1,SHIP,-1);
-  if(n==0)return(1);
-
-  if(players[player].gold<GetPrice(NULL,SHIP3,ENGINE4,CANNON4)){
-    if(n==CountObjs(lhead,-1,SHIP,PILOT)){ /* there are only pilots */
-      return(1);
-    }
-  }
-  n*=20;
-
-  return(0);
-}

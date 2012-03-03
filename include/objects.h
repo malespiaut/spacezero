@@ -187,6 +187,12 @@
 #define PLAYERSTRATRANDOM 1  /* choose a random planet to attack */
 #define PLAYERSTRATSTRONG 2  /* from strongest to nearest */
 
+/* player status */
+#define PLAYERNULL 0
+#define PLAYERACTIVE 1
+#define PLAYERIDLE 2
+#define PLAYERDEAD 3
+
 #define OBJNAMESMAXLEN 16  /*max size of objs names. */
 
 struct _Segment{
@@ -526,6 +532,7 @@ struct Global{
 struct Player{
   char playername[MAXTEXTLEN]; /* name of the player */
   short id;          /* player id */
+  int status;        /* player status */
   int pid;           /* last ship player id  */
   short proc;        /* machine that controls it */
   short control;     /* HUMAN or COMPUTER */
@@ -546,7 +553,7 @@ struct Player{
   int nkills;        /* number of enemies killed  */
   int points;        /*  */
   short modified;    /* used in communication */
-  short ttl;
+  short ttl;         /* used in communication */
 
   struct IntList *kplanets;
   struct HeadIntIList ksectors;
@@ -607,6 +614,7 @@ int GetLandedZone(Segment *segment,struct Planet *planet);
 
 Object *RemoveDeadObjs(struct HeadObjList *lhobjs,Object *,struct Player *p);
 void RemoveObj(struct HeadObjList *lhobjs,Object *obj2remove);
+int GameOver(struct HeadObjList *lhead,struct Player *players,int actual_player);
 
 int CountObjs(struct HeadObjList *lh,int player,int type,int subtype);
 int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int type,int subtype,int max);

@@ -50,10 +50,13 @@
 #define ARG_compcooperative 18
 #define ARG_queen 19
 #define ARG_pirates 20
-#define ARG_font 21
-#define ARG_geom 22
-#define ARG_nomenu 23
-#define ARG_fontlist 24
+#define ARG_nopirates 21
+#define ARG_enemyknown 22
+#define ARG_noenemyknown 23
+#define ARG_font 24
+#define ARG_geom 25
+#define ARG_nomenu 26
+#define ARG_fontlist 27
 
 struct Parametres{
   int ngalaxies;
@@ -70,6 +73,7 @@ struct Parametres{
   int compcooperative;
   int queen;
   int pirates;
+  int enemyknown;
   int menu;
   int server;
   int client;

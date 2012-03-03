@@ -3487,7 +3487,7 @@ int OtherProc(struct HeadObjList *lh,int p,Object *obj0){
     check if there are a near ship belonging to another proccessor  
     only look for SHIPS
     return:
-    > 0  if there are an object nearer than  belonges to another proccessor.
+    > 0  if there are an close object that  belongs to another proccessor.
       0 if there are no near enemies.
       1 if its closer than 4 radar range
       2 if its closer than 2 radar range

@@ -171,6 +171,12 @@ char *GetOptionValue(int id){
     else
       sprintf(point,"NO");
     break;
+  case ITEM_enemyknown:
+    if(param.enemyknown==TRUE)
+      sprintf(point,"YES");
+    else
+      sprintf(point,"NO");
+    break;
   case ITEM_ip:
     /* printf("IP:%s\n",param.IP); */
     snprintf(point,MAXTEXTLEN,"%s",param.IP);
@@ -410,6 +416,13 @@ struct MenuHead *CreateMenu(void){
   strcpy(item.value,"");
   item.nexthead=NULL;
   Add2MenuHead(mgameoptions,&item,"Pirates: ");
+
+  item.id=ITEM_enemyknown;
+  item.type=MENUITEMBOOL;
+  item.active=ITEM_ST_FALSE;
+  strcpy(item.value,"");
+  item.nexthead=NULL;
+  Add2MenuHead(mgameoptions,&item,"Enemies are known: ");
 
   item.id=ITEM_cooperative;
   item.type=MENUITEMBOOL;
@@ -752,6 +765,9 @@ void Funct01(struct MenuItem *item,char *value){
       break;
     case ITEM_pirates:
       param.pirates=param.pirates==TRUE?FALSE:TRUE;
+      break;
+    case ITEM_enemyknown:
+      param.enemyknown=param.enemyknown==TRUE?FALSE:TRUE;
       break;
 
     default:

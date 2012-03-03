@@ -15,12 +15,10 @@ libopenal_dev
 bugs:(last:120)
 ====
 
--[26] (010910) al pasar al modo manual siempre dispara. (posible disparo a EXPLOSION, objnext no eliminado)
--[41] (011010) Desfase de un frame en los misiles (y tiros?) entre el cliente y el servidor.
+
 -[54] (021110) (in human play)if send to someplace send, dont wait to good state. save04
 -[65] (071210) Debug Warning 2 SetModified()PLANET:trying to change mode (3) 42 to 40
       	       ERROR :setttl0() mode 42 unknown, obj type: 3
--[71](221210) Ships shooting in planet to unexisting ship.Save and load fix it.
 -[72](271210)Debug Warning 2 SetModified()PLANET:trying to change mode (1) 43 to 41
 	     Debug Warning 2 SetModified()PLANET:trying to change mode (1) 43 to 41
 	     Debug Warning 2 SetModified()PLANET:trying to change mode (1) 43 to 34
@@ -52,11 +50,18 @@ Version 0.8 (since 10May2011)
 
 -!!Rewrite NearestObjAll(), call less times.
 -!!Reordenar, jerarquizar codigo, ficheros.
--!!Disminuir numero de variables extern (97),58,72,76,92 grep extern src/*.c include/*h |grep ";" |wc
--!!Disminuir los HERE (74)88,69  grep HERE src/*c include/*h|wc
+-!!Disminuir numero de variables extern (97),58,72,76,92,111 grep extern src/*.c include/*h |grep ";" |wc
+-!!Disminuir los HERE (74)88,69,83  grep HERE src/*c include/*h|wc
+-!!toroidal Universe as option.
+-!!Damage in collision depends on mass and velocity. Elastic shocks. 
+-!!Change ksectorslist for a three elements list: id,x,y.
+-!!In terminal, messages repite so much.
+-!!In pause mode consumes CPU, redraw every 5 steps..
+-!!Improve CreateContainerList()
+-!!Improve Risk()
+
 -Game statistics.
 -Create list of load (lista de carga).
--!!toroidal Universe as option.
 -math function tables.
 -Objects with sons(shots are sons of the ships).
 -nav_mode in every ship, object propierty(?)
@@ -64,15 +69,9 @@ Version 0.8 (since 10May2011)
 -!change MISSILE to type SHIP
 -frames/s when save/load.
 -?Use same struct for planets and known sectors in struct Player.
--!!Damage in collision depends on mass and velocity. Elastic shocks. 
--!!Change ksectorslist for a three elements list: id,x,y.
--!!In terminal, messages repite so much.
--!!In pause mode consumes CPU, redraw every 5 steps..
 -Dont createlists in execload()
 -Explosions: add ship parts.
 -!!Merge UpdateShip() y UpdateAsteroid() ??
--!!Improve CreateContainerList()
--!!Improve Risk()
 -send drawmissile in DrawObjs() to DrawShip()
 -When select a planet, center map on it , if its known.
 -Measure distances in map view.
@@ -93,30 +92,29 @@ Ships:
 
 AI:    
 ===
-
+-!!Fast ship pursuing a slow one: improve ,adjust velocity.
 -!!When an enemy ship is near a planet send only the necessary ships.
--Orbit in automatic mode(Take off).
--When parent dies, send orders to object sons.
+-!! Review buy() and upgrade()
+-!A planet with to many ships, redistribute ships.
+-!!check rules in ally planet. If is empty: conquer.
+-Add a different way to attack planets. 
 -evasion maneuver.
 -Avoid enemy shots.
+-Orbit in automatic mode(Take off).
+-When parent dies, send orders to object sons.
 -Las ordenes dependen de unos objetivos a cumplir.
--!!Fast ship pursuing a slow one: improve ,adjust velocity.
 -ChooseOrder to matrix form.
 	     -send TAKEOFF to ATTACK and GOTO.
 -!!Send to asteroids from ControlCenter().
 -Improve attack. loop attack. save3
 -!!few planets, a lot of gold => buy ships and conquer. save9
 -!!Merge  ccdata to  player struct.
--!! Review buy() and upgrade()
--!A planet with to many ships, redistribute ships.
--!!check rules in ally planet. If is empty: conquer.
--Add a different way to attack planets. 
 
 
 
 Comm:
 ====
--!!Rewrite a server
+-!!!!Rewrite a server
 -in Object: Change int by boolean (to improve comm)
 -!Compress data.
 
@@ -128,7 +126,6 @@ Save
 Command shell:
 ==============
 
--!!ENEMIESKNOWN as game option.
 -!Save several games.
 -Add select x y
 -Add RETREAT n
@@ -152,6 +149,15 @@ Version 1.0
 -Multiplayer. (+ of two players)
 -3D world interaction.
 -Bitmaps, SDL, opengl??
+
+
+DONE:Version 0.82 (since 30 Jan. 2012)
+=====================================
+X-(250212)!!ENEMIESKNOWN as game option.
+
+BUGS version 0.82
+=================
+
 
 /*********************************************************************************/
 DONE:Version 0.80 (since 10 May. 2011)
@@ -237,7 +243,9 @@ X-Size of font.
 X-(050911)[118]explorer doesnt respond to RETREAT and GOTO n (save10)
 	  GOTO n=>Not Allowed. Planet or ship 15 unknown. (15 is a undiscoverd empty nearest planet)
 X-(181011)[119]Landed ship changes continuously GOTO x <-> NOTHING
-
+X-(xxxx11)[26] (010910) al pasar al modo manual siempre dispara. (posible disparo a EXPLOSION, objnext no eliminado)
+X-(xxxx11)[41] (011010) Desfase de un frame en los misiles (y tiros?) entre el cliente y el servidor.
+X-(xxxx11)[71](221210) Ships shooting in planet to unexisting ship.Save and load fix it.
 
 /********************************************************************************/
 DONE:Version 0.78 (since 10 Jan. 2011)

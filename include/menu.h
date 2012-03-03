@@ -60,21 +60,22 @@
 #define ITEM_compcooperative 16
 #define ITEM_queen 17
 #define ITEM_pirates 18
-#define ITEM_font 19
-#define ITEM_geom 20
-#define ITEM_start 21
-#define ITEM_quit 22 
-#define ITEM_server 23 
-#define ITEM_client 24
-#define ITEM_default 25 
-#define ITEM_fire 26
-#define ITEM_turnleft 27
-#define ITEM_turnright 28
-#define ITEM_accel 29
-#define ITEM_automode 30
-#define ITEM_manualmode 31
-#define ITEM_map 32
-#define ITEM_order 33
+#define ITEM_enemyknown 19
+#define ITEM_font 20
+#define ITEM_geom 21
+#define ITEM_start 22
+#define ITEM_quit 23 
+#define ITEM_server 24 
+#define ITEM_client 25
+#define ITEM_default 26 
+#define ITEM_fire 27
+#define ITEM_turnleft 28
+#define ITEM_turnright 29
+#define ITEM_accel 30
+#define ITEM_automode 31
+#define ITEM_manualmode 32
+#define ITEM_map 33
+#define ITEM_order 34
 
 
 

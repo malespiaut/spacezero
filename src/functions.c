@@ -199,6 +199,10 @@ int GameParametres(int option,int param,int value){
     case GPIRATES:
       game.pirates=value;
       break;
+    case GENEMYKNOWN:
+      game.enemyknown=value;
+      break;
+
     case GNGALAXIES:       /* number of galaxies */
       game.ngalaxies=value;
       break;
@@ -260,6 +264,7 @@ int GameParametres(int option,int param,int value){
       game.compcooperative=FALSE;
       game.queen=FALSE;
       game.pirates=TRUE;
+      game.enemyknown=FALSE;
       game.ngalaxies=NUMGALAXIES;
       game.nplayers=NUMPLAYERS;
       game.nplanets=NUMPLANETS;
@@ -310,6 +315,9 @@ int GameParametres(int option,int param,int value){
     case GPIRATES:
       ret=game.pirates;
       break;
+    case GENEMYKNOWN:
+      ret=game.enemyknown;
+      break;
     case GNGALAXIES:       /* number of galaxies */
       ret=game.ngalaxies;
       break;
@@ -334,7 +342,6 @@ int GameParametres(int option,int param,int value){
     case GSOUNDVOL:          /* TRUE FALSE game paused */
       ret=game.soundvol;
       break;
-
     case GPAUSED:          /* TRUE FALSE game paused */
       ret=game.paused;
       break;

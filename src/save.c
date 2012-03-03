@@ -271,12 +271,13 @@ int ExecSave(struct HeadObjList lh,char *nom){
   
   printf("record: %d\n",record);
   
-  fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d\n",
+  fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d\n",
 	  GameParametres(GET,GWIDTH,0),GameParametres(GET,GHEIGHT,0),
 	  GameParametres(GET,GNET,0),
 	  GameParametres(GET,GNGALAXIES,0),GameParametres(GET,GNPLAYERS,0),
 	  GameParametres(GET,GNPLANETS,0),GameParametres(GET,GKPLANETS,0),
-	  GameParametres(GET,GPIRATES,0),GameParametres(GET,GCOOPERATIVE,0),
+	  GameParametres(GET,GPIRATES,0),GameParametres(GET,GENEMYKNOWN,0),
+	  GameParametres(GET,GCOOPERATIVE,0),
 	  GameParametres(GET,GCOMPCOOPERATIVE,0),GameParametres(GET,GQUEEN,0));
   
   
@@ -361,9 +362,10 @@ int ExecSave(struct HeadObjList lh,char *nom){
     }
     
     nsectors=players[i].ksectors.n;
-    fprintf(fp,"%s %d %d %d %d %d %d %d %d %d %d %d %d %d %f %d %d %d %d %d %d ",
+    fprintf(fp,"%s %d %d %d %d %d %d %d %d %d %d %d %d %d %d %f %d %d %d %d %d %d ",
 	    players[i].playername,
 	    players[i].id,
+	    players[i].status,
 	    players[i].pid,
 	    players[i].proc,
 	    players[i].control,
@@ -607,6 +609,13 @@ int ExecLoad(char *nom){
     perror("fscanf");
     exit(-1);
   }
+  GameParametres(SET,GENEMYKNOWN,tmpint);
+
+
+  if(fscanf(fp,"%d",&tmpint)!=1){ 
+    perror("fscanf");
+    exit(-1);
+  }
   GameParametres(SET,GCOOPERATIVE,tmpint);
 
   if(fscanf(fp,"%d",&tmpint)!=1){ 
@@ -765,9 +774,10 @@ int ExecLoad(char *nom){
   }
 
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    if(fscanf(fp,"%128s%hd%d%hd%hd%hd%hd%hd%hd%d%d%d%d%d%f%d%d%d%d%d%d",
+    if(fscanf(fp,"%128s%hd%d%d%hd%hd%hd%hd%hd%hd%d%d%d%d%d%f%d%d%d%d%d%d",
 	      players[i].playername,
 	      &players[i].id,
+	      &players[i].status,
 	      &players[i].pid,
 	      &players[i].proc,
 	      &players[i].control,
@@ -785,7 +795,7 @@ int ExecLoad(char *nom){
 	      &players[i].ndeaths,
 	      &players[i].nkills,
 	      &players[i].points,
-	      &nkp,&nks)!=21){
+	      &nkp,&nks)!=22){
       perror("fscanf");
       exit(-1);
     }
@@ -1830,11 +1840,11 @@ void SaveParamOptions(char *file,struct Parametres *par){
   }
   printf("saving options to file: %s\n",file);
   fprintf(fp,"%s\n",version);
-  fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+  fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
 	  par->ngalaxies,par->nplanets, par->nplayers, par->ul,par->kplanets,
 	  par->sound,par->music,par->soundvol,par->musicvol,
 	  par->cooperative,par->compcooperative,par->queen,
-	  par->pirates,par->port);
+	  par->pirates,par->enemyknown,par->port);
   
   if(strlen(par->IP)==0)strncpy(par->IP,DEFAULT_IP,MAXTEXTLEN);
   fprintf(fp,"%s\n",par->IP);
@@ -1874,11 +1884,11 @@ int LoadParamOptions(char *file,struct Parametres *par){
     return(1);
   }
 
-  if(fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
+  if(fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
 	 &par->ngalaxies,&par->nplanets, &par->nplayers, &par->ul,&par->kplanets,
 	 &par->sound,&par->music,&par->soundvol,&par->musicvol,
 	 &par->cooperative,&par->compcooperative,&par->queen,
-	    &par->pirates,&par->port)!=14){
+	    &par->pirates,&par->enemyknown,&par->port)!=15){
     perror("fscanf");
     exit(-1);
   }
@@ -1905,11 +1915,11 @@ int LoadParamOptions(char *file,struct Parametres *par){
 void PrintParamOptions(struct Parametres *par){
 
   printf("version:\"%s\"\n",version);
-  printf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+  printf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
 	 par->ngalaxies,par->nplanets, par->nplayers, par->ul,par->kplanets,
 	 par->sound,par->music,par->soundvol,par->musicvol,
 	 par->cooperative,par->compcooperative,par->queen,
-	 par->pirates,par->port);
+	 par->pirates,par->enemyknown,par->port);
   
   printf("IP:\"%s\"\n",par->IP);
   printf("name:\"%s\"\n",par->playername);

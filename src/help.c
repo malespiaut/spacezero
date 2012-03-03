@@ -49,6 +49,7 @@ void PrintArguments(struct Parametres param,char *title){
   printf("\tcomputer cooperative mode: %d\n",param.compcooperative);
   printf("\tQueen mode: %d\n",param.queen);
   printf("\tpirates: %d\n",param.pirates);
+  printf("\tenemy known: %d\n",param.enemyknown);
 
   printf("\tUniverse size: %d\n",param.ul);
   printf("\tSERVER: %d\n",param.server);
@@ -70,7 +71,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   
 
   int i;
-  char arg[29]="";
+  char arg[32]="";
 
   struct Validargum validarg[]={{"h",ARG_h},{"g",ARG_g},{"n",ARG_n},
 				{"p",ARG_p},{"t",ARG_t},{"l",ARG_l},
@@ -82,7 +83,10 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 				{"cooperative",ARG_cooperative},
 				{"compcooperative",ARG_compcooperative},
 				{"queen",ARG_queen},
-				{"nopirates",ARG_pirates},
+				{"pirates",ARG_pirates},
+				{"nopirates",ARG_nopirates},
+				{"enemyknown",ARG_enemyknown},
+				{"noenemyknown",ARG_noenemyknown},
 				{"nomenu",ARG_nomenu},
 				{"fontlist",ARG_fontlist},
 				{"",ARG_0}};
@@ -398,7 +402,16 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 	par->queen=1;
 	break;
       case ARG_pirates:
+	par->pirates=TRUE;
+	break;
+      case ARG_nopirates:
 	par->pirates=FALSE;
+	break;
+      case ARG_enemyknown:
+	par->enemyknown=TRUE;
+	break;
+      case ARG_noenemyknown:
+	par->enemyknown=FALSE;
 	break;
       case ARG_nomenu:
 	par->menu=FALSE;
@@ -489,7 +502,13 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "-queen\t\t Queen mode.\n" );
   (void) fprintf( stdout, 
+		  "-pirates\t Add a team of pirates (default).\n" );
+  (void) fprintf( stdout, 
 		  "-nopirates\t Don't add a team of pirates.\n" );
+  (void) fprintf( stdout, 
+		  "-enemyknown\t All anemies are known.\n" );
+  (void) fprintf( stdout, 
+		  "-noenemyknown\t All anemies are unknown (default).\n" );
   (void) fprintf( stdout, 
 		  "\nMULTIPLAYER OPTIONS:\n" );
   (void) fprintf( stdout, 
@@ -766,6 +785,7 @@ void SetDefaultParamValues(struct Parametres *par){
   par->queen=FALSE;
 
   par->pirates=TRUE;
+  par->enemyknown=FALSE;
   par->menu=TRUE;
 
   par->server=FALSE;

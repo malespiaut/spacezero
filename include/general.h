@@ -46,8 +46,8 @@
 #define PI 3.14159265
 
 
-#define MINORSAVEVERSION "0.81.23" /* the save file must be at least this version */
-#define MINOROPTIONSVERSION "0.81.57" /* the options file must be at least this version */
+#define MINORSAVEVERSION "0.83.03" /* the save file must be at least this version */
+#define MINOROPTIONSVERSION "0.83.03" /* the options file must be at least this version */
 
 #define MAXTEXTLEN 128
 
@@ -70,7 +70,6 @@
 #define MINLEVELPILOT 1        /* min level of a ship to have a survival pod, (only fighters)*/
 
 #define PLANETSKNOWN 0
-#define ENEMIESKNOWN 0
 #define SLOWMACHINE 0
 
 
@@ -154,16 +153,17 @@
 #define GCOMPCOOPERATIVE 9  /* Computer cooperative mode game */
 #define GQUEEN     10        /* Queen mode game */
 #define GPIRATES   11        /* Create pirates or not */
-#define GNGALAXIES 12       /* number of galaxies */
-#define GNPLAYERS  13        /* number of players */
-#define GNPLANETS  14        /* number of planets */
-#define GKPLANETS  15       /* TRUE FALSE planets known or unknown */ 
-#define GMUSIC     16       /* TRUE FALSE music */
-#define GSOUND     17       /* TRUE FALSE sound */
-#define GMUSICVOL  18       /* 0..100 music volume */
-#define GSOUNDVOL  19       /* 0..100 sound volume */
-#define GPAUSED    20       /* TRUE FALSE game paused */
-#define GQUIT      21       /* 0,1,2 really quit? */
+#define GENEMYKNOWN   12        /* Enemies are known */
+#define GNGALAXIES 13       /* number of galaxies */
+#define GNPLAYERS  14        /* number of players */
+#define GNPLANETS  15        /* number of planets */
+#define GKPLANETS  16       /* TRUE FALSE planets known or unknown */ 
+#define GMUSIC     17       /* TRUE FALSE music */
+#define GSOUND     18       /* TRUE FALSE sound */
+#define GMUSICVOL  19       /* 0..100 music volume */
+#define GSOUNDVOL  20       /* 0..100 sound volume */
+#define GPAUSED    21       /* TRUE FALSE game paused */
+#define GQUIT      22       /* 0,1,2 really quit? */
 
 
 /*    Error codes for all functions */
@@ -220,6 +220,7 @@ struct Game{
   int compcooperative;
   int queen;
   int pirates;
+  int enemyknown;
   int ngalaxies;       /* number of galaxies */
   int nplayers;        /* number of players */
   int nplanets;        /* number of planets */

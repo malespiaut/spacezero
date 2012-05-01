@@ -835,14 +835,18 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
 
   if(keyval==keys.fire.value){
     keys.fire.state=TRUE;
+    keys.manualmode.state=TRUE;
   }
   if(keyval==keys.turnleft.value){
     keys.turnleft.state=TRUE;
+    keys.manualmode.state=TRUE;
   }
   if(keyval==keys.turnright.value){
     keys.turnright.state=TRUE;
+    keys.manualmode.state=TRUE;
   }
   if(keyval==keys.accel.value){
+    keys.manualmode.state=TRUE;
     keys.accel.state=TRUE;
   }
   if(keyval==keys.manualmode.value){
@@ -1472,10 +1476,10 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
       
     case SHIP:
       switch(ls->obj->subtype){
-      case SHIP1:
+      case EXPLORER:
       case SHIP2:
-      case SHIP3:
-      case SHIP4:
+      case FIGHTER:
+      case QUEEN:
       case SATELLITE:
       case TOWER:	
       case PILOT:
@@ -1654,16 +1658,16 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
   gc2=gcobj[color];
 
   switch(obj->subtype){
-  case SHIP1:
+  case EXPLORER:
     s=s1;
     break;
   case SHIP2:
     s=s2;
     break;
-  case SHIP3:
+  case FIGHTER:
     s=s3;
     break;
-  case SHIP4:
+  case QUEEN:
     s=s4;
     break;
   case TOWER:
@@ -1713,10 +1717,10 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
     }
     break;
 
-  case SHIP1:
+  case EXPLORER:
   case SHIP2:
-  case SHIP3:
-  case SHIP4:
+  case FIGHTER:
+  case QUEEN:
     
     rcosa=obj->radio*cos(obj->a);
     rsina=obj->radio*sin(obj->a);
@@ -3198,7 +3202,7 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *
   n=CountTextList(head);
   m=PosTextList(head,1);
   scroll=0;
-  if(m>h/2 &&n>h){
+  if(m>h/2 && n>=h){
     scroll=m-h/2;
   }
   gc=penGreen;
@@ -4053,7 +4057,7 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
  
    XPrintTextList(pixmap,gfont,titleships,&shiplist,10,15,textsw+charw+10,GameParametres(GET,GHEIGHT,0)-50); 
 
-  XPrintTextList(pixmap,gfont,"PLANETS:",&planetlist,GameParametres(GET,GWIDTH,0)-textpw-20,15,textpw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
+   XPrintTextList(pixmap,gfont,"PLANETS:",&planetlist,GameParametres(GET,GWIDTH,0)-textpw-20,15,textpw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
 
   return;
 }
@@ -4380,7 +4384,7 @@ void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
   /* HERE: send kills and deaths to client */
 
   for(i=1;i<nplayers;i++){
-    if(pl[i].status==PLAYERACTIVE){
+    if(pl[i].status>=PLAYERACTIVE){
       snprintf(cad,MAXTEXTLEN,"player: %s, [L%d : %d : %1.1f], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
 	       pl[i].playername,pl[i].maxlevel,pl[i].level,(float)pl[i].level/(pl[i].nships+0.0001),
 	       pl[i].nships,pl[i].nbuildships,

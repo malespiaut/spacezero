@@ -107,7 +107,7 @@ struct CCDATA{
 
 
 void ai(struct HeadObjList *lhobjs,Object *obj,int actual_player);
-
+void aimisil(struct HeadObjList *lhobjs,Object *obj,int act_player);
 
 int HigherPoint(struct Planet *planet);
 void ControlCenter(struct HeadObjList *lhobjs,struct Player player);

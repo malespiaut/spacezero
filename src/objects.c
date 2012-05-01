@@ -74,6 +74,8 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
     exit(-1);
   }
 
+  players[player].status=PLAYERMODIFIED;
+
   if(type<=0){
     fprintf(stderr,"ERROR in NewObj() (type<0) type:%d stype:%d\n",type,stype);
     exit(-1);
@@ -571,8 +573,8 @@ void NewEngine(Engine *eng,int type){
   case ENGINE2:
     eng->a=25;
     eng->a_max=200;
-    eng->v_max=40;/* VELMAX; 15; */
-    eng->ang_a=0.0004; //.0004/*  missile */
+    eng->v_max=40;/* 40VELMAX; 15; */
+    eng->ang_a=0.001; //.0004/*  missile */
     eng->ang_a_max=.2;//.2
     eng->ang_v_max=.3;//.3
     eng->gascost=.07;
@@ -724,19 +726,13 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
 
   struct ObjList *ls,*freels;
   Object *ret;
-  int i;
   char text[MAXTEXTLEN];
   int sw=0;
   int swx=0;
   int gnet;
-  int rofplayer[MAXNUMPLAYERS];
   int nplayers;
 
   nplayers=GameParametres(GET,GNPLAYERS,0);
-  for(i=0;i<nplayers;i++){
-    rofplayer[i]=0;
-  }
-
   ret=cv0;
   gnet=GameParametres(GET,GNET,0);
 
@@ -801,7 +797,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
     }
     
     if(freels!=NULL){
-
+      p[freels->obj->player].status=PLAYERMODIFIED;
       if(freels->obj->type==SHIP){
 	if(freels->obj->type==SHIP)p[freels->obj->player].ndeaths++;
 	if( freels->obj->player == actual_player){
@@ -825,23 +821,10 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
 	}
       }
       if(freels->obj==cv0)ret=NULL;
-
-      //      printf("%d\n",freels->obj->player);
-      rofplayer[freels->obj->player]=1;
       RemoveObj(lhobjs,freels->obj);
     }
     ls=ls->next;
   }
-
-  /* for(i=0;i<nplayers;i++){ */
-  /*   if(1||rofplayer[i]){ */
-  /*     //      printf("enter0 GAMEOVER\n"); */
-  /*     if(GameOver(lhobjs,p,i)){ */
-  /* 	//	printf("enter GAMEOVER\n"); */
-  /* 	p[i].status=PLAYERDEAD; */
-  /*     } */
-  /*   } */
-  /* } */
   return(ret);
 }
 
@@ -899,7 +882,6 @@ void RemoveObj(struct HeadObjList *lhobjs,Object *obj2remove){
     free(freels->obj);
     freels->obj=NULL;
     g_memused-=sizeof(Object);
-
     free(freels);
     g_memused-=sizeof(struct ObjList);
     freels=NULL;
@@ -1911,17 +1893,11 @@ void NearestObjAll(struct HeadObjList *lhc,Object *obj,struct NearObject *objs){
 	  }
 	}
 	/* ignore pilots */
-	if(obj2->subtype==PILOT){ls=ls->next;continue;}
+	if(obj2->type==SHIP && obj2->subtype==PILOT){ls=ls->next;continue;}
 	
 	break;
       case PLANET:
 	if(j!=0){ls=ls->next;continue;}
-
-/* 	if(obj2->player!=obj->player){ /\* if are equal must be in list *\/ */
-/* 	  if(!IsInIntList(players[player].kplanets,obj2->id)){ */
-/* 	    ls=ls->next;continue; */
-/* 	  } */
-/* 	} */
 	break;
       default:
 	ls=ls->next;continue;
@@ -1947,6 +1923,7 @@ void NearestObjAll(struct HeadObjList *lhc,Object *obj,struct NearObject *objs){
 	if(r2>radar2){ls=ls->next;continue;}
       case ASTEROID:
 	if(r2>25*radar2){ls=ls->next;continue;}
+
 	if( players[obj2->player].team!=players[player].team ){ /* Enemy Ship */
 	  if(objs[0].obj==NULL){ /* first element */
 	    objs[0].obj=obj2;
@@ -2510,10 +2487,10 @@ int BuyShip(struct Player player,Object *obj,int type){
 
   switch(type){
   case EXPLORER:
-    price=GetPrice(NULL,SHIP1,ENGINE3,CANNON3);
+    price=GetPrice(NULL,EXPLORER,ENGINE3,CANNON3);
     break;
   case FIGHTER:
-    price=GetPrice(NULL,SHIP3,ENGINE4,CANNON4);
+    price=GetPrice(NULL,FIGHTER,ENGINE4,CANNON4);
     break;
   case TOWER:
     price=GetPrice(NULL,TOWER,ENGINE1,CANNON4);
@@ -3032,11 +3009,9 @@ int CreatePlayerList(struct HeadObjList hlist1,struct HeadObjList *hlist2,int pl
     ls0->next=ls2->next;
     ls2->next=ls0;
 
-    /*    printf("%d ",ls0->obj->id); */
     hlist2->n++;
     n++;
   }
-  /*  printf("\n"); */
   return(n) ;
 }
 
@@ -3076,7 +3051,7 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
     if(ls->obj->state<=0 && proc==players[ls->obj->player].proc){
       ls=ls->next;continue;
     }
-
+    /* objects than dont collide */
     switch(ls->obj->type){
     case PROJECTILE:
       if(ls->obj->subtype==EXPLOSION){ 
@@ -3097,6 +3072,7 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
     default:
       break;
     }
+    /* --objects than dont collide */
 
     switch(ls->obj->habitat){
     case H_SPACE:
@@ -3164,7 +3140,7 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
 
 int CreatekplanetsLists(struct HeadObjList *lh,struct HeadObjList *hkplanets){
   /* 
-     Create a list with all the objects that can collide.
+     Create a list with all the known planets.
      returns the number of objects of the list.
    */
   struct ObjList *ls;
@@ -3357,7 +3333,7 @@ void Experience(Object *obj,float pts){
       obj->experience-=100*pow(2,obj->level);
       obj->level++;
       //HERE      obj->ttl=0;
-      if(obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
+      if(0 && obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
 	obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
       }
 
@@ -4693,7 +4669,7 @@ int GameOver(struct HeadObjList *lhead,struct Player *players,int player){
   n=CountObjs(lhead,player,SHIP,-1);
   if(n==0)return(1);
 
-  if(players[player].gold<GetPrice(NULL,SHIP3,ENGINE4,CANNON4)){
+  if(players[player].gold<GetPrice(NULL,FIGHTER,ENGINE4,CANNON4)){
     if(n==CountObjs(lhead,player,SHIP,PILOT)){ /* there are only pilots */
       return(1);
     }

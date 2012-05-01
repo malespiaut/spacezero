@@ -117,17 +117,18 @@
 
 /* ship items */
 #define ITSURVIVAL 1  /* has a survival pod */ 
-#define ITPILOT 2     /* transport pilots */
+#define ITPILOT    1<<1     /* transport pilots */
+
 
 /* weapons types */
 #define CANNON0 0   /* no weapon */
-#define CANNON1 1
-#define CANNON2 2
-#define CANNON3 3
-#define CANNON4 4
-#define CANNON5 5
-#define CANNON6 6
-#define CANNON7 7   /* velocity  */
+#define CANNON1 1   /* shot */
+#define CANNON2 2   /* shot */
+#define CANNON3 3   /* shot */
+#define CANNON4 4   /* tower,new precision cannon */
+#define CANNON5 5   /* shot */
+#define CANNON6 6   /* shot */
+#define CANNON7 7   /* velocity, not used  */
 #define CANNON8 8   /* missile */
 #define CANNON9 9   /* laser */
 #define NUMWEAPONS 10
@@ -188,10 +189,12 @@
 #define PLAYERSTRATSTRONG 2  /* from strongest to nearest */
 
 /* player status */
-#define PLAYERNULL 0
-#define PLAYERACTIVE 1
-#define PLAYERIDLE 2
-#define PLAYERDEAD 3
+#define PLAYERNULL 0       /* not used */
+#define PLAYERIDLE 1       /* not used */
+#define PLAYERDEAD 2       /* GAMEOVER */
+#define PLAYERACTIVE 3     /* all states > PLAYERACTIVE are active states */
+#define PLAYERMODIFIED 4   /* when the number of ships or habitat change */  
+
 
 #define OBJNAMESMAXLEN 16  /*max size of objs names. */
 

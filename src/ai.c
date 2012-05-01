@@ -56,6 +56,83 @@ int MAXnf2a=15;
 int MINnf2a=6;
 
 
+void aimisil(struct HeadObjList *lhobjs,Object *obj,int act_player){
+  Object *ship_enemy;
+  float d2;
+  float a,b,ib;  
+  int level=1;
+  float factor=1;
+
+  ship_enemy=NearestObj(lhobjs,obj,SHIP,PENEMY,&d2);
+  if(ship_enemy!=NULL){
+    if(ship_enemy->habitat!=obj->habitat)ship_enemy=NULL;
+    if(d2>obj->radar*obj->radar)ship_enemy=NULL;
+  }
+  
+  if(ship_enemy==NULL){
+    obj->ang_a=obj->ang_v=0;
+  }
+  else{
+
+    /* ship velocity angle */
+    a=atan2(obj->vy ,obj->vx);
+
+    /* objetive-ship angle */
+    b=atan2(ship_enemy->y - obj->y,ship_enemy->x - obj->x);
+
+    //    ib=a - b;
+     ib=obj->a-(2*b-a);
+
+    //    ib=obj->a - b;
+    switch(level){
+    case 0:
+      factor=1;
+      break;
+    case 1:
+      if(fabs(ib)<0.25)factor=0.5;  /* 28º */
+      if(fabs(ib)<0.1)factor=0.25;
+      break;
+    default:
+      factor=1;
+      break;
+    }
+
+    //        factor=1;
+    
+    if(ib<0){
+      if(obj->ang_a<0)obj->ang_a=0;
+      //if(obj->ang_v<0)obj->ang_v=0;
+      if(obj->ang_v<0)factor=1;
+      obj->ang_a+=factor*obj->engine.ang_a;
+      if(obj->ang_a>obj->engine.ang_a_max)obj->ang_a=obj->engine.ang_a_max;
+    }
+    if(ib>0){
+      if(obj->ang_a>0)obj->ang_a=0;
+      //if(obj->ang_v>0)obj->ang_v=0;
+      if(obj->ang_v>0)factor=1;
+      obj->ang_a-=factor*obj->engine.ang_a;
+      if(obj->ang_a<-obj->engine.ang_a_max)obj->ang_a=-obj->engine.ang_a_max;
+    }
+
+    //    if((fabs(a-b)<0.1 ||1) && fabs(obj->a-b)<0.1){
+    if(fabs(obj->a-b)<0.1){
+      float v;
+      obj->ang_a=0;
+      obj->ang_v=0;
+      obj->a=b;
+      v=sqrt(obj->vx*obj->vx+obj->vy*obj->vy);
+      obj->vx=(v*cos(b)+9*obj->vx)/10;
+      obj->vy=(v*sin(b)+9*obj->vy)/10;
+    }
+
+  }
+  
+  obj->accel+=obj->engine.a;
+  if(obj->accel > obj->engine.a_max){
+    obj->accel=obj->engine.a_max;	    
+  }
+}
+
 
 void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   /*
@@ -108,7 +185,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   if(debugai&&obj==cv){printf("time:%d %d\n",obj->cdata->td2[0],obj->cdata->a);}
 #endif
 
-  if(obj->cdata->obj[0]!=NULL || (time - obj->cdata->td2[0]) > 10){
+  if(obj->cdata->obj[0]!=NULL || (time - obj->cdata->td2[0]) > 30+obj->id%20){
 
     for(i=0;i<4;i++){
       nobjs[i].obj=NULL;
@@ -1682,10 +1759,13 @@ int CCBuy(struct CCDATA *ccdata,struct Player player,int *planetid){
   /* if there unknown planets, 5 explorer by planet max 8.*/
   np=GameParametres(GET,GNPLANETS,0);
 
+  /* HERE review this */
   if(np-ccdata->nkplanets>0 && ccdata->nexplorer<8){
     if(ccdata->nkplanets>1 || ccdata->nexplorer<5){
-      *planetid=ccdata->planetlowdefense->id;
-      return(EXPLORER);
+      if((float)ccdata->nenemy/ccdata->nplanets < 1.5){
+	*planetid=ccdata->planetlowdefense->id;
+	return(EXPLORER);
+      }
     }
   }
 
@@ -3038,7 +3118,7 @@ void Play(Object *obj,int sid,float vol){
   else{
     if(cv->habitat==H_PLANET){
       if(cv->in==obj->in){
-	PlaySound(sid,0,0.5*vol);
+	PlaySound(sid,0,0.375*vol);
       }
     }
   }

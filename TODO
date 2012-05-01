@@ -52,13 +52,14 @@ Version 0.8 (since 10May2011)
 -!!Reordenar, jerarquizar codigo, ficheros.
 -!!Disminuir numero de variables extern (97),58,72,76,92,111 grep extern src/*.c include/*h |grep ";" |wc
 -!!Disminuir los HERE (74)88,69,83  grep HERE src/*c include/*h|wc
--!!toroidal Universe as option.
 -!!Damage in collision depends on mass and velocity. Elastic shocks. 
 -!!Change ksectorslist for a three elements list: id,x,y.
 -!!In terminal, messages repite so much.
 -!!In pause mode consumes CPU, redraw every 5 steps..
--!!Improve CreateContainerList()
 -!!Improve Risk()
+-!!Explosions: add ship parts.
+-!!toroidal Universe as option.
+
 
 -Game statistics.
 -Create list of load (lista de carga).
@@ -70,7 +71,8 @@ Version 0.8 (since 10May2011)
 -frames/s when save/load.
 -?Use same struct for planets and known sectors in struct Player.
 -Dont createlists in execload()
--Explosions: add ship parts.
+-AI (save14) attacks to the same strong planet.
+
 -!!Merge UpdateShip() y UpdateAsteroid() ??
 -send drawmissile in DrawObjs() to DrawShip()
 -When select a planet, center map on it , if its known.
@@ -115,7 +117,6 @@ AI:
 Comm:
 ====
 -!!!!Rewrite a server
--in Object: Change int by boolean (to improve comm)
 -!Compress data.
 
 Save
@@ -154,6 +155,8 @@ Version 1.0
 DONE:Version 0.82 (since 30 Jan. 2012)
 =====================================
 X-(250212)!!ENEMIESKNOWN as game option.
+X-(020312)!!Improve CreateContainerList()
+
 
 BUGS version 0.82
 =================

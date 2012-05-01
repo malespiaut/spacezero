@@ -19,7 +19,7 @@ INSTALL_DATA_DIR=/usr/local/share/spacezero
 #INSTALL_DATA_DIR=/usr/share/spacezero
 
 
-OPENALFLAGS= -lopenal -lalut
+OPENALFLAGS= -lopenal -lalut -lvorbisfile
 
 GTKFLAGS=`pkg-config --cflags gtk+-2.0`
 GTKLIBS=`pkg-config --libs gtk+-2.0`
@@ -89,13 +89,9 @@ clean:
 mrproper: clean
 	rm -f src/*~ include/*~
 
-#.c.o:	
-#		$(CC)  $(CFLAGS)   $(LDFLAGS) $(GTKFLAGS) -c $< -o  $@ 
-
-# add -pg for profile
-#.c.o:	
-#		$(CC) -pg  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
-
-# add -g for debug
 .c.o:	
-		$(CC) -g  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
+		$(CC)  $(CFLAGS)   $(LDFLAGS) $(GTKFLAGS) -c $< -o  $@ 
+# add -pg for profile
+#		$(CC) -pg  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
+# add -g for debug
+#		$(CC) -g  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 

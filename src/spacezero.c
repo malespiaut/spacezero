@@ -85,10 +85,10 @@ int g_memused=0;
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.03"};
+char version[64]={"0.83.05"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Feb. 2012"};
+char last_revision[]={"Mar. 2012"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -249,7 +249,6 @@ int main(int argc,char *argv[]){
     printf("(int) -0.1= %d\n",(int)(-0.1));
     printf("(int) -1.1= %d\n",(int)(-1.1));
     
-
   }
   /* -- tests */
 #endif
@@ -405,7 +404,7 @@ int main(int argc,char *argv[]){
     gtk_timeout_add((int)(DT*100),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
   }
 #endif
-  gettimeofday(&init_time,NULL);  
+  gettimeofday(&init_time,NULL);
   gtk_main();
 
 
@@ -591,8 +590,13 @@ gint MainLoop(gpointer data){
   double fpst=0;
   static double fpstt=0;
   static int fpscont=0;
+  static struct timeval time0,time1;
+  double lag;
 
   if(gdraw.main==FALSE)return(TRUE);
+
+
+  gettimeofday(&time0,NULL);
 
   Clock(2,CL_CLEAR);
   Clock(2,CL_START);
@@ -736,31 +740,61 @@ gint MainLoop(gpointer data){
   /*****--CELLON*****/
 
   
-  for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
-    DestroyObjList(&listheadcontainer[i]);
-    listheadcontainer[i].next=NULL;
-    listheadcontainer[i].n=0;
-  }
-  for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    DestroyObjList(&listheadkplanets[i]);
-    listheadkplanets[i].next=NULL;
-    listheadkplanets[i].n=0;
-  }
-  
+ 
   key_eval(&keys);
-
-  if(GameParametres(GET,GPAUSED,0)==FALSE){
-
-    /* update createplayerlist only if necesary HERE*/
-    DestroyObjList(&listheadplayer);
-    listheadplayer.next=NULL;
-    listheadplayer.n=0;
-    CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
-
-    CreateContainerLists(&listheadobjs,listheadcontainer);
-    CreatekplanetsLists(&listheadobjs,listheadkplanets);
-  }
   
+  /* Create some lists */
+  if(1){
+    int pmodified=0;
+    static int lasttimeupdate=0;
+
+    if(lasttimeupdate>60){
+      lasttimeupdate=0;
+      players[actual_player].status=PLAYERMODIFIED;
+      pmodified++;
+    }    
+
+    for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+      if(players[i].status==PLAYERMODIFIED){
+	pmodified++;
+      }
+    }
+
+    if(pmodified){
+      lasttimeupdate=0;      
+      /* update createplayerlist only if necesary HERE  9.44% CPU*/
+      if(players[actual_player].status==PLAYERMODIFIED){
+	DestroyObjList(&listheadplayer);
+	listheadplayer.next=NULL;
+	listheadplayer.n=0;
+	//	printf("updateplayerlist %d\n",GetTime());
+	CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
+      }
+      
+      for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
+	DestroyObjList(&listheadcontainer[i]);
+	listheadcontainer[i].next=NULL;
+	listheadcontainer[i].n=0;
+      }
+      
+      for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+	DestroyObjList(&listheadkplanets[i]);
+	listheadkplanets[i].next=NULL;
+	listheadkplanets[i].n=0;
+      }
+      //      printf("createcontainerlist %d\n",GetTime());
+      CreateContainerLists(&listheadobjs,listheadcontainer);
+      CreatekplanetsLists(&listheadobjs,listheadkplanets);
+      
+      for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+	if(players[i].status>=PLAYERACTIVE)players[i].status=PLAYERACTIVE;
+      }
+    }
+    lasttimeupdate++;
+  }
+  /* --Create some lists */
+
+
   /* messages */
   swmess=0;
   
@@ -782,7 +816,6 @@ gint MainLoop(gpointer data){
        gameover=FALSE; 
       /* observeenemies=FALSE; */
     }
-
   }
 
   if(gameover==TRUE){
@@ -834,7 +867,6 @@ gint MainLoop(gpointer data){
       gtk_widget_draw(drawing_area,&update_rect);
     }
     if(swpaused>=NETSTEP){
-      //      DestroyObjList(&listheadplayer); // HERE quitar esto? revisar
       return(TRUE);   //savepause
     }
     if(GameParametres(GET,GNET,0)==TRUE){
@@ -1021,7 +1053,6 @@ gint MainLoop(gpointer data){
     DestroyObjList(&listheadplayer);  //HERE verify with DestroyAllObjs() in execload()
     listheadplayer.n=0;  
     listheadplayer.next=NULL;  
-
   
     if(ExecLoad(savefile)==0){
       loadsw=1;
@@ -1168,9 +1199,6 @@ gint MainLoop(gpointer data){
   if(cv==NULL)gdraw.map=FALSE;
 
   /*--  what to draw */
-
-
-
 
 
   /* game window*/
@@ -1431,7 +1459,7 @@ gint MainLoop(gpointer data){
   /* Check for GAMEOVER */
 
   for(i=1;i<GameParametres(GET,GNPLAYERS,0)+1;i++){
-    if(!((cont+i)%30) && players[i].status==PLAYERACTIVE){
+    if(!((cont+i)%30) && players[i].status>=PLAYERACTIVE){
       if(GameOver(&listheadobjs,players,i)){
 	players[i].status=PLAYERDEAD;
       }
@@ -1454,7 +1482,13 @@ gint MainLoop(gpointer data){
       c=0;
     }
   }
-    
+
+
+  gettimeofday(&time1,NULL);
+  lag=(time1.tv_sec-time0.tv_sec)*1e6+(time1.tv_usec-time0.tv_usec);
+
+  //  printf("lag: %.1f\n",lag/(41700)*100);
+
 
   return(TRUE);
 
@@ -1471,7 +1505,7 @@ gint Quit(GtkWidget *widget,gpointer gdata){
     Object *obj;
 
     printf("****************** Statistics ************************\n");
-    obj=NewObj(&listheadobjs,SHIP,SHIP1,
+    obj=NewObj(&listheadobjs,SHIP,EXPLORER,
 	       0,0,0,0,
 	       CANNON0,ENGINE0,0,NULL,NULL);
     Add2ObjList(&listheadobjs,obj);
@@ -2025,9 +2059,15 @@ void key_eval(struct Keys *key){
 
 void UpdateShip(Object *obj){
   /* 
-     Calculate the new coordinates of the ship *obj
-
+     Calculate the new coordinates of the ship *obj:
+     calculate gravity forces
+     update position and velocity
+     recharge armor and fuel
+     repair ship
+     learning and experience
+     check collision with planets
   */
+
   float vx,vy,vmax2;
   float cosa,sina;
   float ang0;
@@ -2348,8 +2388,9 @@ void UpdateShip(Object *obj){
     if(obj->x>width)obj->x-=width;
 
     if(obj->y>LYFACTOR){ /* its out of planet */
+      players[obj->player].status=PLAYERMODIFIED;
       if(proc==players[obj->player].proc){
-	a=obj->x*(2*PI)/width-PI;
+	a=-PI*(2*obj->x/width+0.5); 
 	cosa=cos(a);
 	sina=sin(a);
 	obj->x=obj->in->planet->x+2*obj->in->planet->r*cosa;
@@ -2861,6 +2902,7 @@ void Collision(struct HeadObjList *lh){
 	    obj=obj1;
 	    pnt=obj2;
 	  }
+	  players[obj->player].status=PLAYERMODIFIED;
 	  if(proc==players[obj->player].proc){
 	    obj->habitat=H_PLANET;
 	    obj->planet=NULL;
@@ -2879,7 +2921,7 @@ void Collision(struct HeadObjList *lh){
 	    /* initial conditions at planet */
 	    a=atan2(-pnt->y+obj->y,-pnt->x+obj->x);
 	    b=atan2(obj->vy,obj->vx)-a;
-	    obj->x=(a+PI)/(2*PI)*LXFACTOR;
+	    obj->x=LXFACTOR-(a+PI/2)/(2*PI)*LXFACTOR;
 	    obj->y=LYFACTOR;
 	    v=sqrt(obj->vx*obj->vx+obj->vy*obj->vy);
 	    
@@ -3174,7 +3216,12 @@ void Collision(struct HeadObjList *lh){
 		else{/***** ship has landed *****/
 		  if(obj1->vy<0){
 		    obj1->mode=LANDED;
-		    if(obj1->items & ITPILOT){
+		    
+		    if(obj1->subtype==FIGHTER && obj1->level>=MINLEVELPILOT) {
+		      obj1->items=obj1->items|ITSURVIVAL; /* create a survival pod */
+		    }
+
+		    if(obj1->items & ITPILOT){ /* if has a rescued pilot, eject him */
 		      EjectPilotsObj(&listheadobjs,obj1);
 		      obj1->items=obj1->items&(~ITPILOT);
 		    }
@@ -3271,7 +3318,7 @@ void Collision(struct HeadObjList *lh){
   } /* while(ls1!=NULL) */
 
   return;
-}  /* --Colission() */
+}  /* --Collission() */
 
 int UpdateObjs(void){
   /*
@@ -3329,42 +3376,45 @@ int UpdateObjs(void){
       case PROJECTILE:
 	switch(obj->subtype){
 	case MISSILE:
-	  ship_enemy=NearestObj(&listheadobjs,obj,SHIP,PENEMY,&d2);
-	  if(ship_enemy!=NULL){
-	    if(ship_enemy->habitat!=obj->habitat)ship_enemy=NULL;
-	    if(d2>obj->radar*obj->radar)ship_enemy=NULL;
-	  }
-
-	  if(ship_enemy==NULL){
-	    obj->ang_a=obj->ang_v=0;
-	    
-	    obj->accel+=obj->engine.a;
-	    if(obj->accel > obj->engine.a_max)
-	      obj->accel=obj->engine.a_max;	    
-	    
-	  }
-	  else{
-
-	    b=atan2(ship_enemy->y - obj->y,ship_enemy->x - obj->x);
-	    ib=obj->a - b;
-
-
-	    if(ib<0){
-	      if(obj->ang_a<0)obj->ang_a=0;
-	      if(obj->ang_v<0)obj->ang_v=0;
-	      obj->ang_a+=obj->engine.ang_a;
-	      if(obj->ang_a>obj->engine.ang_a_max)obj->ang_a=obj->engine.ang_a_max;
-	    }
-	    if(ib>0){
-	      if(obj->ang_a>0)obj->ang_a=0;
-	      if(obj->ang_v>0)obj->ang_v=0;
-	      obj->ang_a-=obj->engine.ang_a;
-	      if(obj->ang_a<-obj->engine.ang_a_max)obj->ang_a=-obj->engine.ang_a_max;
+	  aimisil(&listheadobjs,obj,actual_player);
+	  if(0){
+	    ship_enemy=NearestObj(&listheadobjs,obj,SHIP,PENEMY,&d2);
+	    if(ship_enemy!=NULL){
+	      if(ship_enemy->habitat!=obj->habitat)ship_enemy=NULL;
+	      if(d2>obj->radar*obj->radar)ship_enemy=NULL;
 	    }
 	    
-	    obj->accel+=obj->engine.a;
-	    if(obj->accel > obj->engine.a_max)
-	      obj->accel=obj->engine.a_max;	    
+	    if(ship_enemy==NULL){
+	      obj->ang_a=obj->ang_v=0;
+	      
+	      obj->accel+=obj->engine.a;
+	      if(obj->accel > obj->engine.a_max)
+		obj->accel=obj->engine.a_max;	    
+	      
+	    }
+	    else{
+	      
+	      b=atan2(ship_enemy->y - obj->y,ship_enemy->x - obj->x);
+	      ib=obj->a - b;
+	      
+	      
+	      if(ib<0){
+		if(obj->ang_a<0)obj->ang_a=0;
+		if(obj->ang_v<0)obj->ang_v=0;
+		obj->ang_a+=obj->engine.ang_a;
+		if(obj->ang_a>obj->engine.ang_a_max)obj->ang_a=obj->engine.ang_a_max;
+	      }
+	      if(ib>0){
+		if(obj->ang_a>0)obj->ang_a=0;
+		if(obj->ang_v>0)obj->ang_v=0;
+		obj->ang_a-=obj->engine.ang_a;
+		if(obj->ang_a<-obj->engine.ang_a_max)obj->ang_a=-obj->engine.ang_a_max;
+	      }
+	      
+	      obj->accel+=obj->engine.a;
+	      if(obj->accel > obj->engine.a_max)
+		obj->accel=obj->engine.a_max;	    
+	    }
 	  }
 
 	  if(0&&obj==cv){
@@ -3391,10 +3441,10 @@ int UpdateObjs(void){
 	}
 
 	switch(obj->subtype){
-	case SHIP1:
+	case EXPLORER:
 	case SHIP2:
-	case SHIP3:
-	case SHIP4:
+	case FIGHTER:
+	case QUEEN:
 	case SATELLITE:
 	case TOWER:
 	case PILOT:
@@ -3926,7 +3976,7 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
       a=i*PI/3;
       x=400*sin(a);
       y=400*cos(a);
-      obj=NewObj(lheadobjs,SHIP,SHIP3,
+      obj=NewObj(lheadobjs,SHIP,FIGHTER,
 		 0,0,0,0,
 		 CANNON4,ENGINE1,2,NULL,NULL);
       obj->x=obj->x0=x;
@@ -3944,7 +3994,7 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
   if(0){  
     x=400;
     y=100;
-    obj=NewObj(lheadobjs,SHIP,SHIP3,
+    obj=NewObj(lheadobjs,SHIP,FIGHTER,
 	       0,0,0,0,
 	       CANNON4,ENGINE3,2,NULL,NULL);
     obj->x=obj->x0=x;
@@ -3959,7 +4009,7 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
     Add2ObjList(lheadobjs,obj);
     x=-400;
     y=100;
-    obj=NewObj(lheadobjs,SHIP,SHIP3,
+    obj=NewObj(lheadobjs,SHIP,FIGHTER,
 	       0,0,0,0,
 	       CANNON4,ENGINE3,2,NULL,NULL);
     obj->x=obj->x0=x;
@@ -3978,7 +4028,7 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
   
   x=0;
   y=0;
-  obj=NewObj(lheadobjs,SHIP,SHIP3,
+  obj=NewObj(lheadobjs,SHIP,FIGHTER,
 	     0,0,0,0,
 	     CANNON4,ENGINE3,1,NULL,NULL);
   obj->x=obj->x0=x;
@@ -4191,6 +4241,7 @@ void GetUniverse(void){
 
   /*ExecLoad("kk"); */
   ExecLoad(savefile);
+  players[actual_player].status=PLAYERMODIFIED;
   p_time=GetTime();
   CheckGame("Checking game after load...",1);
   printf("done\n");
@@ -5034,7 +5085,7 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
     snprintf(players[i].playername,MAXTEXTLEN,"player%d",i);
     players[i].id=i;
-    players[i].status=PLAYERACTIVE;
+    players[i].status=PLAYERMODIFIED;
     players[i].pid=GameParametres(GET,GNPLANETS,0)+1;
     players[i].proc=0;
     players[i].control=COMPUTER;

@@ -314,8 +314,8 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
       break;
     case BUY:
       strcpy(cad,"");
-      snprintf(pr1,12,"%d",GetPrice(NULL,SHIP1,ENGINE3,CANNON3));
-      snprintf(pr2,12,"%d",GetPrice(NULL,SHIP3,ENGINE4,CANNON4));
+      snprintf(pr1,12,"%d",GetPrice(NULL,EXPLORER,ENGINE3,CANNON3));
+      snprintf(pr2,12,"%d",GetPrice(NULL,FIGHTER,ENGINE4,CANNON4));
       snprintf(pr3,12,"%d",GetPrice(NULL,TOWER,ENGINE1,CANNON4));
       snprintf(cad,MAXTEXTLEN,"1: EXPLORER(%s)   2: FIGTHER(%s)   3: TOWER(%s)",pr1,pr2,pr3);
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT){

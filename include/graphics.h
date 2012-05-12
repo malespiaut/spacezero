@@ -26,11 +26,18 @@
 #ifndef _GRAPHICS_
 #define _GRAPHICS_
 
+#include "menu.h"
+#include "help.h"
+
 /* constants used by DrawMessageBox() */
 #define MBOXDEFAULT 0
 #define MBOXBORDER 1
-#include "menu.h"
-#include "help.h"
+
+#define VIEW_NONE 0
+#define VIEW_SPACE 1
+#define VIEW_MAP 2
+#define VIEW_PLANET 3
+#define VIEW_SHIP 4
 
 struct Stars{
   int *color;
@@ -127,10 +134,10 @@ void Shift(int action,int ulx,int cvid,float *z,float *x,float *y);
 
 void MousePos(int order,int *x,int *y);
 
-void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Space reg,Object *cv);
-void Real2Window(Object *,int habitat,int rx,int ry,int *wx,int *wy);
+void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,int view,Space reg,Object *cv);
+void Real2Window(Object *,int view,int rx,int ry,int *wx,int *wy);
 void Real2Sector(int x,int y,int *a,int *b);
-void Window2Real(Object *,int habitat,int wx,int wy,int *rx,int *ry);
+void Window2Real(Object *,int view,int wx,int wy,int *rx,int *ry);
 void Window2Sector(Object *cv,int *x,int *y);
 void W2R(Object *cv,int *x,int *y);
 

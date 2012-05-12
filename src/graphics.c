@@ -1309,8 +1309,9 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
   Object *lobj=NULL;
   int x,y,r;
   int i,n=0;
-  float x0,y0,x1,y1,a;
-  float x_0,y_0,x_1,y_1;
+  float x0,y0,x1,y1,x2,y2;
+  float a;
+  float x_0,y_0,x_1,y_1,x_2,y_2;
   float rcosa,rsina;
 
   /* last to draw (cv)*/
@@ -1373,21 +1374,17 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
     }
     if(ls->obj->state<=0){ls=ls->next;continue;}
     if(ls->obj->habitat!=habitat.type){ls=ls->next;continue;}
-
     if(cv->in!=ls->obj->in){ls=ls->next;continue;}
     if(cv->habitat==H_SHIP){ls=ls->next;continue;}
-    
     x=ls->obj->x;
     y=ls->obj->y;
 
     if(ls->obj->habitat==H_PLANET){
       x*=sx;
+      y=ls->obj->y - ls->obj->radio;
       y*=sy;
-      if(ls->obj->type==SHIP){
-	y+=ls->obj->radio+1;
-      }
+      y+=ls->obj->radio;
     }
-
 
     if(ls->obj->habitat==H_SPACE){
       x-=xr;
@@ -1400,7 +1397,6 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
       continue;
     } 
     a=ls->obj->a;  
-
     
     /*    printf("type: %d id:%d\n",ls->obj->type,ls->obj->id); */
     if(ls->obj->player > MAXNUMPLAYERS+2){
@@ -1442,6 +1438,35 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
 	  gdk_draw_line(pixmap,gc,
 			x+x_0,gheight-(y+y_0),
 			x+x_1,gheight-(y+y_1));
+
+	  /********** engine flares *************/
+	  if(ls->obj->accel>0){ 
+	    x0=-.04*ls->obj->radio;
+	    y0=.2;
+	    x1=x0;
+	    y1=-.2;
+	    x2=x0-3*ls->obj->accel/ls->obj->gas_max;
+	    y2=0;
+	    
+	    x_0=x0*rcosa-y0*rsina;
+	    y_0=x0*rsina+y0*rcosa;
+	    
+	    x_1=x1*rcosa-y1*rsina;
+	    y_1=x1*rsina+y1*rcosa;
+	    
+	    x_2=x2*rcosa-y2*rsina;
+	    y_2=x2*rsina+y2*rcosa;
+	    
+	    gdk_draw_line(pixmap,penCyan,
+			  x+x_0,gheight-(y+y_0),
+			  x+x_2,gheight-(y+y_2));
+	    gdk_draw_line(pixmap,penCyan,
+			  x+x_1,gheight-(y+y_1),
+			  x+x_2,gheight-(y+y_2));
+	    
+	  }
+	  /********** --engine flares *************/
+	  
 	  
 	}
 
@@ -1466,7 +1491,22 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
 	//	gdk_draw_point(pixmap,gcexp,x,gheight-y);
 	//	gdk_draw_rectangle(pixmap,gcexp,TRUE,x-2,gheight-y-2,4,4);
 	gcexp=gcolors[players[ls->obj->player].color];
-	gdk_draw_rectangle(pixmap,gcexp,TRUE,x-1,gheight-y-1,3,3);
+	//	gdk_draw_rectangle(pixmap,gcexp,TRUE,x-1,gheight-y-1,3,3);
+
+	//	gdk_draw_point(pixmap,gcexp,x,gheight-y);
+
+	switch((int)(ls->obj->life/40)){
+	default:
+	  gdk_draw_point(pixmap,gcexp,x,gheight-y);
+	case 2:
+	  gdk_draw_point(pixmap,gcexp,x,gheight-y+1);
+	case 1:
+	  gdk_draw_point(pixmap,gcexp,x+1,gheight-y+1);
+	case 0:
+	  gdk_draw_point(pixmap,gcexp,x+1,gheight-y);
+	  break;
+	}
+	
 	break;
       default:
 	fprintf(stderr,"ERROR: DrawObjs() not known\n");
@@ -1506,21 +1546,24 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
     case ASTEROID:
       DrawAsteroid(pixmap,x,y,ls->obj);
       break;
+
     case PLANET:
-
       DrawPlanet(pixmap,x,y,ls->obj->radio);
-
       break;
+
     case TRACKPOINT:
       break;
+
     case TRACE:
       gdk_draw_point(pixmap,penWhite,x,gheight-y);
       break;
+
     default:
       g_print("ERROR DrawObjs(2)%d %d %d %d %d\n",ls->obj->id,ls->obj->type,ls->obj->subtype,ls->obj->player,n);
       //      exit(-1);
       break;
-    }   
+    }
+
     ls=ls->next;
   }
 
@@ -1747,7 +1790,6 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
 
     /********** engine flares *************/
     if(obj->accel>0){ 
-      x0=-.6;//-.04*obj->radio;
       x0=-.04*obj->radio;
       y0=.2;
       x1=x0;
@@ -1771,7 +1813,8 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
       gdk_draw_line(pixmap,penCyan,
 		    x+x_1,gheight-(y+y_1),
 		    x+x_2,gheight-(y+y_2));
-    } 
+      
+    }
     /********** --engine flares *************/
     break;
 
@@ -2261,7 +2304,6 @@ void DrawAsteroid(GdkPixmap *pixmap,int x,int y,Object *obj){
 		   FALSE,
 		   pts,16);
 }
-
 
 
 void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int ulx){
@@ -3081,14 +3123,15 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   DrawString(pixmap,font,color,x0+x,y+texth,point);
   y+=incy;
 
-  if(0){
-    snprintf(point,MAXTEXTLEN,"VX %.1f",obj->vx);
+#if TEST
+    snprintf(point,MAXTEXTLEN,"VX=%.1f",obj->vx);
     DrawString(pixmap,font,color,x0+x,y+texth,point);
     y+=incy;
-    snprintf(point,MAXTEXTLEN,"VY %.1f",obj->vy);
+    snprintf(point,MAXTEXTLEN,"VY=%.1f",obj->vy);
     DrawString(pixmap,font,color,x0+x,y+texth,point);
     y+=incy;
-  }
+#endif  
+
   snprintf(point,MAXTEXTLEN,"V=%.1f",v);
   DrawString(pixmap,font,color,x0+x,y+texth,point);
   y+=incy;
@@ -4120,7 +4163,7 @@ void Shift(int action,int ulx,int objid,float *z,float *x,float *y){
 }
 
 
-void Window2Real(Object *cv,int habitat, int wx,int wy,int *rx,int *ry){
+void Window2Real(Object *cv,int view, int wx,int wy,int *rx,int *ry){
   /* version 01 */
   float zoom;
   float cvx,cvy;
@@ -4130,7 +4173,6 @@ void Window2Real(Object *cv,int habitat, int wx,int wy,int *rx,int *ry){
   int x,y,x0,y0;
   float ifactor;
   float sx,sy;
-
 
   ulx=GameParametres(GET,GULX,0);
   gwidth=GameParametres(GET,GWIDTH,0);
@@ -4146,7 +4188,16 @@ void Window2Real(Object *cv,int habitat, int wx,int wy,int *rx,int *ry){
       objy=cv->y;
     }
   }
-  if(habitat==0){  /* free space */
+  switch(view){
+  case VIEW_NONE:
+  return;
+  break;
+  case VIEW_SPACE:
+    *rx=wx+objx-gwidth/2;
+    *ry=gheight-wy+objy-gheight/2;
+    break;
+
+  case VIEW_MAP:
     Shift(GET,ulx,cv==NULL?0:cv->id,&zoom,&cvx,&cvy);
     
     x0=0.5*gwidth;
@@ -4159,17 +4210,28 @@ void Window2Real(Object *cv,int habitat, int wx,int wy,int *rx,int *ry){
     
     *rx=(x-x0)*ifactor-cvx+objx;
     *ry=(y-y0)*ifactor-cvy+objy;
-  }
-  else{
+    break;
+
+  case VIEW_PLANET:
     sx=(float)gwidth/LXFACTOR;
     sy=(float)gheight/LYFACTOR;
     *rx=((float)wx/sx+0.5);
     *ry=((float)wy/sy+0.5);
+    break;
+
+  case VIEW_SHIP:
+    fprintf(stderr,"Not implemented\n");
+    break;
+
+  default:
+    fprintf(stderr,"Not implemented\n");
+    return;
+    break;
   }
 }
 
 
-void Real2Window(Object *cv,int habitat,int rx,int ry,int *wx,int *wy){
+void Real2Window(Object *cv,int view,int rx,int ry,int *wx,int *wy){
   /* version 01 */
 
   float zoom;
@@ -4196,7 +4258,17 @@ void Real2Window(Object *cv,int habitat,int rx,int ry,int *wx,int *wy){
       objy=cv->y;
     }
   }
-  if(habitat==0){ /* free space */
+
+  switch(view){
+  case VIEW_NONE:
+  return;
+  break;
+  case VIEW_SPACE:
+    *wx=rx-objx+gwidth/2;
+    *wy=gheight-(ry-objy+gheight/2);
+    break;
+
+  case VIEW_MAP:
     Shift(GET,ulx,cv==NULL?0:cv->id,&zoom,&cvx,&cvy);
     
     x0=0.5*gwidth;
@@ -4206,13 +4278,24 @@ void Real2Window(Object *cv,int habitat,int rx,int ry,int *wx,int *wy){
     
     *wx=x0+(rx-objx+cvx)*factor + 0.5;
     *wy=gheight-y0-(ry-objy+cvy)*factor + 0.5;
-  }
-  else{
 
+    break;
+
+  case VIEW_PLANET:
     sx=(float)gwidth/LXFACTOR;
     sy=(float)gheight/LYFACTOR;
     *wx=(float)rx*sx + 0.5;
     *wy=(float)ry*sy + 0.5;
+    break;
+
+  case VIEW_SHIP:
+    fprintf(stderr,"Not implemented\n");
+    break;
+
+  default:
+    fprintf(stderr,"Not implemented\n");
+    return;
+    break;
   }
 }
 
@@ -4282,25 +4365,24 @@ void Real2Sector(int x,int y,int *a,int *b){
 }
 
 
-void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Space reg,Object *cv){
+void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,int view,Space reg,Object *cv){
   Rectangle rect;
 
   int x0,y0,x1,y1;
 
   if(reg.habitat<0){
-    fprintf(stderr,"ERROR: DrawSelectionBox(): reb habitat=%d (<0)\n",reg.habitat);
+    fprintf(stderr,"ERROR: DrawSelectionBox(): reg habitat=%d (<0)\n",reg.habitat);
     return;
   }
   rect.x=reg.rect.x;
   rect.y=reg.rect.y;
   rect.width=reg.rect.width;
   rect.height=reg.rect.height;
+  
+  if(reg.habitat==0 && keys.mleft==FALSE){ /* in space */
 
-  if(reg.habitat==0 && keys.mleft==FALSE){
-
-
-    Real2Window(cv,reg.habitat,rect.x,rect.y,&x0,&y0);
-    Real2Window(cv,reg.habitat,rect.x+rect.width,rect.y+rect.height,&x1,&y1);
+    Real2Window(cv,view,rect.x,rect.y,&x0,&y0);
+    Real2Window(cv,view,rect.x+rect.width,rect.y+rect.height,&x1,&y1);
     
     rect.x=x0;
     rect.y=y0;
@@ -4308,9 +4390,9 @@ void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,Space reg,Object *cv){
     rect.height=y1-y0;
   }
 
-  if(reg.habitat>0 && keys.mleft==FALSE){
-    Real2Window(cv,reg.habitat,rect.x,rect.y,&x0,&y0);
-    Real2Window(cv,reg.habitat,rect.x+rect.width,rect.y+rect.height,&x1,&y1);
+  if(reg.habitat>0 && keys.mleft==FALSE){ /* in a planet */
+    Real2Window(cv,view,rect.x,rect.y,&x0,&y0);
+    Real2Window(cv,view,rect.x+rect.width,rect.y+rect.height,&x1,&y1);
     
     rect.x=x0;
     rect.y=y0;

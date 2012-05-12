@@ -46,7 +46,7 @@
 #define PI 3.14159265
 
 
-#define MINORSAVEVERSION "0.83.03" /* the save file must be at least this version */
+#define MINORSAVEVERSION "0.83.08" /* the save file must be at least this version */
 #define MINOROPTIONSVERSION "0.83.03" /* the options file must be at least this version */
 
 #define MAXTEXTLEN 128
@@ -251,7 +251,7 @@ typedef struct{
 
 typedef struct{
   Rectangle rect;
-  int habitat; /* 0 means free space, 1, 2, ... planetid */
+  int habitat; /* 0 means free space, >0:  planetid */
 }Space;
 
 typedef struct{

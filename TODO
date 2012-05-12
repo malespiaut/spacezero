@@ -156,11 +156,18 @@ DONE:Version 0.82 (since 30 Jan. 2012)
 =====================================
 X-(250212)!!ENEMIESKNOWN as game option.
 X-(020312)!!Improve CreateContainerList()
-
+X-(010512)ships change to manual mode when you try to control them.
+X-(010512)fighters only can get the survival pod when are landed.
+X-(010512)entering angle in planet fixed.
+X-(050512)explosions have gravity
+X-(050512)explosions collide with terrain
+X-(070512)Select ships in space. 
+X-(090512)added air resistance.
 
 BUGS version 0.82
 =================
 
+X-(100512) bug that create unnecessary trace points.
 
 /*********************************************************************************/
 DONE:Version 0.80 (since 10 May. 2011)

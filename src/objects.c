@@ -234,9 +234,10 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
       break;
     case EXPLOSION:
       obj->durable=TRUE;
-      obj->life=100;
+      obj->life=150;
       obj->damage=obj->parent->damage/16;
       obj->parent=NULL;
+      obj->mass=5;
       break;
     default:
       fprintf(stderr,"ERROR (NewOb)\n");
@@ -312,6 +313,10 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
     obj->durable=TRUE;
     obj->life=500;
     obj->gas=0;
+    if(obj->parent!=NULL){
+      obj->habitat=obj->parent->habitat;
+      obj->in=in;
+    }
     break;
   default:
     fprintf(stderr,"ERROR (NewOb)\n");
@@ -320,7 +325,6 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
   }
 
   obj->cost*=COSTFACTOR;
-
 
   /* data base */
   if(obj->type==SHIP){ // HERE TODO SHIP COMPUTER, only ships
@@ -789,7 +793,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
       }
     }
     if(swx){
-      Explosion(lhobjs,ls->obj,0);
+      Explosion(lhobjs,cv0,ls->obj,0);
       /* sound */
 #if SOUND
       Play(ls->obj,EXPLOSION0,1);
@@ -1120,7 +1124,7 @@ int GetSegment(Segment *segment,Object *obj){
 
 
 
-void Explosion(struct HeadObjList *lh,Object *obj,int type){
+void Explosion(struct HeadObjList *lh,Object *cv,Object *obj,int type){
   /*
     Create explosion objects.
    */  
@@ -1128,28 +1132,48 @@ void Explosion(struct HeadObjList *lh,Object *obj,int type){
   float v,vx,vy;
   float a;
   Object *nobj;
-  /*  return; */
-  /*  printf("Explosion of object %d type %d stype:%d\n",obj->id,obj->type,obj->subtype); */
+  int nexplosion=16;
+  int swexplosion=0;
+
+
+  if(obj==NULL)return;
+
+  /* only there are an explosion if you can see it. */
+  if(cv!=NULL){
+    if(cv->habitat==obj->habitat){
+      if(cv->habitat==H_PLANET){
+	if(cv->in==obj->in)swexplosion++;
+      }
+      else{
+	/* check if are close */
+	if( (cv->x-obj->x)*(cv->x-obj->x)+(cv->y-obj->y)*(cv->y-obj->y)<4000000)
+	  swexplosion++;
+      }
+    }
+    if(!swexplosion)return;
+  }
+
   switch (type){
   case 0: /* ship destroyed */
-    for(i=0;i<16;i++){  
+    nexplosion=(64*obj->mass)/100;
+    for(i=0;i<nexplosion;i++){   //16
       a=2.*PI*(Random(-1));
-      v=2.*VELMAX*(Random(-1)); 
+      v=1.0*VELMAX*(Random(-1)); 
       vx=v*cos(a) + obj->vx;
       vy=v*sin(a) + obj->vy;
       nobj=NewObj(lh,PROJECTILE,EXPLOSION,obj->x,obj->y,vx,vy,
 		  CANNON0,ENGINE0,obj->player,obj,obj->in);
       if(nobj!=NULL){
+	nobj->life*=(.25+Random(-1));
 	Add2ObjList(lh,nobj);
 	nobj->parent=NULL;
       }
-      /*    printf("%d ",i); */
     }
     break;
   case 1: /* ship hitted */
     for(i=0;i<4;i++){  
       a=2.*PI*(Random(-1));
-      v=VELMAX*(Random(-1)); 
+      v=0.5*VELMAX*(Random(-1)); 
       vx=v*cos(a) + obj->vx;
       vy=v*sin(a) + obj->vy;
       nobj=NewObj(lh,PROJECTILE,EXPLOSION,obj->x,obj->y,vx,vy,
@@ -1158,7 +1182,6 @@ void Explosion(struct HeadObjList *lh,Object *obj,int type){
 	Add2ObjList(lh,nobj);
 	nobj->parent=NULL;
       }
-      /*    printf("%d ",i); */
     }
     break;
   default:
@@ -1412,6 +1435,44 @@ Object *SelectOneShip(struct HeadObjList *lh,Space reg,Object *cv,int ctrl){
   return(ret);
 }
 
+
+int IsInRegion(Object *obj,Space region){
+  Point a,b;
+  Rectangle rect;
+  rect.x=region.rect.x;
+  rect.y=region.rect.y;
+  rect.width=region.rect.width;
+  rect.height=region.rect.height;
+  
+  if(region.rect.width<0){
+    rect.x+=region.rect.width;
+    rect.width*=-1;
+  }
+  
+  if(region.rect.height<0){
+    rect.y+=region.rect.height;
+    rect.height*=-1;
+  }
+  if(region.habitat>0){ /* select a region inside a planet */
+    a.x=rect.x;
+    a.y=rect.y-rect.height;
+    b.x=rect.x+rect.width;
+    b.y=rect.y;
+  }
+  else{ /* select a region in map view */
+    a.x=rect.x;
+    a.y=rect.y;
+    b.x=rect.x+rect.width;
+    b.y=rect.y+rect.height;
+  }
+  if(obj->x < a.x || obj->x > b.x || obj->y < a.y || obj->y > b.y ){
+    /*reset */
+
+    return(TRUE);
+  }
+  return(FALSE);
+  
+}
 
 
 float Distance2NearestShip(struct HeadObjList *lh,int player,int x,int y){
@@ -2567,6 +2628,7 @@ int BuyShip(struct Player player,Object *obj,int type){
     
     obj_b->x=s->x0+obj_b->radio+r*(Random(-1));
     //    obj_b->x=s->x0+obj_b->radio+r*(obj_b->pid%20)/20.;
+    obj_b->y+=obj_b->radio+1;
     obj_b->player=obj->player;
     obj_b->a=PI/2;
     obj_b->habitat=obj->habitat;
@@ -3054,9 +3116,9 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
     /* objects than dont collide */
     switch(ls->obj->type){
     case PROJECTILE:
-      if(ls->obj->subtype==EXPLOSION){ 
-	ls=ls->next;continue; 
-      } 
+      /* if(ls->obj->subtype==EXPLOSION){  */
+      /* 	ls=ls->next;continue;  */
+      /* }  */
       break;
     case TRACE:
     case TRACKPOINT:
@@ -3485,6 +3547,7 @@ Object *MarkObjs(struct HeadObjList *lh,Space reg,Object *cv,int ctrl){
   /*
     Set the selected mark on in all ship inside the region reg.
     return a pointer to the first selected obj
+    if cv is selected returns cv.
 
   */
 
@@ -3548,13 +3611,11 @@ Object *MarkObjs(struct HeadObjList *lh,Space reg,Object *cv,int ctrl){
 	    sw1++;
 	  }
 	  ls->obj->selected=TRUE;
-	  if(ls->obj==cv)ret=cv;
 	  n++;
 	}
       }
     }
     else{ /* select a region in map view */
-      
       if(ls->obj->habitat==H_PLANET){
 	x=ls->obj->in->planet->x;
 	y=ls->obj->in->planet->y;
@@ -3571,12 +3632,14 @@ Object *MarkObjs(struct HeadObjList *lh,Space reg,Object *cv,int ctrl){
 	    sw1++;
 	  }
 	  ls->obj->selected=TRUE;
-	  if(ls->obj==cv)ret=cv;
 	  n++;
 	}
       }
     }
     ls=ls->next;
+  }
+  if(cv!=NULL){
+    if(cv->selected==TRUE)return(cv);
   }
   return(ret);
 }
@@ -3973,11 +4036,6 @@ int CreatePilot( Object *obj){
   obj->weapon0.n=0;
   obj->weapon1.n=0;
   obj->weapon2.n=0;
-  Explosion(&listheadobjs,obj,0);
-#if SOUND
-  if(obj->habitat==H_PLANET)
-    Play(obj,EXPLOSION0,1);
-#endif
   return(1);
 }
 
@@ -4132,7 +4190,7 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
   return(n);
 }
 
-void CheckPilots(struct HeadObjList *hol){
+void CheckPilots(struct HeadObjList *hol,Object *cvobj){
   /* 
      check if  destroyed ship has pilots.
   */
@@ -4161,7 +4219,13 @@ void CheckPilots(struct HeadObjList *hol){
       if(sw&&(ls->obj->items & ITSURVIVAL)){
 	sw=0;
 	/* GetPointsObj(hol,players,ls->obj);/\* points and experience *\/ */
-	CreatePilot(ls->obj);
+	if(CreatePilot(ls->obj)){
+	  Explosion(&listheadobjs,cvobj,ls->obj,0);
+#if SOUND
+	  if(ls->obj->habitat==H_PLANET)
+	    Play(ls->obj,EXPLOSION0,1);
+#endif
+	}
 	ls->obj->items=ls->obj->items&(~ITSURVIVAL);
 	if(ls->obj->player==actual_player){
 	  printf("Ejecting pilot from ship %d\n",ls->obj->pid);

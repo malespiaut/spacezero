@@ -1020,16 +1020,18 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 
 
 void SelectionBox(Object **pcv,int reset){
-  /* version 01*/
+  /* version 03*/
 
-  static int sw=0;
+  static int mouserelease=FALSE;
   static Space region;
+  static int sw=0;
   static Object *cv0=NULL;
   int x,y;
   int x0,y0;
   int x1,y1;
   Object *cv;
-  int n;  
+  int n;
+  int view;
 
   if(0){
     if(*pcv==NULL){
@@ -1045,6 +1047,12 @@ void SelectionBox(Object **pcv,int reset){
   if(*pcv==NULL)return;
   cv=*pcv;
 
+  if(sw==0){
+    region.rect.width=region.rect.height=0;
+    region.habitat=-1;
+    sw++;
+  }
+
   if(cv0!=cv){
     cv0=cv;
     if(reset==0)reset=1;
@@ -1055,33 +1063,55 @@ void SelectionBox(Object **pcv,int reset){
     break;
   case 1:
     region.rect.width=region.rect.height=0;
-    habitat.type=cv->habitat;
-    habitat.obj=cv->in;
+    region.habitat=-1;
     (*pcv)->selected=TRUE;
-    sw=0;
+    mouserelease=FALSE;
     return;
     break;
   case 2:
     region.rect.width=region.rect.height=0;
+    region.habitat=-1;
     UnmarkObjs(&listheadobjs);
-    habitat.type=cv->habitat;
-    habitat.obj=cv->in;
     (*pcv)->selected=TRUE;
-    sw=0;
+    mouserelease=FALSE;
     return;
     break;
   default:
     break;
   }
 
-  if(region.habitat<0){
-    printf("Sel: habitat<0\n");
+  /* Define views. Four types of view: SPACE,MAP,PLANET,SHIP*/
+
+  view=VIEW_NONE;
+  
+  if(gdraw.map==TRUE){
+    view=VIEW_MAP;
+  }
+  else{
+    switch(habitat.type){
+    case H_SPACE:
+      view=VIEW_SPACE;
+      break;
+    case H_PLANET:
+      view=VIEW_PLANET;
+	break;
+    case H_SHIP:
+      view=VIEW_NONE;
+      break;
+    default:
+      break;
+    }
+  }
+  
+  if(view==VIEW_NONE){
+    //    printf("VIEW: NONE\n");
     return;
   }
-
-  if((habitat.type==H_SPACE && gdraw.map==TRUE) || habitat.type==H_PLANET){
+  
+  if(view==VIEW_SPACE||view==VIEW_PLANET||view==VIEW_MAP){
+    
     if(keys.mleft==FALSE){
-      if(sw){ /* mouse release */
+      if(mouserelease){ /* mouse release */
 	/* region 0: space & map, >0 planet*/
 #if DEBUG
 	printf("BOX0: %d %d w:%d h:%d\n",region.rect.x,region.rect.y, 
@@ -1093,29 +1123,38 @@ void SelectionBox(Object **pcv,int reset){
 	  if(keys.ctrl==FALSE){
 	    UnmarkObjs(&listheadobjs);
 	  }
-	  habitat.type=cv->habitat;
-	  habitat.obj=cv->in;
 	  cv->selected=TRUE;
 
-	  sw=0;
+	  mouserelease=FALSE;
 
 	  /***** mouse selection, one click *****/
 
-	  //	    keys.esc=TRUE;
-	  if(region.habitat>0){
+	  if(view==VIEW_PLANET){
 	    region.rect.y=GameParametres(GET,GHEIGHT,0)-region.rect.y;
 	  }
 	  
-	  Window2Real(cv,region.habitat,region.rect.x,region.rect.y,&x0,&y0); 
-	  Window2Real(cv,region.habitat,region.rect.x+region.rect.width, 
+	  Window2Real(cv,view,region.rect.x,region.rect.y,&x0,&y0); 
+	  Window2Real(cv,view,region.rect.x+region.rect.width, 
 		      region.rect.y+region.rect.height, 
 		      &x1,&y1); 
 	  
 	  region.rect.x=x0; 
 	  region.rect.y=y0; 
 	  region.rect.width=0; 
-	  region.rect.height=0; 
-	  
+	  region.rect.height=0;
+
+	  switch(view){
+	  case VIEW_MAP:
+	  case VIEW_SPACE:
+	    region.habitat=0;
+	    break;
+	  case VIEW_PLANET:
+	    if(cv!=NULL)region.habitat=cv->in->id;
+	    break;
+	  default:
+	    break;
+	  }
+
 	  if(region.habitat>=0){
 	    cv0=SelectOneShip(&listheadobjs,region,cv,keys.ctrl);
 	    if(cv0==NULL)cv0=cv;
@@ -1126,26 +1165,27 @@ void SelectionBox(Object **pcv,int reset){
 		    cv0->selected=cv0->selected==TRUE?FALSE:TRUE;
 		    if(cv==cv0 && cv0->selected==FALSE){
 		      *pcv=FirstSelected(&listheadobjs,cv->player);
-		      habitat.type=(*pcv)->habitat;
-		      habitat.obj=(*pcv)->in;
-		      (*pcv)->selected=TRUE;
+		      if(*pcv!=NULL){
+			(*pcv)->selected=TRUE;
+			habitat.type=(*pcv)->habitat;
+			habitat.obj=(*pcv)->in;
+		      }
 		    }
 		  }
 		}
 		else{
-		  //		    cv->selected=FALSE;
 		  *pcv=cv0;
+		  (*pcv)->selected=TRUE;
 		  habitat.type=(*pcv)->habitat;
 		  habitat.obj=(*pcv)->in;
-		  (*pcv)->selected=TRUE;
 		}
 	      }
 	      else{
 		cv->selected=FALSE;
 		*pcv=cv0;
+		(*pcv)->selected=TRUE;
 		habitat.type=(*pcv)->habitat;
 		habitat.obj=(*pcv)->in;
-		(*pcv)->selected=TRUE;
 	      }
 	    }
 	    else{
@@ -1166,6 +1206,19 @@ void SelectionBox(Object **pcv,int reset){
 	    region.rect.y+=region.rect.height;
 	    region.rect.height*=-1;
 	  }
+
+	  switch(view){
+	  case VIEW_MAP:
+	  case VIEW_SPACE:
+	    region.habitat=0;
+	    break;
+	  case VIEW_PLANET:
+	    if(cv!=NULL)region.habitat=cv->in->id;
+	    break;
+	  default:
+	    break;
+	  }
+
 	  
 	  if(region.habitat==0){ /* free space */
 	    /* window to real coordinates */
@@ -1174,85 +1227,106 @@ void SelectionBox(Object **pcv,int reset){
 	    region.rect.y=GameParametres(GET,GHEIGHT,0)-region.rect.y;
 	  }
 
-	  Window2Real(cv,region.habitat,region.rect.x,region.rect.y,&x0,&y0); 
-	  Window2Real(cv,region.habitat,region.rect.x+region.rect.width, 
+	  Window2Real(cv,view,region.rect.x,region.rect.y,&x0,&y0); 
+	  Window2Real(cv,view,region.rect.x+region.rect.width, 
 		      region.rect.y+region.rect.height, 
 		      &x1,&y1); 
 	  
-	  region.rect.x=x0; 
-	  region.rect.y=y0; 
-	  region.rect.width=x1-x0; 
-	  region.rect.height=y1-y0; 
-	  
+	  region.rect.x=x0;
+	  region.rect.y=y0;
+	  region.rect.width=x1-x0;
+	  region.rect.height=y1-y0;
+
 #if DEBUG	    
 	  printf("BOX1: %d %d w:%d h:%d\n",region.rect.x,region.rect.y, 
 		 region.rect.width,region.rect.height);  /* window coordinates */
 #endif	    
 	  if(region.habitat>=0){
 	    cv0=MarkObjs(&listheadobjs,region,*pcv,keys.ctrl);
-	    
 	    if(cv0!=NULL){
 	      *pcv=cv0;
+	      (*pcv)->selected=TRUE;
 	      habitat.type=(*pcv)->habitat;
 	      habitat.obj=(*pcv)->in;
-	      (*pcv)->selected=TRUE;
-	      ///		SelectionBox(cv,1); /* reset selection box*/
 	    }
 	  }
 	  n=CountSelected(&listheadobjs,cv->player);
 	  if(n<6){
 	    printf("Selected ships:\n");
 	    PrintSelected(&listheadobjs); 
+	    if(n==0)printf("NONE\n");
 	  }
-	  else printf("Selected %d ships.\n",n);
+	  else{
+	    printf("Selected %d ships.\n",n);
+
+	  }
 	}
-	sw=0;
+	mouserelease=FALSE;
       }
     }
     
     if(keys.mleft==TRUE){
-      //      keys.esc=TRUE;
-      if(sw==0){
+      if(mouserelease==0){
 	MousePos(GET,&x,&y);
 	region.rect.x=x;
 	region.rect.y=y;
 	region.rect.width=region.rect.height=0;
 	region.habitat=-1; /* nothing selected */
-	if(gdraw.map==TRUE){
-	  region.habitat=0;
-	}
-	else{
-	  switch(habitat.type){
-	  case H_PLANET:
-	    break;
-	  case H_SHIP:
-	    break;
-	  default:
-	    break;
-	  }
-	  if(habitat.type==H_PLANET){
-	    if(cv!=NULL)region.habitat=cv->in->id;
-	  }
-	}
-	sw=1;
+
+	mouserelease=TRUE;
       }
       MousePos(GET,&x,&y);
       region.rect.width=x-region.rect.x;
       region.rect.height=y-region.rect.y;
+
+      switch(view){
+      case VIEW_SPACE:
+      case VIEW_MAP:
+	region.habitat=0;
+	break;
+      case VIEW_PLANET:
+	if(cv!=NULL)region.habitat=cv->in->id;
+	break;
+      default:
+	break;
+      }
     }
     
+    
     if(region.rect.width!=0){
-      if(region.habitat>0 && gdraw.map==FALSE){
-	DrawSelectionBox(pixmap,penGreen,region,cv);
+      switch(view){
+      case VIEW_PLANET:
+	if(region.habitat>0){
+	  DrawSelectionBox(pixmap,penGreen,view,region,cv);
+	}
+	break;
+      case VIEW_SPACE:
+      case VIEW_MAP:
+	if(region.habitat==0){
+	  DrawSelectionBox(pixmap,penGreen,view,region,cv);
+	}
+	break;
+
+      default:
+	break;
       }
-      else{
-	if(region.habitat==0 && gdraw.map==TRUE){
-	  DrawSelectionBox(pixmap,penGreen,region,cv);
+      /*
+	check if cv in inside the region 
+	if not : delete region
+      */
+      if(keys.mleft==FALSE && *pcv!=NULL){
+	if((*pcv)->habitat==H_SPACE){
+	  if(IsInRegion(*pcv,region)){
+	    region.rect.width=region.rect.height=0;
+	    region.habitat=-1;
+	  }
+	  return;
 	}
       }
     }
   }
 }
+
 
 
 char Keyval2Char(guint keyval){

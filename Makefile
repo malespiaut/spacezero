@@ -90,8 +90,8 @@ mrproper: clean
 	rm -f src/*~ include/*~
 
 .c.o:	
-		$(CC)  $(CFLAGS)   $(LDFLAGS) $(GTKFLAGS) -c $< -o  $@ 
+#		$(CC)  $(CFLAGS)   $(LDFLAGS) $(GTKFLAGS) -c $< -o  $@ 
 # add -pg for profile
 #		$(CC) -pg  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
 # add -g for debug
-#		$(CC) -g  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
+		$(CC) -g  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 

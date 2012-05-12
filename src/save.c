@@ -261,6 +261,16 @@ int ExecSave(struct HeadObjList lh,char *nom){
   n=0;
   ls=lh.next;
   while(ls!=NULL){
+
+    switch(ls->obj->type){
+    case TRACKPOINT:
+    case TRACE:
+      ls=ls->next;continue;
+      break;
+    default:
+      break;
+    }    
+
     n++;
     ls=ls->next;
   }
@@ -412,7 +422,16 @@ int ExecSave(struct HeadObjList lh,char *nom){
   ls=lh.next;
   
   while(ls!=NULL){
-    /*    if(ls->obj->type!=TRACKPOINT){ */
+
+    switch(ls->obj->type){
+    case TRACKPOINT:
+    case TRACE:
+      ls=ls->next;continue;
+      break;
+    default:
+      break;
+    }    
+
     FprintfObj(fp,ls->obj);
     fprintf(fp,"\n");
     ls=ls->next;

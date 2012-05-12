@@ -639,7 +639,7 @@ Object *FirstShip(struct HeadObjList *lh,Object *cv0,int pid);
 Object *NextPlanetCv(struct HeadObjList *lh,Object *cv0,int pid);
 Object *PrevPlanetCv(struct HeadObjList *lh,Object *cv0,int pid);
 
-void Explosion(struct HeadObjList *lh,Object *obj,int type);
+void Explosion(struct HeadObjList *lh,Object *cv,Object *obj,int type);
 
 Object *ObjNearThan(struct HeadObjList *lh,int player,int x,int y,float dmin2);
 float Distance2NearestShip(struct HeadObjList *lh,int player,int x,int y);
@@ -693,13 +693,16 @@ int IsPlanetEmpty(Object *planet,Object *obj);
 Object *FirstSelected(struct HeadObjList *lh,int player);
 Object *SelectOneShip(struct HeadObjList *lh,Space region,Object *cv,int ctrl);
 
+int IsInRegion(Object *obj,Space region);
+
+
 int UpdateCell(struct HeadObjList *lh,int *cell);
 int ValueCell(int *cell,Object *obj,int x,int y);
 
 int CreatePilot( Object *obj);
 int EjectPilots(struct HeadObjList *lh);
 int EjectPilotsObj(struct HeadObjList *lh,Object *obj);
-void CheckPilots(struct HeadObjList *hol);
+void CheckPilots(struct HeadObjList *hol,Object *);
 
 float Distance2(Object *obj1,Object *obj2);
 

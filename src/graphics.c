@@ -49,7 +49,6 @@
 
 extern struct Player *players;
 extern struct Parametres param;
-extern int g_memused;
 extern char version[64];
 int gdrawmenu=1;
 
@@ -1261,7 +1260,7 @@ void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data){
 GdkColor *NewColor(int red,int green,int blue){
   
   GdkColor *c=(GdkColor *)malloc(sizeof(GdkColor));
-  g_memused+=sizeof(GdkColor);
+  MemUsed(MADD,+sizeof(GdkColor));
   if(c==NULL){
     fprintf(stderr,"ERROR in malloc Newcolor()\n");
     exit(-1);
@@ -2366,7 +2365,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
   if(keys.order.state==FALSE){
     /* DrawString(pixmap,gfont,penRed,10,gheight+GameParametres(GET,GPANEL,0)/2+4,  */
     /* 		    "O: Introduce command");  */
-    ShellTitle(0,NULL,pixmap,gfont,penRed,10,gheight+GameParametres(GET,GPANEL,0)/2+4);
+    ShellTitle(0,NULL,pixmap,penRed,gfont,10,gheight+GameParametres(GET,GPANEL,0)/2+4);
 
     /* map centered at selected ship */
     if(cv!=NULL){
@@ -2861,6 +2860,10 @@ int DrawPlanetInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *planet,i
   DrawString(pixmap,font,color,x0,y,point);
   y+=incy;
 
+  sprintf(point,"LEVEL: %d",planet->level);
+  DrawString(pixmap,font,color,x0,y,point);
+  y+=incy;
+
   return(y);
 
 }
@@ -3203,7 +3206,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   y+=incy;
 
   if(v>2){
-    snprintf(point,MAXTEXTLEN,"Time: %.0f s.",d*SECTORSIZE/(20*DT*v));
+    snprintf(point,MAXTEXTLEN,"Time: %.0f s",d*SECTORSIZE/(20*DT*v));
   }
   else{
     snprintf(point,MAXTEXTLEN,"Time: --");
@@ -3742,9 +3745,11 @@ gint SaveWindowOptions(GtkWidget *widget,gpointer gdata){
   //  fprintf(fp,"%d ",(int)state);
   if(state){
     SetMusicVolume(0,VOLSET);
+    printf("music off\n");
   }
   else{
     SetMusicVolume((float)param.musicvol/100,VOLSET);
+    printf("music on\n");
   }
 
   state=gtk_toggle_button_get_active((GtkToggleButton *)options3);
@@ -4190,13 +4195,14 @@ void Window2Real(Object *cv,int view, int wx,int wy,int *rx,int *ry){
   }
   switch(view){
   case VIEW_NONE:
-  return;
-  break;
+    return;
+    break;
+    
   case VIEW_SPACE:
     *rx=wx+objx-gwidth/2;
     *ry=gheight-wy+objy-gheight/2;
     break;
-
+    
   case VIEW_MAP:
     Shift(GET,ulx,cv==NULL?0:cv->id,&zoom,&cvx,&cvy);
     
@@ -4319,6 +4325,7 @@ void Window2Sector(Object *cv,int *x,int *y){
 void W2R(Object *obj,int *x,int *y){
   /*
     convert the window x,y coordinates in real coordinates. 
+    only works on map
   */
 
   int a,b;

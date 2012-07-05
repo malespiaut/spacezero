@@ -210,7 +210,7 @@ struct TextMessageList{
 };
 
 
-struct Game{
+struct Game{           /* Game parametres */
   int width,height;    /* window size */
   int panel_height;    /* shell height */
   int ulx,uly;         /* Universe size */

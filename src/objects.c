@@ -23,6 +23,7 @@
 		version 0.82 Jan 2012
 ****/
 
+#include <sys/time.h>
 #include "general.h"
 #include "functions.h"
 #include "spacecomm.h"
@@ -44,7 +45,6 @@ extern struct TextMessageList listheadtext;
 extern struct CharListHead gameloglist;          /* list of all game messages */
 extern struct Window windowgamelog;
 extern int actual_player,actual_player0;
-extern int g_memused;
 extern int record;
 extern int gameover;
 extern int *cell;
@@ -68,7 +68,7 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
 
   /*   return NULL; */
   obj=malloc(sizeof(Object));
-  g_memused+=sizeof(Object);
+  MemUsed(MADD,+sizeof(Object));
   if(obj==NULL){
     fprintf(stderr,"ERROR in malloc NewObj()\n");
     exit(-1);
@@ -329,7 +329,7 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
   /* data base */
   if(obj->type==SHIP){ // HERE TODO SHIP COMPUTER, only ships
     obj->cdata=malloc(sizeof(Data));
-    g_memused+=sizeof(Data);
+    MemUsed(MADD,+sizeof(Data));
     if(obj->cdata==NULL){
       fprintf(stderr,"ERROR in malloc NewObj()\n");
       exit(-1);
@@ -357,7 +357,7 @@ int Add2ObjList(struct HeadObjList *lhead,Object *obj){
   ls=lhead->next;
   
   lhead->next=malloc(sizeof(struct ObjList));
-  g_memused+=sizeof(struct ObjList);
+  MemUsed(MADD,+sizeof(struct ObjList));
   if(lhead->next==NULL){
     fprintf(stderr,"ERROR in malloc Add2ObjList()\n");
     exit(-1);
@@ -885,9 +885,9 @@ void RemoveObj(struct HeadObjList *lhobjs,Object *obj2remove){
     DelAllOrder(freels->obj);
     free(freels->obj);
     freels->obj=NULL;
-    g_memused-=sizeof(Object);
+    MemUsed(MADD,-sizeof(Object));
     free(freels);
-    g_memused-=sizeof(struct ObjList);
+    MemUsed(MADD,-sizeof(struct ObjList));
     freels=NULL;
     lhobjs->n--;
   } /*  if(ls->obj==obj2remove) */
@@ -950,7 +950,7 @@ struct Planet *NewPlanet(void){
   int sw=0;
   
   planet=malloc(sizeof(struct Planet));
-  g_memused+=sizeof(struct Planet);
+  MemUsed(MADD,+sizeof(struct Planet));
 
   if(planet==NULL){
     fprintf(stderr,"ERROR in malloc NewPlanet()\n");
@@ -958,7 +958,7 @@ struct Planet *NewPlanet(void){
   }
 
   planet->segment=malloc(sizeof(Segment));
-  g_memused+=sizeof(Segment);
+  MemUsed(MADD,+sizeof(Segment));
   if(planet->segment==NULL){
     fprintf(stderr,"ERROR in malloc NewPlanet()2\n");
     exit(-1);
@@ -1010,7 +1010,7 @@ struct Planet *NewPlanet(void){
 
     
     s->next=malloc(sizeof(Segment));
-    g_memused+=sizeof(Segment);
+    MemUsed(MADD,+sizeof(Segment));
     if(s->next==NULL){
       fprintf(stderr,"ERROR in malloc NewPlanet()\n");
       exit(-1);
@@ -1046,7 +1046,7 @@ struct Planet *NewPlanet(void){
 
   /* last segment */
   s->next=malloc(sizeof(Segment));
-  g_memused+=sizeof(Segment);
+  MemUsed(MADD,+sizeof(Segment));
   if(s->next==NULL){
     fprintf(stderr,"ERROR in malloc NewPlanet()2\n");
     exit(-1);
@@ -1135,27 +1135,44 @@ void Explosion(struct HeadObjList *lh,Object *cv,Object *obj,int type){
   int nexplosion=16;
   int swexplosion=0;
 
+  struct timeval time;
+  static int n=0;
+  static struct timeval time0;
+
+
+  /* max 500 explosion dots by second */
+  gettimeofday(&time,NULL);
+  if(time.tv_sec-time0.tv_sec>1 ){
+    n=0;
+  }
+  if(n==0){
+    time0=time;
+  }
+  if(n>500)return;
+
 
   if(obj==NULL)return;
+  if(cv==NULL)return;
 
   /* only there are an explosion if you can see it. */
-  if(cv!=NULL){
-    if(cv->habitat==obj->habitat){
-      if(cv->habitat==H_PLANET){
-	if(cv->in==obj->in)swexplosion++;
-      }
-      else{
-	/* check if are close */
-	if( (cv->x-obj->x)*(cv->x-obj->x)+(cv->y-obj->y)*(cv->y-obj->y)<4000000)
-	  swexplosion++;
-      }
+
+  if(cv->habitat==obj->habitat){
+    if(cv->habitat==H_PLANET){
+      if(cv->in==obj->in)swexplosion++;
     }
-    if(!swexplosion)return;
+    else{
+      /* check if are close */
+      if( (cv->x-obj->x)*(cv->x-obj->x)+(cv->y-obj->y)*(cv->y-obj->y)<4000000)
+	swexplosion++;
+    }
   }
+  if(!swexplosion)return;
+  
 
   switch (type){
   case 0: /* ship destroyed */
     nexplosion=(64*obj->mass)/100;
+    n+=nexplosion;
     for(i=0;i<nexplosion;i++){   //16
       a=2.*PI*(Random(-1));
       v=1.0*VELMAX*(Random(-1)); 
@@ -1171,7 +1188,8 @@ void Explosion(struct HeadObjList *lh,Object *cv,Object *obj,int type){
     }
     break;
   case 1: /* ship hitted */
-    for(i=0;i<4;i++){  
+    n+=4;
+    for(i=0;i<4;i++){
       a=2.*PI*(Random(-1));
       v=0.5*VELMAX*(Random(-1)); 
       vx=v*cos(a) + obj->vx;
@@ -2067,7 +2085,7 @@ void DestroyAllObj(struct HeadObjList *lh){
     ls=ls->next;
     free(ls0);
     ls0=NULL;
-    g_memused-=sizeof(struct ObjList);
+    MemUsed(MADD,-sizeof(struct ObjList));
     lh->n--;
   }
 }
@@ -2103,12 +2121,12 @@ void DestroyObj(Object *obj){
     }
     free(obj->cdata);
     obj->cdata=NULL;
-    g_memused-=sizeof(Data);
+    MemUsed(MADD,-sizeof(Data));
 
   }
   free(obj);
   obj=NULL;
-  g_memused-=sizeof(Object);
+  MemUsed(MADD,-sizeof(Object));
 }
 
 void DestroyPlanet(struct Planet *planet){
@@ -2120,12 +2138,12 @@ void DestroyPlanet(struct Planet *planet){
     s=s->next;
     free(s0);
     s0=NULL;
-    g_memused-=sizeof(Segment);
+    MemUsed(MADD,-sizeof(Segment));
 
   } 
   free(planet);
   planet=NULL;
-  g_memused-=sizeof(struct Planet);
+  MemUsed(MADD,-sizeof(struct Planet));
 
 }
 
@@ -2171,7 +2189,7 @@ int CopyBuf2Planet(char *buf,struct Planet *planet){
   int offset=0;
 
   planet=malloc(sizeof(struct Planet));
-  g_memused+=sizeof(struct Planet);
+  MemUsed(MADD,+sizeof(struct Planet));
   if(planet==NULL){
     fprintf(stderr,"ERROR in malloc CopyBuf2Planet()\n");
     exit(-1);
@@ -2188,7 +2206,7 @@ int CopyBuf2Planet(char *buf,struct Planet *planet){
   offset=sizeof(struct Planet);
 
   s=malloc(sizeof(Segment));
-  g_memused+=sizeof(Segment);
+  MemUsed(MADD,+sizeof(Segment));
   if(s==NULL){
     fprintf(stderr,"ERROR in malloc CopyBuf2Planet()2\n");
     exit(-1);
@@ -2208,7 +2226,7 @@ int CopyBuf2Planet(char *buf,struct Planet *planet){
 
   while(s2->next!=NULL){
     s->next=malloc(sizeof(Segment));
-    g_memused+=sizeof(Segment);
+    MemUsed(MADD,+sizeof(Segment));
     if(s->next==NULL){
       fprintf(stderr,"ERROR in malloc CopyBuf2Planet()2\n");
       exit(-1);
@@ -2335,7 +2353,7 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
 
   /*   printf("m addded:%s\n",cad); */
   list=malloc(sizeof(struct TextMessageList));
-  g_memused+=sizeof(struct TextMessageList);
+  MemUsed(MADD,+sizeof(struct TextMessageList));
   if(list==NULL){
     fprintf(stderr,"ERROR in malloc Add2TextMessageList()\n");
     exit(-1);
@@ -2381,7 +2399,7 @@ int Add2TextList(struct TextList *listhead,char *cad,int color){
   }
 
   list=malloc(sizeof(struct TextList));
-  g_memused+=sizeof(struct TextList);
+  MemUsed(MADD,+sizeof(struct TextList));
 
   if(list==NULL){
     fprintf(stderr,"ERROR in malloc Add2TextList()\n");
@@ -2409,7 +2427,7 @@ int DestroyTextList(struct TextList *head){
     lh=lh->next;
     free(lh0);
     lh0=NULL;
-    g_memused-=sizeof(struct TextList);
+    MemUsed(MADD,-sizeof(struct TextList));
 
     n++;
   }
@@ -2912,7 +2930,7 @@ int DestroyObjList(struct HeadObjList *hl){
     ls0->next=NULL;
     free(ls0);
     ls0=NULL;
-    g_memused-=sizeof(struct ObjList);
+    MemUsed(MADD,-sizeof(struct ObjList));
     hl->n--;
     n++;
   }
@@ -3030,7 +3048,7 @@ int CreatePlayerList(struct HeadObjList hlist1,struct HeadObjList *hlist2,int pl
     if(ls1->obj->habitat==H_PLANET)id1=ls1->obj->in->id;
 
     ls0=malloc(sizeof(struct ObjList));
-    g_memused+=sizeof(struct ObjList);
+    MemUsed(MADD,+sizeof(struct ObjList));
     if(ls0==NULL){
       fprintf(stderr,"ERROR in malloc CreateList()\n");
       exit(-1);
@@ -3265,7 +3283,7 @@ int CreatePlanetList(struct HeadObjList lheadobjs,struct HeadObjList *lheadplane
     if(ls->obj->type==PLANET){
 
       ls0=malloc(sizeof(struct ObjList));
-      g_memused+=sizeof(struct ObjList);
+      MemUsed(MADD,+sizeof(struct ObjList));
       if(ls0==NULL){
 	fprintf(stderr,"ERROR in malloc() CreatePlanetList()\n");
 	exit(-1);
@@ -3395,9 +3413,6 @@ void Experience(Object *obj,float pts){
       obj->experience-=100*pow(2,obj->level);
       obj->level++;
       //HERE      obj->ttl=0;
-      if(0 && obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
-	obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
-      }
 
       if(GameParametres(GET,GNET,0)==TRUE){
 	/* if(GetProc()==players[obj->player].proc){ */
@@ -3685,6 +3700,7 @@ int PrintSelected(struct HeadObjList *lh){
 
 int NearMaxLevelObj(Object *obj,struct HeadObjList *lh){
   /* 
+     Not USED.
      return the max level of the objects in the list 
      that belongs to same player that obj.
      pilots are not counted
@@ -4039,51 +4055,6 @@ int CreatePilot( Object *obj){
   return(1);
 }
 
-int EjectPilots(struct HeadObjList *lh){
-  /*
-    version 01
-    Eject pilots from dead objs
-    Rescue the transported pilots of dead objs 
-    only own pilots, not allied pilots. 
-    returns:
-    the number of pilots ejected.
-   */
-
-  struct ObjList *ls;
-  Object *obj;
-  int n=0;
-  int proc;
-
-  proc=GetProc();
-  ls=lh->next;
-  while(ls!=NULL){
-
-    if(ls->obj->type!=SHIP){ls=ls->next;continue;}
-
-    switch(ls->obj->subtype){
-    case FIGHTER:
-      obj=ls->obj;
-
-      if(proc==players[obj->player].proc){
-
-	/***** ship destroyed ****/
-	if(obj->state<=0 && (obj->items & ITPILOT) ){
-	  n+=EjectPilotsObj(&listheadobjs,obj);
-	  obj->items=obj->items&(~ITPILOT);
-	}   
-      }
-      break;
-
-    default:
-      break;
-    }
-    ls=ls->next;
-  }
-  return(n);
-}
-
-
-
 int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
   /*
     Eject pilots from ship obj
@@ -4166,8 +4137,11 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
       pilot->x=obj->x;
       pilot->y=obj->y;
       pilot->vx=0.75*obj->vx+6*Random(-1)-3;
-      pilot->vy=0.75*obj->vy+6*Random(-1)-3;
-      if(obj->habitat==H_PLANET)pilot->vy+=10;
+      if(obj->habitat==H_PLANET){
+	pilot->vy=fabs(0.75*obj->vy+6*Random(-1)-3)+10;
+      }else{
+	pilot->vy=0.75*obj->vy+6*Random(-1)-3;
+      }
       pilot->a=obj->a;
       pilot->ai=0;
       pilot->items=0;
@@ -4205,14 +4179,14 @@ void CheckPilots(struct HeadObjList *hol,Object *cvobj){
 
   while(ls!=NULL){
     sw=0;
-    if(ls->obj->state<=0)sw=1;
     if(proc!=players[ls->obj->player].proc){ls=ls->next;continue;}
 
+    if(ls->obj->state<=0)sw=1;
     if(1){
       
       if(sw&&(ls->obj->items & ITPILOT)){
 	EjectPilotsObj(hol,ls->obj);
-	ls->obj->items=ls->obj->items&(~ITPILOT);
+ 	ls->obj->items=(ls->obj->items)&(~ITPILOT);
       }
       
       /***** ship destroyed Create Pilot****/
@@ -4226,7 +4200,6 @@ void CheckPilots(struct HeadObjList *hol,Object *cvobj){
 	    Play(ls->obj,EXPLOSION0,1);
 #endif
 	}
-	ls->obj->items=ls->obj->items&(~ITSURVIVAL);
 	if(ls->obj->player==actual_player){
 	  printf("Ejecting pilot from ship %d\n",ls->obj->pid);
 	}
@@ -4403,7 +4376,7 @@ struct ObjTree *Add2ObjTree(struct ObjTree *head,Object *obj){
     /* first element */
     
     head=malloc(sizeof(struct ObjTree));
-    g_memused+=sizeof(struct ObjTree);
+    MemUsed(MADD,+sizeof(struct ObjTree));
     if(head==NULL){
       fprintf(stderr,"ERROR in malloc Add2ObjTree()\n");
       exit(-1);
@@ -4423,7 +4396,7 @@ struct ObjTree *Add2ObjTree(struct ObjTree *head,Object *obj){
       return(head);
     }
     new=malloc(sizeof(struct ObjTree));
-    g_memused+=sizeof(struct ObjTree);
+    MemUsed(MADD,+sizeof(struct ObjTree));
 
     if(new==NULL){
       fprintf(stderr,"ERROR in malloc Add2ObjTree()\n");
@@ -4440,7 +4413,7 @@ struct ObjTree *Add2ObjTree(struct ObjTree *head,Object *obj){
   /* add to the beginning of the list */
   parent=head;
   new=malloc(sizeof(struct ObjTree));
-  g_memused+=sizeof(struct ObjTree);
+  MemUsed(MADD,+sizeof(struct ObjTree));
   if(new==NULL){
     fprintf(stderr,"ERROR in malloc Add2ObjTree()\n");
     exit(-1);
@@ -4465,7 +4438,7 @@ void DestroyTree(struct ObjTree *head){
   //  DestroyObj(head->obj);
   free(head);
   head=NULL;
-  g_memused-=sizeof(struct ObjTree);
+  MemUsed(MADD,-sizeof(struct ObjTree));
 
 }
 
@@ -4489,7 +4462,7 @@ struct ObjTree *DelObjTree(struct ObjTree *head,Object *obj){
 
     free(head);
     head=NULL;
-    g_memused-=sizeof(struct ObjTree);
+    MemUsed(MADD,-sizeof(struct ObjTree));
     return(tmp->next);
   }
 
@@ -4588,7 +4561,7 @@ struct VerletList *CreateVerletList(struct HeadObjList hol){
   struct VerletList *vlh,*vl;
 
   vlh=malloc(sizeof(struct VerletList));
-  g_memused+=sizeof(struct VerletList);
+  MemUsed(MADD,+sizeof(struct VerletList));
   if(vlh==NULL){
     fprintf(stderr,"ERROR in malloc CreateVerletList()\n");
     exit(-1);
@@ -4608,7 +4581,7 @@ struct VerletList *CreateVerletList(struct HeadObjList hol){
     }
     else{/*next elements*/
       vl=malloc(sizeof(struct VerletList));
-      g_memused+=sizeof(struct VerletList);
+      MemUsed(MADD,+sizeof(struct VerletList));
 
       if(vl==NULL){
 	fprintf(stderr,"ERROR in malloc CreateVerletList()\n");
@@ -4634,7 +4607,7 @@ struct VerletList *CreateVerletList(struct HeadObjList hol){
 	if(vl->nextobj==NULL){
 	  /* is the first */
 	  vl->nextobj=malloc(sizeof(struct ObjList));
-	  g_memused+=sizeof(struct ObjList);
+	  MemUsed(MADD,+sizeof(struct ObjList));
 	  if(vl->nextobj==NULL){
 	    fprintf(stderr,"ERROR in malloc CreateVerletList()\n");
 	    exit(-1);
@@ -4646,7 +4619,7 @@ struct VerletList *CreateVerletList(struct HeadObjList hol){
 	else{
 	  /* adding at the beginning */
 	  nols=malloc(sizeof(struct ObjList));
-	  g_memused+=sizeof(struct ObjList);
+	  MemUsed(MADD,+sizeof(struct ObjList));
 	  if(nols==NULL){
 	    fprintf(stderr,"ERROR in malloc CreateVerletList()\n");
 	    exit(-1);
@@ -4705,7 +4678,7 @@ void DestroyVerletList(struct VerletList *hvl){
       ls=vl->nextobj;
       free(ls0);
       ls0=NULL;
-      g_memused-=sizeof(struct ObjList);
+      MemUsed(MADD,-sizeof(struct ObjList));
     }
     vl=vl->next;
   }
@@ -4716,12 +4689,12 @@ void DestroyVerletList(struct VerletList *hvl){
     hvl->next=hvl->next->next;
     free(vl0);
     vl0=NULL;
-    g_memused-=sizeof(struct VerletList);
+    MemUsed(MADD,-sizeof(struct VerletList));
     vl=hvl;
   }
   free(hvl);
   hvl=NULL;
-  g_memused-=sizeof(struct VerletList);
+  MemUsed(MADD,-sizeof(struct VerletList));
 }
 
 int GameOver(struct HeadObjList *lhead,struct Player *players,int player){

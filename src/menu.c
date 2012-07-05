@@ -29,7 +29,6 @@
 #include "menu.h"
 #include "sound.h"
 
-extern int g_memused;
 extern struct Parametres param;
 struct Keys keys;
 
@@ -79,7 +78,7 @@ int Add2MenuHead(struct MenuHead *mhead,struct MenuItem *item0,char *title){
     itemnew=item->next;
   }
 
-  g_memused+=sizeof(struct MenuItem);
+  MemUsed(MADD,+sizeof(struct MenuItem));
   itemnew->id=item0->id;
   itemnew->type=item0->type;
   itemnew->active=item0->active;

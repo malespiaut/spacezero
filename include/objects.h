@@ -117,7 +117,7 @@
 
 /* ship items */
 #define ITSURVIVAL 1  /* has a survival pod */ 
-#define ITPILOT    1<<1     /* transport pilots */
+#define ITPILOT    2     /* transport pilots */
 
 
 /* weapons types */
@@ -369,7 +369,7 @@ struct ObjectAll{   /* SENDOBJALL */
   int mass;         /* mass */
 
   int cargo;        /* capacity of the dock TODO*/
-  int items;
+  unsigned int items;
   int radio;        /* ship radio */
   float cost;       /* cost of the object per unit time*/
   int damage;       /* damage of the ship in collision*/
@@ -444,7 +444,6 @@ struct ObjectNew{   /* SENDOBJNEW */
 
   int engtype;
 };
-
 
 
 struct ObjectAAll{  /* SENDOBJAALL */
@@ -700,7 +699,6 @@ int UpdateCell(struct HeadObjList *lh,int *cell);
 int ValueCell(int *cell,Object *obj,int x,int y);
 
 int CreatePilot( Object *obj);
-int EjectPilots(struct HeadObjList *lh);
 int EjectPilotsObj(struct HeadObjList *lh,Object *obj);
 void CheckPilots(struct HeadObjList *hol,Object *);
 

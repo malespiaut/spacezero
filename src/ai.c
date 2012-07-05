@@ -42,7 +42,6 @@ extern struct Player *players;
 extern struct CCDATA *ccdatap; 
 extern struct HeadObjList *listheadcontainer; /* lists of objects that contain objects: free space and planets*/
 extern struct HeadObjList *listheadkplanets;  /* lists of planets known by players */
-extern int g_memused;
 
 #if DEBUG
 int debugwar=FALSE;
@@ -428,7 +427,8 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	    if(fabs(obj->x-mainord->a)<400 && fabs(obj->y-mainord->b)<400){
 	      if(obj->player==act_player && mainord->h==0 && mainord->id!=EXPLORE){
 		snprintf(text,MAXTEXTLEN,"(%c %d) ARRIVED TO %d %d",
-			 Type(obj),obj->pid,(int)(mainord->a/SECTORSIZE)-(mainord->a<0),(int)(mainord->b/SECTORSIZE)-(mainord->b<0));
+			 Type(obj),obj->pid,(int)(mainord->a/SECTORSIZE)-(mainord->a<0),
+			 (int)(mainord->b/SECTORSIZE)-(mainord->b<0));
 		if(!Add2TextMessageList(&listheadtext,text,obj->id,obj->player,0,100,0)){
 		  Add2CharListWindow(&gameloglist,text,1,&windowgamelog);
 		}
@@ -926,8 +926,18 @@ void ExecGoto(Object *obj,struct Order *ord){
     }
     break;
   case SHIP:
-  default:
     d02=40000+2000*(obj->id%10);
+
+    if((int)ord->i==PILOT){d02=25;}
+    v2=obj->vx*obj->vx+obj->vy*obj->vy;
+    if(v2>225)d02*=2;
+    if(d2 <d02){  /* ori 40000 objetive reached. */
+      ExecStop(obj,0);
+      return;
+    }
+    break;
+  default:
+    d02=40+2*(obj->id%10);
 
     if((int)ord->i==PILOT){d02=25;}
     v2=obj->vx*obj->vx+obj->vy*obj->vy;
@@ -1546,14 +1556,13 @@ void ExecStop(Object *obj,float v0){
   inca=obj->engine.ang_v_max*DT;
 
   if(ia>inca){
-    obj->accel*=.8;
+    if(obj->habitat!=H_PLANET)obj->accel*=.8;
     ExecTurn(obj,b);
   }
   else{
     obj->a=b;
     obj->ang_a=0;
   }
-
   if(ia<PI/2){
     if(v2>20)
       A=1;
@@ -1566,7 +1575,6 @@ void ExecStop(Object *obj,float v0){
       obj->accel=.5;
     }
     obj->accel+=A*obj->engine.a;
-    
     if(obj->accel>obj->engine.a_max)
       obj->accel=obj->engine.a_max;
   }
@@ -1640,7 +1648,7 @@ Object *CCUpgrade(struct HeadObjList *lhobjs,struct Player *player){
     return:
     the type of ship to upgrade
     in *obj2upgrade the ship to upgrade
-    -1 if ther are no objjects to upgrade.
+    -1 if there are no ships to upgrade.
    */
   struct ObjList *ls;
   Object *obj,*retobj;
@@ -1680,23 +1688,28 @@ Object *CCUpgrade(struct HeadObjList *lhobjs,struct Player *player){
       if(obj->subtype!=TOWER){ls=ls->next;continue;}
     }
 
-    if(sw==0){
+    /* dont upgrade learning spaceships*/
+    if(obj->in->level>obj->level+1){ls=ls->next;continue;} 
+
+    if(sw==0){ /* first */
       minlevel=obj->level;
       retobj=obj;
       sw++;
     }
     else{
+      if(obj->level==minlevel){
+	if(Random(-1)<.20){
+	  retobj=obj;
+	}
+      }
       if(obj->level<minlevel){
 	minlevel=obj->level;
 	retobj=obj;
       }
-      if(obj->level==minlevel){
-	if(Random(-1)<.20){
-	  minlevel=obj->level;
-	  retobj=obj;
-	}
-      }
     }
+
+
+
     ls=ls->next;
   }
   if(0&&retobj!=NULL){
@@ -1917,6 +1930,8 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
       price=.5*GetPrice(obj,0,0,0);
       if(price>0){
 	players[obj->player].gold+=price;
+	obj->mode=SOLD;
+	obj->items=0;
 	obj->state=-1;
 	/*      obj->modified=SENDOBJKILL; */
 	if(GameParametres(GET,GNET,0)==TRUE){
@@ -3158,7 +3173,7 @@ void DelFirstOrder(Object *obj){
     fprintf(stderr,"ERROR: DelFirstOrder()\n");
   }
   free(lo);
-  g_memused-=sizeof(struct ListOrder);
+  MemUsed(MADD,-sizeof(struct ListOrder));
   lo=NULL;
 }
 
@@ -3265,7 +3280,7 @@ struct Order *ReadOrder(struct Order *order0,Object *obj,int mode){
 
   if(freelo != NULL){
     free(freelo);
-    g_memused-=sizeof(struct ListOrder);
+    MemUsed(MADD,-sizeof(struct ListOrder));
     freelo=NULL;
     return(NULL);
   }
@@ -3313,7 +3328,7 @@ int AddOrder(Object *obj,struct Order *order){
     fprintf(stderr,"ERROR in malloc AddOrder()3\n");
     exit(-1);
   }
-  g_memused+=sizeof(struct ListOrder);
+  MemUsed(MADD,+sizeof(struct ListOrder));
 
 
   lord->order.priority=order->priority;
@@ -3438,7 +3453,7 @@ void TestOrder(Object *obj){
   }
 }
 
-void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0){
+void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0,float level){
   /*
     Create some pirates
    */
@@ -3446,6 +3461,7 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0){
   float x,y;
   int i;
   int stype=SHIP0;
+  float exp,incexp;
 
   if(GameParametres(GET,GPIRATES,0)==FALSE)return;
 
@@ -3466,7 +3482,24 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0){
     obj->planet=NULL;
     obj->habitat=H_SPACE;
     obj->weapon=&obj->weapon0;
-    obj->weapon->n=obj->weapon->max_n;
+    obj->weapon0.n=obj->weapon0.max_n;
+
+    exp=level*100*Random(-1);
+    if(exp>750)exp=750;
+    incexp=exp<100?exp:100;
+    do{
+      Experience(obj,incexp);
+      exp-=incexp;
+    }while(exp>0);
+
+    if(obj->subtype==FIGHTER){
+      if(obj->weapon1.type!=CANNON0){
+	obj->weapon1.n=obj->weapon1.max_n;
+      }
+      if(obj->weapon2.type!=CANNON0){
+	obj->weapon2.n=obj->weapon2.max_n;
+      }
+    }
     Add2ObjList(lhobjs,obj);
     players[obj->player].nbuildships++;
   }
@@ -3783,13 +3816,16 @@ int AddobjCCData(struct CCDATA *ccdata,Object *obj){
 
     if(obj->habitat==H_PLANET){
       if(pinfo->planet->id==obj->in->id){
-	float strength;
+	float strength=0;
 
 	if(ccdata->player==obj->player){
-	  strength=(obj->level+1)*(obj->state)/100*(obj->state>75)*(obj->gas>=.80*obj->gas_max)*(obj->weapon0.n>.8*obj->weapon0.max_n)*(obj->mode==LANDED);
-	  if(obj->type==SHIP && obj->subtype==PILOT)strength=-1;/* priority buy ship to pilots */
-	  if(obj->subtype!=TOWER && obj->subtype!=PILOT){
-	    pinfo->strengtha+=strength*(obj->state>95)*(obj->gas>.98*obj->gas_max)*(obj->weapon0.n>=.95*obj->weapon0.max_n);
+	  if(obj->in->level<=obj->level+1){  /* dont include learning ships*/
+	    strength=(obj->level+1)*(obj->state)/100*(obj->state>75)*(obj->gas>=.80*obj->gas_max)*(obj->weapon0.n>.8*obj->weapon0.max_n)*(obj->mode==LANDED);
+	    if(obj->type==SHIP && obj->subtype==PILOT)strength=-1;/* priority buy ship to pilots */
+	    if(obj->subtype!=TOWER && obj->subtype!=PILOT){
+	      pinfo->strengtha+=strength*(obj->state>95)*(obj->gas>.98*obj->gas_max)*(obj->weapon0.n>=.95*obj->weapon0.max_n);
+	    }
+
 	  }
 	}
 	else{ /* are enemies */
@@ -3983,7 +4019,7 @@ void DestroyCCPlanetInfo(struct CCDATA *ccdata){
     pinfo=pinfo->next;
     free(pinfo0);
     pinfo0=NULL;
-    g_memused-=sizeof(struct PlanetInfo);
+    MemUsed(MADD,-sizeof(struct PlanetInfo));
   }
   ccdata->planetinfo=NULL;
 }
@@ -4510,7 +4546,7 @@ int AddNewPlanet2CCData(struct CCDATA *ccdata,Object *planet){
   pinfo->next=ccdata->planetinfo;
   ccdata->planetinfo=pinfo;
     
-  g_memused+=sizeof(struct PlanetInfo);
+  MemUsed(MADD,+sizeof(struct PlanetInfo));
   
   return(1);
 }
@@ -4546,7 +4582,7 @@ int AddPlanetInfo2CCData(struct CCDATA *ccdata,struct PlanetInfo *pinfo0){
   pinfo->next=ccdata->planetinfo;
   ccdata->planetinfo=pinfo;
     
-  g_memused+=sizeof(struct PlanetInfo);
+  MemUsed(MADD,+sizeof(struct PlanetInfo));
   
   return(1);
 }

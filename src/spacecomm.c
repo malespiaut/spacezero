@@ -1456,7 +1456,6 @@ int ReadObjsfromBuffer(char *buf){
 	      printf("checking for pilots in %d (%d)\n",nobj->id,nobj->pid);
 	    }
 	    EjectPilotsObj(&listheadobjs,nobj);
-	    //  nobj->items=nobj->items&(~ITPILOT);
 	  }
 	}
       }
@@ -1926,7 +1925,7 @@ int ReadObjsfromBuffer(char *buf){
 	/* when landed */
 	if(nobj->mode==LANDED){
 	  EjectPilotsObj(&listheadobjs,nobj);
-	  nobj->items=nobj->items&(~ITPILOT);
+	  nobj->items=(nobj->items)&(~ITPILOT);
 	}
 
 	/* when destroyed */

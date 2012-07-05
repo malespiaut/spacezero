@@ -139,7 +139,7 @@ int CountOrder(Object *obj);
 int ReadMaxPriority(Object *obj);
 void TestOrder(Object *obj);
 
-void CreatePirates(struct HeadObjList *lhobjs,int,float,float);
+void CreatePirates(struct HeadObjList *lhobjs,int,float,float,float);
 void CreateAsteroids(struct HeadObjList *lhobjs,int n, float x0,float y0);
 void GetInformation(struct Player *p1,struct Player *p2,Object *obj);
 

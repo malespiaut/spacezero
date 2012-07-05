@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright (C) 2006-2012  MRevenga
+ **  Copyright(C) 2006-2012  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -23,44 +23,43 @@
 		version 0.82 Jan 2012
 ****/
 
-#ifndef _FUNCTIONS_
-#define _FUNCTIONS_ 
 
-#include "objects.h"
-#include "menu.h"
+#define BUFFER_MUSIC_SIZE 256
+#define NUM_BUFFER_MUSIC 64 
 
 
-#define GET 0
-#define SET 1
+/* Stream states */
+#define SS_STOP 0
+#define SS_PLAY 1
+#define SS_PAUSE 2
 
-#define MRESET 0
-#define MSET 1
-#define MADD 2
-#define MGET 3
+/* Steam modes */
+#define SM_ONCE 0
+#define SM_LOOP 1
+
+/* stream orders */
+
+#define SO_NONE 0
+#define SO_SETVOL 1
+#define SO_PLAY 2
+#define SO_PAUSE 3
+#define SO_STOP 4
 
 
-float Random(int);
-float Sqrt(int n);
-void delay(int time);
-void AddGold(struct Player *,int player,int n);
-int GetControl(struct Player *,int player);
-int GetPlayerProc(struct Player *,int player);
-int GameParametres(int option,int param,int value);
+struct StreamedSound{
+  OggVorbis_File *ogg_file;
+  ALenum format;
+  ALfloat rate;
+  ALuint *streambuffers;
+  ALuint *streamsource;
+  int nbuffers;
+  int buffersize;
+  int mode;
+  int state;
+  int order;
+  float value;
+};
 
-int Proc(int option,int value);
-int GetProc(void);
-int SetProc(int value);
-int NProc(int option,int value);
-int GetNProc(void);
-int SetNProc(int value);
 
-int sTime(int action,int t);
-int GetTime(void);
-void SetTime(int t);
-void IncTime(void);
-
-void DelCharFromCad(char *cad,char *filter);
-
-int MemUsed(int action,int value);
-
-#endif
+struct StreamedSound * StreamSound (char *filename,int mode);
+void *Stream(struct StreamedSound *arg);

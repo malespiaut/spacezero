@@ -46,7 +46,6 @@ extern int fobj[4];
 
 extern Object *cv;     /* coordenates center */
 extern struct Player *players;
-extern int g_memused;
 
 extern struct CCDATA *ccdatap; //HERE set to number of players
 extern int *cell;
@@ -562,7 +561,7 @@ int ExecLoad(char *nom){
   }
   
   free(players);
-  g_memused-=sizeof(struct Player);
+  MemUsed(MADD,-sizeof(struct Player));
   players=NULL;
   
   
@@ -896,7 +895,7 @@ int ExecLoad(char *nom){
     CopyObject(nobj,&obj);
     if(nobj->type!=SHIP){
       free(data);
-      g_memused-=sizeof(Data);
+      MemUsed(MADD,-sizeof(Data));
       data=NULL;
     }
     nobj->cdata=data;
@@ -917,7 +916,7 @@ int ExecLoad(char *nom){
     
     if(nobj->type==PLANET){
       nplanet=malloc(sizeof(struct Planet));
-      g_memused+=sizeof(struct Planet);
+      MemUsed(MADD,sizeof(struct Planet));
       if(nplanet==NULL){
 	fprintf(stderr,"ERROR in malloc ExecLoad()\n");
 	exit(-1);
@@ -1424,7 +1423,7 @@ int FscanfPlanet(FILE *fp,struct Planet *planet){
   }
   
   planet->segment=malloc(sizeof(Segment));
-  g_memused+=sizeof(Segment);
+  MemUsed(MADD,sizeof(Segment));
   if(planet->segment==NULL){
     fprintf(stderr,"ERROR in malloc CreatePlanet()2\n");
     exit(-1);
@@ -1446,7 +1445,7 @@ int FscanfPlanet(FILE *fp,struct Planet *planet){
     s->y1=y1;
     
     s->next=malloc(sizeof(Segment));
-    g_memused+=sizeof(Segment);
+    MemUsed(MADD,sizeof(Segment));
     if(s->next==NULL){
       fprintf(stderr,"ERROR in malloc CreatePlanet()2\n");
       exit(-1);

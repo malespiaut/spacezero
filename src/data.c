@@ -28,8 +28,8 @@
 #include "data.h"
 #include "general.h"
 #include "objects.h"
+#include "functions.h"
 
-extern int g_memused;
 
 /* 
  *   data structures and functions
@@ -55,7 +55,7 @@ struct IntList* Add2IntList(struct IntList *list,int id){
 
   if(list==NULL){ /* first item */
     list=malloc(sizeof(struct IntList));
-    g_memused+=sizeof(struct IntList);
+    MemUsed(MADD,+sizeof(struct IntList));
     if(list==NULL){ 
       fprintf(stderr,"ERROR in malloc (Add2IntList)\n"); 
       exit(-1); 
@@ -86,7 +86,7 @@ struct IntList* Add2IntList(struct IntList *list,int id){
     fprintf(stderr,"ERROR in malloc (Add2IntList)\n"); 
     exit(-1); 
   } 
-  g_memused+=sizeof(struct IntList);
+  MemUsed(MADD,+sizeof(struct IntList));
   kps->next->id=id;
   kps->next->next=NULL;
   return(list);
@@ -134,7 +134,7 @@ int DelFirstIntList(struct IntList *list){
     item0=list;
     list=list->next;
     free(item0);
-    g_memused-=sizeof(struct IntList);
+    MemUsed(MADD,-sizeof(struct IntList));
     item0=NULL;
     return(1);
   }
@@ -158,13 +158,13 @@ int DelIntList(struct IntList *list){
     item0=list->next;
     list->next=list->next->next;
     free(item0);
-    g_memused-=sizeof(struct IntList);
+    MemUsed(MADD,-sizeof(struct IntList));
     item0=NULL;
     n++;
   }
   
   free(list);
-  g_memused-=sizeof(struct IntList);
+  MemUsed(MADD,-sizeof(struct IntList));
   list=NULL;
   n++;
   return (n);
@@ -226,7 +226,7 @@ int Add2IntIList(struct HeadIntIList *head,int id){
   /* is the first */
   if(head->list==NULL){
     head->list=malloc(sizeof(struct IntList));
-    g_memused+=sizeof(struct IntList);
+    MemUsed(MADD,+sizeof(struct IntList));
     if(head->list==NULL){ 
       fprintf(stderr,"ERROR in malloc (Add2IntIList)\n"); 
       exit(-1); 
@@ -276,7 +276,7 @@ int Add2IntIList(struct HeadIntIList *head,int id){
     if(item->id>id){ /*item is not in the list, adding in the middle */
       struct IntList *itemn;
       itemn=malloc(sizeof(struct IntList));
-      g_memused+=sizeof(struct IntList);
+      MemUsed(MADD,+sizeof(struct IntList));
       if(itemn==NULL){ 
 	fprintf(stderr,"ERROR in malloc (Add2IntIList)\n"); 
 	exit(-1); 
@@ -309,7 +309,7 @@ int Add2IntIList(struct HeadIntIList *head,int id){
   head->n0++;
   
   item=malloc(sizeof(struct IntList));
-  g_memused+=sizeof(struct IntList);
+  MemUsed(MADD,+sizeof(struct IntList));
   if(item==NULL){ 
     fprintf(stderr,"ERROR in malloc (Add2IntIList)\n"); 
     exit(-1); 
@@ -447,14 +447,14 @@ int Add2CharList(struct CharListHead *hlist,char *cad,int mode){
 
   if(list==NULL){ /* first item */
     list=malloc(sizeof(struct CharList));
-    g_memused+=sizeof(struct CharList);
+    MemUsed(MADD,+sizeof(struct CharList));
     if(list==NULL){ 
       fprintf(stderr,"ERROR in malloc (Add2Charlist)\n"); 
       exit(-1); 
     } 
 
     list->cad=malloc((n+1)*sizeof(char));
-    g_memused+=sizeof((n+1)*sizeof(char));
+    MemUsed(MADD,+sizeof((n+1)*sizeof(char)));
     if(list->cad==NULL){ 
       fprintf(stderr,"ERROR in malloc (Add2Charlist)\n"); 
       exit(-1); 
@@ -480,7 +480,7 @@ int Add2CharList(struct CharListHead *hlist,char *cad,int mode){
       n=strlen(freeitem->cad);
       free(freeitem->cad);
       free(freeitem);
-      g_memused-=(sizeof((n+1)*sizeof(char))+sizeof(struct CharList));
+      MemUsed(MADD,-(sizeof((n+1)*sizeof(char))+sizeof(struct CharList)));
       hlist->n--;
       swfull++;
     }
@@ -496,14 +496,14 @@ int Add2CharList(struct CharListHead *hlist,char *cad,int mode){
   while(list->next!=NULL)list=list->next;
 
     list->next=malloc(sizeof(struct CharList));
-    g_memused+=sizeof(struct CharList);
+    MemUsed(MADD,+sizeof(struct CharList));
     if(list->next==NULL){ 
       fprintf(stderr,"ERROR in malloc (Add2Charlist)\n"); 
       exit(-1); 
     } 
 
     list->next->cad=malloc((n+1)*sizeof(char));
-    g_memused+=sizeof((n+1)*sizeof(char));
+    MemUsed(MADD,+sizeof((n+1)*sizeof(char)));
     if(list->next->cad==NULL){ 
       fprintf(stderr,"ERROR in malloc (Add2Charlist)\n"); 
       exit(-1); 
@@ -614,7 +614,7 @@ int DestroyCharList(struct CharListHead *hlist){
     n=strlen(freeitem->cad);
     free(freeitem->cad);
     free(freeitem);
-    g_memused-=(sizeof(n*sizeof(char))+sizeof(struct CharList));
+    MemUsed(MADD,-(sizeof(n*sizeof(char))+sizeof(struct CharList)));
     hlist->n--;
     cont++;
   }
@@ -636,7 +636,7 @@ struct IntTree *Add2IntTree(struct IntTree *head,int id){
 
   if(!head){
     head=malloc(sizeof(struct IntTree));
-    g_memused+=sizeof(struct IntTree);
+    MemUsed(MADD,+sizeof(struct IntTree));
     if(head==NULL){ 
       fprintf(stderr,"ERROR in malloc (Add2IntTree)\n"); 
       exit(-1); 
@@ -726,7 +726,7 @@ void DelIntTree(struct IntTree *head){
     head->l=NULL;
     head->r=NULL;
     free(head);
-    g_memused-=sizeof(struct IntTree);
+    MemUsed(MADD,-sizeof(struct IntTree));
     head=NULL;
   }
 }

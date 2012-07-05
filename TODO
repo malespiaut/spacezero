@@ -9,7 +9,7 @@ make
 libgtk2.0_dev
 libalut_dev
 libopenal_dev
-
+libvorbis-dev
 
 
 bugs:(last:120)
@@ -50,7 +50,7 @@ Version 0.8 (since 10May2011)
 
 -!!Rewrite NearestObjAll(), call less times.
 -!!Reordenar, jerarquizar codigo, ficheros.
--!!Disminuir numero de variables extern (97),58,72,76,92,111 grep extern src/*.c include/*h |grep ";" |wc
+-!!Disminuir numero de variables extern (97),58,72,76,92,95,87 grep extern src/*.c include/*h |grep ";" |wc
 -!!Disminuir los HERE (74)88,69,83  grep HERE src/*c include/*h|wc
 -!!Damage in collision depends on mass and velocity. Elastic shocks. 
 -!!Change ksectorslist for a three elements list: id,x,y.
@@ -163,11 +163,15 @@ X-(050512)explosions have gravity
 X-(050512)explosions collide with terrain
 X-(070512)Select ships in space. 
 X-(090512)added air resistance.
+X-(300612) pirates increase their level along time.
+X-(020712)changred wav's by ogg file. Memory use reduced by three.
 
 BUGS version 0.82
 =================
 
 X-(100512) bug that create unnecessary trace points.
+
+
 
 /*********************************************************************************/
 DONE:Version 0.80 (since 10 May. 2011)

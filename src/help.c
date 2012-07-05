@@ -478,7 +478,7 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "-name playername where playername is the name of the player.\n" );
   (void) fprintf( stdout, 
-		  "-f font\t\t change the default font by font.\n" );
+		  "-font font\t change the default font by font.\n" );
   (void) fprintf( stdout, 
 		  "-nomenu \t Starts automatically, without menu.\n" );
   (void) fprintf( stdout, 

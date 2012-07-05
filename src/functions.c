@@ -384,7 +384,7 @@ int sTime(int action,int t){
   case 1: /* INCREMENT */
     time++;
     break;
-  case 2:
+  case 2: /* RETURN VALUE */
     return (time);
     break;
   case 3: /* SET */
@@ -451,3 +451,27 @@ float Sqrt(int n){
   return(ret); 
 }
 
+int MemUsed(int action,int value){
+
+  static int memused=0;
+
+  switch(action){
+  case MRESET:
+    memused=0;
+    break;
+  case MSET:
+    memused=value;
+    break;
+  case MADD:
+    memused+=value;
+    break;
+  case MGET:
+    return (memused);
+    break;
+  default:
+    fprintf(stderr,"MenUsed(): Not implemented\n");
+    exit(-1);
+    break;
+  }
+  return(memused);
+}

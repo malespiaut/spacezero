@@ -29,19 +29,20 @@
 #include <gtk/gtk.h>
 #include "objects.h"
 
+/* keystrokes */
 #define RESET 0
 #define ADD 1
 #define DELETELAST 2
 #define RETURNLAST 3
 #define LOAD 4
 
-/* keystrokes */
+
 
 void initshell(void);
-void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,int x,int y);
-int Shell(int command,GdkPixmap *pixmap,GdkFont *,GdkGC *,struct HeadObjList *hl,struct Player *players,struct Keys *,Object **cv);
+void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,int x,int y);
+int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *,struct HeadObjList *hl,struct Player *players,struct Keys *,Object **cv);
 Object *ExecOrder(struct HeadObjList *hl,Object *obj,int player,int order,char *par);
-void SelectionBox(Object **,int);
+void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **,int);
 int Keystrokes(int mode,guint *val,char *c);
 char Keyval2Char(guint keyval);
 

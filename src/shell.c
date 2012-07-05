@@ -33,8 +33,6 @@
 #include "graphics.h"
 
 extern struct Player *players;
-extern GdkPixmap *pixmap;
-extern GdkGC *penGreen;
 extern struct Habitat habitat;
 extern struct Keys keys;
 extern struct HeadObjList listheadobjs;       /* list of all objects */
@@ -45,15 +43,16 @@ int debugshell=FALSE;
 #endif
 
 
+int GetView(void);
 
-
-int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadObjList *lhead,struct Player *ps,struct Keys *key,Object **pcv){
+int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadObjList *lhead,struct Player *ps,struct Keys *key,Object **pcv){
   /*
     version 04
   */
   static char cad[MAXTEXTLEN]="";
   static char ord[16]="";
   static char par[MAXTEXTLEN]="";
+  static char pargoto[MAXTEXTLEN]="";
   static char lastpar[MAXTEXTLEN]="";
   static char par0[MAXTEXTLEN]="";
   static int level=0;
@@ -75,7 +74,6 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
   Object *firstselobj=NULL;
   int sw=0;
   int textw;
-
 
   switch(command){
   case 0:
@@ -275,41 +273,86 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
     case SELECT:
     case GOTO:
 
-      if(key->mright==TRUE && gdraw.map==TRUE && *pcv!=NULL){
-	int x,y,a,b,pid;
-	Object *nearobj;
-	MousePos(GET,&x,&y);
-	strcpy(par,"");
-	//	  printf("mouse:  %d %d\n",x,y);
-	a=x;
-	b=y;
-	W2R(*pcv,&a,&b);
-	nearobj=ObjNearThan(lhead,player,a,b,500000); /* 0.5 sectors */
-	if(nearobj!=NULL)pid=nearobj->pid;
-	else pid=0;
-	//	printf("Window2Real() %d %d %d\n",a,b,pid);
+      /* keyb or mouse order */
+      if(key->mright==TRUE  && *pcv!=NULL){
+	int view=GetView();
 
-	if(pid!=0){
-	  snprintf(par,12,"%d",pid);
-	}
-	else{
-	  Window2Sector(*pcv,&x,&y);
-	  snprintf(par,12,"%d %d",x,y);
+	switch(view){
+	  int x,y,a,b,pid;
+	  Object *nearobj;
+
+	case VIEW_MAP:
+	  MousePos(GET,&x,&y);
+	  strcpy(pargoto,"");
+	  strcpy(par,"");
+	  a=x;
+	  b=y;
+	  //	W2R(*pcv,&a,&b);
+	  Window2Real(*pcv,VIEW_MAP, x,y,&a,&b);
+	  
+	  nearobj=ObjNearThan(lhead,player,a,b,500000); /* 0.5 sectors */
+	  if(nearobj!=NULL)pid=nearobj->pid;
+	  else pid=0;
+	  
+	  if(pid!=0){ /* is a planet or a spaceship */
+	    snprintf(pargoto,12,"%d",pid);
+	    snprintf(par,12,"%d",pid);
+	  }
+	  else{ /* universe coordinates */
+	    Window2Sector(*pcv,&x,&y);
+	    sprintf(pargoto,"%d %d",x,y);
+	    sprintf(par,"%d %d",a,b);
+	    //	    printf("first: %d %d (%s)\n",a,b,pargoto);
+	  }
+	  key->enter=TRUE;
+	  break;
+
+	case VIEW_SPACE:
+	  break;
+
+	case VIEW_PLANET:
+	  break;
+
+	default:
+	  break;
 	}
 	key->mright=FALSE;
-	key->enter=TRUE;
-	
       }
       else{
+	/* keyb order */
+	int nargs,id1,id2;
+	char arg1[MAXTEXTLEN],arg2[MAXTEXTLEN];
 	strcpy(par,"");
 	Keystrokes(LOAD,NULL,par);
+	strcpy(pargoto,"");
+	Keystrokes(LOAD,NULL,pargoto);
+	
+	if(1){
+	  
+	  // cambiar texto por coordenadas reales
+	  nargs=Get2Args(pargoto,&arg1[0],&arg2[0]);
+	  switch(nargs){
+	  case 0:
+	  case 1:
+	    break;
+	  case 2:
+	    id1=strtol(arg1,NULL,10);
+	    id2=strtol(arg2,NULL,10);
+	    /* pasar de sectores a coordenadas reales */
+	    sprintf(par,"%d %d",id1*SECTORSIZE+SECTORSIZE/2,id2*SECTORSIZE+SECTORSIZE/2);
+	    break;
+	  default:
+	    printf("ERROR (%d)\n",nargs);
+	    break;
+	  }
+	}
       }
       strcpy(cad,"");
       strncat(cad,ord,MAXTEXTLEN-strlen(cad));
       
-      DelCharFromCad(par,"1234567890,- fnFN");
+      DelCharFromCad(pargoto,"1234567890,- fnFN");
       
-      strncat(cad,par,MAXTEXTLEN-strlen(cad));
+      strncat(cad,pargoto,MAXTEXTLEN-strlen(cad));
       
       break;
     case BUY:
@@ -460,7 +503,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
       if(firstselobj!=cv && firstselobj!=NULL){
 	*pcv=firstselobj;
 	if(*pcv!=NULL){
-	  SelectionBox(pcv,2);
+	  SelectionBox(pixmap,color,pcv,2);
 	  (*pcv)->selected=TRUE;
 	}
       }
@@ -484,6 +527,9 @@ int Shell(int command,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct HeadOb
     for(i=0;i<10;i++){
       key->number[i]=FALSE;
     }
+
+    /* delete selectionbox*/
+    SelectionBox(pixmap,color,pcv,1);
   }
 
   if(key->mdclick==TRUE){
@@ -670,8 +716,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	switch(obj_dest->type){
 	case PLANET: /* if planet is unknown*/
 	  if(IsInIntList((players[obj->player].kplanets),id1)==0){
-	    printf("Not Allowed. Planet or ship %d unknown.\n",obj_dest->pid);
-	    snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or ship %d unknown.",obj_dest->pid);
+	    printf("Not Allowed. Planet or spaceship %d unknown.\n",obj_dest->pid);
+	    snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship %d unknown.",obj_dest->pid);
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	    obj_dest=NULL;
 	  }
@@ -684,8 +730,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	case SHIP:/* ship belongs to another player*/
 	  if(obj_dest->player!=obj->player){
 	    obj_dest=NULL;
-	    printf("Not Allowed. Destiny is an enemy ship.\n");
-	    snprintf(stmess,MAXTEXTLEN,"Not Allowed. Destiny is an enemy ship.");
+	    printf("Not Allowed. Destiny is an enemy spaceship.\n");
+	    snprintf(stmess,MAXTEXTLEN,"Not Allowed. Destiny is an enemy spaceship.");
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  else{
@@ -698,9 +744,9 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	      obj_dest=NULL;
 	      }	
 	    else{
-	      printf("(%c %d) going to ship %d.\n",
+	      printf("(%c %d) going to spaceship %d.\n",
 		     Type(obj),obj->pid,obj_dest->pid);
-	      snprintf(stmess,MAXTEXTLEN,"(%c %d) going to ship %d.",
+	      snprintf(stmess,MAXTEXTLEN,"(%c %d) going to spaceship %d.",
 		       Type(obj),obj->pid,obj_dest->pid);
 	      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	    }
@@ -711,8 +757,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	}
       }
       else{
-	printf("Not Allowed. Planet or ship unknown.\n");
-	snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or ship unknown.");
+	printf("Not Allowed. Planet or spaceship unknown.\n");
+	snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship unknown.");
 	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       }
       
@@ -731,7 +777,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	ord.i=ord.j=ord.k=ord.l=0;
 	if(obj_dest->type==SHIP && obj_dest->subtype==PILOT){
 	  ord.i=PILOT;
-	  printf("ord_i 1st: %f\n",ord.i);
+	  //	  printf("ord_i 1st: %f\n",ord.i);
 	}
 
 	DelAllOrder(obj);
@@ -739,7 +785,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 
       }
       break;
-    case 2:
+    case 2: // AQUI
       id1=strtol(arg1,NULL,10);
       id2=strtol(arg2,NULL,10);
 
@@ -749,6 +795,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       ord.g_time=time;
       ord.a=id1*SECTORSIZE+SECTORSIZE/2;
       ord.b=id2*SECTORSIZE+SECTORSIZE/2;
+      ord.a=id1;
+      ord.b=id2;
       ord.c=-1;
       ord.d=0;
       ord.e=ord.f=ord.g=ord.h=0;
@@ -756,8 +804,14 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       DelAllOrder(obj);
       AddOrder(obj,&ord);
 
-      printf("(%c %d) going to sector %d %d.\n",Type(obj),obj->pid,id1,id2);
-      snprintf(stmess,MAXTEXTLEN,"(%c %d) going to sector %d %d.",Type(obj),obj->pid,id1,id2);
+      printf("(%c %d) going to sector %d %d.\n",
+	     Type(obj),
+	     obj->pid,
+	       (id1-SECTORSIZE/2)/SECTORSIZE,
+	       (id2-SECTORSIZE/2)/SECTORSIZE);
+      snprintf(stmess,MAXTEXTLEN,"(%c %d) going to sector %d %d.",Type(obj),obj->pid,
+	       (id1-SECTORSIZE/2)/SECTORSIZE,
+	       (id2-SECTORSIZE/2)/SECTORSIZE);
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       break;
     default:
@@ -926,8 +980,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	case SZ_UNKNOWNERROR:
 	  break;
 	case SZ_OBJNOTLANDED:
-	  printf("Ship must be landed.\n");
-	  snprintf(stmess,MAXTEXTLEN,"Ship must be landed.");
+	  printf("Spaceship must be landed.\n");
+	  snprintf(stmess,MAXTEXTLEN,"Spaceship must be landed.");
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  break;
 	case SZ_NOTOWNPLANET:
@@ -954,8 +1008,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     }
     break;
   case SELL:
-    printf("Selling ship with id: %d\n",obj->pid);
-    snprintf(stmess,MAXTEXTLEN,"Selling ship with id: %d",obj->pid);
+    printf("Selling spaceship with id: %d\n",obj->pid);
+    snprintf(stmess,MAXTEXTLEN,"Selling spaceship with id: %d",obj->pid);
     ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
     price=.5*GetPrice(obj,0,0,0);
     if(price>0){
@@ -1019,13 +1073,14 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 }
 
 
-void SelectionBox(Object **pcv,int reset){
+void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
   /* version 03*/
 
   static int mouserelease=FALSE;
   static Space region;
   static int sw=0;
   static Object *cv0=NULL;
+  char stmess[MAXTEXTLEN];
   int x,y;
   int x0,y0;
   int x1,y1;
@@ -1081,28 +1136,8 @@ void SelectionBox(Object **pcv,int reset){
   }
 
   /* Define views. Four types of view: SPACE,MAP,PLANET,SHIP*/
+  view=GetView();
 
-  view=VIEW_NONE;
-  
-  if(gdraw.map==TRUE){
-    view=VIEW_MAP;
-  }
-  else{
-    switch(habitat.type){
-    case H_SPACE:
-      view=VIEW_SPACE;
-      break;
-    case H_PLANET:
-      view=VIEW_PLANET;
-	break;
-    case H_SHIP:
-      view=VIEW_NONE;
-      break;
-    default:
-      break;
-    }
-  }
-  
   if(view==VIEW_NONE){
     //    printf("VIEW: NONE\n");
     return;
@@ -1252,13 +1287,17 @@ void SelectionBox(Object **pcv,int reset){
 	  }
 	  n=CountSelected(&listheadobjs,cv->player);
 	  if(n<6){
-	    printf("Selected ships:\n");
+	    printf("Selected spaceships:\n");
 	    PrintSelected(&listheadobjs); 
 	    if(n==0)printf("NONE\n");
 	  }
 	  else{
-	    printf("Selected %d ships.\n",n);
-
+	    printf("Selected %d spaceships.\n",n);
+	  }
+	  if(n>0){
+	    snprintf(stmess,MAXTEXTLEN,"Selected %d spaceships.",n);
+	    ShellTitle(2,NULL,NULL,NULL,NULL,0,0);
+	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	}
 	mouserelease=FALSE;
@@ -1297,13 +1336,13 @@ void SelectionBox(Object **pcv,int reset){
       switch(view){
       case VIEW_PLANET:
 	if(region.habitat>0){
-	  DrawSelectionBox(pixmap,penGreen,view,region,cv);
+	  DrawSelectionBox(pixmap,color,view,region,cv);
 	}
 	break;
       case VIEW_SPACE:
       case VIEW_MAP:
 	if(region.habitat==0){
-	  DrawSelectionBox(pixmap,penGreen,view,region,cv);
+	  DrawSelectionBox(pixmap,color,view,region,cv);
 	}
 	break;
 
@@ -1538,12 +1577,13 @@ int Get2Args(char *cad,char *arg1,char *arg2){
 }
 
 
-void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkFont *font,GdkGC *color,int x,int y){
+void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,int x,int y){
   static char cad0[64]="O: Introduce command";
   static char cad1[64]="";
   static int n_mess=0;
   char *cad;
 
+  if(mess!=NULL)
   switch (order){
     case 0:
       break;
@@ -1573,4 +1613,33 @@ void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkFont *font,GdkGC *colo
 
   DrawString(pixmap,font,color,x,y,cad);
   return;
+}
+
+
+int GetView(void){
+  /* Define views. Four types of view: SPACE,MAP,PLANET,SHIP*/
+  int view;
+
+  view=VIEW_NONE;
+  
+  if(gdraw.map==TRUE){
+    view=VIEW_MAP;
+  }
+  else{
+    switch(habitat.type){
+    case H_SPACE:
+      view=VIEW_SPACE;
+      break;
+    case H_PLANET:
+      view=VIEW_PLANET;
+	break;
+    case H_SHIP:
+      view=VIEW_NONE;
+      break;
+    default:
+      view=VIEW_NONE;
+      break;
+    }
+  }
+  return(view);
 }

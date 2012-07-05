@@ -32,23 +32,21 @@ version-0.1.5
 #include "functions.h"
 #include "sound.h"
 #include "general.h"
+#include "streamsound.h"
 
 #define SOUNDDEBUG FALSE
+
 #if DEBUG
 int debugsound=0;
 #endif
 
 char filesoundnames[NUM_SOUNDS][MAXTEXTLEN];
-
-
 char *soundnames[NUM_SOUNDS]={ 
-  "music.wav",
-  "bfire.wav",
-  "explos.wav",
-  "thrust.wav",
-  "crash.wav"};
-
-
+  "music.ogg",
+  "bfire.ogg",
+  "explos.ogg",
+  "thrust.ogg",
+  "crash.ogg"};
 
 ALuint sources[NUM_SOURCES];
 ALuint buffers[NUM_BUFFERS];
@@ -59,6 +57,10 @@ struct Sourcetable sourcetable[NUM_SOURCES];
 int Ssoundenabled=TRUE;
 float Smusicvol=1;
 float Ssoundvol=1;
+
+struct StreamedSound *music=NULL;
+
+ALvoid* LoadMemoryFromOggFile(char *fname,ALenum *format,ALsizei *size,ALfloat *frequency);
 
 static void reportError(void){
   
@@ -83,6 +85,7 @@ int InitSound(void){
   ALsizei size; 
   ALfloat frequency; 
   ALvoid *data;
+
   ALfloat sourcePos[] = {0.0f, 0.0f, 0.0f};
   ALfloat listenerPos[]={0.0,0.0,0.0};/* At the origin */
   ALfloat listenerVel[]={0.0,0.0,0.0};/* The velocity (no doppler here) */
@@ -152,6 +155,7 @@ int InitSound(void){
     return(2);
   }
 
+
 #if SOUNDDEBUG
   printf("InitSound(): buffers created:\n");
   for(i=0;i<NUM_BUFFERS;i++){
@@ -200,13 +204,16 @@ int InitSound(void){
   for(i=0;i<NUM_BUFFERS;i++){
     buffertable[i]=-1;
   }
-  for(i=0,j=0;i<NUM_BUFFERS && i<NUM_SOUNDS;i++){
-    data=alutLoadMemoryFromFile(filesoundnames[i],&format,&size,&frequency);
+
+  for(i=1,j=1;i<NUM_BUFFERS && i<NUM_SOUNDS;i++){
+    //    data=alutLoadMemoryFromFile(filesoundnames[i],&format,&size,&frequency);
+    data=LoadMemoryFromOggFile(filesoundnames[i],&format,&size,&frequency);
     if(data==NULL){
       fprintf(stderr,"Warning: file not found or corrupted: %s\n",filesoundnames[i]); 
       Ssoundenabled=FALSE;
       return(4);
     }
+    printf("file: %s size: %d\n",filesoundnames[i],size);
     if(data!=NULL){
       alBufferData(buffers[j],format,data,size,frequency);
 #if SOUNDDEBUG
@@ -218,13 +225,15 @@ int InitSound(void){
       data=NULL;
       j++;
     }
-    else{
 #if SOUNDDEBUG
+    else{
       printf("InitSound(): sound not added: %s data: %p \n",
 	     filesoundnames[i],data);
-#endif
+      
     }
+#endif
   }
+
   printf("InitSound(): soundenabled: %d \n",Ssoundenabled);
   return(0);
 }
@@ -233,9 +242,6 @@ int InitSound(void){
 int ExitSound(void){
   int i;
 
-
-/*   alutGetError(); */
-/*   alGetError(); */
 
   /* deataching buffer*/
   for(i=0;i<NUM_SOURCES;i++){
@@ -294,6 +300,16 @@ int PlaySound(int sid,int mode,float vol){
     }
   }
 
+  if(sid==MUSIC){
+    if(music!=NULL){
+      fprintf(stderr,"WARNING: music not NULL\n");
+      exit(-1);
+    }
+    music=StreamSound(filesoundnames[0],SM_LOOP);
+    return(0);
+  }
+
+
   bufferid=-1;
   sourceid=-1;
   bufferfree=-1;
@@ -314,20 +330,21 @@ int PlaySound(int sid,int mode,float vol){
       for(i=0;i<NUM_BUFFERS;i++){
 	if(buffertable[i]==-1){bufferfree=i;break;} /* free buffer  */
       }
-
+      
       if(bufferfree==-1){ /* cleaning buffers */
 	bufferfree=CleanBuffers();
       }
-
+      
       if( bufferfree==-1)return(3);
       cleandone++;
     }
     while(cleandone<1);
-
+    
     /* load the buffer */
-    data=alutLoadMemoryFromFile(filesoundnames[sid],&format,&size,&frequency);
+    //    data=alutLoadMemoryFromFile(filesoundnames[sid],&format,&size,&frequency);
+    data=LoadMemoryFromOggFile(filesoundnames[sid],&format,&size,&frequency);
     if(data==NULL){
-      fprintf(stderr,"Warning: file not found or corrupted: %s\n",filesoundnames[bufferfree]); 
+      fprintf(stderr,"Warning PlaySound(): file not found or corrupted: %s\n",filesoundnames[bufferfree]); 
       return(4);
     }
     
@@ -410,8 +427,6 @@ int PlaySound(int sid,int mode,float vol){
     else{
       printf("PlaySound(): Error sourcetable corrupted\n");
     }
-
-
 
 #if SOUNDDEBUG
     printf("PlaySound():buffer %d attached to source %d  \n",bufferid,sourceid);      
@@ -586,13 +601,40 @@ int Sound(int mode,int sid){
 #endif
       return(0);
     }
+
+    switch(mode){
+    case SPAUSE:
+      music->state=SS_PAUSE;
+#if DEBUG
+      if(debugsound) printf("Sound() mode: %d\n",mode);
+#endif
+      break;
+    case SPLAY:
+      music->state=SS_PLAY;
+
+#if DEBUG
+      if(debugsound)printf("Sound() mode: %d\n",mode);
+#endif
+      break;
+    case SSTOP:
+      music->state=SS_PAUSE;
+
+#if DEBUG
+      if(debugsound)printf("Sound() mode: %d\n",mode);
+#endif
+      break;
+    default:
+    break;
+    }
+
+  return(0);
     break;
   default:
     break;
   }
 
   sw=0;
-  for(i=0;i<NUM_BUFFERS;i++){
+  for(i=1;i<NUM_BUFFERS;i++){
     if(buffertable[i]==sid){
 #if SOUNDDEBUG
       printf("Sound():sound %d in buffer %d\n",sid,i);
@@ -605,7 +647,7 @@ int Sound(int mode,int sid){
   if(sw==0)return(1);
   /* look for an associated source*/
   sw=0;
-  for(i=0;i<NUM_SOURCES;i++){
+  for(i=1;i<NUM_SOURCES;i++){
 
     alGetSourcei(sources[i], AL_BUFFER, &sourceState); /*returns the buffer id
 							 0 if is not a buffer associated*/
@@ -667,7 +709,12 @@ float SetSoundVolume(float vol,int action){
   if(nvol>1)nvol=1;
   if(nvol<0)nvol=0;
 
-  alSourcef(sources[0],AL_GAIN,nvol*Smusicvol); /* music volume */
+  if(music!=NULL){
+    if(music!=NULL){
+      music->value=nvol*Smusicvol;
+      music->order=SO_SETVOL;
+    }
+  }
   for(i=1;i<NUM_SOURCES;i++){
     alSourcef(sources[i],AL_GAIN,nvol);
   }
@@ -678,7 +725,7 @@ float SetSoundVolume(float vol,int action){
 
 
 float SetMusicVolume(float vol,int action){
-  ALfloat nvol=0;
+static  ALfloat nvol=0;
 
   switch(action){
   case VOLSET:
@@ -697,9 +744,65 @@ float SetMusicVolume(float vol,int action){
   if(nvol>1)nvol=1;
   if(nvol<0)nvol=0;
   
-  alSourcef(sources[0],AL_GAIN,nvol);
-
+  //  alSourcef(sources[0],AL_GAIN,nvol);
+  if(music!=NULL){
+    music->value=nvol;
+    music->order=SO_SETVOL;
+    //    alSourcef(music->streamsource[0],AL_GAIN,nvol);
+  }
   Smusicvol=nvol;
   return(Smusicvol);
+}
+
+ALvoid* LoadMemoryFromOggFile(char *fname,ALenum *format,ALsizei *size,ALfloat *frequency){
+  char *data;
+  OggVorbis_File sound;
+  vorbis_info *information=NULL;
+  int bytes_readed=0;
+  int bytes;
+  int current = -1;
+  int buffer_size=0;
+
+  data=malloc(4096*sizeof(char));
+  if(data==NULL){ 
+    fprintf(stderr,"ERROR in malloc oggLoadMemoryFromFile()\n"); 
+    exit(-1); 
+  }
+  buffer_size=4096;
+
+  printf("fname: %s\n",fname);
+  if ( ov_fopen ( fname, &sound ) < 0 ){
+    printf ("This is not an ogg file\n");
+    exit(1);
+  }
+  printf("OK\n");
+  information = ov_info ( &sound, -1 );
+    printf("OK\n");
+  if (( information->channels ) == 2 ){
+    *format = AL_FORMAT_STEREO16;
+  }else{
+    *format = AL_FORMAT_MONO16;
+  }
+
+  *frequency=information->rate;
+
+  do{
+    if(bytes_readed + 4096 > buffer_size){
+      data=realloc(data,bytes_readed+4096);
+      if(data==NULL){ 
+	fprintf(stderr,"ERROR in realloc oggLoadMemoryFromFile()\n"); 
+	exit(-1); 
+      }
+    }
+    bytes=ov_read ( &sound, &data[bytes_readed], 4096, 0, 2, 1, &current) ;
+    printf("OK %s %d\n",fname,bytes);
+    if(bytes>0){
+      bytes_readed+=bytes;
+
+    }
+  }
+  while (bytes>0);
+  *size=bytes_readed;
+  return(data);
 }
 

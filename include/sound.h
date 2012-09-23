@@ -75,6 +75,7 @@ int PlaySound(int sid,int mode,float vol);
 int Wait2FinishSound(void);
 int CleanBuffers(void);
 int StopSound(int sid);
+float SetMasterVolume(float vol,int action);
 float SetSoundVolume(float vol,int action);
 float SetMusicVolume(float vol,int action);
 

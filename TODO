@@ -24,7 +24,7 @@ bugs:(last:120)
 	     Debug Warning 2 SetModified()PLANET:trying to change mode (1) 43 to 34
 	     ERROR :setttl0() mode 43 unknown, obj type: 3
 -[75](220111) setttl0(): ERROR 2:setttl0() mode 43 unknown, obj type: 3
--[94](120411)despues de vender todo sigue dando mensajes de las naves
+-[94](120411)despues de vender todo sigue dando mensajes de las naves ¿en red?
 -[95](130411)Checking game after load...done
              ERROR ReadObjsfromBuffer(SENDOBJKILL) id: 2176 doesnt exists (saven1)client
 -[96](150411)ERROR 2 :setttl0() mode 43 unknown, obj type: 3 player: 1 id: 15 pid: 15
@@ -39,7 +39,7 @@ bugs:(last:120)
 -[117]why dont explore (save08)(the last ship, no unknown planets)
 
 
-Version 0.6: (since 0707)
+ Version 0.6: (since 0707)
 ============
 
 Version 0.7 (since 060910)
@@ -54,19 +54,17 @@ Version 0.8 (since 10May2011)
 -!!Disminuir los HERE (74)88,69,83  grep HERE src/*c include/*h|wc
 -!!Damage in collision depends on mass and velocity. Elastic shocks. 
 -!!Change ksectorslist for a three elements list: id,x,y.
--!!In terminal, messages repite so much.
 -!!In pause mode consumes CPU, redraw every 5 steps..
 -!!Improve Risk()
 -!!Explosions: add ship parts.
 -!!toroidal Universe as option.
 
 
--Game statistics.
+
 -Create list of load (lista de carga).
 -math function tables.
 -Objects with sons(shots are sons of the ships).
 -nav_mode in every ship, object propierty(?)
--Check CreatePlayerList() in MainLoop() (dont create in paused mode);
 -!change MISSILE to type SHIP
 -frames/s when save/load.
 -?Use same struct for planets and known sectors in struct Player.
@@ -113,7 +111,6 @@ AI:
 -!!Merge  ccdata to  player struct.
 
 
-
 Comm:
 ====
 -!!!!Rewrite a server
@@ -155,16 +152,25 @@ Version 1.0
 DONE:Version 0.82 (since 30 Jan. 2012)
 =====================================
 X-(250212)!!ENEMIESKNOWN as game option.
+X-added -pirates option
+X-fix: planets identicals
 X-(020312)!!Improve CreateContainerList()
 X-(010512)ships change to manual mode when you try to control them.
 X-(010512)fighters only can get the survival pod when are landed.
 X-(010512)entering angle in planet fixed.
+X-new explosions.
 X-(050512)explosions have gravity
 X-(050512)explosions collide with terrain
 X-(070512)Select ships in space. 
 X-(090512)added air resistance.
-X-(300612) pirates increase their level along time.
-X-(020712)changred wav's by ogg file. Memory use reduced by three.
+X-(300612)pirates increase their level along time.
+X-(020712)changed wav's by ogg file.
+X-(150812)Game statistics.
+X-(210912)Check CreatePlayerList() in MainLoop() (dont create in paused mode);
+X-()In terminal, messages repite so much.
+X-(230912)Speedup: explosions dont collide in space.
+X-(230912)Speedup: aimisil() improved.
+
 
 BUGS version 0.82
 =================

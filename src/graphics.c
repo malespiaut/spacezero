@@ -320,7 +320,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
 	 "right mouse \t Send the selected ships to that point.\nbutton");
 
 #if TEST
-  printf("label help size: %d (<1088)\n  ",strlen(labelhelp)); 
+  printf("label help size: %d (<1088)\n  ",(int)strlen(labelhelp)); 
 #endif
   if(strlen(labelhelp)>1088){
     fprintf(stderr,"ERROR InitGraphics(): cad labelhelp too long.\n");
@@ -568,9 +568,9 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   /*255 165   0 */
   penOrange= GetPen(NewColor(65535,42405,0),pixmap);
   /*238 130 238 */
-  penViolet= GetPen(NewColor(61166,33410,61166),pixmap);
+  penViolet= GetPen(NewColor(65535,0,65535),pixmap);
   /*255 192 203 */
-  penPink= GetPen(NewColor(65535,49344,52171),pixmap);
+  penPink= GetPen(NewColor(65535,32766,65535),pixmap);
   penCyan= GetPen(NewColor(0,65535,65535),pixmap);
   penSoftRed= GetPen(NewColor(20000,0,0),pixmap);
   penGrey= GetPen(NewColor(40000,40000,40000),pixmap);
@@ -3229,7 +3229,7 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *
   struct TextList *lh;
   int x,y,scroll; 
   GdkGC *gc;
-  int i,m,n,h;
+  int i,m,n,nc,h;
   static int charw=12;
   static int charh=12;
   int textw0,textw;
@@ -3245,29 +3245,32 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *
 
   h=height/incy;
 
-  n=CountTextList(head);
-  m=PosTextList(head,1);
+  n=CountTextList(head); /* number of items */
+  m=PosTextList(head,1); /* position of first item of color 1 */
+  nc=CountColorTextList(head,1); /* number of items of color 1 */
   scroll=0;
-  if(m>h/2 && n>=h){
-    scroll=m-h/2;
+  if(n>=h && m>h/2){
+    scroll=m;
+    if(nc<h){
+      scroll-=(h-nc)/2;
+    }
   }
   gc=penGreen;
-
   x=x0+7;
   y=y0+incy;
 
   textw=0;
-  lh=head->next;
+
 
   DrawString(pixmap,font,penBlue,x,y,title);
   textw0=gdk_text_width(font,title,strlen(title));
   if(textw0>textw){
     textw=textw0;
   }
-
+  
   //  y+=incy;
-
-  for(i=0;i<n;i++){ /* HERE double loop */
+  lh=head->next;  
+  for(i=0;i<n;i++){
     switch(lh->color){
     case 1:
       gc=penWhite;
@@ -3285,7 +3288,7 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *
       gc=penGreen;
       break;
     }
-
+    
     if(y-scroll*incy>y0){
       DrawString(pixmap,font,gc,x,y+incy-scroll*incy,lh->text);
       //      printf("XPrintTextList(): %s %d\n",lh->text,GetTime());
@@ -3955,45 +3958,41 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
   char mode=' ';
   struct Order *ord=NULL;
   int pid;
+  int i;
   static struct TextList shiplist;
   static struct TextList planetlist;
   static Object *last_cv=NULL;
   static int textpw=1,textsw=1;
   static int charw=12;
-  static int nt,ne,nf,nq;
-  static int shipcounter=0;
+  static int ships[SHIP_S_MAX+1];
+  static int shipsinplanets[MAXNUMPLANETS+1];
   int color; /* 0 green, 1 white, 2 yellow, 3 red */
   int textw=0;
-  
+
+
   if(gfont==NULL)return;
 
   if(sw==0){ /* variable initialization  */
     shiplist.next=NULL;
     planetlist.next=NULL;
     charw=gdk_text_width(gfont,"O",1);
-    shipcounter=0;
-    nt=ne=nf=nq=0;
     sw=1;
+    for(i=0;i<SHIP_S_MAX+1;i++){
+      ships[i]=0;
+    }
   }
-  shipcounter++;
-  if(shipcounter==20){
-    ne=CountObjs(hlp,player,SHIP,EXPLORER);
-    nf=CountObjs(hlp,player,SHIP,FIGHTER); 
-    nt=CountObjs(hlp,player,SHIP,TOWER); 
-    nq=CountObjs(hlp,player,SHIP,QUEEN); 
-    shipcounter=0;
-  }
-  snprintf(titleships,MAXTEXTLEN,"SHIPS: E:%d F:%d T:%d Q:%d",ne,nf,nt,nq);
+  
+  snprintf(titleships,MAXTEXTLEN,"SHIPS: E:%d F:%d T:%d Q:%d",
+	   ships[EXPLORER],ships[FIGHTER],ships[TOWER],ships[QUEEN]);
 
   if(cvobj!=last_cv || act){
+
+    CountShips(hlp,shipsinplanets,ships);
+
     last_cv=cvobj;
     
     DestroyTextList(&shiplist);
     DestroyTextList(&planetlist);
-
-    /* Add2TextList(&shiplist,"SHIPS:",0); */
-    //    Add2TextList(&shiplist,tmpcad,0);
-    //Add2TextList(&planetlist,"PLANETS:",0);
 
     textpw=gdk_text_width(gfont,"PLANETS:",strlen("PLANETS:"));
     textsw=gdk_text_width(gfont,"SHIPS:",strlen("SHIPS:"));
@@ -4001,24 +4000,22 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
     textw=gdk_text_width(gfont,cad,strlen(cad));
     if(textw>textpw)textpw=textw;
 
-
     color=0;
     if(cvobj!=NULL){
       if(cvobj->habitat==H_SPACE)color=1;
     }
-    snprintf(cad,MAXTEXTLEN,"out: %d",
-	     CountShipsInPlanet(hlp,0,SHIP,-1,0));
+    snprintf(cad,MAXTEXTLEN,"out: %d",shipsinplanets[MAXNUMPLANETS]);
+
     textw=gdk_text_width(gfont,cad,strlen(cad));
     if(textw>textpw)textpw=textw;
     Add2TextList(&planetlist,cad,color);
-    
-
     
     ls=hlp->next;
     while(ls!=NULL){
       obj=ls->obj;
       color=0;
-      if(obj->type==SHIP){
+      switch(obj->type){
+      case SHIP:
 	mode=Type(obj);
 	if(obj->ai==0)mode='M';
 	if(obj->type==SHIP && obj->subtype==PILOT)mode='A';	
@@ -4026,8 +4023,7 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 	if(obj->state<50 || obj->gas<0.5*obj->gas_max){color=2;}
 	if(obj->state<25 || obj->gas<0.25*obj->gas_max){color=3;}
 	
-	if(obj==cvobj){color=1;}
-	if(obj->selected==TRUE){color=1;}
+	if(obj==cvobj || obj->selected==TRUE){color=1;}
 
 	snprintf(cad,MAXTEXTLEN,"%c L%d id: %d ",mode,obj->level,obj->pid);
 	
@@ -4081,27 +4077,28 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 	textw=gdk_text_width(gfont,cad,strlen(cad));
 	if(textw>textsw)textsw=textw;
 	Add2TextList(&shiplist,cad,color);
-      }/*ship */
+	break;/*ship */
       
-      if(obj->type==PLANET){
+      case PLANET:
 	color=0;
-
+	
 	if(cvobj!=NULL){
 	  if(cvobj->player!=obj->player)color=4;
 	  if(cvobj->in==obj)color=1;
 	}
 
 	snprintf(cad,MAXTEXTLEN,"id: %d g:%.0f  %d",
-		 obj->id,obj->planet->gold,CountShipsInPlanet(hlp,obj->id,SHIP,-1,0));
+		 obj->id,obj->planet->gold,shipsinplanets[obj->id - 1]);
 	textw=gdk_text_width(gfont,cad,strlen(cad));
 	if(textw>textpw)textpw=textw;
 	Add2TextList(&planetlist,cad,color);
-      }
-      else{
+	break;
+      default:
+	break;
       }
       ls=ls->next;
     }
-  }
+  }//  if(cvobj!=last_cv || act){
  
    XPrintTextList(pixmap,gfont,titleships,&shiplist,10,15,textsw+charw+10,GameParametres(GET,GHEIGHT,0)-50); 
 
@@ -4424,7 +4421,7 @@ void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,int view,Space reg,Object *
 
 
 
-void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
+int DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
   /*
     Show general game statistics
    */
@@ -4439,7 +4436,7 @@ void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
   static int textheight=0;
   int len;
 
-  if(gfont==NULL)return;
+  if(gfont==NULL)return(0);
   nplayers=GameParametres(GET,GNPLAYERS,0)+2;
   gwidth=GameParametres(GET,GWIDTH,0);
   gheight=GameParametres(GET,GHEIGHT,0);
@@ -4471,30 +4468,72 @@ void DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
   DrawString(pixmap,gfont,penWhite,x,y+textheight,cad);
 
   /* HERE: send kills and deaths to client */
+  {
+    //HERE sort players    
+    int n,m;
+    int *a;
+    int j,k;
+    int sw=0;
+    
+    a=malloc(nplayers*sizeof(int));
+    if(a==NULL){ 
+      fprintf(stderr,"ERROR in malloc DrawGameStatistics()\n"); 
+      exit(-1); 
+    } 
 
-  for(i=1;i<nplayers;i++){
-    if(pl[i].status>=PLAYERACTIVE){
-      snprintf(cad,MAXTEXTLEN,"player: %s, [L%d : %d : %1.1f], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
-	       pl[i].playername,pl[i].maxlevel,pl[i].level,(float)pl[i].level/(pl[i].nships+0.0001),
-	       pl[i].nships,pl[i].nbuildships,
-	       pl[i].nplanets,pl[i].nkills,
-	       pl[i].ndeaths);
+    for(i=0;i<nplayers;i++){
+      a[i]=0;
     }
-    else if(pl[i].status==PLAYERDEAD){
-      snprintf(cad,MAXTEXTLEN,"player: %s, [L%d] GAMEOVER, ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
-	       pl[i].playername,pl[i].maxlevel,
-	       pl[i].nships,pl[i].nbuildships,
-	       pl[i].nplanets,pl[i].nkills,
-	       pl[i].ndeaths);
+
+    n=m=0;
+    a[0]=1;
+    n++;
+    for(i=2;i<nplayers;i++){
+	sw=0;
+      for(j=0;j<n;j++){
+	if(pl[i].level>pl[a[j]].level){
+	  for(k=n;k>j;k--){
+	    a[k]=a[k-1];
+	  }
+	  a[j]=i;
+	  sw++;
+	}
+	if(sw)break;
+      }
+      if(sw==0){
+	a[n]=i;
+      }
+      n++;
     }
+    
+    for(i=0;i<nplayers-1;i++){
+      //      printf("%d %d\n",i,a[i]);
+      if(pl[a[i]].status>=PLAYERACTIVE){
+	snprintf(cad,MAXTEXTLEN,"player: %s, [L%d : %d : %1.1f], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
+		 pl[a[i]].playername,pl[a[i]].maxlevel,pl[a[i]].level,(float)pl[a[i]].level/(pl[a[i]].nships+0.0001),
+		 pl[a[i]].nships,pl[a[i]].nbuildships,
+		 pl[a[i]].nplanets,pl[a[i]].nkills,
+		 pl[a[i]].ndeaths);
+      }
+      else if(pl[a[i]].status==PLAYERDEAD){
+	snprintf(cad,MAXTEXTLEN,"player: %s, [L%d] GAMEOVER, ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
+		 pl[a[i]].playername,pl[a[i]].maxlevel,
+		 pl[a[i]].nships,pl[a[i]].nbuildships,
+		 pl[a[i]].nplanets,pl[a[i]].nkills,
+		 pl[a[i]].ndeaths);
+      }
       len=strlen(cad);
-    if(len>len0){
-      len0=len;
-      textwidth=gdk_text_width(gfont,cad,len0);
-      textheight=gdk_text_height(gfont,cad,len0);
+      if(len>len0){
+	len0=len;
+	textwidth=gdk_text_width(gfont,cad,len0);
+	textheight=gdk_text_height(gfont,cad,len0);
+      }
+      DrawString(pixmap,gfont,gcolors[players[a[i]].color],x,y+(i+2)*textheight,cad);
     }
-    DrawString(pixmap,gfont,gcolors[players[i].color],x,y+(i+1)*textheight,cad);
+    free(a);
   }
+  return(x-10);
+  
 }
 
 

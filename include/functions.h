@@ -61,6 +61,6 @@ void IncTime(void);
 
 void DelCharFromCad(char *cad,char *filter);
 
-int MemUsed(int action,int value);
+int MemUsed(int action,size_t value);
 
 #endif

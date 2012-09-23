@@ -27,6 +27,7 @@
 #define _DATA_ 
 
 #include <stdio.h>
+#include "general.h"
 
 #define NINDEXILIST 20  // number of indexes
 #define NINDEXCALC 100  // recalc indexes when this number of items are added
@@ -79,6 +80,13 @@ struct Window{ /* basic window */
 
 };
 
+struct TextList{
+  int color;
+  char text[MAXTEXTLEN];  /* text */
+  struct TextList *next;
+};
+
+
 
 struct IntTree *Add2IntTree(struct IntTree *head,int id);
 int IsInIntTree(struct IntTree *head,int id);
@@ -106,5 +114,13 @@ int Add2CharList(struct CharListHead *list,char *cad,int mode);
 int Add2CharListWindow(struct CharListHead *list,char *cad,int mode,struct Window *w);
 int PrintCharList(struct CharListHead *hlist);
 int DestroyCharList(struct CharListHead *hlist);
+
+int Add2TextList(struct TextList *head,char *cad,int color);
+int DestroyTextList(struct TextList *head);
+int PrintTextList(struct TextList *head);
+int PosTextList(struct TextList *head,int m);
+int CountTextList(struct TextList *head);
+int CountColorTextList(struct TextList *head,int m);
+
 
 #endif

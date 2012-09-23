@@ -168,7 +168,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT && CountNSelected(lhead,player)==1){
 	strncpy(cad,"S: SELECT   B: BUY   W: WRITE",MAXTEXTLEN); 
-	key->g=key->x=key->p=key->t=key->r=key->e=FALSE;
+	key->g=key->x=key->p=key->t=key->r=key->e=key->u=FALSE;
       }
 
       if(0&&CountNSelected(lhead,player)>1){

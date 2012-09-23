@@ -46,7 +46,7 @@
 #define PI 3.14159265
 
 
-#define MINORSAVEVERSION "0.83.08" /* the save file must be at least this version */
+#define MINORSAVEVERSION "0.83.16" /* the save file must be at least this version */
 #define MINOROPTIONSVERSION "0.83.03" /* the options file must be at least this version */
 
 #define MAXTEXTLEN 128
@@ -63,7 +63,7 @@
 #define NUMSTARS 200
 #define GRAVITATION_RANGE2 4000000  /* max. gravity reach */
 #define G .1                        /* gravitation constant */
-#define DT .42//.35 //.42
+#define DT .42//.42//.35 //.42
 #define RESOURCEFACTOR 1.2     /* velocity factor for getting resource from planets */
 #define COSTFACTOR 1.0         /* multiplicative factor to ships cost */
 #define DAMAGEFACTOR .9;       /* multiplicative factor to weapon damage */
@@ -180,13 +180,6 @@ enum SZ_Error{
   SZ_NOTIMPLEMENTED
 };
 /*   --Error codes for all functions */
-
-
-struct TextList{
-  int color;
-  char text[MAXTEXTLEN];  /* text */
-  struct TextList *next;
-};
 
 
 /* messages among players */

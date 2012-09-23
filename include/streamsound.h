@@ -24,9 +24,6 @@
 ****/
 
 
-#define BUFFER_MUSIC_SIZE 256
-#define NUM_BUFFER_MUSIC 64 
-
 
 /* Stream states */
 #define SS_STOP 0
@@ -62,4 +59,5 @@ struct StreamedSound{
 
 
 struct StreamedSound * StreamSound (char *filename,int mode);
-void *Stream(struct StreamedSound *arg);
+
+int ExitStreamSound(void);

@@ -55,8 +55,9 @@ int buffertable[NUM_BUFFERS]; /* buffer id's -- sound id's */
 struct Sourcetable sourcetable[NUM_SOURCES];
 
 int Ssoundenabled=TRUE;
-float Smusicvol=1;
-float Ssoundvol=1;
+float Smusicvol=1.0;
+float Ssoundvol=1.0;
+float Smastervol=1.0;
 
 struct StreamedSound *music=NULL;
 
@@ -213,7 +214,6 @@ int InitSound(void){
       Ssoundenabled=FALSE;
       return(4);
     }
-    printf("file: %s size: %d\n",filesoundnames[i],size);
     if(data!=NULL){
       alBufferData(buffers[j],format,data,size,frequency);
 #if SOUNDDEBUG
@@ -258,8 +258,12 @@ int ExitSound(void){
     alDeleteBuffers(1,&buffers[i]);
   }
 
+  ExitStreamSound();
+
   /* exiting */
   
+
+
   alGetError();
 
   if (!alutExit()){
@@ -302,7 +306,7 @@ int PlaySound(int sid,int mode,float vol){
 
   if(sid==MUSIC){
     if(music!=NULL){
-      fprintf(stderr,"WARNING: music not NULL\n");
+      fprintf(stderr,"ERROR: music not NULL\n");
       exit(-1);
     }
     music=StreamSound(filesoundnames[0],SM_LOOP);
@@ -445,7 +449,7 @@ int PlaySound(int sid,int mode,float vol){
     alSourcei(sources[sourceid],AL_LOOPING,AL_FALSE);
   }
 
-  alSourcef(sources[sourceid],AL_GAIN,vol*Ssoundvol);
+  alSourcef(sources[sourceid],AL_GAIN,vol*Ssoundvol*Smastervol);
   alSourcePlay(sources[sourceid]);
 
   /* sound propeties */
@@ -688,11 +692,42 @@ int Sound(int mode,int sid){
   return(0);
 }
 
+float SetMasterVolume(float vol,int action){
+  /* sets the effects volume */
+
+  ALfloat nvol=0;
+  float smastervol0=Smastervol;
+  switch(action){
+  case VOLSET:
+    nvol=vol;
+    break;
+  case VOLGET:
+    return(Smastervol);
+    break;
+  case VOLINC:
+    nvol=Smastervol+vol;
+    break;
+  default:
+    break;
+  }
+  if(nvol>1)nvol=1;
+  if(nvol<0)nvol=0;
+
+  Smastervol=nvol;
+  if(Smastervol!=smastervol0){
+    SetSoundVolume(Ssoundvol,VOLSET);
+    SetMusicVolume(Smusicvol,VOLSET);
+  }
+  //  printf("master: %f\n",Smastervol);
+  return(Smastervol);
+}
+
+
 
 float SetSoundVolume(float vol,int action){
+  /* sets the effects volume */
   int i;
   ALfloat nvol=0;
-
   switch(action){
   case VOLSET:
     nvol=vol;
@@ -706,25 +741,26 @@ float SetSoundVolume(float vol,int action){
   default:
     break;
   }
+  //  printf ("Set sound volume %f %d\n",vol,action);
+
   if(nvol>1)nvol=1;
   if(nvol<0)nvol=0;
 
-  if(music!=NULL){
-    if(music!=NULL){
-      music->value=nvol*Smusicvol;
-      music->order=SO_SETVOL;
-    }
+  if(0&&music!=NULL){
+    music->value=Smusicvol;
+    music->order=SO_SETVOL;
   }
   for(i=1;i<NUM_SOURCES;i++){
-    alSourcef(sources[i],AL_GAIN,nvol);
+    alSourcef(sources[i],AL_GAIN,nvol*Smastervol);
   }
   Ssoundvol=nvol;
-  //  printf("Volume: %d\n",(int)(100*nvol));
+  //  printf("Set sound volume: %f\n",nvol*Smastervol);
   return(Ssoundvol);
 }
 
 
 float SetMusicVolume(float vol,int action){
+  /* sets the music volume */
 static  ALfloat nvol=0;
 
   switch(action){
@@ -741,15 +777,17 @@ static  ALfloat nvol=0;
   default:
     break;
   }
+  //  printf ("Set music volume %f %d\n",vol,action);
   if(nvol>1)nvol=1;
   if(nvol<0)nvol=0;
   
   //  alSourcef(sources[0],AL_GAIN,nvol);
   if(music!=NULL){
-    music->value=nvol;
+    music->value=nvol*Smastervol;
     music->order=SO_SETVOL;
     //    alSourcef(music->streamsource[0],AL_GAIN,nvol);
   }
+  //  printf("Set music volume: %f\n",nvol*Smastervol);
   Smusicvol=nvol;
   return(Smusicvol);
 }
@@ -770,14 +808,11 @@ ALvoid* LoadMemoryFromOggFile(char *fname,ALenum *format,ALsizei *size,ALfloat *
   }
   buffer_size=4096;
 
-  printf("fname: %s\n",fname);
   if ( ov_fopen ( fname, &sound ) < 0 ){
-    printf ("This is not an ogg file\n");
+    fprintf (stderr,"This is not an ogg file\n");
     exit(1);
   }
-  printf("OK\n");
   information = ov_info ( &sound, -1 );
-    printf("OK\n");
   if (( information->channels ) == 2 ){
     *format = AL_FORMAT_STEREO16;
   }else{
@@ -795,7 +830,6 @@ ALvoid* LoadMemoryFromOggFile(char *fname,ALenum *format,ALsizei *size,ALfloat *
       }
     }
     bytes=ov_read ( &sound, &data[bytes_readed], 4096, 0, 2, 1, &current) ;
-    printf("OK %s %d\n",fname,bytes);
     if(bytes>0){
       bytes_readed+=bytes;
 

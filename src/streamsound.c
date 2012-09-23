@@ -36,12 +36,22 @@
 #include "streamsound.h"
 
 
+#define BUFFER_MUSIC_SIZE 256
+#define NUM_BUFFER_MUSIC 64 
+
+
+ALuint *streamsource;
+  ALuint *streambuffers;//[NUM_BUFFER_MUSIC];
+
 static void reportError(void){
   
   fprintf (stderr, "ALUT error: %s\n",
            alutGetErrorString (alutGetError ()));
   /*  exit (EXIT_FAILURE); */
 }
+
+
+void *Stream(struct StreamedSound *arg);
 
 
 struct StreamedSound * StreamSound (char *filename,int mode){
@@ -58,8 +68,8 @@ struct StreamedSound * StreamSound (char *filename,int mode){
   int current = -1;
   ALenum format;
   vorbis_info *information = NULL;
-  ALuint *streambuffers;//[NUM_BUFFER_MUSIC];
-  ALuint *streamsource;
+
+
   
   stream_param=malloc(sizeof(struct StreamedSound));
   if(stream_param==NULL){ 
@@ -88,7 +98,7 @@ struct StreamedSound * StreamSound (char *filename,int mode){
   pthread_attr_init (&attr);
   
   if ( ov_fopen ( filename, music ) < 0 ){
-    printf ("This is not an ogg file\n");
+    fprintf (stderr,"This is not an ogg file\n");
     exit(1);
   }
   
@@ -253,4 +263,27 @@ void *Stream(struct StreamedSound *arg){
   alDeleteBuffers ( nbuffers, streambuffers );
   
   return((void*)NULL);
+}
+
+
+int ExitStreamSound(void){
+  int i;
+
+
+  /* deataching buffer*/
+  alSourcei(*streamsource, AL_BUFFER, 0);  
+  
+  
+  /* Deleting sources */
+
+  alDeleteSources(1,streamsource);  
+
+
+  /* Deleting buffers */
+  for(i=0;i<NUM_BUFFER_MUSIC;i++){
+    alDeleteBuffers(1,&streambuffers[i]);
+  }
+
+
+  return (0);
 }

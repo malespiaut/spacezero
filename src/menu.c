@@ -355,14 +355,14 @@ struct MenuHead *CreateMenu(void){
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgeneraloptions,&item,"Sound");
+  Add2MenuHead(mgeneraloptions,&item,"Sound effects volume:");
 
   item.id=ITEM_music;
   item.type=MENUITEMTEXTENTRY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgeneraloptions,&item,"Music");
+  Add2MenuHead(mgeneraloptions,&item,"Music volume:");
 
   item.id=ITEM_geom;
   item.type=MENUITEMTEXTENTRY;
@@ -797,16 +797,22 @@ void Funct01(struct MenuItem *item,char *value){
       break;
     case ITEM_music:
       if(item->active==ITEM_ST_UPDATE){
+	int master;
 	tmparg=param.musicvol;
 	param.musicvol=atoi(value);
 	if(CheckArgs(param)){
 	  fprintf(stderr,"WARNING: Invalid value\n");
 	  param.musicvol=tmparg;
 	}
-	else{
-	  Keystrokes(RESET,NULL,NULL);
-	  SetMusicVolume((float)param.musicvol/100,VOLSET);
+
+	Keystrokes(RESET,NULL,NULL);
+
+	master=SetMasterVolume(0,VOLGET);
+	if(master*100<param.musicvol){
+	  SetMasterVolume(param.musicvol/100,VOLSET);
 	}
+
+	SetMusicVolume((float)param.musicvol/100,VOLSET);
 	item->active=ITEM_ST_SHOW;
       }
       break;

@@ -161,7 +161,6 @@ int GameParametres(int option,int param,int value){
   static struct Game game;
   int ret=0;
 
-  //  printf("option: %d param: %d value:%d\n",option,param,value);
   switch(option){
 
   case SET:
@@ -220,29 +219,20 @@ int GameParametres(int option,int param,int value){
       if(game.music==0){
 	SetMusicVolume(0,VOLSET);
       }
-      else{
-	SetMusicVolume((float)game.musicvol/100,VOLSET);
-      }
       break;
     case GSOUND:          /* TRUE FALSE sound on/off */
       game.sound=value;
       if(game.sound==0){
-	SetMusicVolume(0,VOLSET);
 	SetSoundVolume(0,VOLSET);
-      }
-      else{
-	SetMusicVolume((float)game.musicvol/100,VOLSET);
-	SetSoundVolume((float)game.soundvol/100,VOLSET);
+	SetMusicVolume(0,VOLSET);
       }
 
       break;
     case GMUSICVOL:          /* 0..100 music volume */
       game.musicvol=value;
-      SetMusicVolume((float)value/100,VOLSET);
       break;
     case GSOUNDVOL:          /* 0..100 sound volume */
       game.soundvol=value;
-      SetSoundVolume((float)value/100,VOLSET);
       break;
 
 
@@ -405,30 +395,18 @@ void DelCharFromCad(char *cad,char *filter){
   int n=0;
   int m=0;
 
-  //  printf("cad: \"%s\"\n",cad);
-  //  printf("filter: \"%s\"\n",filter);
-
-  //  printf("\"");
   while(cad[n]!='\0'){
-    //    printf("%c",*c);
     if(n>=MAXTEXTLEN-1)break;
     if(strchr(filter,cad[n])==NULL){ /* not found */
-      //  printf("not found :%c\n",cad[n]);
     }
     else{  /* found */
-      // printf("found :%c\n",cad[n]);
-      //      cad[m]=cad[n];
       strncpy(&cad[m],&cad[n],1);
       m++;
-
     }
     n++;
   }
 
   strncpy(&cad[m],"\0",1);
-  //  memcpy(&c[2],'\0',sizeof(char));
-  //  printf("m: %d\n",m);
-  //printf("cad2: \"%s\"\n",cad);
 }
 
 float Sqrt(int n){
@@ -451,7 +429,7 @@ float Sqrt(int n){
   return(ret); 
 }
 
-int MemUsed(int action,int value){
+int MemUsed(int action,size_t value){
 
   static int memused=0;
 

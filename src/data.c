@@ -747,6 +747,124 @@ int CountIntTree (struct IntTree *head){
   return(cont);
 }
 
+/************
+Text Lists
+***********/
+
+int Add2TextList(struct TextList *listhead,char *cad,int color){
+  /* 
+     add the cad to the list
+  */
+  struct TextList *list;
+  struct TextList *lh;
+
+  /* Add text at the end of the list */
+  lh=listhead;
+  while(lh->next!=NULL){
+    lh=lh->next;
+  }
+
+  list=malloc(sizeof(struct TextList));
+  MemUsed(MADD,+sizeof(struct TextList));
+
+  if(list==NULL){
+    fprintf(stderr,"ERROR in malloc Add2TextList()\n");
+    exit(-1);
+  }
+  strncpy(list->text,cad,MAXTEXTLEN);
+  list->color=color;
+  list->next=NULL; 
+  lh->next=list;
+  return (0);
+}
+
+int DestroyTextList(struct TextList *head){
+  /* 
+     delete all the list
+     return:
+     the number of items deleted
+  */
+  struct TextList *lh0;
+  struct TextList *lh;
+  int n=0;
+  long memused=0;
+
+  lh=head->next;
+  while(lh!=NULL){
+    lh0=lh;
+    lh=lh->next;
+    free(lh0);
+    lh0=NULL;
+    memused-=sizeof(struct TextList);
+    n++;
+  }
+  head->next=NULL;
+
+  MemUsed(MADD,memused);
+
+  return (n);
+}
+
+int PrintTextList(struct TextList *head){
+  struct TextList *lh;
+
+  lh=head->next;
+  while(lh!=NULL){
+    printf("%s\n",lh->text);
+    lh=lh->next;
+  }
+  return(0);
+}
+int CountTextList(struct TextList *head){
+  /*
+    returns:
+    the number of texts of the the list head.
+   */
+  struct TextList *lh;
+  int n=0;
+  lh=head->next;
+  while(lh!=NULL){
+    n++;
+    lh=lh->next;
+  }
+  return(n);
+}
+int PosTextList(struct TextList *head,int m){
+  /*
+    returns:
+    the position of the first text with color m
+   */
+
+  struct TextList *lh;
+  int n=0;
+  lh=head->next;
+  while(lh!=NULL){
+    if(lh->color==m)return(n);
+    n++;
+    lh=lh->next;
+  }
+  return(-1);
+}
+
+int CountColorTextList(struct TextList *head,int m){
+  /*
+    returns:
+    the number of texts of color m
+   */
+
+  struct TextList *lh;
+  int n=0;
+  lh=head->next;
+  while(lh!=NULL){
+    if(lh->color==m)n++;
+    lh=lh->next;
+  }
+  return(n);
+}
+
+
+
+
 
 /* objects */
 

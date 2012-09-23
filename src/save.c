@@ -27,7 +27,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include "save.h"
-
+#include "statistics.h"
 
 extern int actual_player,actual_player0;
 extern int record;
@@ -54,6 +54,30 @@ struct Global gremote,glocal;
 #if DEBUG
 int debugsave=0;
 #endif
+
+
+int CreateDir(char *dir);
+void SaveRecord(char *file,struct Player *players,int record);
+int FprintfPlanet(FILE *fp,Object *obj);
+int FprintfObj(FILE *fp,Object *obj);
+
+int FscanfObj(FILE *fp,Object *obj,struct ObjTable *);
+int FscanfPlanet(FILE *fp,struct Planet *planet);
+
+int Check(void);
+int FprintfOrders(FILE *fp,Object *obj);
+int FscanfOrders(FILE *fp,Object *obj);
+int CountOrders(Object *obj);
+
+void FprintfCCData(FILE *fp,struct CCDATA *ccdata);
+void FscanfCCData(FILE *fp,struct CCDATA *ccdata);
+int CountPlanetInfoList(struct CCDATA *ccdata);
+
+void FprintfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo);
+void FprintfPlanetInfoList(FILE *fp,struct CCDATA *ccdata);
+void FscanfPlanetInfoList(FILE *fp,struct CCDATA *ccdata);
+void FscanfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo);
+
 
 
 int CreateDir(char *dir){
@@ -160,6 +184,7 @@ char *CreateRecordFile(void){
 
   return(file);
 }
+
 
 
 char *CreateOptionsFile(void){
@@ -445,6 +470,11 @@ int ExecSave(struct HeadObjList lh,char *nom){
 
   /* --ccdata*/
 
+  /* statistics */
+  fprintStatistics(fp);
+
+  /* --statistics */
+
 
   fprintf(fp,"%f\n",control);
   fclose(fp);
@@ -673,6 +703,8 @@ int ExecLoad(char *nom){
     ccdatap[i].nfighter=0;
     ccdatap[i].ntower=0;
     ccdatap[i].ncargo=0;
+    ccdatap[i].npilot=0;
+    ccdatap[i].pilot=NULL;
     
     ccdatap[i].sw=0;
     ccdatap[i].war=0;
@@ -820,7 +852,6 @@ int ExecLoad(char *nom){
     players[i].modified=SENDOBJUNMOD;
     players[i].ttl=2000;
 
-
     /* building known sectors and known planets list */
 
     players[i].kplanets=NULL;
@@ -941,6 +972,12 @@ int ExecLoad(char *nom){
   }
   
   /* --load ccdata*/
+
+  /* statistics */
+  fscanfStatistics(fp);
+  
+  /* --statistics */
+
 
   
   if(fscanf(fp,"%f",&control2)!=1){
@@ -1619,10 +1656,10 @@ void FprintfCCData(FILE *fp,struct CCDATA *ccdata){
     printf("\nsaving CCDATA player: %d\n",ccdata->player);
   }
 #endif
-  fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+  fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
 	  ccdata->player,ccdata->time,ccdata->time2,ccdata->nkplanets,ccdata->nplanets,
 	  ccdata->ninexplore,ccdata->nenemy,
-	  ccdata->nexplorer,ccdata->nfighter,ccdata->ntower,ccdata->ncargo,
+	  ccdata->nexplorer,ccdata->nfighter,ccdata->npilot,ccdata->ntower,ccdata->ncargo,
 	  ccdata->sw,ccdata->war);
 
   if(ccdata->planetlowdefense!=NULL){
@@ -1729,9 +1766,9 @@ void FprintfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo){
     printf("saving info of planet %d\n",objid);
   }
 #endif
-  fprintf(fp,"%d %d %d %d %d %d %f %f %d\n",
+  fprintf(fp,"%d %d %d %d %d %d %d %f %f %d\n",
 	  objid,pinfo->time,
-	  pinfo->nexplorer,pinfo->nfighter,pinfo->ntower,pinfo->ncargo,
+	  pinfo->nexplorer,pinfo->nfighter,pinfo->npilot,pinfo->ntower,pinfo->ncargo,
 	  pinfo->strength,pinfo->strengtha,
 	  pinfo->nassigned);
 }
@@ -1752,14 +1789,15 @@ void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
   int pld,pw,p2m,p2a;
 
 
-  if(fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d",
+  if(fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
 	  &ccdata->player,&ccdata->time,&ccdata->time2,&ccdata->nkplanets,&ccdata->nplanets,
 	  &ccdata->ninexplore,&ccdata->nenemy,
-	  &ccdata->nexplorer,&ccdata->nfighter,&ccdata->ntower,&ccdata->ncargo,
-	    &ccdata->sw,&ccdata->war)!=13){
+	    &ccdata->nexplorer,&ccdata->nfighter,&ccdata->npilot,&ccdata->ntower,&ccdata->ncargo,
+	    &ccdata->sw,&ccdata->war)!=14){
     perror("fscanf");
     exit(-1);
-  } 
+  }
+  ccdata->pilot=NULL;
 
   if(fscanf(fp,"%d%d%d%d",&pld,&pw,&p2m,&p2a)!=4){
     perror("fscanf");
@@ -1832,11 +1870,11 @@ void FscanfPlanetInfoList(FILE *fp,struct CCDATA *ccdata){
 void FscanfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo){
   int objid;
   Object *planet;
-  if(fscanf(fp,"%d%d%d%d%d%d%f%f%d",
-	  &objid,&pinfo->time,
-	  &pinfo->nexplorer,&pinfo->nfighter,&pinfo->ntower,&pinfo->ncargo,
+  if(fscanf(fp,"%d%d%d%d%d%d%d%f%f%d",
+	    &objid,&pinfo->time,
+	    &pinfo->nexplorer,&pinfo->nfighter,&pinfo->nfighter,&pinfo->ntower,&pinfo->ncargo,
 	  &pinfo->strength,&pinfo->strengtha,
-	    &pinfo->nassigned)!=9){
+	    &pinfo->nassigned)!=10){
     perror("fscanf");
     exit(-1);
   } 

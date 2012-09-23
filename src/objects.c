@@ -41,6 +41,7 @@ struct ObjTree *treeobjs=NULL;
 extern struct Player *players;
 extern struct HeadObjList listheadobjs;
 extern struct HeadObjList *listheadkplanets; /* lists of planets known by players */
+extern struct HeadObjList listheadplayer;     /* list of objects of each player */
 extern struct TextMessageList listheadtext;
 extern struct CharListHead gameloglist;          /* list of all game messages */
 extern struct Window windowgamelog;
@@ -74,8 +75,10 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
     exit(-1);
   }
 
-  players[player].status=PLAYERMODIFIED;
-
+  if(type<TRACKPOINT){
+    players[player].status=PLAYERMODIFIED;
+    if(type==SHIP)listheadplayer.update=1;
+  }
   if(type<=0){
     fprintf(stderr,"ERROR in NewObj() (type<0) type:%d stype:%d\n",type,stype);
     exit(-1);
@@ -801,8 +804,12 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
     }
     
     if(freels!=NULL){
-      p[freels->obj->player].status=PLAYERMODIFIED;
+      
+      if(freels->obj->type < TRACKPOINT) {
+	p[freels->obj->player].status=PLAYERMODIFIED;
+      }
       if(freels->obj->type==SHIP){
+	listheadplayer.update=1;
 	if(freels->obj->type==SHIP)p[freels->obj->player].ndeaths++;
 	if( freels->obj->player == actual_player){
 	  snprintf(text,MAXTEXTLEN,"(%c %d) SHIP DESTROYED",Type(freels->obj),freels->obj->pid);
@@ -1290,6 +1297,44 @@ int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int type,int stype,in
   }
   return(n);
 }
+
+
+int CountShips(struct HeadObjList *lh,int *planet,int *ships){
+  /*
+    Count the number of ships in planet
+    Returns the number of ships.
+  */
+
+  struct ObjList *ls;
+  int n=0;
+  int i;
+
+  for(i=0;i<MAXNUMPLANETS+1;i++){
+    planet[i]=0;
+  }
+  for(i=0;i<SHIP_S_MAX+1;i++){
+    ships[i]=0;
+  }
+
+  ls=lh->next;
+  while(ls!=NULL){
+
+    if(ls->obj->type!=SHIP){ls=ls->next;continue;}
+
+    ships[ls->obj->subtype]++;
+    
+    if(ls->obj->habitat==H_PLANET){
+      planet[ls->obj->in->id - 1]++;
+    }
+    else{
+      planet[MAXNUMPLANETS]++;
+    }
+    n++;
+    ls=ls->next;
+  }
+  return(n);
+}
+
 
 int CopyObject(Object *nobj,Object *obj){
 
@@ -2384,97 +2429,6 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
 }
 
 
-
-int Add2TextList(struct TextList *listhead,char *cad,int color){
-  /* 
-     add the cad to the list
-  */
-  struct TextList *list;
-  struct TextList *lh;
-
-  /* Add text at the end of the list */
-  lh=listhead;
-  while(lh->next!=NULL){
-    lh=lh->next;
-  }
-
-  list=malloc(sizeof(struct TextList));
-  MemUsed(MADD,+sizeof(struct TextList));
-
-  if(list==NULL){
-    fprintf(stderr,"ERROR in malloc Add2TextList()\n");
-    exit(-1);
-  }
-  strncpy(list->text,cad,MAXTEXTLEN);
-  list->color=color;
-  list->next=NULL; 
-  lh->next=list;
-  return (0);
-}
-
-int DestroyTextList(struct TextList *head){
-  /* 
-     delete all the list
-     return:
-     the number of items deleted
-  */
-  struct TextList *lh0;
-  struct TextList *lh;
-  int n=0;
-  lh=head->next;
-  while(lh!=NULL){
-    lh0=lh;
-    lh=lh->next;
-    free(lh0);
-    lh0=NULL;
-    MemUsed(MADD,-sizeof(struct TextList));
-
-    n++;
-  }
-  head->next=NULL;
-  return (n);
-}
-
-int PrintTextList(struct TextList *head){
-  struct TextList *lh;
-
-  lh=head->next;
-  while(lh!=NULL){
-    printf("%s\n",lh->text);
-    lh=lh->next;
-  }
-  return(0);
-}
-int CountTextList(struct TextList *head){
-  /*
-    returns:
-    the number of texts of the the list head.
-   */
-  struct TextList *lh;
-  int n=0;
-  lh=head->next;
-  while(lh!=NULL){
-    n++;
-    lh=lh->next;
-  }
-  return(n);
-}
-int PosTextList(struct TextList *head,int m){
-  /*
-    returns:
-    the position of the text with color m
-   */
-
-  struct TextList *lh;
-  int n=0;
-  lh=head->next;
-  while(lh!=NULL){
-    if(lh->color==m)return(n);
-    n++;
-    lh=lh->next;
-  }
-  return(-1);
-}
 int GetPrice(Object *obj,int stype,int eng,int weapon){
   /*
     return:
@@ -2491,7 +2445,7 @@ int GetPrice(Object *obj,int stype,int eng,int weapon){
   
   if(obj!=NULL){
     if(obj->type!=SHIP){
-      fprintf(stderr,"ERROR in GetPrice() obj type:%d\n",obj->type);
+      fprintf(stdout,"ERROR in GetPrice() obj type:%d\n",obj->type);
       return(-1);
     }
 
@@ -2501,13 +2455,15 @@ int GetPrice(Object *obj,int stype,int eng,int weapon){
     level=obj->level;
 
     if(obj->type==SHIP && obj->subtype==PILOT){ 
+      /* TODO show this only in human gamer */
+      /*      fprintf(stdout,"(%d)pilots can not be upgraded\n",obj->player); */
       eng=ENGINE0;
       weapon=CANNON0;
+      // return(-1);
     } 
-
   }
 
-  if(stype<SHIP0 || stype>SHIPMAX){
+  if(stype<SHIP0 || stype>SHIP_S_MAX){
     fprintf(stderr,"ERROR in GetPrice() stype id:%d\n",stype);
     return(-1);
   }
@@ -2920,6 +2876,7 @@ int DestroyObjList(struct HeadObjList *hl){
    */
   struct ObjList *ls0;
   int n=0;
+  long memused=0;
   
   if(hl==NULL)return(0);
 
@@ -2930,10 +2887,12 @@ int DestroyObjList(struct HeadObjList *hl){
     ls0->next=NULL;
     free(ls0);
     ls0=NULL;
-    MemUsed(MADD,-sizeof(struct ObjList));
+    memused-=sizeof(struct ObjList);
     hl->n--;
     n++;
   }
+  MemUsed(MADD,memused);
+
   if(hl->next!=NULL){
     fprintf(stderr,"ERROR 1 in DestroyObjList()\n");
     exit(-1);
@@ -3015,6 +2974,7 @@ int CreatePlayerList(struct HeadObjList hlist1,struct HeadObjList *hlist2,int pl
   struct ObjList *ls0,*ls1,*ls2;
   int id1,id2;
   int n=0;
+  long memused=0;
 
 
   if(hlist2->next!=NULL){
@@ -3048,7 +3008,8 @@ int CreatePlayerList(struct HeadObjList hlist1,struct HeadObjList *hlist2,int pl
     if(ls1->obj->habitat==H_PLANET)id1=ls1->obj->in->id;
 
     ls0=malloc(sizeof(struct ObjList));
-    MemUsed(MADD,+sizeof(struct ObjList));
+    memused+=sizeof(struct ObjList);
+    //    MemUsed(MADD,+sizeof(struct ObjList));
     if(ls0==NULL){
       fprintf(stderr,"ERROR in malloc CreateList()\n");
       exit(-1);
@@ -3092,6 +3053,7 @@ int CreatePlayerList(struct HeadObjList hlist1,struct HeadObjList *hlist2,int pl
     hlist2->n++;
     n++;
   }
+  MemUsed(MADD,memused);
   return(n) ;
 }
 
@@ -3111,6 +3073,7 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
   int proc;
   int value0;
   int gulx,guly;
+
 
   for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
     if(hcontainer[i].next!=NULL){ 
@@ -3134,9 +3097,9 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
     /* objects than dont collide */
     switch(ls->obj->type){
     case PROJECTILE:
-      /* if(ls->obj->subtype==EXPLOSION){  */
-      /* 	ls=ls->next;continue;  */
-      /* }  */
+      if(ls->obj->subtype==EXPLOSION && ls->obj->habitat==H_SPACE){  
+	  ls=ls->next;continue;     
+      }    
       break;
     case TRACE:
     case TRACKPOINT:
@@ -3178,7 +3141,6 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
       n=0;
     }
 
-   
     obj=ls->obj;
     
     /**** CELLON****/
@@ -3267,7 +3229,7 @@ int CreatePlanetList(struct HeadObjList lheadobjs,struct HeadObjList *lheadplane
 
 
   struct ObjList *ls,*ls0,*lsp;
-
+  long memused=0;
 
   if(lheadplanets->next!=NULL){ 
     //    fprintf(stderr,"WARNING: CPL() not NULL\n"); 
@@ -3283,7 +3245,8 @@ int CreatePlanetList(struct HeadObjList lheadobjs,struct HeadObjList *lheadplane
     if(ls->obj->type==PLANET){
 
       ls0=malloc(sizeof(struct ObjList));
-      MemUsed(MADD,+sizeof(struct ObjList));
+      memused+=sizeof(struct ObjList);
+
       if(ls0==NULL){
 	fprintf(stderr,"ERROR in malloc() CreatePlanetList()\n");
 	exit(-1);
@@ -3304,6 +3267,7 @@ int CreatePlanetList(struct HeadObjList lheadobjs,struct HeadObjList *lheadplane
     }
     ls=ls->next;
   }
+  MemUsed(MADD,memused);
   return(lheadplanets->n);
 }
 
@@ -3446,8 +3410,9 @@ void Experience(Object *obj,float pts){
       }
       
       if(obj->weapon1.type!=CANNON0){
-	if(obj->weapon1.rate>9)
+	if(obj->weapon1.rate>9){
 	  obj->weapon1.rate--;
+	}
 	if(obj->weapon1.max_n<14){ /* max 15 missiles */
 	  obj->weapon1.max_n+=2;
 	}
@@ -3469,15 +3434,19 @@ void Experience(Object *obj,float pts){
       obj->engine.v2_max=obj->engine.v_max*obj->engine.v_max;
 
       if(obj->subtype==FIGHTER){
-	if(obj->level==1){
+	switch(obj->level){
+	case 1:
 	  if(obj->weapon1.type==CANNON0){
 	    NewWeapon(&obj->weapon1,CANNON8);
 	  }
-	}
-	if(obj->level==2){
+	  break;
+	case 2:
 	  if(obj->weapon2.type==CANNON0){
 	    NewWeapon(&obj->weapon2,CANNON9);
 	  }
+	  break;
+	default:
+	  break;
 	}
       }
     }
@@ -4081,7 +4050,7 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj){
     if(ls->obj->in!=obj){ls=ls->next;continue;}
 
     if(ls->obj->type!=SHIP){
-      fprintf(stderr,"ERROR EjectPilotsObj() type != SHIP\n");
+      fprintf(stderr,"ERROR EjectPilotsObj() type:%d %d != SHIP\n",ls->obj->type,ls->obj->subtype);
       ls=ls->next;continue;
     }
 

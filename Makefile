@@ -37,12 +37,12 @@ PROFCC=  $(CC) -pg
 PROGRAMA=$(BINDIR)/spacezero
 
 
-SOUND_OBJS= $(SRCPATH)sound.o
-SOUND_SRCS= $(SRCPATH)sound.c
+SOUND_OBJS= $(SRCPATH)sound.o  $(SRCPATH)streamsound.o
+SOUND_SRCS= $(SRCPATH)sound.c  $(SRCPATH)streamsound.c
 
 
-PROGRAMA_OBJS=$(SRCPATH)spacezero.o $(SRCPATH)objects.o $(SRCPATH)ai.o $(SRCPATH)save.o $(SRCPATH)shell.o $(SRCPATH)spacecomm.o $(SRCPATH)help.o $(SRCPATH)comm.o $(SRCPATH)graphics.o  $(SRCPATH)functions.o $(SRCPATH)data.o $(SOUND_OBJS) $(SRCPATH)menu.o $(SRCPATH)sectors.o $(SRCPATH)clock.o $(SRCPATH)streamsound.o
-PROGRAMA_SRCS=$(SRCPATH)spacezero.c $(SRCPATH)objects.c $(SRCPATH)ai.c $(SRCPATH)save.c $(SRCPATH)shell.c $(SRCPATH)spacecomm.c $(SRCPATH)help.c $(SRCPATH)comm.c $(SRCPATH)graphics.c  $(SRCPATH)functions.c $(SRCPATH)data.c $(SRCPATH)menu.c $(SRCPATH)sectors.c $(SRCPATH)clock.c$ $(SRCPATH)streamsound.c $(SOUND_SRCS)
+PROGRAMA_OBJS=$(SRCPATH)spacezero.o $(SRCPATH)objects.o $(SRCPATH)ai.o $(SRCPATH)save.o $(SRCPATH)shell.o $(SRCPATH)spacecomm.o $(SRCPATH)help.o $(SRCPATH)comm.o $(SRCPATH)graphics.o  $(SRCPATH)functions.o $(SRCPATH)data.o $(SRCPATH)menu.o $(SRCPATH)sectors.o $(SRCPATH)clock.o  $(SRCPATH)statistics.o $(SOUND_OBJS)
+PROGRAMA_SRCS=$(SRCPATH)spacezero.c $(SRCPATH)objects.c $(SRCPATH)ai.c $(SRCPATH)save.c $(SRCPATH)shell.c $(SRCPATH)spacecomm.c $(SRCPATH)help.c $(SRCPATH)comm.c $(SRCPATH)graphics.c  $(SRCPATH)functions.c $(SRCPATH)data.c $(SRCPATH)menu.c $(SRCPATH)sectors.c $(SRCPATH)clock.c$ $(SRCPATH)statistics.c $(SOUND_SRCS) 
 
 
 
@@ -94,4 +94,4 @@ mrproper: clean
 # add -pg for profile
 #		$(CC) -pg  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
 # add -g for debug
-		$(CC) -g  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
+		$(CC) -g $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 

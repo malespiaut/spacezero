@@ -73,7 +73,7 @@
 #define SHIP5 5
 #define SHIP6 6
 #define SHIP7 7
-#define SHIPMAX SHIP7
+#define SHIP_S_MAX SHIP7
 
 /* predefined ships */ 
 #define EXPLORER SHIP1
@@ -195,7 +195,6 @@
 #define PLAYERACTIVE 3     /* all states > PLAYERACTIVE are active states */
 #define PLAYERMODIFIED 4   /* when the number of ships or habitat change */  
 
-
 #define OBJNAMESMAXLEN 16  /*max size of objs names. */
 
 struct _Segment{
@@ -293,7 +292,7 @@ struct _Object{
   short level;
   float experience; /* experience */
   float pexperience;/* partial experience */
-  int kills;        /*number of enemies killed */
+  int kills;        /*number of enemies killed. */
 
   int durable;
   int visible;      /* not used */
@@ -302,7 +301,7 @@ struct _Object{
   int mass;         /* mass */
 
   int items;        /* survival ship, ...*/
-  int cargo;        /* capacity of the bodega TODO*/
+  int cargo;        /* capacity of the bodega TODO. In planets: no of ships */
   int radio;        /* ship radio */
   float cost;       /* cost of the object per unit time*/
   int damage;       /* damage of the ship in collision*/
@@ -501,6 +500,7 @@ struct ObjList{
 
 struct HeadObjList{
   int n;
+  int update;
   struct ObjList *next;
 };
 
@@ -557,8 +557,8 @@ struct Player{
   short modified;    /* used in communication */
   short ttl;         /* used in communication */
 
-  struct IntList *kplanets;
-  struct HeadIntIList ksectors;
+  struct IntList *kplanets;       /* list of known planets */
+  struct HeadIntIList ksectors;   /* list of known universe sectors */
 };
 
 struct PlayerAll{
@@ -620,6 +620,7 @@ int GameOver(struct HeadObjList *lhead,struct Player *players,int actual_player)
 
 int CountObjs(struct HeadObjList *lh,int player,int type,int subtype);
 int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int type,int subtype,int max);
+int CountShips(struct HeadObjList *lh,int *c,int *s);
 int CountPlayerShipObjs(struct HeadObjList *lh,int player,int *cont);
 int CountPlayerPlanets(struct HeadObjList *lh,struct Player player,int *cont);
 int CountPlanets(struct HeadObjList *lh,int type);
@@ -669,11 +670,6 @@ int CreatePlanetList(struct HeadObjList,struct HeadObjList *);
 void CreateNearObjsList(struct HeadObjList *lh,struct HeadObjList *lhn,int player);
 int CreatePilot(Object *obj);
 
-int Add2TextList(struct TextList *head,char *cad,int color);
-int DestroyTextList(struct TextList *head);
-int PrintTextList(struct TextList *head);
-int PosTextList(struct TextList *head,int m);
-int CountTextList(struct TextList *head);
 char Type(Object *obj);
 char *TypeCad(Object *obj);
 

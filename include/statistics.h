@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright (C) 2006-2012  MRevenga
+ **  Copyright(C) 2006-2012  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -23,37 +23,24 @@
 		version 0.82 Jan 2012
 ****/
 
-#ifndef _SAVE_
-#define _SAVE_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <gtk/gtk.h>
-#include <math.h>
 
-#include "ai.h"
-#include "objects.h"
-#include "ai.h"
 #include "general.h"
-#include "data.h"
-#include "spacecomm.h"
-#include "functions.h"
+
+struct Stats{
+  int time;
+  float level[MAXNUMPLAYERS+2];
+  int nplanets[MAXNUMPLAYERS+2];
+};
 
 
-char *CreateOptionsFile(void);
-char *CreateSaveFile(int server,int client);
-char *CreateRecordFile(void);
-char *CreateKeyboardFile(void);
+void InitStatistics(void);
 
-void SaveParamOptions(char *file,struct Parametres *par);
-void SaveUserKeys(char *file,struct Keys *keys);
-int LoadUserKeys(char *keyfile,struct Keys *keys);
+void AddStatistics(struct Stats *s);
 
-int LoadParamOptions(char *file,struct Parametres *par);
-void PrintParamOptions(struct Parametres *par);
+void fprintStatistics(FILE *fp);
+void fscanfStatistics(FILE *fp);
 
-int ExecSave(struct HeadObjList ,char *);
-int ExecLoad(char *);
+void PrintStatistics(void);
 
-
-#endif
+void DrawStatistics(GdkPixmap *pixmap,Rectangle *r);

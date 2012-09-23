@@ -34,6 +34,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include "spacezero.h"
+#include "statistics.h"
 #include "clock.h"
 
 #define TESTSAVE FALSE
@@ -84,10 +85,10 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.11"};
+char version[64]={"0.83.17"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Jul. 2012"};
+char last_revision[]={"Sep. 2012"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -183,13 +184,13 @@ int main(int argc,char *argv[]){
     exit(-1);
   }
 
-  sa.sa_handler=segfault_handler;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags=0;
-  if(sigaction(SIGSEGV,&sa,NULL)){
-    perror("sigaction");
-    exit(-1);
-  }
+  /* sa.sa_handler=segfault_handler; */
+  /* sigemptyset(&sa.sa_mask); */
+  /* sa.sa_flags=0; */
+  /* if(sigaction(SIGSEGV,&sa,NULL)){ */
+  /*   perror("sigaction"); */
+  /*   exit(-1); */
+  /* } */
 
   /******** --signals ***********/
 
@@ -226,25 +227,25 @@ int main(int argc,char *argv[]){
     Sizeof Parametres: 288		Sizeof Parametres: 288	     
    */
 
-    printf("Sizeof char: %d\n",sizeof(char));
-    printf("Sizeof short: %d\n",sizeof(short));
-    printf("Sizeof int: %d\n",sizeof(int));
-    printf("Sizeof int32: %d\n",sizeof(int32_t));
-    printf("Sizeof int64: %d\n",sizeof(int64_t));
-    printf("Sizeof long int: %d\n",sizeof(long int));
-    printf("Sizeof int *: %d\n",sizeof(int *));
-    printf("Sizeof char *: %d\n",sizeof(char *));
-    printf("Sizeof float: %d\n",sizeof(float));
-    printf("Sizeof double: %d\n\n",sizeof(double));
-    printf("Sizeof Object: %d\n",sizeof(Object));
-    printf("Sizeof ObjNew %d\n",sizeof(struct ObjectNew));
-    printf("Sizeof ObjectAAll: %d\n",sizeof(struct ObjectAAll));
-    printf("Sizeof Object dynamic: %d\n",sizeof(struct Objectdynamic));
-    printf("Sizeof Object pos: %d\n",sizeof(struct Objectpos));
-    printf("Sizeof Weapon: %d\n",sizeof(Weapon));
-    printf("Sizeof Player: %d\n",sizeof(struct Player));
-    printf("Sizeof PlayerMod: %d\n",sizeof(struct PlayerMod));
-    printf("Sizeof Parametres: %d\n",sizeof(struct Parametres));
+    printf("Sizeof char: %u\n",(unsigned int)sizeof(char));
+    printf("Sizeof short: %u\n",(unsigned int)sizeof(short));
+    printf("Sizeof int: %u\n",(unsigned int)sizeof(int));
+    printf("Sizeof int32: %u\n",(unsigned int)sizeof(int32_t));
+    printf("Sizeof int64: %u\n",(unsigned int)sizeof(int64_t));
+    printf("Sizeof long int: %u\n",(unsigned int)sizeof(long int));
+    printf("Sizeof int *: %u\n",(unsigned int)sizeof(int *));
+    printf("Sizeof char *: %u\n",(unsigned int)sizeof(char *));
+    printf("Sizeof float: %u\n",(unsigned int)sizeof(float));
+    printf("Sizeof double: %u\n\n",(unsigned int)sizeof(double));
+    printf("Sizeof Object: %u\n",(unsigned int)sizeof(Object));
+    printf("Sizeof ObjNew %u\n",(unsigned int)sizeof(struct ObjectNew));
+    printf("Sizeof ObjectAAll: %u\n",(unsigned int)sizeof(struct ObjectAAll));
+    printf("Sizeof Object dynamic: %u\n",(unsigned int)sizeof(struct Objectdynamic));
+    printf("Sizeof Object pos: %u\n",(unsigned int)sizeof(struct Objectpos));
+    printf("Sizeof Weapon: %u\n",(unsigned int)sizeof(Weapon));
+    printf("Sizeof Player: %u\n",(unsigned int)sizeof(struct Player));
+    printf("Sizeof PlayerMod: %u\n",(unsigned int)sizeof(struct PlayerMod));
+    printf("Sizeof Parametres: %u\n",(unsigned int)sizeof(struct Parametres));
     printf("buffersize: %d\n",BUFFERSIZE);
     printf("EOF: %d\n",EOF);
     
@@ -347,7 +348,11 @@ int main(int argc,char *argv[]){
     Play(NULL,-1,0); /* disable sound */
   }
 
-  if(soundenabled==TRUE){
+  if(0&&soundenabled==TRUE){ //old
+    float master=0;
+    master=param.soundvol>param.musicvol?param.soundvol:param.musicvol;
+    master/=100;
+    SetMasterVolume(1,VOLSET);
     SetSoundVolume((float)param.soundvol/100,VOLSET);
     printf("Sound volume: %d\n",param.soundvol);
     PlaySound(MUSIC,SLOOP,1);
@@ -360,11 +365,43 @@ int main(int argc,char *argv[]){
       printf("Music is off\n");
     }
   }
+
+  if(soundenabled==TRUE){
+    float master=0;
+    float music=0,sound=0;
+
+    if(param.soundvol>param.musicvol){
+      master=(float)param.soundvol/100;
+      sound=1.0;
+      music=(float)param.musicvol/param.soundvol;
+    }
+    else{
+      master=(float)param.musicvol/100;
+      music=1.0;
+      sound=(float)param.soundvol/param.musicvol;
+    }
+
+    SetMasterVolume(master,VOLSET);
+
+    //    printf("MASTER volume: %f %d %d\n",master,param.soundvol,param.musicvol);
+    SetSoundVolume(sound,VOLSET);
+    //    printf("Sound volume: %d %f\n",param.soundvol,sound);
+    PlaySound(MUSIC,SLOOP,1);
+    if(param.music){
+      //      printf("Music volume: %d %f\n",param.musicvol,music);
+      SetMusicVolume(music,VOLSET);
+    }
+    else{
+      Sound(SSTOP,MUSIC);
+      printf("Music is off\n");
+    }
+  }
+
   /********* --sound initialization *********/ 
 #endif
 
 
-  /******** what stuff draw *********/
+  /******** what stuff to draw *********/
   gdraw.main=FALSE;
   gdraw.menu=TRUE;
   gdraw.map=FALSE;
@@ -375,7 +412,7 @@ int main(int argc,char *argv[]){
   gdraw.crash=FALSE;
   gdraw.volume=FALSE;
 
-  /******** --what stuff draw *********/
+  /******** --what stuff to draw *********/
 
   /***** game log initialization *****/
 
@@ -395,6 +432,7 @@ int main(int argc,char *argv[]){
   windowgamelog.scrollbar.pos=0;
   windowgamelog.scrollbar.n=0;
   windowgamelog.data=&gameloglist;
+
 
   gtk_timeout_add((int)(DT*50),MenuLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
 #if DEBUGFAST
@@ -443,6 +481,7 @@ gint MenuLoop(gpointer data){
   int swsaveoptions=0;
 
   if(gdraw.menu==FALSE)return(TRUE); 
+  //  printf("menu\n");
 
   if(cont==0){
     SetDefaultKeyValues(&keys,1);
@@ -550,13 +589,51 @@ gint MenuLoop(gpointer data){
     gdraw.menu=FALSE;
     gdraw.main=TRUE;
     Keystrokes(RESET,NULL,NULL);
+      printf("saving game param...\n");
     SetGameParametres(param);
     MakeTitle(param,title);
     gtk_window_set_title(GTK_WINDOW(win_main),title);
     if(swsaveoptions){
+      printf("saving options...\n");
       SaveParamOptions(optionsfile,&param);
       SaveUserKeys(keyboardfile,&keys);
     }
+    /* activating sound ??*/
+
+
+  if(soundenabled==TRUE){
+    float master=0;
+    float music=0,sound=0;
+
+    if(param.soundvol>param.musicvol){
+      master=(float)param.soundvol/100;
+      sound=1.0;
+      music=(float)param.musicvol/param.soundvol;
+    }
+    else{
+      master=(float)param.musicvol/100;
+      music=1.0;
+      sound=(float)param.soundvol/param.musicvol;
+    }
+
+    SetMasterVolume(master,VOLSET);
+    //    printf("MASTER volume: %f %d %d\n",master,param.soundvol,param.musicvol);
+    SetSoundVolume(sound,VOLSET);
+    //    printf("Sound volume: %d %f\n",param.soundvol,sound);
+    //    PlaySound(MUSIC,SLOOP,1);
+    if(param.music){
+      //      printf("Music volume: %d %f\n",param.musicvol,music);
+      SetMusicVolume(music,VOLSET);
+    }
+    else{
+      Sound(SSTOP,MUSIC);
+      printf("Music is off\n");
+    }
+  }
+
+
+
+    printf("exiting menu...\n");
   }
   return(TRUE);
 }
@@ -598,7 +675,6 @@ gint MainLoop(gpointer data){
   double lag;
 
   if(gdraw.main==FALSE)return(TRUE);
-
 
   gettimeofday(&time0,NULL);
   timenow=GetTime();
@@ -665,8 +741,9 @@ gint MainLoop(gpointer data){
       //      exit(-1);
     }
 
+    printf("init game vars...\n");
     InitGameVars(); /* */
-
+    printf("... init game vars\n"); 
     if(GameParametres(GET,GQUIT,0)==2 ){
       Quit(NULL,NULL); 
     }
@@ -691,6 +768,11 @@ gint MainLoop(gpointer data){
     GameParametres(SET,GWIDTH,drawing_area->allocation.width); 
 
     gdraw.menu=FALSE;
+
+    /* statistics */
+    InitStatistics();
+
+
     sw++;
   }
 
@@ -752,11 +834,12 @@ gint MainLoop(gpointer data){
     int pmodified=0;
     static int lasttimeupdate=0;
 
-    if(lasttimeupdate>60){
-      lasttimeupdate=0;
-      players[actual_player].status=PLAYERMODIFIED;
-      pmodified++;
-    }    
+    if(lasttimeupdate>60){ 
+      lasttimeupdate=0; 
+      //      players[actual_player].status=PLAYERMODIFIED; 
+      pmodified++; 
+    }     
+
 
     for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
       if(players[i].status==PLAYERMODIFIED){
@@ -764,17 +847,25 @@ gint MainLoop(gpointer data){
       }
     }
 
+    if(listheadplayer.update){
+      DestroyObjList(&listheadplayer);
+      listheadplayer.next=NULL;
+      listheadplayer.n=0;
+      //      printf("updateplayerlist %d\n",GetTime());
+      CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
+      listheadplayer.update=0;
+    }
+
     if(pmodified){
+
       lasttimeupdate=0;      
       /* update createplayerlist only if necesary HERE  9.44% CPU*/
-      if(players[actual_player].status==PLAYERMODIFIED){
-	DestroyObjList(&listheadplayer);
-	listheadplayer.next=NULL;
-	listheadplayer.n=0;
-	//	printf("updateplayerlist %d\n",GetTime());
-	CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
-      }
-      
+      /*
+	the list must be update when a ship is created or destroyed : mandatory
+	if habitat changes. no mandatory
+	HERE actualizar al cambiar habitat
+      */
+
       for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
 	DestroyObjList(&listheadcontainer[i]);
 	listheadcontainer[i].next=NULL;
@@ -928,7 +1019,7 @@ gint MainLoop(gpointer data){
     	    char text[MAXTEXTLEN];
 	    float level=0;
 	    int np=4;
-	    level+=timenow/20000.0;
+	    level=timenow/30000.0;
 	    lasttimepirates=timenow;
 	    x0=ulx*Random(-1)-ulx/2;
 	    y0=uly*Random(-1)-uly/2;
@@ -1098,8 +1189,7 @@ gint MainLoop(gpointer data){
     PrintGameOptions();
     /* print teams */
     PrintTeams(players);
-
-  }
+  }//  if(keys.load==TRUE && swcomm==TRUE){
 
 
   if(keys.save==TRUE && swcomm==TRUE){ //savepause
@@ -1265,7 +1355,7 @@ gint MainLoop(gpointer data){
       if(contvolume==0)gdraw.volume=FALSE;
       x=gwidth-65;
       y=gheight-15;
-      DrawBarBox(pixmap,penRed,x,y,60,10,SetSoundVolume(0,VOLGET));
+      DrawBarBox(pixmap,penRed,x,y,60,10,SetMasterVolume(0,VOLGET));
     }
        
     if(gdraw.map==TRUE){
@@ -1318,9 +1408,31 @@ gint MainLoop(gpointer data){
     DrawInfo(pixmap,cv);
   }/* if(paused==0) */
 
+  if(!(cont%24)){  /* statistics */
+    struct Stats stat;
+    int i;
+    for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+      stat.level[i]=players[i].level;
+      stat.nplanets[i]=players[i].nplanets;
+      //      printf("%d %d\n",i,players[i].nplanets);
+    }
+    AddStatistics(&stat);
+    //    PrintStatistics();
+  }
 
   if(gdraw.stats==TRUE){
-    DrawGameStatistics(pixmap,players);
+    Rectangle rect;
+    int x;
+    rect.x=5;
+    rect.y=5;
+    rect.width=200;
+    rect.height=100;
+    x=DrawGameStatistics(pixmap,players)-5;
+    rect.height=100;
+    rect.width=x-5;
+    if(rect.width>195)rect.width=195;
+    if(rect.width<0)rect.width=0;
+    DrawStatistics(pixmap,&rect);
   }
   
   if(swmess){ 
@@ -1456,7 +1568,8 @@ gint MainLoop(gpointer data){
   for(i=1;i<GameParametres(GET,GNPLAYERS,0)+1;i++){
     if(!((cont+i)%30) && players[i].status>=PLAYERACTIVE){
       if(GameOver(&listheadobjs,players,i)){
-	players[i].status=PLAYERDEAD;
+ 	players[i].status=PLAYERDEAD;
+ 	players[i].level=0;
       }
     }
   }
@@ -1690,16 +1803,16 @@ void key_eval(struct Keys *key){
 
   if(key->ctrl==TRUE && (key->plus==TRUE||key->minus==TRUE)){
     if(key->plus==TRUE){
-      SetSoundVolume(0.025,VOLINC);
+      SetMasterVolume(0.025,VOLINC);
       gdraw.volume=TRUE;
     }
     if(key->minus==TRUE){
-      SetSoundVolume(-0.025,VOLINC);
+      SetMasterVolume(-0.025,VOLINC);
       gdraw.volume=TRUE;
     }
-    param.soundvol=100*SetSoundVolume(0,VOLGET);
-    GameParametres(SET,GSOUNDVOL,param.soundvol);
 
+    //    param.soundvol=100*SetSoundVolume(0,VOLGET);
+    GameParametres(SET,GSOUNDVOL,param.soundvol);
   }
   /* --sound */
 
@@ -1784,8 +1897,7 @@ void key_eval(struct Keys *key){
 	  SelectionBox(NULL,NULL,&cv,2);
 	}
       }
-    }
-    /*-- observe enemies */
+    }   /*-- observe enemies */
 
     if(ship_c!=NULL){
       if(ship_c->type!=SHIP){
@@ -2387,6 +2499,7 @@ void UpdateShip(Object *obj){
 
     if(obj->y>LYFACTOR){ /* its out of planet */
       players[obj->player].status=PLAYERMODIFIED;
+      listheadplayer.update=1;
       if(proc==players[obj->player].proc){
 	a=-PI*(2*obj->x/width+0.5); 
 	cosa=cos(a);
@@ -2923,6 +3036,7 @@ void Collision(struct HeadObjList *lh){
 	      pnt=obj2;
 	    }
 	    players[obj->player].status=PLAYERMODIFIED;
+	    listheadplayer.update=1;
 	    if(proc==players[obj->player].proc){
 	      obj->habitat=H_PLANET;
 	      obj->planet=NULL;
@@ -3386,7 +3500,7 @@ int UpdateObjs(void){
       case PROJECTILE:
 	switch(obj->subtype){
 	case MISSILE:
-	  aimisil(&listheadobjs,obj,actual_player);
+	  aimisil(&listheadobjs,obj);
 	  if(0){
 	    ship_enemy=NearestObj(&listheadobjs,obj,SHIP,PENEMY,&d2);
 	    if(ship_enemy!=NULL){
@@ -4972,8 +5086,9 @@ void SetGameParametres(struct Parametres param){
 
   GameParametres(SET,GMUSIC,param.music);
   GameParametres(SET,GSOUND,param.sound);
-  GameParametres(SET,GMUSICVOL,param.musicvol);
   GameParametres(SET,GSOUNDVOL,param.soundvol);
+  GameParametres(SET,GMUSICVOL,param.musicvol);
+
 
   GameParametres(SET,GWIDTH,DEFAULTWIDTH);
   GameParametres(SET,GHEIGHT,DEFAULTHEIGHT);
@@ -5160,6 +5275,8 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
     ccdatap[i].nfighter=0;
     ccdatap[i].ntower=0;
     ccdatap[i].ncargo=0;
+    ccdatap[i].npilot=0;
+    ccdatap[i].pilot=NULL;
     
     ccdatap[i].sw=0;
     ccdatap[i].war=0;

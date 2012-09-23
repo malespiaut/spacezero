@@ -55,14 +55,23 @@ int MAXnf2a=15;
 int MINnf2a=6;
 
 
-void aimisil(struct HeadObjList *lhobjs,Object *obj,int act_player){
+void aimisil(struct HeadObjList *lhobjs,Object *obj){
   Object *ship_enemy;
   float d2;
   float a,b,ib;  
   int level=1;
   float factor=1;
 
-  ship_enemy=NearestObj(lhobjs,obj,SHIP,PENEMY,&d2);
+  if(obj->gas<=0){
+    obj->dest=NULL;
+    return;
+  }
+
+  if(obj->dest==NULL){
+    obj->dest=NearestObj(lhobjs,obj,SHIP,PENEMY,&d2);
+  }
+  ship_enemy=obj->dest;
+
   if(ship_enemy!=NULL){
     if(ship_enemy->habitat!=obj->habitat)ship_enemy=NULL;
     if(d2>obj->radar*obj->radar)ship_enemy=NULL;
@@ -123,12 +132,11 @@ void aimisil(struct HeadObjList *lhobjs,Object *obj,int act_player){
       obj->vx=(v*cos(b)+9*obj->vx)/10;
       obj->vy=(v*sin(b)+9*obj->vy)/10;
     }
-
   }
   
   obj->accel+=obj->engine.a;
   if(obj->accel > obj->engine.a_max){
-    obj->accel=obj->engine.a_max;	    
+    obj->accel=obj->engine.a_max;
   }
 }
 
@@ -284,7 +292,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       order.a=obj->in->x; 
       order.b=obj->in->y; 
       order.c=obj->in->id; 
-      order.d=obj->in->type; 
+      order.d=obj->in->type;
       order.e=obj->in->id; 
       order.f=order.h=0; 
       order.i=order.j=order.k=order.l=0;
@@ -298,7 +306,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   mainordid=mainord!=NULL?mainord->id:-1;
   danger=Risk(lhobjs,obj,mainordid,&order.id); /* Checking for danger */
 
-  /* if(cv==obj)printf("risk: %d\n",danger); */
+  if(0&&cv==obj)printf("risk: %d\n",danger);
 
 #if DEBUG
   if(debugai && cv==obj){
@@ -599,6 +607,11 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       break;
     case TAKEOFF:
 
+      /* if is entering planet first STOP*/
+      if(obj->vy < 0 && obj->vx*obj->vx+obj->vy*obj->vy>100){
+	ExecStop(obj,0);
+	break;
+      }
       b=PI/2;
 
       /* MOVE */
@@ -843,7 +856,6 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
    * --execute the order 
    *********************/
 
-
   return;
 } /*  --ai() */
 
@@ -894,12 +906,15 @@ void ExecGoto(Object *obj,struct Order *ord){
      ord.c:  id of the objetive. -1 if is a universe point.
      ord.d:  objetive type.
      ord.e:  objetive id.
-     ord.f:  switch variable.
+     ord.f:  switch variable. (phase)
      ord.g:  mass of the objetive
      ord.h:  switch variable
      ord.i:  subtype of the objetive
      return:
      0 if the objective is reached.
+
+     phase 0: (order.f)
+
   */
   float rx,ry;
   float c;
@@ -908,12 +923,17 @@ void ExecGoto(Object *obj,struct Order *ord){
   float b,v2;
   int swaccel;
 
-  rx=ord->a - obj->x; 
+
+  rx=ord->a - obj->x;
   ry=ord->b - obj->y;
 
   d2=rx*rx+ry*ry;
 
   d02=40000+2000*(obj->id%10);
+  //  if(obj==cv)  printf("goto %d\n",GetTime());
+
+
+  /***** objetive reached *****/
 
   switch((int)ord->d){
   case PLANET:
@@ -927,7 +947,7 @@ void ExecGoto(Object *obj,struct Order *ord){
     break;
   case SHIP:
     d02=40000+2000*(obj->id%10);
-
+    
     if((int)ord->i==PILOT){d02=25;}
     v2=obj->vx*obj->vx+obj->vy*obj->vy;
     if(v2>225)d02*=2;
@@ -951,8 +971,13 @@ void ExecGoto(Object *obj,struct Order *ord){
   
   if(d2 <d02){  /* ori 40000 objetive reached. */
     ExecStop(obj,0);
+    printf("stop\n");
     return;
   }
+
+  /***** --objetive reached *****/
+
+  /**** direction angle *****/
 
   c=atan2(ry,rx);
   ac=obj->a-c;
@@ -980,6 +1005,155 @@ void ExecGoto(Object *obj,struct Order *ord){
       obj->ang_a=0;
     }
   }
+
+
+  /***** velocity angle *****/
+
+  v2=obj->vx*obj->vx+obj->vy*obj->vy;
+  b=atan2(obj->vy,obj->vx);  /*  velocity angle */
+  ab=obj->a-b;
+  if(ab > PI)ab-=2*PI;
+  if(ab < -PI)ab+=2*PI;
+  ab=ab >= 0 ? ab : -ab;
+  
+  bc=b-c;
+  if(bc > PI)bc-=2*PI;
+  if(bc < -PI)bc+=2*PI;
+  bc=bc >= 0 ? bc : -bc;
+  
+  if(obj->gas>0){
+    swaccel=0;
+
+
+   if(ab > .08 && bc > .08){
+      swaccel=1;
+    }
+    if(v2<0.9*obj->engine.v2_max*(1-0.4375*(obj->state<25))){
+      swaccel=1;
+    }
+    if(swaccel){
+      obj->accel+=obj->engine.a;
+      if(obj->accel > obj->engine.a_max)
+	obj->accel=obj->engine.a_max;
+    }
+    else{
+      obj->accel=0;
+    }
+  }
+  else{
+    obj->accel=0;
+  }
+  return;
+}
+
+
+void ExecGoto_00(Object *obj,struct Order *ord){
+  /* 
+     Send a ship to an universe point or to an object.
+     ord.a:  x coordinates of the objetive.
+     ord.b:  y coordinates of the objetive.
+     ord.c:  id of the objetive. -1 if is a universe point.
+     ord.d:  objetive type.
+     ord.e:  objetive id.
+     ord.f:  switch variable.
+     ord.g:  mass of the objetive
+     ord.h:  switch variable
+     ord.i:  subtype of the objetive
+     return:
+     0 if the objective is reached.
+  */
+  float rx,ry;
+  float c;
+  float d2,d02;
+  float ab,bc,ac;
+  float b,v2;
+  int swaccel;
+
+
+  rx=ord->a - obj->x;
+  ry=ord->b - obj->y;
+
+  d2=rx*rx+ry*ry;
+
+  d02=40000+2000*(obj->id%10);
+  //  if(obj==cv)  printf("goto %d\n",GetTime());
+
+
+  /***** objetive reached *****/
+
+  switch((int)ord->d){
+  case PLANET:
+    d02=100000;  /* ori   d02=22500; */
+    if(ord->g>100000)d02=150000;
+    if(ord->g>125000)d02=200000;
+    if(d2<d02){  /* ori 40000 objetive reached. */
+      ExecBrake(obj,4);
+      return;
+    }
+    break;
+  case SHIP:
+    d02=40000+2000*(obj->id%10);
+    
+    if((int)ord->i==PILOT){d02=25;}
+    v2=obj->vx*obj->vx+obj->vy*obj->vy;
+    if(v2>225)d02*=2;
+    if(d2 <d02){  /* ori 40000 objetive reached. */
+      ExecStop(obj,0);
+      return;
+    }
+    break;
+  default:
+    d02=40+2*(obj->id%10);
+
+    if((int)ord->i==PILOT){d02=25;}
+    v2=obj->vx*obj->vx+obj->vy*obj->vy;
+    if(v2>225)d02*=2;
+    if(d2 <d02){  /* ori 40000 objetive reached. */
+      ExecStop(obj,0);
+      return;
+    }
+    break;
+  }
+  
+  if(d2 <d02){  /* ori 40000 objetive reached. */
+    ExecStop(obj,0);
+    printf("stop\n");
+    return;
+  }
+
+  /***** --objetive reached *****/
+
+  /**** direction angle *****/
+
+  c=atan2(ry,rx);
+  ac=obj->a-c;
+  if(ac > PI)ac-=2*PI;
+  if(ac < -PI)ac+=2*PI;
+  ac=ac >= 0 ? ac : -ac;
+
+  if((int)ord->f==1){
+    if(ac>.025){
+      ExecTurn(obj,c);
+      /*     return; */
+    }
+    else{
+      obj->ang_a=0;
+      ord->f=0;
+    }
+  }
+  else{
+    if(ac>.05){ 
+      ExecTurn(obj,c);
+      ord->f=1;
+      /*     return; */
+    }
+    else{
+      obj->ang_a=0;
+    }
+  }
+
+
+  /***** velocity angle *****/
 
   v2=obj->vx*obj->vx+obj->vy*obj->vy;
   b=atan2(obj->vy,obj->vx);  /*  velocity angle */
@@ -1017,8 +1191,8 @@ void ExecGoto(Object *obj,struct Order *ord){
     obj->accel=0;
   }
   return;
-  
 }
+
 
 void ExecLand(Object *obj,struct Order *ord){
   /*
@@ -1655,7 +1829,7 @@ Object *CCUpgrade(struct HeadObjList *lhobjs,struct Player *player){
   int minlevel=0;
   int sw=0;
   int playerid=player->id;
-  int obj2upgrade=0;
+  int obj2upgrade=0; /*fighter*/
   float cut;
   retobj=NULL;
 
@@ -1672,7 +1846,6 @@ Object *CCUpgrade(struct HeadObjList *lhobjs,struct Player *player){
  }
 
 /*--what upgrade */
-
   ls=lhobjs->next;
   while(ls!=NULL){
     obj=ls->obj;
@@ -1681,16 +1854,15 @@ Object *CCUpgrade(struct HeadObjList *lhobjs,struct Player *player){
     if(obj->subtype==PILOT){ls=ls->next;continue;}
     if(obj->mode!=LANDED){ls=ls->next;continue;}
     if(obj->level>=player->maxlevel-1){ls=ls->next;continue;}
+
     if(obj2upgrade==0){ /* not a tower*/
       if(obj->subtype==TOWER){ls=ls->next;continue;}
     }
     else{ /* a tower */
       if(obj->subtype!=TOWER){ls=ls->next;continue;}
     }
-
     /* dont upgrade learning spaceships*/
-    if(obj->in->level>obj->level+1){ls=ls->next;continue;} 
-
+    if(obj->in->level>obj->level+2){ls=ls->next;continue;} 
     if(sw==0){ /* first */
       minlevel=obj->level;
       retobj=obj;
@@ -1708,14 +1880,18 @@ Object *CCUpgrade(struct HeadObjList *lhobjs,struct Player *player){
       }
     }
 
-
-
     ls=ls->next;
   }
-  if(0&&retobj!=NULL){
-    printf("player:%d UPGRADE %d \n",retobj->player,retobj->pid);
-  }
+  if(0){
+    if(retobj!=NULL){
+      printf("player:%d UPGRADE %d \n",retobj->player,retobj->pid);
+    }
+    else{
+      printf("player: UPGRADE NULL \n");
+    }
+  }  
   return(retobj);
+  
 }
 
 
@@ -2294,10 +2470,9 @@ Object *ObjFromPlanet(struct HeadObjList *lhobjs,int planetid,int player){
   ls=lhobjs->next;
   while(ls!=NULL){
     if(ls->obj->player==player){
-      if(ls->obj->mode==LANDED && ls->obj->in->id==planetid){
-	obj=ls->obj;
-	if(ls->obj->type==SHIP && ls->obj->subtype==PILOT){
-	  return(obj);
+      if(ls->obj->mode==LANDED){
+	if(ls->obj->in->id==planetid){
+	  return(ls->obj);
 	}
       }
     }
@@ -2305,7 +2480,6 @@ Object *ObjFromPlanet(struct HeadObjList *lhobjs,int planetid,int player){
   }
   return(obj);
 }
-
 
 
 Object *ObjMinExperience(struct HeadObjList *lhobjs,int player){
@@ -2420,7 +2594,7 @@ int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
      >0 if there some danger: enemies, low gas, low state
      1 if there an enemy
      2 if has low gas or if the damage is high
-     in *orderid the id of the order 
+     in *orderid the id of the order
   */
 
   Object *planet_enemy,*planet_ally,*planet_inexplore,*ship_enemy;
@@ -3482,7 +3656,6 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0,float lev
     obj->planet=NULL;
     obj->habitat=H_SPACE;
     obj->weapon=&obj->weapon0;
-    obj->weapon0.n=obj->weapon0.max_n;
 
     exp=level*100*Random(-1);
     if(exp>750)exp=750;
@@ -3492,6 +3665,11 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0,float lev
       exp-=incexp;
     }while(exp>0);
 
+    if(obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
+      obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
+    }
+
+    obj->weapon0.n=obj->weapon0.max_n;
     if(obj->subtype==FIGHTER){
       if(obj->weapon1.type!=CANNON0){
 	obj->weapon1.n=obj->weapon1.max_n;
@@ -3725,6 +3903,8 @@ void CalcCCInfo(struct HeadObjList *lhobjs,struct HeadObjList *lhkplanets,int pl
   ccdata->nfighter=0;
   ccdata->ntower=0;
   ccdata->ncargo=0;
+  ccdata->npilot=0;
+  ccdata->pilot=NULL;
 
 
   ls=lhkplanets->next;
@@ -3771,9 +3951,14 @@ void CalcCCInfo(struct HeadObjList *lhobjs,struct HeadObjList *lhkplanets,int pl
       case FIGHTER:
 	ccdata->nfighter++;
 	break;
-      /* case PILOT: */
-      /* 	ccdata->nfighter-=10; */
-      /* 	break; */
+      case PILOT: 
+	ccdata->npilot++;
+	if(obj->mode==LANDED){
+	  if(players[obj->player].team==players[obj->in->player].team){
+	    ccdata->pilot=obj;
+	  }
+	}
+       	break; 
       case TOWER:
 	ccdata->ntower++;
 	break;
@@ -3821,7 +4006,7 @@ int AddobjCCData(struct CCDATA *ccdata,Object *obj){
 	if(ccdata->player==obj->player){
 	  if(obj->in->level<=obj->level+1){  /* dont include learning ships*/
 	    strength=(obj->level+1)*(obj->state)/100*(obj->state>75)*(obj->gas>=.80*obj->gas_max)*(obj->weapon0.n>.8*obj->weapon0.max_n)*(obj->mode==LANDED);
-	    if(obj->type==SHIP && obj->subtype==PILOT)strength=-1;/* priority buy ship to pilots */
+	    //	    if(obj->type==SHIP && obj->subtype==PILOT)strength=-1;/* priority buy ship to pilots */
 	    if(obj->subtype!=TOWER && obj->subtype!=PILOT){
 	      pinfo->strengtha+=strength*(obj->state>95)*(obj->gas>.98*obj->gas_max)*(obj->weapon0.n>=.95*obj->weapon0.max_n);
 	    }
@@ -3846,6 +4031,9 @@ int AddobjCCData(struct CCDATA *ccdata,Object *obj){
 	  break;
 	case QUEEN:
 	  pinfo->ncargo++;
+	  break;
+	case PILOT:
+	  pinfo->npilot++;
 	  break;
 	default:
 	  break;
@@ -3900,7 +4088,6 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
 
   while(pinfo!=NULL){ /* known planets */
     if(pinfo->planet->player != player){pinfo=pinfo->next;continue;}
-
 
     if(pinfo->ntower+pinfo->nfighter+pinfo->nexplorer+pinfo->ncargo>0){
       if(sw==0){
@@ -3972,6 +4159,9 @@ int GetCCPlanetInfo(struct CCDATA *ccdata,int pid,int info){
       break;
     case CCDATANFIGHTER:
       return(pinfo->nfighter);
+      break;
+    case CCDATANPILOT:
+      return(pinfo->npilot);
       break;
     case CCDATANTOWER:
       return(pinfo->ntower);
@@ -4537,6 +4727,7 @@ int AddNewPlanet2CCData(struct CCDATA *ccdata,Object *planet){
   pinfo->time=GetTime();
   pinfo->nexplorer=0;
   pinfo->nfighter=0;
+  pinfo->npilot=0;
   pinfo->ntower=0;
   pinfo->ncargo=0;
   pinfo->strength=0;
@@ -4572,7 +4763,8 @@ int AddPlanetInfo2CCData(struct CCDATA *ccdata,struct PlanetInfo *pinfo0){
   pinfo->planet=pinfo0->planet;
   pinfo->time=pinfo0->time; 
   pinfo->nexplorer=pinfo0->nexplorer;	 
-  pinfo->nfighter=pinfo0->nfighter;	 
+  pinfo->nfighter=pinfo0->nfighter;
+  pinfo->npilot=pinfo0->npilot;
   pinfo->ntower=pinfo0->ntower;	 
   pinfo->ncargo=pinfo0->ncargo;	 
   pinfo->strength=pinfo0->strength;	 
@@ -4606,6 +4798,7 @@ int ResetPlanetCCInfo(struct CCDATA *ccdata,Object *planet){
 	pinfo->time=GetTime();
 	pinfo->nexplorer=0;
 	pinfo->nfighter=0;
+	pinfo->npilot=0;
 	pinfo->ntower=0;
 	pinfo->ncargo=0;
 	pinfo->strength=0;
@@ -4652,6 +4845,7 @@ int CalcEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object 
 	pinfo->time=GetTime();
 	pinfo->nexplorer=0;
 	pinfo->nfighter=0;
+	pinfo->npilot=0;
 	pinfo->ntower=0;
 	pinfo->ncargo=0;
 	pinfo->strength=0;
@@ -4689,6 +4883,9 @@ int CalcEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object 
 	break;
       case FIGHTER:
 	pinfo->nfighter++;
+	break;
+     case PILOT:
+	pinfo->npilot++;
 	break;
       case TOWER:
 	pinfo->ntower++;
@@ -4980,7 +5177,7 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
   int price;
   
   int np;
-  int planet;
+  int planetid;
   int ret=0;
   int status;
   int buyid;
@@ -4990,7 +5187,7 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
 
 
   np=(player.nplanets);
-  if(np==0)return(0); /* HERE this dont allow to pilots to buy when no planets */
+  if(np==0)return(0); /* HERE this doesn't allow to pilots to buy when there are not planets */
   nships=ccdata->nfighter+ccdata->ntower;
   buyid=-1;
   cut=.5;
@@ -5054,14 +5251,13 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
        ccdata->planetweak==NULL){
       buyupgradesw=0;
     }
-
     player.lastaction=buyupgradesw;
 
   }
 
   /*--decide what */
-
-  //  printf("BuyorUpgrade():%d\n",player.lastaction);
+  if(0&&cv!=NULL)
+    if(cv->player==player.id)printf("BuyorUpgrade(%d):%d\n",player.id,player.lastaction);
   switch(player.lastaction){
   case 0:
     break;
@@ -5072,33 +5268,38 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
       buy a fighter in the planet wiht less strength.
     */
     
-    planet=-1;
+    planetid=0;
     obj=NULL;
-    buyid=CCBuy(ccdata,player,&planet);
-    //    printf("BuyorUpgrade():\tCCBUY: %d\n",buyid);
-    if(ccdata->war && buyid==FIGHTER && ccdata->planet2meet!=NULL){
-      if(player.id==ccdata->planet2meet->player){ 
-	planet=ccdata->planet2meet->id;
+    buyid=CCBuy(ccdata,player,&planetid);
+    //printf("BuyorUpgrade():\tCCBUY: %d\n",buyid);
+    if(ccdata->war){
+      if(buyid==FIGHTER && ccdata->planet2meet!=NULL){
+	if(player.id==ccdata->planet2meet->player){ 
+	  planetid=ccdata->planet2meet->id;
+	}
       }
-    }      
-    if(planet!=-1 && buyid!= -1){
-      obj=ObjFromPlanet(lhobjs,planet,player.id);
-      
-      if(obj!=NULL && buyid>=0){
-	if(obj->type==SHIP && obj->subtype==PILOT){
-	  buyid=FIGHTER;
-	}
-	status=BuyShip(player,obj,buyid);
-	if(status==SZ_OK){
-	  ret=1;
-	  player.lastaction=0;
-#if DEBUG
-	  if(debugshop){
-	    printf("player %d buy ship: planet: %d type: %d\n",player.id,obj->in->id,buyid);
-	  }
-#endif
-	  ccdata->time=0;
-	}
+    }
+    
+    /* if have pilots buy from pilot */
+    if(buyid==FIGHTER && ccdata->pilot!=NULL){
+	obj=ccdata->pilot;
+    }
+    
+    if(obj==NULL){
+      if(planetid>0 && buyid > SHIP0){
+	obj=ObjFromPlanet(lhobjs,planetid,player.id);
+      }
+    }
+    
+    if(obj!=NULL && buyid>SHIP0){
+      if(obj->type==SHIP && obj->subtype==PILOT){
+	buyid=FIGHTER;
+      }
+      status=BuyShip(player,obj,buyid);
+      if(status==SZ_OK){
+	ret=1;
+	player.lastaction=0;
+	ccdata->time=0;
       }
     }
     
@@ -5106,6 +5307,7 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
   case 2: /* upgrade ships */
     
     obj2up=CCUpgrade(lhobjs,&player);
+    //    printf("%p\n",obj2up);
     if(obj2up==NULL){
       player.lastaction=0;
     }	

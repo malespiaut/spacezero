@@ -34,8 +34,9 @@
 #define CCDATANSHIPS 1
 #define CCDATANEXPLORER 2
 #define CCDATANFIGHTER 3
-#define CCDATANTOWER 4
-#define CCDATANQUEEN 5
+#define CCDATANPILOT 4
+#define CCDATANTOWER 5
+#define CCDATANQUEEN 6
 
 #define MAXPRIORITY 1
 #define MAINORD 2
@@ -74,6 +75,7 @@ struct PlanetInfo{
   int nfighter;    /* number of explorers of the planet (team)*/
   int ntower;      /* number of explorers of the planet (team)*/
   int ncargo;      /* number of explorers of the planet (team)*/
+  int npilot;     /* number of pilots */
   float strength;  /* total strenght  */
   float strengtha; /* strength to attack */
   int nassigned;
@@ -93,6 +95,8 @@ struct CCDATA{
   int nfighter;     /* number of fighters of the player*/
   int ntower;       /* number of towers of the player*/
   int ncargo;       /* number of cargos of the player*/
+  int npilot;       /* number of pilots of the player*/
+  Object *pilot;    /* a pointer to the first landed pilot */
 
   int sw;           /* not used */
   int war;          /* war phase */
@@ -107,7 +111,7 @@ struct CCDATA{
 
 
 void ai(struct HeadObjList *lhobjs,Object *obj,int actual_player);
-void aimisil(struct HeadObjList *lhobjs,Object *obj,int act_player);
+void aimisil(struct HeadObjList *lhobjs,Object *obj);
 
 int HigherPoint(struct Planet *planet);
 void ControlCenter(struct HeadObjList *lhobjs,struct Player player);

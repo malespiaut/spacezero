@@ -468,7 +468,7 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "\nGENERAL OPTIONS:\n" );
   (void) fprintf( stdout, 
-		  "-soundvol n\t where n is the sound volume. (0..100)\n" );
+		  "-soundvol n\t where n is the sound effects volume. (0..100)\n" );
   (void) fprintf( stdout, 
 		  "-musicvol n\t where n is the music volume. (0..100)\n" );
   (void) fprintf( stdout, 

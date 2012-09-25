@@ -126,7 +126,6 @@ Command shell:
 
 -!Save several games.
 -Add select x y
--Add RETREAT n
 -Pop up window. Simplify command interface - ID: 3434505
 
 Planets:
@@ -170,6 +169,7 @@ X-(210912)Check CreatePlayerList() in MainLoop() (dont create in paused mode);
 X-()In terminal, messages repite so much.
 X-(230912)Speedup: explosions dont collide in space.
 X-(230912)Speedup: aimisil() improved.
+X-(240912)Add RETREAT n
 
 
 BUGS version 0.82

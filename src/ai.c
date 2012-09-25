@@ -282,24 +282,54 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     }
   }
   if(mainord!=NULL){
-    if(mainord->id==RETREAT && obj->mode==LANDED){ /* in retreat, when reach a planet change order by goto */
-      ReadOrder(NULL,obj,MAXPRIORITY); /* deleting the order */
-      order.priority=1;
-      order.id=GOTO;
-      order.time=4;
-      order.g_time=time;
-      
-      order.a=obj->in->x; 
-      order.b=obj->in->y; 
-      order.c=obj->in->id; 
-      order.d=obj->in->type;
-      order.e=obj->in->id; 
-      order.f=order.h=0; 
-      order.i=order.j=order.k=order.l=0;
-      order.g=obj->in->mass;
-      DelAllOrder(obj);
-      AddOrder(obj,&order);   /* adding go to the planet */
-      mainord=ReadOrder(NULL,obj,MAINORD);
+    if(mainord->id==RETREAT){ /* in retreat, when reach destiny change the order */
+      int sw=0;
+      if(mainord->c!=-1){
+	if(obj->habitat==H_PLANET){
+	  if(obj->in->id == mainord->c){ /* dest reached */
+	    if(obj->in->player==obj->player)sw=2;
+	    if(obj->in->player!=obj->player)sw=1;
+	  }
+	}
+      }
+      else{
+	sw=0;
+      }
+      if(sw==1){ /* in retreat, when reach a planet change order by goto */
+	ReadOrder(NULL,obj,MAXPRIORITY); /* deleting the order */
+	order.priority=1;
+	order.id=GOTO;
+	order.time=4;
+	order.g_time=time;
+	
+	order.a=obj->in->x;
+	order.b=obj->in->y;
+	order.c=obj->in->id; 
+	order.d=obj->in->type;
+	order.e=obj->in->id; 
+	order.f=order.h=0; 
+	order.i=order.j=order.k=order.l=0;
+	order.g=obj->in->mass;
+	DelAllOrder(obj);
+	AddOrder(obj,&order);   /* adding go to the planet */
+	mainord=ReadOrder(NULL,obj,MAINORD);
+      }
+      if(sw==2){ /* change to STOP */
+	ReadOrder(NULL,obj,MAXPRIORITY); /* deleting the order */
+	order.priority=1;
+	order.id=STOP;
+	
+	order.time=0;
+	order.g_time=time;
+	
+	order.a=order.b=order.c=order.d=0;
+	order.e=order.f=order.g=order.h=0;
+	order.i=order.j=order.k=order.l=0;
+
+	DelAllOrder(obj);
+	AddOrder(obj,&order);   /* adding STOP */
+	mainord=ReadOrder(NULL,obj,MAINORD);
+      }
     }
   }
   
@@ -931,7 +961,6 @@ void ExecGoto(Object *obj,struct Order *ord){
 
   d02=40000+2000*(obj->id%10);
   //  if(obj==cv)  printf("goto %d\n",GetTime());
-
 
   /***** objetive reached *****/
 
@@ -2729,9 +2758,15 @@ int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
 
   if(morderid==RETREAT){
     if(obj->mode!=LANDED){
-      action[0]=0;action[1]=0;
-      action[2]=1;    
+      action[0]=1;action[1]=0;
+      action[2]=0;    
     }
+    /*HERE NEW
+      if(obj->habitat==H_PLANET){
+      action[0]=0;action[1]=1;
+      action[2]=0;
+      }
+    */
   }
 
 
@@ -2750,7 +2785,6 @@ int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
     printf("gas %f\n",obj->gas);
   }
 #endif
-
   switch(max_action){
   case 0:  /* NOTHING */
     ret=0;

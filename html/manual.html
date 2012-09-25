@@ -193,11 +193,21 @@
 		      not accelerate.</td>
 		  </tr>
 
-		  <td>RETREAT</td>
-		  <td>Your ship will go directly to the nearest
+		  <td>RETREAT [n]</td>
+		  <td>
+		    <ul>
+		    <li>Your ship will go directly to the nearest
 		    empty or allied planet, without attacking the
-		    enemy. Once landed it will change the order to
-		    GOTO nearest planet.</td>
+		    enemy. Once entering planet the order will be
+		    changed to STOP.
+		  <li> You can also assign a target planet adding its
+		  id after the order. Example: RETREAT 23 will send
+		  your selected spaceships to planet 23 (it can be
+		  ally or enemy). In the case of an enemy planet the
+		  order will be changed to GOTO 23 when your spaceship
+		  enters the planet, attacking the enemies.
+		  </ul>
+		  </td>
 		  </tr>
 		  
 		  <tr bgcolor="#000000">
@@ -242,7 +252,7 @@
 	    You can change between both modes, for all your ships,
 	    pressing any of the navigation spaceship keys (key arrows
 	    and space bar by default) for manual mode and give an
-	    order or press the "down key arrow" key to go back to
+	    order or press the "down arrow" key to go back to
 	    automatic mode.<p>
 	    
 	  <p> Only one ship can be changed between these modes at a
@@ -287,8 +297,8 @@
 	    </ul>
 
 	    <li> RETREAT:<br> 
-	      The ship will go to the nearest ally planet without
-	      attacking any enemy or asteroid.
+	      The ship will go directly to their destiny without
+	      attack  enemies or asteroids.
 	    </ul>
 
 	    <hr>	      
@@ -450,12 +460,12 @@
 		      of enemies defeated, number of ships lost and
 		      points.
 		      
-		    <li>Information about the planet in which the
-		      ship is. Planet ID, gold remaining,
-		      resource and mass. The resource indicates the
-		      number of towers that can be built in the
-		      planet. More towers can still defend the
-		      planet but don't extract more gold.
+		    <li>Information about the planet in which the ship
+		      is. Planet ID, gold remaining, resource, mass
+		      and the level of the higher level spaceship. The
+		      resource indicates the number of towers that can
+		      be built in the planet. More towers can still
+		      defend the planet but don't extract more gold.
 		  </ul>
 		</td>
 	      </tr>
@@ -615,10 +625,14 @@
 	  </p>
 	  <p>
 	    <img SRC="manual_files/statistics.png" alt="game statistics">	    
-	  <p>
-	    Player name, [max. level reached], number of ships, (total number of ships
-	    created), planets, enemy destroyed ships and number of
-	    lost ships.
+
+	  <p>In the left window: the historic values of the sum of the
+	  level of all spaceships.
+	    
+	  <p>In the right one: Player name, [max. level reached : sum
+	    of the level of all spaceships : average level], number of
+	    ships, (total number of ships created), planets, enemy
+	    destroyed and number of lost spaceships.
 	    
 	  <p>Pressing the "ESC" key all the info windows are closed.</p>
 	  <hr>	    

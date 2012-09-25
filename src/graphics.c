@@ -3184,7 +3184,22 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
       snprintf(point,MAXTEXTLEN,"ORDER: EXPLORE");
       break;
     case RETREAT:
-      snprintf(point,MAXTEXTLEN,"ORDER: RETREAT");
+      if(ord->c!=-1){
+	snprintf(point,MAXTEXTLEN,"ORDER RETREAT: %d",(int)ord->e);
+	dx=ox-ord->a;
+	dy=oy-ord->b;
+	d=sqrt(dx*dx+dy*dy)/SECTORSIZE;
+	
+      }
+      else{
+	snprintf(point,MAXTEXTLEN,"ORDER RETREAT: (%d,%d)", 
+		 (int)(ord->a/SECTORSIZE)-(ord->a<0),
+		 (int)(ord->b/SECTORSIZE)-(ord->b<0));
+	dx=ox-ord->a;
+	dy=oy-ord->b;
+	d=sqrt(dx*dx+dy*dy)/SECTORSIZE;
+      }
+      //      snprintf(point,MAXTEXTLEN,"ORDER: RETREAT");
       break;
     default:
       snprintf(point,MAXTEXTLEN,"ORDER id: %d",ord->id);

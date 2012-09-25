@@ -257,7 +257,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     if(key->d==TRUE){
       level=2;
       order=RETREAT;
-      strcpy(ord,"RETREAT");
+      strcpy(ord,"RETREAT : ");
       key->d=FALSE;
     }
     
@@ -272,7 +272,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       
     case SELECT:
     case GOTO:
-
+    case RETREAT:
       /* keyb or mouse order */
       if(key->mright==TRUE  && *pcv!=NULL){
 	int view=GetView();
@@ -375,9 +375,10 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     case STOP:
     case TAKEOFF:
     case REPEAT:
-    case RETREAT:
+      //    case RETREAT:
       strcpy(cad,"");
       snprintf(cad,MAXTEXTLEN,"%s %s",ord,par);
+      //      printf("RETREAT: %s\n",cad);
       break;
     case SELL:
       strcpy(cad,"");
@@ -651,11 +652,15 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   ord.time=0;
   retreatsw=0;
 
+  if(order==RETREAT && nargs==0){
+    nargs=1;
+    strcpy(&arg1[0],"n");
+  }
+
   switch(order){
 
   case RETREAT:
-    nargs=1;
-    strcpy(&arg1[0],"n");
+
     retreatsw=1;
   case GOTO:
 
@@ -680,7 +685,6 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  obj_dest=obj_destb;
 	}   
 	if(obj_dest!=NULL)id1=obj_dest->id;
-	
 	break;
       case 'F':
       case 'f':
@@ -791,6 +795,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 
       ord.priority=1;
       ord.id=GOTO;
+
+      if(retreatsw)ord.id=RETREAT;
       ord.time=0;
       ord.g_time=time;
       ord.a=id1*SECTORSIZE+SECTORSIZE/2;

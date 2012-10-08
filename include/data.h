@@ -80,12 +80,16 @@ struct Window{ /* basic window */
 
 };
 
+struct HeadTextList{
+  int n;
+  struct TextList *next;
+};
+
 struct TextList{
   int color;
   char text[MAXTEXTLEN];  /* text */
   struct TextList *next;
 };
-
 
 
 struct IntTree *Add2IntTree(struct IntTree *head,int id);
@@ -115,12 +119,12 @@ int Add2CharListWindow(struct CharListHead *list,char *cad,int mode,struct Windo
 int PrintCharList(struct CharListHead *hlist);
 int DestroyCharList(struct CharListHead *hlist);
 
-int Add2TextList(struct TextList *head,char *cad,int color);
-int DestroyTextList(struct TextList *head);
-int PrintTextList(struct TextList *head);
-int PosTextList(struct TextList *head,int m);
-int CountTextList(struct TextList *head);
-int CountColorTextList(struct TextList *head,int m);
-
+int Add2TextList(struct HeadTextList *head,char *cad,int color);
+int DestroyTextList(struct HeadTextList *head);
+int PrintTextList(struct HeadTextList *head);
+int PosFirstTextList(struct HeadTextList *head,int m);
+int PosLastTextList(struct HeadTextList *head,int m);
+int CountTextList(struct HeadTextList *head);
+int CountColorTextList(struct HeadTextList *head,int m);
 
 #endif

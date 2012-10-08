@@ -192,14 +192,14 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   if(debugai&&obj==cv){printf("time:%d %d\n",obj->cdata->td2[0],obj->cdata->a);}
 #endif
 
-  if(obj->cdata->obj[0]!=NULL || (time - obj->cdata->td2[0]) > 30+obj->id%20){
+  if(obj->cdata->obj[0]!=NULL || (time - obj->cdata->td2[0]) > 50+obj->id%20){
 
     for(i=0;i<4;i++){
       nobjs[i].obj=NULL;
       nobjs[i].d2=-1;
     }
 
-    NearestObjAll(listheadcontainer,obj,nobjs); // HERE double loop
+    NearestObjAll(listheadcontainer,obj,nobjs); 
 
     d2min=obj->radar*obj->radar;
     
@@ -287,8 +287,8 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       if(mainord->c!=-1){
 	if(obj->habitat==H_PLANET){
 	  if(obj->in->id == mainord->c){ /* dest reached */
-	    if(obj->in->player==obj->player)sw=2;
 	    if(obj->in->player!=obj->player)sw=1;
+	    if(obj->in->player==obj->player || obj->in->player==0)sw=2;
 	  }
 	}
       }
@@ -1924,7 +1924,6 @@ Object *CCUpgrade(struct HeadObjList *lhobjs,struct Player *player){
 }
 
 
-
 int CCBuy(struct CCDATA *ccdata,struct Player player,int *planetid){
   /*
     version 01 29Oct10
@@ -1944,78 +1943,92 @@ int CCBuy(struct CCDATA *ccdata,struct Player player,int *planetid){
    */
 
   int np;
-  struct PlanetInfo *pinfo;
+  struct PlanetInfo *pinfo,*pinfo2;
+  float resources;
 
-  if(ccdata->planetlowdefense!=NULL){
-    if(player.id!=ccdata->planetlowdefense->player){  //HERE this happens (maybe if in the meanwhile change of owner)
-      fprintf(stderr,"WARNING: player: %d planetlow: %d\n",player.id,ccdata->planetlowdefense->id);
-      ccdata->planetlowdefense=NULL;
+  if(ccdata->planethighresource!=NULL){
+    if(player.id!=ccdata->planethighresource->player){  //HERE this happens (maybe if in the meanwhile change of owner)
+      fprintf(stderr,"WARNING: player: %d planetlow: %d\n",player.id,ccdata->planethighresource->id);
+      ccdata->planethighresource=NULL;
       return(-1);
     }
   }
 
-  pinfo=GetPlanetInfo(ccdata,ccdata->planetlowdefense);
+  pinfo=GetPlanetInfo(ccdata,ccdata->planethighresource);
+  resources=pinfo->planet->planet->reggold/0.015 - pinfo->ntower;
   /* if ntower < 2 buy tower */
   if(pinfo->ntower<2){
-    *planetid=ccdata->planetlowdefense->id;
-    //    printf("CCBuy 1: planet: %d ntower: %d\n",ccdata->planetlowdefense->planet->id,ccdata->planetlowdefense->ntower);
-
+    *planetid=ccdata->planethighresource->id;
     return(TOWER);
   }
 
-  if(pinfo->ntower<3 && player.balance<0){
-    *planetid=ccdata->planetlowdefense->id;
-    //    printf("CCBuy 2\n");
+  if(resources > 1.0){
+    *planetid=ccdata->planethighresource->id;
+    return(TOWER);
+  }
+
+  if(player.balance<0 && resources>=0.7){
+    *planetid=ccdata->planethighresource->id;
     return(TOWER);
   }
 
   if(player.balance<0){
-    //    printf("balance: %f \n",player.balance);
     return(-1);
   }
 
   /* if there unknown planets, 5 explorer by planet max 8.*/
   np=GameParametres(GET,GNPLANETS,0);
 
-  /* HERE review this */
+
   if(np-ccdata->nkplanets>0 && ccdata->nexplorer<8){
     if(ccdata->nkplanets>1 || ccdata->nexplorer<5){
       if((float)ccdata->nenemy/ccdata->nplanets < 1.5){
-	*planetid=ccdata->planetlowdefense->id;
+	*planetid=ccdata->planethighresource->id;
 	return(EXPLORER);
       }
     }
   }
 
-  /* if number of fighters is very low  */
-  if((float)ccdata->nfighter/(float)ccdata->nplanets < 0.5 &&
-     player.balance>.15){
-    *planetid=ccdata->planetweak->id;
-    return(FIGHTER);
-  }
-
-
-  /* if ntowers/nplanets < 2.5 buy tower */
-  if(ccdata->nplanets>5 && 
-     ((float)ccdata->ntower/(float)ccdata->nplanets)<2.5){
-    *planetid=ccdata->planetlowdefense->id;
-    //    printf("CCBuy 3\n");
+  if(resources > 0.7){
+    *planetid=ccdata->planethighresource->id;
     return(TOWER);
   }
 
 
-  /* max rel. fighter/tower 1 */
-  if((float)(ccdata->nfighter+ccdata->nexplorer/2)/(float)ccdata->ntower < 1.2){ //HERE adjust this value
-    *planetid=ccdata->planetweak->id;
-    return(FIGHTER);
-  }
+  if(ccdata->planetweak!=NULL){
 
+    /* if number of fighters is very low  */
+    if((float)ccdata->nfighter/(float)ccdata->nplanets < 0.5 &&
+       player.balance>.15){
+      *planetid=ccdata->planetweak->id;
+      return(FIGHTER);
+    }
+    
+  /* max rel. fighter/tower 1 */
+    if((float)(ccdata->nfighter+ccdata->nexplorer/2)/(float)ccdata->ntower < 0.3){ 
+      *planetid=ccdata->planetweak->id;
+      return(FIGHTER);
+    }
+  }
   /* if ntower < 3 buy tower */
   if(pinfo->ntower<3){
-    *planetid=ccdata->planetlowdefense->id;
-    //    printf("CCBuy 4\n");
+    *planetid=ccdata->planethighresource->id;
     return(TOWER);
+  }
 
+  pinfo2=GetPlanetInfo(ccdata,ccdata->planetweak);
+  if(pinfo2!=NULL){
+    if(pinfo2->ntower<3){
+      *planetid=ccdata->planetweak->id;
+      return(TOWER);
+    }
+
+    if((float)(ccdata->nfighter+ccdata->nexplorer/2)/(float)ccdata->ntower < 1.0){
+      if(player.balance>0.15){
+	*planetid=ccdata->planetweak->id;
+	return(FIGHTER);
+      }
+    }
   }
   return(-1);
 }
@@ -2059,7 +2072,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
   struct CCDATA *ccdata;
   struct PlanetInfo *pinfo1;
   int nplanets;
-  static int *shipsinplanet;
+  int *shipsinplanet;
 
   pinfo1=NULL;
   no=0;
@@ -2097,7 +2110,9 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
     CalcCCInfo(lhobjs,&listheadkplanets[player.id],player.id,ccdata);
     /* Calc the planet with less towers and weakest. */
     CalcCCPlanetStrength(player.id,ccdata);
-
+    /* update info of enemies planets */
+    //    printf("CC: player %d\n",player.id);
+    UpdateEnemyPlanetInfo(lhobjs,ccdata,player.id);
 
   }
 
@@ -2761,7 +2776,7 @@ int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
       action[0]=1;action[1]=0;
       action[2]=0;    
     }
-    /*HERE NEW
+    /*HERENEW
       if(obj->habitat==H_PLANET){
       action[0]=0;action[1]=1;
       action[2]=0;
@@ -2962,20 +2977,21 @@ Weapon *ChooseWeapon(Object *obj){
   int i,j;
   int max=0;
   int jmax=-1;
-  int sum;
+  float sum;
   Weapon *weapon;
 
   /*             SHOT1 MISSILE LASER */
-  float a[5][3]={{500000,4000000,160000}, /* enemy distance2 */
+  float a[5][3]={{425000,4000000,110000}, /* enemy distance2 */
 		 {.25,.50,.25},           /* avability factor */
 		 {100,100,300},           /* ship gas  */
-		 {1,0,1},                 /* cost */
+		 {1,0,1},                 /* cost NOT USED */
 		 {1,1,1}};                /* number of proyectiles  */
+
   float b[5][3]={{0,0,0},   /* r */
 		 {0,0,0},   /* n  */
 		 {0,0,0},   /* gas */
-		 {1,0,1},   /* cost */
-		 {1,1,1}};   /* avability */
+		 {1,1,1},   /* cost */
+		 {1,1.1,1}};   /* multiplicative factor  */
 
   weapon=NULL;
 
@@ -3003,7 +3019,7 @@ Weapon *ChooseWeapon(Object *obj){
       if(obj->dest_r2 < a[0][j])b[0][j]=1;
       if(weapon->n > a[1][j]*weapon->max_n)b[1][j]=1;
       if(obj->gas > a[2][j])b[2][j]=1;
-      if(weapon->cont1!=0 )b[4][j]=0;/*.5;  HERE why 0.5 */
+      if(weapon->cont1!=0 )b[4][j]=0;
       if(weapon->n==0)b[4][j]=0;
       break;
      default:
@@ -3013,11 +3029,13 @@ Weapon *ChooseWeapon(Object *obj){
     for(i=0;i<4;i++){
       sum+=b[i][j];
     }
+    sum*=0.8+(0.2*Random(-1));
     sum*=b[4][j];
-    if(sum>max){max=sum;jmax=j;}
+    if(sum>max){
+      if(sum>max){max=sum;jmax=j;}
+    }
  
   }
-
   weapon=&obj->weapon0; /* default */
   if(jmax==1)weapon=&obj->weapon1;
   if(jmax==2)weapon=&obj->weapon2;
@@ -3668,7 +3686,6 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0,float lev
   Object *obj; 
   float x,y;
   int i;
-  int stype=SHIP0;
   float exp,incexp;
 
   if(GameParametres(GET,GPIRATES,0)==FALSE)return;
@@ -3677,13 +3694,17 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0,float lev
     x=1024*Random(-1);
     y=1024*Random(-1);
     
-    if(i==0)stype=EXPLORER;
-    else
-      stype=FIGHTER;
+    if(i==0){ /* EXPLORER*/
+      obj=NewObj(lhobjs,SHIP,EXPLORER,
+		 x0+x,y0+y,0,0,
+		 CANNON3,ENGINE3,GameParametres(GET,GNPLAYERS,0)+1,NULL,NULL);
+    }
+    else{  /* FIGHTER*/
+      obj=NewObj(lhobjs,SHIP,FIGHTER,
+		 x0+x,y0+y,0,0,
+		 CANNON4,ENGINE4,GameParametres(GET,GNPLAYERS,0)+1,NULL,NULL);
+    }
 
-    obj=NewObj(lhobjs,SHIP,stype,
-	       x0+x,y0+y,0,0,
-	       CANNON3,ENGINE3,GameParametres(GET,GNPLAYERS,0)+1,NULL,NULL);
     obj->a=PI/2;
     obj->player=GameParametres(GET,GNPLAYERS,0)+1;
     obj->ai=1;
@@ -3691,7 +3712,7 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0,float lev
     obj->habitat=H_SPACE;
     obj->weapon=&obj->weapon0;
 
-    exp=level*100*Random(-1);
+    exp=level*15+level*100*Random(-1);
     if(exp>750)exp=750;
     incexp=exp<100?exp:100;
     do{
@@ -4036,22 +4057,29 @@ int AddobjCCData(struct CCDATA *ccdata,Object *obj){
     if(obj->habitat==H_PLANET){
       if(pinfo->planet->id==obj->in->id){
 	float strength=0;
+	
+	if(players[obj->player].team!=players[pinfo->planet->player].team){
+	  pinfo=pinfo->next;continue;	  
+	}
 
 	if(ccdata->player==obj->player){
-	  if(obj->in->level<=obj->level+1){  /* dont include learning ships*/
-	    strength=(obj->level+1)*(obj->state)/100*(obj->state>75)*(obj->gas>=.80*obj->gas_max)*(obj->weapon0.n>.8*obj->weapon0.max_n)*(obj->mode==LANDED);
+	  if(obj->level >= obj->in->level-2){  /* dont include learning ships*/
+	    float factor=0;
+	    factor=(obj->level)*(obj->state)/100*(obj->state>75)*(obj->gas>=.80*obj->gas_max)*(obj->weapon0.n>.8*obj->weapon0.max_n)*(obj->mode==LANDED);
 	    //	    if(obj->type==SHIP && obj->subtype==PILOT)strength=-1;/* priority buy ship to pilots */
 	    if(obj->subtype!=TOWER && obj->subtype!=PILOT){
-	      pinfo->strengtha+=strength*(obj->state>95)*(obj->gas>.98*obj->gas_max)*(obj->weapon0.n>=.95*obj->weapon0.max_n);
+	      factor*=(obj->state>95)*(obj->gas>.98*obj->gas_max)*(obj->weapon0.n>=.95*obj->weapon0.max_n);
+	      // pinfo->strengtha+=strength*(obj->state>95)*(obj->gas>.98*obj->gas_max)*(obj->weapon0.n>=.95*obj->weapon0.max_n);
+	      pinfo->strengtha+=pow(2,factor);
 	    }
-
+	    strength=pow(2,factor);
 	  }
 	}
-	else{ /* are enemies */
-	  strength=(obj->level+1);
+	else{ /* are allies */
+	  strength=pow(2,obj->level);
 	}
 
-	pinfo->strength+=strength;
+	pinfo->strength+=strength;  //HERE CHECK THIS 
 
 	switch(obj->subtype){
 	case EXPLORER:
@@ -4073,7 +4101,7 @@ int AddobjCCData(struct CCDATA *ccdata,Object *obj){
 	  break;
 	}
 
-  	ret=1;
+ 	ret=1;
 	if(ordersw==2)return(1);
       }
     }
@@ -4101,6 +4129,7 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
 
   struct PlanetInfo *pinfo;
   int ntowers=0;
+  float lowresources=0;
   int strength=0;
   int sw=0;
 #if DEBUG
@@ -4113,7 +4142,7 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
   }
 
 
-  ccdata->planetlowdefense=NULL;
+  ccdata->planethighresource=NULL;
   ccdata->planetweak=NULL;
 #if DEBUG
   pinfolow=NULL;
@@ -4126,7 +4155,8 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
     if(pinfo->ntower+pinfo->nfighter+pinfo->nexplorer+pinfo->ncargo>0){
       if(sw==0){
 	ntowers=pinfo->ntower;
-	ccdata->planetlowdefense=pinfo->planet;
+	ccdata->planethighresource=pinfo->planet;
+	lowresources=pinfo->planet->planet->reggold/0.015-pinfo->ntower;
 	strength=pinfo->strength;
 	ccdata->planetweak=pinfo->planet;
 #if DEBUG
@@ -4135,9 +4165,10 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
 	sw++;
       }
       else{
-	if(pinfo->ntower < ntowers){
-	  ntowers=pinfo->ntower;
-	  ccdata->planetlowdefense=pinfo->planet;
+	float  resources=pinfo->planet->planet->reggold/0.015 - pinfo->ntower;
+	if(resources > lowresources){// AQUI
+	  lowresources=resources;
+	  ccdata->planethighresource=pinfo->planet;
 #if DEBUG
 	  pinfolow=pinfo;
 #endif
@@ -4155,8 +4186,8 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
 #if DEBUG
   if(debugwar){
     printf("CalcCCPlanetStrength(): player:%d ",player);
-    if(ccdata->planetlowdefense!=NULL){
-      printf("plow: %d ntower %d ",ccdata->planetlowdefense->id,pinfolow->ntower);
+    if(ccdata->planethighresource!=NULL){
+      printf("plow: %d ntower %d ",ccdata->planethighresource->id,pinfolow->ntower);
     }
     else{
       printf("plow: NULL ");
@@ -4203,6 +4234,8 @@ int GetCCPlanetInfo(struct CCDATA *ccdata,int pid,int info){
     case CCDATANQUEEN:
       return(pinfo->ncargo);
       break;
+    case CCDATASTRENGTH:
+      return(pinfo->strength);
     default:
       break;
     }
@@ -4347,8 +4380,9 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
     Calc planet to attack and from which
     copy the info in ccdata.
     return:
-    0 if no planet are found.
-    1 if there planets.
+    0 if no  planets are found.
+    1 if there planets origin and destiny.
+    //TODO     2 if there are only dest  planet.
    */
  
   struct PlanetInfo *pinfo,*pinfo1;
@@ -4357,8 +4391,8 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
   int ret=0;
   float d2=0,d2min=0;
   int team0,team1,team2;
-  int strategy=PLAYERSTRATDEFAULT;
-  float strength;
+  int strategy;
+  float strength=0;;
   int rval;
 
 
@@ -4373,16 +4407,12 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
 
   rval=100*Random(-1);
   if(rval<30){
-    strategy=PLAYERSTRATDEFAULT;
+    strategy=(int)(NUMPLAYERSTRAT*Random(-1));
   }
-  else{
-    if(rval<45){
-      strategy=PLAYERSTRATRANDOM;
-    }
-    else{
-      strategy=PLAYERSTRATSTRONG;
-    }
-  }
+
+#if TEST
+  strategy=PLAYERSTRATWEAK;
+#endif
 
   switch(strategy){
   case PLAYERSTRATRANDOM: /*  to a random enemy planet from nearest */
@@ -4399,12 +4429,14 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
       if(team1==team0){pinfo=pinfo->next;continue;}
       if(sw==0){ /* first time */
 	ccdata->planet2attack=pinfo->planet;
+	strength=pinfo->strength;
 	sw=1;
 	pinfo=pinfo->next;continue;
       }
       if(100*Random(-1)<20){
 	/* changing planet to attack */
 	ccdata->planet2attack=pinfo->planet;
+	strength=pinfo->strength;
       }      
       pinfo=pinfo->next;
     }
@@ -4416,7 +4448,6 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
     
   case PLAYERSTRATDEFAULT: /* from nearest to nearest*/
     sw=0;
-    ret=0;
     pinfo=ccdata->planetinfo;
     while(pinfo!=NULL){ /* double loop */
       
@@ -4440,12 +4471,12 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
 	  if(team0==team1){
 	    ccdata->planet2meet=pinfo->planet;
 	    ccdata->planet2attack=pinfo1->planet;
-	    ret=1;
+	    strength=pinfo1->strength;
 	  }
 	  else{
 	    ccdata->planet2meet=pinfo1->planet;
 	    ccdata->planet2attack=pinfo->planet;
-	    ret=1;
+	    strength=pinfo->strength;
 	  }
 	  sw++;
 	  pinfo1=pinfo1->next;continue;
@@ -4459,12 +4490,12 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
 	  if(team0==team1){
 	    ccdata->planet2meet=pinfo->planet;
 	    ccdata->planet2attack=pinfo1->planet;
-	    ret=1;
+	    strength=pinfo1->strength;
 	  }
 	  else{
 	    ccdata->planet2meet=pinfo1->planet;
 	    ccdata->planet2attack=pinfo->planet;
-	    ret=1;
+	    strength=pinfo->strength;
 	  }
 	}
 	//break;
@@ -4483,7 +4514,6 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
     ccdata->planet2attack=NULL;
     ccdata->planet2meet=NULL;
     pinfo=ccdata->planetinfo;
-    strength=0;
     while(pinfo!=NULL){
       if(pinfo->planet->player==0){pinfo=pinfo->next;continue;}
       if(player.id!=pinfo->planet->player){pinfo=pinfo->next;continue;}
@@ -4514,34 +4544,87 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
     ccdata->planet2attack=GetNearPlanet(ccdata,planet,PENEMY);
 
     /* looking for the nearest ally planet 2 meet */
-
     ccdata->planet2meet=GetNearPlanet(ccdata,ccdata->planet2attack,PALLY);
     break;
- 
+    
+  case PLAYERSTRATWEAK: /* attack weakest */
+
+    /* looking for the weakest enemy planet */
+
+    sw=0;
+    team1=player.team;
+    pinfo1=NULL;
+    planet=NULL;
+    ccdata->planet2attack=NULL;
+    ccdata->planet2meet=NULL;
+    pinfo=ccdata->planetinfo;
+    strength=0;
+    while(pinfo!=NULL){
+      if(pinfo->planet->player==0){pinfo=pinfo->next;continue;}
+      team2=players[pinfo->planet->player].team;
+      if(team1==team2){pinfo=pinfo->next;continue;}
+
+      if(planet!=NULL){
+#if TEST
+	if(pinfo->strength>200){
+	  printf("WARNING:  check for planet %d %f %f\n",pinfo->planet->id,strength,pinfo->strength);
+	}
+#endif
+      }
+      if(sw==0){ /* first time */
+	planet=pinfo->planet;
+	strength=pinfo->strength;
+	sw=1;
+	pinfo=pinfo->next;continue;
+      }
+
+      if(pinfo->strength<strength){
+	planet=pinfo->planet;
+	strength=pinfo->strength;
+      }
+      else{
+	if(pinfo->strength==strength){
+	  if(100*Random(-1)<20){ /* HERE must depend on number of planets*/
+	    planet=pinfo->planet;
+	  }
+	}
+      }
+      pinfo=pinfo->next;
+    }
+
+    if(planet!=NULL){
+      ccdata->planet2attack=planet;
+      
+      /* looking the nearest ally planet */
+      ccdata->planet2meet=GetNearPlanet(ccdata,ccdata->planet2attack,PALLY);
+    }
+    break;
   default:
-    ret=0;
     break;
   }
-  if(ccdata->planet2attack!=NULL && ccdata->planet2meet!=NULL)ret=1;
 
-  if(ccdata->planet2meet==NULL || ccdata->planet2attack==NULL){
-#if DEBUG
-    if(debugwar){
-      printf("(%d)planet2meet or planet2attack NULL\n",ccdata->player);
-    }
-#endif
+  ret=0;
+
+  if(ccdata->planet2attack!=NULL){
+    ccdata->p2a_strength=strength;
+  }
+
+  if(ccdata->planet2attack!=NULL && ccdata->planet2meet!=NULL){
+    ccdata->p2a_strength=strength;
+    ret=1;
+  }
+  else{
     ret=0;
   }
+
 #if DEBUG  
   if(debugwar && ret!=0){
     printf("WARCCPLANET() player: %d p2meet: %d p2attack: %d\n",
 	   ccdata->player,ccdata->planet2meet->id,ccdata->planet2attack->id);
   }
 #endif
-
   return(ret);
 }
-
 
 
 int DecideIfWar(struct Player player,struct CCDATA *ccdata){
@@ -4619,7 +4702,7 @@ struct PlanetInfo *GetPlanetInfo(struct CCDATA *ccdata,Object *planet){
 
 Object *GetNearPlanet(struct CCDATA *ccdata,Object *planet1,int mode){
   /*
-    returns in planet2 the nearest planet to planet1 depends on the value mode
+    returns the nearest planet to planet1 depends on the value mode
     returns:
     0 if not found
     1 if found.
@@ -4696,6 +4779,7 @@ Object *GetNearPlanet(struct CCDATA *ccdata,Object *planet1,int mode){
 
 int AddCCEnemyPlanetInfo(struct CCDATA *ccdata,Object *planet){
   /*
+    NOT USED
     returns:
     1 if info is succesfully reset 
     0 if not;
@@ -4931,10 +5015,11 @@ int CalcEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object 
 	break;
       }
       /* HERE save the strength of enemy planets */
-      pinfo->strength+=ls->obj->level+1;      
-      if(ls->obj->level>1)pinfo->strength++;
-      if(ls->obj->level>2)pinfo->strength++;
-      if(ls->obj->level>3)pinfo->strength+=4;
+      //      pinfo->strength+=ls->obj->level+1;
+      pinfo->strength+=pow(2,ls->obj->level);
+      /* if(ls->obj->level>1)pinfo->strength++; */
+      /* if(ls->obj->level>2)pinfo->strength++; */
+      /* if(ls->obj->level>3)pinfo->strength+=4; */
       ls=ls->next;
     }
 #if DEBUG
@@ -4949,6 +5034,53 @@ int CalcEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object 
   }
   return(1);
 }
+
+
+int UpdateEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,int player){
+  /*
+    update the info of enemy planets:
+    decrease their strengh along time.
+    returns:
+    number of planets updated.
+  */
+  struct PlanetInfo *pinfo;
+  int ret=0;
+
+  //  printf("updateenemyplanetinfo\n");
+
+  if(ccdata==NULL)return(0);
+
+  pinfo=ccdata->planetinfo;
+  while(pinfo!=NULL){
+    //    printf("\t%d %d %d\n",pinfo->planet->id,players[player].team,players[pinfo->planet->player].team);
+
+    if(players[player].team != players[pinfo->planet->player].team){
+      //    if((players[player].team!=players[ccdata->player].team)){
+      //      printf("\t%d %d\n",GetTime(),pinfo->time);
+      if(GetTime() - pinfo->time > 7000){ //7000
+	/* strength to half every 5 min */
+	float smin;
+	//	smin=0.8*3*(players[pinfo->planet->player].maxlevel-1);//HERE adjust this formula
+	if(players[pinfo->planet->player].nships>0){
+	  smin=3*pow(2,(float)players[pinfo->planet->player].level/players[pinfo->planet->player].nships);
+	}
+	else{
+	  smin=0;
+	}
+	pinfo->strength-=(int)(pinfo->strength/2);
+	if(pinfo->strength<smin)pinfo->strength=smin;
+	pinfo->time=GetTime();
+	ret++;
+      }
+
+      //      printf("\t %d %f \n",pinfo->planet->id,pinfo->strength);
+    }
+    pinfo=pinfo->next;
+  }
+  return(ret);
+}
+
+
 
 int CountAssignedCCPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object *planet){
 /* 
@@ -4990,7 +5122,7 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
 */
 
 
-  struct PlanetInfo *pinfo1,*pinfo2;
+  struct PlanetInfo *pinfo1,*pinfo2; /* planets 2meet 2attack*/
   int nf2a=6; /* num of fighter 2 attack */
   static int cont;
 
@@ -5070,7 +5202,8 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
     }
     else{
       ccdata->war=2; /* entering phase 2 */
-      if(ccdata->planet2meet==NULL || ccdata->planet2attack==NULL){
+      //      if(ccdata->planet2meet==NULL || ccdata->planet2attack==NULL){
+      if(ccdata->planet2attack==NULL){
 #if DEBUG    
 	if(debugwar){
 	  printf("(0)player %d planet2meet or planet2attack NULL\n",player.id);
@@ -5107,6 +5240,14 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
 	     ccdata->planet2attack->id,pinfo2->nfighter,pinfo2->strength,pinfo2->nassigned); 
     }
 #endif    
+    /* if p2a strength changes reevaluate */
+    if(1.2*ccdata->p2a_strength < pinfo2->strength){
+      ccdata->planet2meet=ccdata->planet2attack=NULL;
+      ccdata->time=0;
+      ccdata->war=0;
+      return(NULL);
+    }
+
 
     if((pinfo1)->strengtha > nf2a){
       /* entering phase 3 */
@@ -5182,17 +5323,21 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
   }
 
   /* print some DEBUG info */
-  if(ccdata->war){
+
 #if DEBUG
-    if(debugwar && !(cont%40)){
-      printf("player: %d war: %d\n",ccdata->player,ccdata->war);
+  if(ccdata->war){
+    if( debugwar &&  !(cont%200)){
+      int strg;
+      printf("player: %d war: %d nf2a: %d\n",ccdata->player,ccdata->war,nf2a);
       if(ccdata->planet2meet!=NULL && ccdata->planet2attack!=NULL){
-	printf("\tplanet2meet %d planet2attack %d\n",ccdata->planet2meet->id,
-	       ccdata->planet2attack->id);
+	strg=GetCCPlanetInfo(ccdata,ccdata->planet2attack->id,CCDATASTRENGTH);
+	printf("\tplanet2meet %d planet2attack %d (%d)\n",ccdata->planet2meet->id,
+	       ccdata->planet2attack->id,strg);
       }
     }
-#endif
   }
+#endif
+  
   return(pinfo1);
 }
 
@@ -5232,7 +5377,7 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
   if(player.lastaction==0){
 
     if(player.maxlevel<2){
-      cut=0;
+      cut=0; /* cannot upgrade */
     }
     else{
       if((float)ccdata->ntower/np>=2.8){
@@ -5266,6 +5411,9 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
       }
       /* printf("(%d) maxlevel: %d cut: %f %f %d %d\n", */
       /* 	     player.id,player.maxlevel,cut,(float)ccdata->ntower/np,player.level,nships*(player.maxlevel-1)); */
+
+      if(cut<0.1)cut=0.1;
+      if(cut>0.9)cut=0.9;
     }
     
     buyupgradesw=0;
@@ -5281,7 +5429,7 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
       buyupgradesw=0;
     }
 
-    if(ccdata->nkplanets==0 || ccdata->planetlowdefense==NULL || 
+    if(ccdata->nkplanets==0 || ccdata->planethighresource==NULL || 
        ccdata->planetweak==NULL){
       buyupgradesw=0;
     }
@@ -5290,8 +5438,9 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
   }
 
   /*--decide what */
-  if(0&&cv!=NULL)
+  if(0&&cv!=NULL){
     if(cv->player==player.id)printf("BuyorUpgrade(%d):%d\n",player.id,player.lastaction);
+  }
   switch(player.lastaction){
   case 0:
     break;
@@ -5354,7 +5503,6 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
 	  Experience(obj2up,(int)(100*pow(2,obj2up->level) - obj2up->experience+1));
 	  player.lastaction=0;
 	  ret=2;
-
 #if DEBUG
 	  if(debugshop){
 	    printf("player: %d OBJ UPGRADED to level: %d type: %d id: %d price: %d\n",

@@ -177,17 +177,6 @@
 #define ASTEROID2 2
 #define ASTEROID3 3
 
-/* TODO ai players profiles */
-#define PLAYERPROFDEFAULT 0   /* attack planets default profile*/
-#define PLAYERPROFPACIFIST 1  /* never attack planets */
-#define PLAYERPROFAGRESSIVE 2 /* */
-
-/* ai players strategies */
-#define NUMPLAYERSTRAT 3
-#define PLAYERSTRATDEFAULT 0 /* attack near from near planet*/
-#define PLAYERSTRATRANDOM 1  /* choose a random planet to attack */
-#define PLAYERSTRATSTRONG 2  /* from strongest to nearest */
-
 /* player status */
 #define PLAYERNULL 0       /* not used */
 #define PLAYERIDLE 1       /* not used */
@@ -413,9 +402,6 @@ struct ObjectAll{   /* SENDOBJALL */
   Engine engine;     /* motor */
 };
 
-
-
-
 struct ObjectNew{   /* SENDOBJNEW */
   int id;           /* identificador */
   short player;
@@ -516,7 +502,6 @@ struct VerletList{
   struct VerletList *next;
 };
 
-
 struct Habitat{
   int type;      /* H_SPACE, H_PLANET , H_SHIP */
   Object *obj;
@@ -585,8 +570,6 @@ struct PlayerAll{
   short modified;    /* used in communication */
   short ttl;
 };
-
-
 
 struct PlayerMod{    /* Used in communication  */
   short id;
@@ -710,11 +693,9 @@ void PrintObjTree (struct ObjTree *);
 int IsInObjTree(struct ObjTree *,int );
 struct ObjTree *Look4ObjTree(struct ObjTree *,Object *);
 
-
 struct VerletList *CreateVerletList(struct HeadObjList hol);
 void PrintVerletList(struct VerletList *hvl);
 void DestroyVerletList(struct VerletList *hvl);
-
 
 
 #endif

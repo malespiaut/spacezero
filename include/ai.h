@@ -37,6 +37,7 @@
 #define CCDATANPILOT 4
 #define CCDATANTOWER 5
 #define CCDATANQUEEN 6
+#define CCDATASTRENGTH 7
 
 #define MAXPRIORITY 1
 #define MAINORD 2
@@ -65,6 +66,20 @@
 #define WRITE 18
 #define PATROL 19
 #define RUNAWAY 20
+
+/* TODO ai players profiles */
+#define PLAYERPROFDEFAULT 0   /* attack planets default profile*/
+#define PLAYERPROFPACIFIST 1  /* never attack planets */
+#define PLAYERPROFAGRESSIVE 2 /* */
+
+/* ai players strategies */
+#define NUMPLAYERSTRAT 4
+#define PLAYERSTRATDEFAULT 0 /* attack near from near planet*/
+#define PLAYERSTRATRANDOM 1  /* choose a random planet to attack */
+#define PLAYERSTRATSTRONG 2  /* from strongest to nearest */
+#define PLAYERSTRATWEAK 3  /* attack weakest from nearest */
+
+
 
 
 struct PlanetInfo{
@@ -100,8 +115,9 @@ struct CCDATA{
 
   int sw;           /* not used */
   int war;          /* war phase */
+  float p2a_strength;    /* strength of planet 2 attack */
 
-  Object *planetlowdefense; 
+  Object *planethighresource; 
   Object *planetweak;
 
   Object *planet2meet;
@@ -169,6 +185,7 @@ int AddNewPlanet2CCData(struct CCDATA *ccdata,Object *planet);
 int AddPlanetInfo2CCData(struct CCDATA *ccdata,struct PlanetInfo *pinfo);
 int IsInCCList(struct CCDATA *ccdata,Object *planet);
 int CalcEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object *obj);
+int UpdateEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,int player);
 int AddCCEnemyPlanetInfo(struct CCDATA *ccdata,Object *planet); /* NULL function */
 int CountAssignedCCPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object *planet);
 struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *ccdata);

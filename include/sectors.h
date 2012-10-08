@@ -37,5 +37,5 @@ void InvQuadrant(int n,int *x, int *y);
 int NearestSector(struct HeadIntIList *head,float a,float b,int n);
 int NearestSector_03(struct HeadIntIList *head,float a,float b,int n);
 int NearRandomSector(struct HeadIntIList *head,float a,float b,int n);
-int  IsInUniverse(float a,float b);
+int IsInUniverse(float a,float b);
 #endif

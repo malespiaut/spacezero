@@ -85,7 +85,7 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.18"};
+char version[64]={"0.83.21"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Sep. 2012"};
@@ -1019,7 +1019,7 @@ gint MainLoop(gpointer data){
     	    char text[MAXTEXTLEN];
 	    float level=0;
 	    int np=4;
-	    level=timenow/30000.0;
+	    level=timenow/30000.0; /* increase every 20 min */
 	    lasttimepirates=timenow;
 	    x0=ulx*Random(-1)-ulx/2;
 	    y0=uly*Random(-1)-uly/2;
@@ -1186,6 +1186,7 @@ gint MainLoop(gpointer data){
       printf("done\n");
     }
     CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
+    listheadplayer.update=0;
     PrintGameOptions();
     /* print teams */
     PrintTeams(players);
@@ -1355,7 +1356,7 @@ gint MainLoop(gpointer data){
       if(contvolume==0)gdraw.volume=FALSE;
       x=gwidth-65;
       y=gheight-15;
-      DrawBarBox(pixmap,penRed,x,y,60,10,SetMasterVolume(0,VOLGET));
+      DrawBarBox(pixmap,penRed,penRed,x,y,60,10,SetMasterVolume(0,VOLGET));
     }
        
     if(gdraw.map==TRUE){
@@ -1730,7 +1731,7 @@ void key_eval(struct Keys *key){
     if(proc==players[GameParametres(GET,GNPLAYERS,0)+1].proc){/* Send TO ai */
       x0=gulx*Random(-1)-gulx/2;
       y0=guly*Random(-1)-guly/2;
-      /* CreatePirates(&listheadobjs,4,x0,y0);  */
+      CreatePirates(&listheadobjs,4,x0,y0,12);  
       /* snprintf(text,MAXTEXTLEN,"PIRATES!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));  */
       if(Distance2NearestShip(&listheadobjs,-1,x0,y0)<MAXASTEROIDDISTANCE2){ /* 20 sectors */
 	CreateAsteroids(&listheadobjs,6,x0,y0); 
@@ -1886,7 +1887,8 @@ void key_eval(struct Keys *key){
 	listheadplayer.n=0;
 	listheadplayer.next=NULL;
 	CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
-	
+	listheadplayer.update=0;
+
 	cv=SelectObj(&listheadplayer,players[actual_player].cv);
 	if(cv==NULL){
 	  cv=NextCv(&listheadplayer,cv,actual_player);
@@ -3332,7 +3334,9 @@ void Collision(struct HeadObjList *lh){
 		    obj1->mode=LANDED;
 		    
 		    if(obj1->items & ITPILOT){ /* if has a rescued pilot, eject him */
-		      EjectPilotsObj(&listheadobjs,obj1);
+		      if(EjectPilotsObj(&listheadobjs,obj1)){
+			listheadplayer.update=1;
+		      }
 		      obj1->items=(obj1->items)&(~ITPILOT);
 		    }
 		    if(gnet==TRUE){
@@ -3540,7 +3544,6 @@ int UpdateObjs(void){
 		obj->accel=obj->engine.a_max;	    
 	    }
 	  }
-
 	  UpdateShip(obj);
 	  break;
 	case EXPLOSION:
@@ -3556,13 +3559,19 @@ int UpdateObjs(void){
 	}
 	break;
       case SHIP:
-	//	if(obj->trace==TRUE && obj->habitat==H_SPACE){
 	if(obj->trace==TRUE && obj->mode!=LANDED){
 	  if(obj->vx*obj->vx+obj->vy*obj->vy>.25){
+	    Object *objin=obj->in;
+	    
+	    if(objin!=NULL){ /* don't create trace inside a ship */
+	      if(obj->in->type!=PLANET){
+		objin=NULL;
+	      }
+	    }
 	    nobj=NewObj(&listheadobjs,TRACE,SHIP0,
 			obj->x,obj->y,
 			0,0,
-			CANNON0,ENGINE0,obj->player,obj,obj->in);
+			CANNON0,ENGINE0,obj->player,obj,objin);
 	    Add2ObjList(&listheadobjs,nobj);
 	  }
 	}
@@ -5205,10 +5214,9 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
     players[i].control=COMPUTER;
     players[i].team=i+1;
     players[i].profile=PLAYERPROFDEFAULT;
-    players[i].strategy=PLAYERSTRATRANDOM;
+    players[i].strategy=PLAYERSTRATWEAK;
     /* strategy is random weight choosed at WarCCPlanets() */
     players[i].strategy=(int)(NUMPLAYERSTRAT*Random(-1));
-    //    printf("PLAYER %d STRATEGY: %d\n",i,players[i].strategy);
     players[i].maxlevel=0;
     players[i].cv=0;
     players[i].color=i;
@@ -5280,8 +5288,9 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
     
     ccdatap[i].sw=0;
     ccdatap[i].war=0;
+    ccdatap[i].p2a_strength=0;
     
-    ccdatap[i].planetlowdefense=NULL;
+    ccdatap[i].planethighresource=NULL;
     ccdatap[i].planetweak=NULL;
     ccdatap[i].planet2meet=NULL;
     ccdatap[i].planet2attack=NULL;
@@ -5469,7 +5478,7 @@ void InitGameVars(void){
     listheadplayer.n=0; 
     listheadplayer.next=NULL; 
     CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
-    
+    listheadplayer.update=0;
     
     cv=NextCv(&listheadplayer,cv,actual_player);
     if(cv!=NULL){

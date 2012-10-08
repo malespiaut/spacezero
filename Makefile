@@ -85,6 +85,7 @@ dirs:
 
 clean: 
 	rm -f src/*.o bin/spacezero
+	rm -f core
 
 mrproper: clean
 	rm -f src/*~ include/*~

@@ -16,7 +16,7 @@ bugs:(last:120)
 ====
 
 
--[54] (021110) (in human play)if send to someplace send, dont wait to good state. save04
+-[54] (021110) (in human play)if send to someplace, dont wait to good state. save04
 -[65] (071210) Debug Warning 2 SetModified()PLANET:trying to change mode (3) 42 to 40
       	       ERROR :setttl0() mode 42 unknown, obj type: 3
 -[72](271210)Debug Warning 2 SetModified()PLANET:trying to change mode (1) 43 to 41
@@ -30,7 +30,6 @@ bugs:(last:120)
 -[96](150411)ERROR 2 :setttl0() mode 43 unknown, obj type: 3 player: 1 id: 15 pid: 15
 -[97](150411) torre modificada a SENDOBJALL en distinto procesador
       CheckModifiedPre(): PROC: 0 obj 1782 (159) player: 4 type 1 stype 6 mod: 37 time: 182007
--[100](060511)enemy state bar greater than 100 (with very close planets, in net game, maybe unknown state)
 -[101](105011)32/64 bits Gdk-WARNING **: GdkWindow 0x2e00005
  unexpectedly destroyed ??(after ubuntu update, no more)(it
  continues)(happens after screensaver¿?)
@@ -48,17 +47,13 @@ Version 0.7 (since 060910)
 Version 0.8 (since 10May2011)
 ===========
 
--!!Rewrite NearestObjAll(), call less times.
 -!!Reordenar, jerarquizar codigo, ficheros.
 -!!Disminuir numero de variables extern (97),58,72,76,92,95,87 grep extern src/*.c include/*h |grep ";" |wc
 -!!Disminuir los HERE (74)88,69,83  grep HERE src/*c include/*h|wc
 -!!Damage in collision depends on mass and velocity. Elastic shocks. 
 -!!Change ksectorslist for a three elements list: id,x,y.
--!!In pause mode consumes CPU, redraw every 5 steps..
 -!!Improve Risk()
--!!Explosions: add ship parts.
 -!!toroidal Universe as option.
-
 
 
 -Create list of load (lista de carga).
@@ -68,13 +63,10 @@ Version 0.8 (since 10May2011)
 -!change MISSILE to type SHIP
 -frames/s when save/load.
 -?Use same struct for planets and known sectors in struct Player.
--Dont createlists in execload()
--AI (save14) attacks to the same strong planet.
 
 -!!Merge UpdateShip() y UpdateAsteroid() ??
 -send drawmissile in DrawObjs() to DrawShip()
--When select a planet, center map on it , if its known.
--Measure distances in map view.
+
 
 mouse:
 =====
@@ -138,7 +130,7 @@ Version 0.9
 -Missions.=> Missions script files. (XML?)
 -Increase planet terrain. As in "Defender"
 -Avoid shocks whith ships.(See ancient ai() version).
-
+-Explosions: add ship parts.
 
 Version 1.0
 ===========
@@ -170,12 +162,18 @@ X-()In terminal, messages repite so much.
 X-(230912)Speedup: explosions dont collide in space.
 X-(230912)Speedup: aimisil() improved.
 X-(240912)Add RETREAT n
+X-(250912)!!Rewrite NearestObjAll(), call less times.
+X-(250912)!!In pause mode consumes CPU, redraw every 5 steps..
+X-()When select a planet, center map on it , if its known.
+X-()Measure distances in map view.
+X-(041012)!!AI (save14) attacks to the same strong planet.=>near to near
 
 
 BUGS version 0.82
 =================
 
 X-(100512) bug that create unnecessary trace points.
+X-(250912)[100](060511)enemy state bar greater than 100 (with very close planets, in net game, maybe unknown state)
 
 
 

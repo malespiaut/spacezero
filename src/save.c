@@ -708,8 +708,9 @@ int ExecLoad(char *nom){
     
     ccdatap[i].sw=0;
     ccdatap[i].war=0;
+    ccdatap[i].p2a_strength=0;
     
-    ccdatap[i].planetlowdefense=NULL;
+    ccdatap[i].planethighresource=NULL;
     ccdatap[i].planetweak=NULL;
     ccdatap[i].planet2meet=NULL;
     ccdatap[i].planet2attack=NULL;
@@ -849,6 +850,8 @@ int ExecLoad(char *nom){
       perror("fscanf");
       exit(-1);
     }
+    /* testing */ players[i].strategy=3;
+
     players[i].modified=SENDOBJUNMOD;
     players[i].ttl=2000;
 
@@ -1656,17 +1659,17 @@ void FprintfCCData(FILE *fp,struct CCDATA *ccdata){
     printf("\nsaving CCDATA player: %d\n",ccdata->player);
   }
 #endif
-  fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+  fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d %f\n",
 	  ccdata->player,ccdata->time,ccdata->time2,ccdata->nkplanets,ccdata->nplanets,
 	  ccdata->ninexplore,ccdata->nenemy,
 	  ccdata->nexplorer,ccdata->nfighter,ccdata->npilot,ccdata->ntower,ccdata->ncargo,
-	  ccdata->sw,ccdata->war);
+	  ccdata->sw,ccdata->war,ccdata->p2a_strength);
 
-  if(ccdata->planetlowdefense!=NULL){
-    fprintf(fp,"%d ",ccdata->planetlowdefense->id);
+  if(ccdata->planethighresource!=NULL){
+    fprintf(fp,"%d ",ccdata->planethighresource->id);
 #if DEBUG
     if(debugsave){
-      printf(" \t lowdefense: %d\n",ccdata->planetlowdefense->id);
+      printf(" \t lowdefense: %d\n",ccdata->planethighresource->id);
     }
 #endif
   }
@@ -1789,11 +1792,11 @@ void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
   int pld,pw,p2m,p2a;
 
 
-  if(fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
+  if(fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d%f",
 	  &ccdata->player,&ccdata->time,&ccdata->time2,&ccdata->nkplanets,&ccdata->nplanets,
 	  &ccdata->ninexplore,&ccdata->nenemy,
 	    &ccdata->nexplorer,&ccdata->nfighter,&ccdata->npilot,&ccdata->ntower,&ccdata->ncargo,
-	    &ccdata->sw,&ccdata->war)!=14){
+	    &ccdata->sw,&ccdata->war,&ccdata->p2a_strength)!=15){
     perror("fscanf");
     exit(-1);
   }
@@ -1817,13 +1820,13 @@ void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
 
   /***** pointers *****/
 
-  ccdata->planetlowdefense=NULL;
+  ccdata->planethighresource=NULL;
   ccdata->planetweak=NULL;
   ccdata->planet2meet=NULL;
   ccdata->planet2attack=NULL;
 
   if(pld!=0){
-    ccdata->planetlowdefense=SelectObj(&listheadobjs,pld);
+    ccdata->planethighresource=SelectObj(&listheadobjs,pld);
   }
   if(pw!=0){
     ccdata->planetweak=SelectObj(&listheadobjs,pw);

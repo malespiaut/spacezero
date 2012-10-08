@@ -751,34 +751,40 @@ int CountIntTree (struct IntTree *head){
 Text Lists
 ***********/
 
-int Add2TextList(struct TextList *listhead,char *cad,int color){
+int Add2TextList(struct HeadTextList *listhead,char *cad,int color){
   /* 
      add the cad to the list
   */
-  struct TextList *list;
-  struct TextList *lh;
+  struct TextList *lh,*new;
 
-  /* Add text at the end of the list */
-  lh=listhead;
-  while(lh->next!=NULL){
-    lh=lh->next;
-  }
-
-  list=malloc(sizeof(struct TextList));
-  MemUsed(MADD,+sizeof(struct TextList));
-
-  if(list==NULL){
+  new=malloc(sizeof(struct TextList));
+  if(new==NULL){
     fprintf(stderr,"ERROR in malloc Add2TextList()\n");
     exit(-1);
   }
-  strncpy(list->text,cad,MAXTEXTLEN);
-  list->color=color;
-  list->next=NULL; 
-  lh->next=list;
+  MemUsed(MADD,+sizeof(struct TextList));
+  
+  strncpy(new->text,cad,MAXTEXTLEN);
+  new->color=color;
+  new->next=NULL; 
+
+  /* first item*/
+  if(listhead->next==NULL){
+    listhead->next=new;
+  }
+  else{
+    /* Add text at the end of the list */
+    lh=listhead->next;
+    while(lh->next!=NULL){
+      lh=lh->next;
+    }
+    lh->next=new;
+  }
+  listhead->n++;
   return (0);
 }
 
-int DestroyTextList(struct TextList *head){
+int DestroyTextList(struct HeadTextList *head){
   /* 
      delete all the list
      return:
@@ -799,13 +805,12 @@ int DestroyTextList(struct TextList *head){
     n++;
   }
   head->next=NULL;
-
+  head->n=0;
   MemUsed(MADD,memused);
-
   return (n);
 }
 
-int PrintTextList(struct TextList *head){
+int PrintTextList(struct HeadTextList *head){
   struct TextList *lh;
 
   lh=head->next;
@@ -815,10 +820,10 @@ int PrintTextList(struct TextList *head){
   }
   return(0);
 }
-int CountTextList(struct TextList *head){
+int CountTextList(struct HeadTextList *head){
   /*
     returns:
-    the number of texts of the the list head.
+    the number of items of the the list head.
    */
   struct TextList *lh;
   int n=0;
@@ -829,7 +834,7 @@ int CountTextList(struct TextList *head){
   }
   return(n);
 }
-int PosTextList(struct TextList *head,int m){
+int PosFirstTextList(struct HeadTextList *head,int m){
   /*
     returns:
     the position of the first text with color m
@@ -846,7 +851,27 @@ int PosTextList(struct TextList *head,int m){
   return(-1);
 }
 
-int CountColorTextList(struct TextList *head,int m){
+
+int PosLastTextList(struct HeadTextList *head,int m){
+  /*
+    returns:
+    the position of the last text item with color m
+   */
+
+  struct TextList *lh;
+  int n=0;
+  int ret=0;
+
+  lh=head->next;
+  while(lh!=NULL){
+    if(lh->color==m)ret=n;
+    n++;
+    lh=lh->next;
+  }
+  return(ret);
+}
+
+int CountColorTextList(struct HeadTextList *head,int m){
   /*
     returns:
     the number of texts of color m
@@ -861,12 +886,3 @@ int CountColorTextList(struct TextList *head,int m){
   }
   return(n);
 }
-
-
-
-
-
-/* objects */
-
-
-

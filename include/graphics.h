@@ -94,7 +94,6 @@ GdkColor *NewColor(int red,int green,int blue);
 GdkGC *GetPen(GdkColor *c,GdkPixmap *pixmap);
 void WriteCad(GdkPixmap *pixmap,char *cad,int x,int y,GdkGC *color);
 
-int DrawObjs_00(GdkPixmap *pixmap,struct HeadObjList ,struct Habitat habitat,Object *cv,Vector r_rel);
 int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *,struct Habitat habitat,Object *cv,Vector r_rel);
 void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj);
 void DrawPlanet(GdkPixmap *pixmap,int x,int y, int r);
@@ -113,13 +112,13 @@ int DrawEnemyShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *,int,
 int DrawPlanetInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *planet,int player,int x0,int y0);
 void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *,Object *,int);
 
-int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct TextList *head,int x0,int y0,int width,int height);
+int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct HeadTextList *head,int x0,int y0,int width,int height);
 void DrawString(GdkDrawable *pixmap,GdkFont *font,GdkGC *gc,gint x,gint y,const gchar *string);
 void DrawMessageBox(GdkPixmap *pixmap,GdkFont *font,char *cad,int x0,int y0,int type);
 
 void DrawCharList (GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct CharListHead *hlist,int x0,int y0);
 void DrawWindow (GdkPixmap *pixmap,GdkFont *font,GdkGC *color,int x0,int y0,int type,struct Window *W);
-void DrawBarBox (GdkPixmap *pixmap,GdkGC *color,int x0,int y0,int w,int h,float value);
+void DrawBarBox (GdkPixmap *pixmap,GdkGC *border,GdkGC *color,int x0,int y0,int w,int h,float value);
 int WindowFocus(struct Window *w);
 int ActWindow(struct Window *w);
 

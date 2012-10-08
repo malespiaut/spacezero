@@ -197,15 +197,22 @@
 		  <td>
 		    <ul>
 		    <li>Your ship will go directly to the nearest
-		    empty or allied planet, without attacking the
-		    enemy. Once entering planet the order will be
-		    changed to STOP.
+		    empty or allied planet, without attacking 
+		    enemies or asteroids.
 		  <li> You can also assign a target planet adding its
 		  id after the order. Example: RETREAT 23 will send
 		  your selected spaceships to planet 23 (it can be
-		  ally or enemy). In the case of an enemy planet the
-		  order will be changed to GOTO 23 when your spaceship
-		  enters the planet, attacking the enemies.
+		  ally or enemy).
+		    <p>
+		      Once entering planet the order will be
+		      changed:
+		      <ul>
+			<li> If the planet is empty or allied it will
+			be changed to STOP.
+			<li> In the case of an enemy planet the order
+		      will change to GOTO, attacking the enemies.
+		      </ul>
+
 		  </ul>
 		  </td>
 		  </tr>
@@ -462,7 +469,7 @@
 		      
 		    <li>Information about the planet in which the ship
 		      is. Planet ID, gold remaining, resource, mass
-		      and the level of the higher level spaceship. The
+		      and the level of the highest level spaceship. The
 		      resource indicates the number of towers that can
 		      be built in the planet. More towers can still
 		      defend the planet but don't extract more gold.
@@ -679,7 +686,7 @@
 	  <p>
 	    <b>Upgrade</b>: you can upgrade a ship (it cost
 	    gold). You can only upgrade until one level below the
-	    higher level reached for one of your ships.
+	    highest level reached for one of your ships.
 	    
 	    
 	    <h3>Gold:</h3>
@@ -963,7 +970,7 @@
 
 <div class="footer"><hr>
   <p>Copyright © 2010-2012 MRevenga <br>
-    Page last updated Jun. 29, 2012</p>
+    Page last updated Sep. 25, 2012</p>
 </div>
 </div>
 <div class="leftcolumn">

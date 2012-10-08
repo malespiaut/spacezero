@@ -46,7 +46,7 @@
 #define PI 3.14159265
 
 
-#define MINORSAVEVERSION "0.83.16" /* the save file must be at least this version */
+#define MINORSAVEVERSION "0.83.21" /* the save file must be at least this version */
 #define MINOROPTIONSVERSION "0.83.03" /* the options file must be at least this version */
 
 #define MAXTEXTLEN 128

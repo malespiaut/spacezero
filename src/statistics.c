@@ -101,7 +101,7 @@ void AddStatistics(struct Stats *s){
 
     if(n==NSTATS){
       /* TODO renormalize */
-      printf("Stats: renormalize\n");
+      //      printf("Stats: renormalize\n");
       k=0;
       for(j=0;j<n;j+=2){
 	for(i=0;i<np;i++){
@@ -112,25 +112,20 @@ void AddStatistics(struct Stats *s){
       }
       n/=2;
       inctime*=2;
-      PrintStatistics();
+      //      PrintStatistics();
     }
   }
 }
 
 
 void PrintStatistics(void){
-  int i,j;
+  int i;
 
-  //  for(i=0;i<np;i++){
   printf("stats %d %d\n",lasttime, inctime);
-  i=1;
-  for(j=1;j<np;j++){
-    printf("%d: %.1f %d \n",j,stats[n].level[j],stats[n].nplanets[j]);
+  for(i=1;i<np;i++){
+    printf("%d: %.1f %d \n",i,stats[NSTATS-1].level[i],stats[NSTATS-1].nplanets[i]);
   }
-
   printf("\n");
-  //  }
-  
 }
 
 

@@ -66,7 +66,7 @@
 #define DT .42//.42//.35 //.42
 #define RESOURCEFACTOR 1.2     /* velocity factor for getting resource from planets */
 #define COSTFACTOR 1.0         /* multiplicative factor to ships cost */
-#define DAMAGEFACTOR .9;       /* multiplicative factor to weapon damage */
+#define DAMAGEFACTOR .81;  //0.9     /* multiplicative factor to weapon damage */
 #define MINLEVELPILOT 1        /* min level of a ship to have a survival pod, (only fighters)*/
 
 #define PLANETSKNOWN 0

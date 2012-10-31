@@ -1035,8 +1035,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	if(players[obj->player].gold>price){
 	  players[obj->player].gold-=price;
 	  Experience(obj,(int)(100*pow(2,obj->level) - obj->experience+1));
-	  printf("(%c %d) upgrade to level %d.\n",Type(obj),obj->pid,obj->level);
-	  snprintf(stmess,MAXTEXTLEN,"(%c %d) upgrade to level %d.",Type(obj),obj->pid,obj->level);
+	  printf("(%c %d) upgraded to level %d.\n",Type(obj),obj->pid,obj->level);
+	  snprintf(stmess,MAXTEXTLEN,"(%c %d) upgraded to level %d.",Type(obj),obj->pid,obj->level);
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	}
 	else{
@@ -1154,10 +1154,6 @@ void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
     if(keys.mleft==FALSE){
       if(mouserelease){ /* mouse release */
 	/* region 0: space & map, >0 planet*/
-#if DEBUG
-	printf("BOX0: %d %d w:%d h:%d\n",region.rect.x,region.rect.y, 
-	       region.rect.width,region.rect.height); 
-#endif
 	if(region.rect.width==0 || region.rect.height==0){
 	  /*reset*/
 	  region.rect.width=region.rect.height=0;
@@ -1278,10 +1274,6 @@ void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
 	  region.rect.width=x1-x0;
 	  region.rect.height=y1-y0;
 
-#if DEBUG	    
-	  printf("BOX1: %d %d w:%d h:%d\n",region.rect.x,region.rect.y, 
-		 region.rect.width,region.rect.height);  /* window coordinates */
-#endif	    
 	  if(region.habitat>=0){
 	    cv0=MarkObjs(&listheadobjs,region,*pcv,keys.ctrl);
 	    if(cv0!=NULL){

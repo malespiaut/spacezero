@@ -85,10 +85,10 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.21"};
+char version[64]={"0.83.27"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Sep. 2012"};
+char last_revision[]={"Oct. 2012"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -684,7 +684,7 @@ gint MainLoop(gpointer data){
 #if DEBUG
   if(debugmem){
     if(!(cont%100)){
-      printf("mem used:%d\n",  MemUsed(MGET,0););
+      printf("mem used:%d\n",  MemUsed(MGET,0));
     }
   }
 #endif
@@ -2363,22 +2363,27 @@ void UpdateShip(Object *obj){
 
   ang0=obj->a;
   obj->a+=(obj->ang_v+0.5*obj->ang_a*100.*dtim)*DT;
+
   if(obj->mode==LANDED){  /* max angle of landed ships */
     float maxang=0;
     switch(obj->subtype){
-    case TOWER:
-      maxang=PI/2;
-      break;
-    default:
+    case EXPLORER:
+    case FIGHTER:
+    case QUEEN:
       maxang=PI/4;
       break;
+    case PILOT:
+      maxang=0;
+      break;
+    default:
+      maxang=PI/2-PI/40;
+      break;
     }
-    if(obj->a>PI/2+maxang){obj->a=ang0;obj->ang_a=obj->ang_v=0;}
-    if(obj->a<PI/2-maxang){obj->a=ang0;obj->ang_a=obj->ang_v=0;}
+    if(obj->a>PI/2+maxang){obj->a=PI/2+maxang;obj->ang_a=obj->ang_v=0;}
+    if(obj->a<PI/2-maxang){obj->a=PI/2-maxang;obj->ang_a=obj->ang_v=0;}
   }
   if(obj->a > PI)obj->a-=2*PI;
   if(obj->a < -PI)obj->a+=2*PI;
-
   obj->vx=vx;
   obj->vy=vy;
   obj->fx0=obj->fx;
@@ -3504,7 +3509,7 @@ int UpdateObjs(void){
       case PROJECTILE:
 	switch(obj->subtype){
 	case MISSILE:
-	  aimisil(&listheadobjs,obj);
+	  aimissile(&listheadobjs,obj);
 	  if(0){
 	    ship_enemy=NearestObj(&listheadobjs,obj,SHIP,PENEMY,&d2);
 	    if(ship_enemy!=NULL){
@@ -4195,10 +4200,10 @@ int CheckGame(char *cad,int action){
   int types[ALLOBJS];
   int type;
   int proc;
-
+  int nplayers=0;
 
   proc=GetProc();
-
+  nplayers=(GameParametres(GET,GNPLAYERS,0));
   /* Checking Orders */
 
   for(i=0;i<ALLOBJS;i++){
@@ -4229,6 +4234,10 @@ int CheckGame(char *cad,int action){
 	printf("\tDeleting all the orders of object %d\n",obj->id);
 	DelAllOrder(obj);
       } 
+    }
+
+    if(obj->player<0 || obj->player>nplayers+2){
+      fprintf(stderr,"\tError CheckGame() obj: %d player id: %d invalid.\n",obj->id,obj->player);
     }
 
     if(obj->type==SHIP && obj->subtype==TOWER && obj->habitat!=H_PLANET){

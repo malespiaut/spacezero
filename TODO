@@ -52,7 +52,6 @@ Version 0.8 (since 10May2011)
 -!!Disminuir los HERE (74)88,69,83  grep HERE src/*c include/*h|wc
 -!!Damage in collision depends on mass and velocity. Elastic shocks. 
 -!!Change ksectorslist for a three elements list: id,x,y.
--!!Improve Risk()
 -!!toroidal Universe as option.
 
 
@@ -167,7 +166,7 @@ X-(250912)!!In pause mode consumes CPU, redraw every 5 steps..
 X-()When select a planet, center map on it , if its known.
 X-()Measure distances in map view.
 X-(041012)!!AI (save14) attacks to the same strong planet.=>near to near
-
+X-(311012)!!Improve Risk()
 
 BUGS version 0.82
 =================

@@ -51,6 +51,7 @@
 extern struct Player *players;
 extern struct Parametres param;
 extern char version[64];
+extern char last_revision[];
 int gdrawmenu=1;
 
 #if DEBUG
@@ -244,7 +245,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_signal_connect(GTK_OBJECT (winabout),"delete_event",
 		     GTK_SIGNAL_FUNC(QuitWindow),winabout);
   gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemabout);
-  snprintf(label,150,"\t SpaceZero %s\t\n\t Jan 2012\t\n\n\n  Copyrigth mrevenga.  \n  homepage:  http://spacezero.sourceforge.net/   ",version);
+  snprintf(label,150,"\t SpaceZero %s\t\n\t %s\t\n\n\n  Copyrigth mrevenga.  \n  homepage:  http://spacezero.sourceforge.net/   ",version,last_revision);
   about1=gtk_label_new(label);
   gtk_widget_show(about1);
   
@@ -1914,7 +1915,6 @@ void DrawStars(GdkPixmap *pixmap,int mode,float rx,float ry){
     for(i=0;i<numstars;i++){
       x=stars.x[i]-rrelxw;
       y=stars.y[i]-rrelyh;
-
       gdk_draw_point(pixmap,pen[stars.color[i]],
 		     x+gwidth*((x<0)-(x>gwidth)),
 		     gheight*(1-((y<0)-(y>gheight)))-y);
@@ -2962,7 +2962,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
     pilot.subtype=PILOT;
     pilot.mode=LANDED;
     pilot.radio=texth;
-    pilot.a=0;
+    pilot.a=PI/2;
     pilot.accel=0;
     pilot.gas_max=1;
     DrawShip(pixmap,color,x0+x+pilot.radio,-(y+texth)+gheight,&pilot);
@@ -3961,7 +3961,7 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 	
 	if(obj==cvobj || obj->selected==TRUE){color=1;}
 
-	snprintf(cad,MAXTEXTLEN,"%c L%d id: %d ",mode,obj->level,obj->pid);
+	snprintf(cad,MAXTEXTLEN,"%c%d id: %d ",mode,obj->level,obj->pid);
 	
 	if(obj->state<100){
 	  strncpy(tmpcad,cad,MAXTEXTLEN);

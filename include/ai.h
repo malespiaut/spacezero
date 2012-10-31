@@ -127,7 +127,7 @@ struct CCDATA{
 
 
 void ai(struct HeadObjList *lhobjs,Object *obj,int actual_player);
-void aimisil(struct HeadObjList *lhobjs,Object *obj);
+void aimissile(struct HeadObjList *lhobjs,Object *obj);
 
 int HigherPoint(struct Planet *planet);
 void ControlCenter(struct HeadObjList *lhobjs,struct Player player);
@@ -135,13 +135,15 @@ Object *ObjFromPlanet(struct HeadObjList *lhobjs,int id,int player);
 Object *ObjMinExperience(struct HeadObjList *lhobjs,int player);
 Segment *LandZone(struct Planet *planet);
 Object *Coordinates(struct HeadObjList *lhobjs,int id,float *x,float *y);
-void ExecGoto(Object *obj,struct Order *ord);
+int ExecGoto(Object *obj,struct Order *ord);
 void ExecLand(Object *obj,struct Order *order);
 void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *order,struct Order *morder,float d2);
-void ExecStop(Object *obj,float v0);
+int ExecStop(Object *obj,float v0);
 int ExecBrake(Object *obj,float v0);
-void ExecTurn(Object *obj,float ia);
-
+int ExecTurn(Object *obj,float ia);
+int ExecTurnAccel(Object *obj,float c,float prec);
+int ExecTakeOff(Object *obj);
+int ExecAccel(Object *obj);
 
 Weapon *ChooseWeapon(Object *obj);
 int FireCannon(struct HeadObjList *lhobjs,Object *sh,Object *);
@@ -149,7 +151,7 @@ void Play(Object *obj,int sid,float vol);
 
 /* int SetModifiedAll20(struct HeadObjList lh,int proc); */
 
-int Risk(struct HeadObjList *lhobjs,Object *obj,int,int *order_id);
+int Risk(struct HeadObjList *lhobjs,Object *obj);
 void DelAllOrder(Object *obj);
 void DelFirstOrder(Object *obj);
 struct Order *ReadOrder(struct Order *,Object *obj,int);
@@ -177,7 +179,7 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata);
 int AddobjCCData(struct CCDATA *ccdata,Object *obj);
 Object *CCUpgrade(struct HeadObjList *lhobjs,struct Player *player);
  
-int DecideIfWar(struct Player player,struct CCDATA *ccdata);
+int DecideWar(struct Player player,struct CCDATA *ccdata);
 struct PlanetInfo *GetPlanetInfo(struct CCDATA *ccdata,Object *planet);
 Object *GetNearPlanet(struct CCDATA *ccdata,Object *planet1,int mode);
 int ResetPlanetCCInfo(struct CCDATA *ccdata,Object *planet);
@@ -186,7 +188,6 @@ int AddPlanetInfo2CCData(struct CCDATA *ccdata,struct PlanetInfo *pinfo);
 int IsInCCList(struct CCDATA *ccdata,Object *planet);
 int CalcEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object *obj);
 int UpdateEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,int player);
-int AddCCEnemyPlanetInfo(struct CCDATA *ccdata,Object *planet); /* NULL function */
 int CountAssignedCCPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object *planet);
 struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *ccdata);
 int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *ccdata);

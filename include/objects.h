@@ -266,7 +266,7 @@ typedef struct{
   int td2[4];    /* time when such info is updated */
   int mlevel;    /* if there is a near high level SHIP */
   int tmlevel;
-  int a,b;         /* low fuel stop switch */
+  int a,b;         /* low fuel stop switches */
 }Data;
 
 
@@ -274,7 +274,7 @@ struct _Object{
   int id;           /* global identifier */
   int pid;          /* player identifier */
   char name[MAXTEXTLEN];   /* object name */
-  short player;
+  short player;     /* id of the player */
   short type;       /* type: SHIP,PLANET,PROJECTILE,... */
 
   short subtype;    /* object subtype */

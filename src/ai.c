@@ -48,14 +48,14 @@ int debugwar=FALSE;
 int debugshop=FALSE;
 int debug=FALSE;
 int debugai=FALSE;
+int debugexec=FALSE;
 int debugrisk=FALSE;
 #endif
 
-int MAXnf2a=15;
+int MAXnf2a=40;
 int MINnf2a=6;
 
-
-void aimisil(struct HeadObjList *lhobjs,Object *obj){
+void aimissile(struct HeadObjList *lhobjs,Object *obj){
   Object *ship_enemy;
   float d2;
   float a,b,ib;  
@@ -79,19 +79,17 @@ void aimisil(struct HeadObjList *lhobjs,Object *obj){
   
   if(ship_enemy==NULL){
     obj->ang_a=obj->ang_v=0;
+    obj->dest=NULL;
   }
   else{
-
     /* ship velocity angle */
     a=atan2(obj->vy ,obj->vx);
 
     /* objetive-ship angle */
     b=atan2(ship_enemy->y - obj->y,ship_enemy->x - obj->x);
 
-    //    ib=a - b;
-     ib=obj->a-(2*b-a);
+    ib=2*(obj->a-b);
 
-    //    ib=obj->a - b;
     switch(level){
     case 0:
       factor=1;
@@ -105,24 +103,19 @@ void aimisil(struct HeadObjList *lhobjs,Object *obj){
       break;
     }
 
-    //        factor=1;
-    
     if(ib<0){
       if(obj->ang_a<0)obj->ang_a=0;
-      //if(obj->ang_v<0)obj->ang_v=0;
       if(obj->ang_v<0)factor=1;
       obj->ang_a+=factor*obj->engine.ang_a;
       if(obj->ang_a>obj->engine.ang_a_max)obj->ang_a=obj->engine.ang_a_max;
     }
     if(ib>0){
       if(obj->ang_a>0)obj->ang_a=0;
-      //if(obj->ang_v>0)obj->ang_v=0;
       if(obj->ang_v>0)factor=1;
       obj->ang_a-=factor*obj->engine.ang_a;
       if(obj->ang_a<-obj->engine.ang_a_max)obj->ang_a=-obj->engine.ang_a_max;
     }
 
-    //    if((fabs(a-b)<0.1 ||1) && fabs(obj->a-b)<0.1){
     if(fabs(obj->a-b)<0.1){
       float v;
       obj->ang_a=0;
@@ -150,12 +143,11 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   struct Order *mainord,*execord,order;
   Object *objt=NULL;
   Segment *segment=NULL;
-  Object *ship_enemy;
+  Object *planet_enemy,*planet_ally,*planet_inexplore,*ship_enemy;
   float b,ia;
-  float d2_enemy;
+  float  d2_pinexplore,d2_penemy,d2_pally,d2_enemy;
   float vx,vy,v2;
   char text[MAXTEXTLEN];
-  float alcance2;
   struct NearObject nobjs[4];
   int i;
   float d2min;
@@ -187,10 +179,6 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   /***** Getting info *****/
 
   control=players[obj->player].control;
-
-#if DEBUG
-  if(debugai&&obj==cv){printf("time:%d %d\n",obj->cdata->td2[0],obj->cdata->a);}
-#endif
 
   if(obj->cdata->obj[0]!=NULL || (time - obj->cdata->td2[0]) > 50+obj->id%20){
 
@@ -225,10 +213,20 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     }
   }
 
-  /***** --Getting info *****/
-
   ship_enemy=obj->cdata->obj[0];
+  obj->dest=ship_enemy;
   d2_enemy=obj->cdata->d2[0];
+
+  planet_enemy=obj->cdata->obj[1];
+  d2_penemy=obj->cdata->d2[1]; /* HERE not used */
+
+  planet_inexplore=obj->cdata->obj[2];
+  d2_pinexplore=obj->cdata->d2[2];
+
+  planet_ally=obj->cdata->obj[3];
+  d2_pally=obj->cdata->d2[3];
+
+  /***** --Getting info *****/
 
   if(ship_enemy!=NULL  && obj->player==act_player && cv!=obj){
     int value=0; 
@@ -265,22 +263,12 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   }
 
 
-
   /******************** 
      select the order 
   ********************/
 
-
   mainord=ReadOrder(NULL,obj,MAINORD);
 
-  if(0&&cv==obj){
-    if(mainord!=NULL){
-      printf("mainord: %d\n",mainord->id);
-    }
-    else{
-      printf("mainord: NULL\n");
-    }
-  }
   if(mainord!=NULL){
     if(mainord->id==RETREAT){ /* in retreat, when reach destiny change the order */
       int sw=0;
@@ -334,9 +322,11 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   }
   
   mainordid=mainord!=NULL?mainord->id:-1;
-  danger=Risk(lhobjs,obj,mainordid,&order.id); /* Checking for danger */
+  danger=Risk(lhobjs,obj); /* Checking for danger */
 
-  if(0&&cv==obj)printf("risk: %d\n",danger);
+  order.id=NOTHING; /*default */
+  if(mainordid>=0)
+    order.id=mainordid;
 
 #if DEBUG
   if(debugai && cv==obj){
@@ -350,7 +340,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   }
 #endif
 
-  if(obj->actorder.id==-1 && obj->norder<10){ /*  */
+  if(obj->actorder.id==-1 && obj->norder<10){ 
 
     order.priority=20;
     order.time=0;
@@ -360,21 +350,27 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     order.e=order.f=order.g=order.h=0;
     order.i=order.j=order.k=order.l=0;
 
-    if(danger==0){ /* Execute mainorder */
+    if(mainord!=NULL){    /* RETREAT is mandatory */
+      if(danger==2 && mainord->id==RETREAT){
+	danger=0;
+      }
+    }
 
+    switch(danger){
+    case 0:    /* no danger, execute main order */
       if(mainord!=NULL){
 	/*order.id=ord->id; */
 	order.id=mainord->id;
 
 	if(mainord->id==EXPLORE && mainord->h==1){/* select sector */
 	  int a,b;
-
+	  
 	  SelectSector(&(players[obj->player].ksectors),obj,&a,&b);
 	  mainord->a=a*SECTORSIZE+SECTORSIZE/2;
 	  mainord->b=b*SECTORSIZE+SECTORSIZE/2;
 	  mainord->h=0;
 	}
-
+	
 	switch(mainord->id){
 	case RETREAT:
 	case GOTO:
@@ -387,23 +383,30 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	      order.id=NOTHING;
 	    }
 	  }
-
+	  
 	  if(objt!=NULL){
-
-/* 	ord.a:  x coordinates of the objetive. */
-/*      ord.b:  y coordinates of the objetive. */
-/*      ord.c: id of the objetive. -1 if is a universe point. */
-/*      ord.d: objetive type. */
-/*      ord.e:  objetive id. */
-/*      ord.g: mass of the objetive. */
-
+	    
+	    /* 	ord.a:  x coordinates of the objetive. */
+	    /*      ord.b:  y coordinates of the objetive. */
+	    /*      ord.c: id of the objetive. -1 if is a universe point. */
+	    /*      ord.d: objetive type. */
+	    /*      ord.e:  objetive id. */
+	    /*      ord.g: mass of the objetive. */
+	    
+	    
 	    order.c=mainord->c;
 	    order.d=mainord->d;
 	    order.e=objt->id;
 	    order.f=0;
 	    order.g=objt->mass;
 	    order.i=mainord->i;
-
+	    
+	    if(mainord->c!=objt->id) {
+	      if(mainord->i==PILOT){
+		order.i=0;
+	      }
+	    }
+	    
 	    if(objt==obj)order.id=STOP;/* PILOT RESCUED  */
 	    if(objt->type==PLANET){
 	      if(obj->habitat==H_PLANET){
@@ -430,7 +433,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 		}
 	      }
 	    }
-
+	    
 	    if(objt->type==SHIP){
 	      switch(objt->habitat){
 	      case H_PLANET:
@@ -457,10 +460,10 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 		break;
 	      }
 	    }
-
+	    
 	  } /*--if(objt!=NULL) */
-
-
+	  
+	  
 	  if(mainord->c==-1){ /* destination is a sector */ 
 	    if(fabs(obj->x-mainord->a)<400 && fabs(obj->y-mainord->b)<400){
 	      if(obj->player==act_player && mainord->h==0 && mainord->id!=EXPLORE){
@@ -500,16 +503,16 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	default:
 	  break;
 	}
-
+	
       } /*  if(mainord!=NULL) */
       else{
 #if DEBUG
 	if(debugai&&cv==obj)printf("macro=NULL actorder : %d\n",obj->actorder.id);
 #endif
-
+	
 	if(obj->mode==NAV){
 	  if(obj->habitat==H_SPACE){
-
+	    
 	    /***** 
 		   all is ok, is in space , there no orders=> 
 		   goto nearest empty or ally planet
@@ -562,16 +565,169 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 
 	}
       } /* else: mainord==NULL*/
-    } /*  if(danger==0) */
 
-    if(0&&order.id==GOTO){
-      if(obj->mode==LANDED){
-	order.id=TAKEOFF;	
+      break;
+    case 1:  /* enemy near */
+      if(ship_enemy!=NULL){
+	order.id=ATTACK;
+	obj->dest=ship_enemy;
+
+	if(obj->habitat==H_PLANET){
+	  if(obj->subtype==TOWER){
+	    if(ship_enemy->in!=obj->in){
+	      order.id=NOTHING;
+	    }
+	    break;
+	  }
+  
+	  if(obj->gas<.25*obj->gas_max || obj->state<25){
+	    if(obj->in->player==obj->player){
+	      if(obj->mode!=LANDED){
+		order.id=LAND;
+	      }
+	    }
+	  }
+	  if(obj->mode!=LANDED && 
+	     mainordid==STOP){
+	    order.id=LAND;
+	  }
+	  
+	  if(ship_enemy->habitat==H_SPACE && mainordid!=STOP){
+	    if(obj->weapon0.n>0.5*obj->weapon0.max_n && obj->gas>.50*obj->gas_max && obj->state>50){
+	      if(obj->engine.a_max){
+		order.id=TAKEOFF;
+	      }
+	    }
+	    else{
+	      if(obj->mode!=LANDED){
+		order.id=LAND;
+	      }
+	    }
+	  }
+	  if(mainordid==RETREAT){
+	    if(mainord->c!=obj->in->id){
+	      order.id=TAKEOFF;
+	    }
+	  }
+	}
       }
-    }
+      else{
+	fprintf(stderr,"WARNING: enemy null\n");
+      }
+      break;
+    case 2:  /* low fuel or damage*/
+
+      order.id=GOTO;
+      
+      if(obj->cdata->a==0)obj->cdata->a=1;
+      
+      obj->dest=NULL;
+      
+      if(planet_ally!=NULL && planet_inexplore!=NULL){
+	if(d2_pally<d2_pinexplore){
+	  obj->dest=planet_ally;
+	}
+	else{
+	  obj->dest=planet_inexplore;
+	}
+      }
+      
+      if(obj->dest==NULL){
+	obj->dest=planet_ally;
+	if(obj->dest==NULL){
+	  obj->dest=planet_inexplore;
+	}
+      }
+      
+      if(obj->dest==NULL){
+	obj->dest=planet_enemy;
+      }
+      
+      if(obj->dest==NULL){
+	order.id=EXPLORE;
+      }
+      
+      if(obj->habitat==H_PLANET){
+	if(ship_enemy==NULL){
+	  obj->dest=obj->in;
+	}
+	if(obj->in==obj->dest){
+	  order.id=LAND;
+	}
+	else{
+	  //	DelAllOrder(obj);
+	  order.id=TAKEOFF;  /* HERE if there no planets must attack here*/
+	}
+	
+	if(obj->mode==LANDED){
+	  order.id=NOTHING;
+	}
+      }
+      
+      /* 
+	 If ship is without gas and habitat SPACE => STOP 
+      */
 #if DEBUG
-    if(cv==obj && debugai)printf("ADD:(%d) %d\n",obj->id,order.id);
+      if(debugrisk && obj==cv){ 
+	printf("Risk(0) cdata: %d  %d\n",obj->cdata->a,order.id); 
+      } 
 #endif
+      
+      if(obj->cdata){
+	if(obj->gas>.75*obj->gas_max){
+	  obj->cdata->a=0;
+	}
+	if(obj->habitat==H_SPACE){
+	  
+	  if(obj->gas<.04*obj->gas_max && obj->cdata->a==1){
+	    order.id=STOP;
+	    obj->cdata->a=2;
+	  }
+	  
+#if DEBUG
+	  if(debugrisk && obj==cv){ 
+	    printf("Risk(-) cdata: %d  %d\n",obj->cdata->a,order.id); 
+	  } 
+#endif	
+	  if(obj->gas<.03*obj->gas_max){
+	    obj->cdata->a=2;
+	  }
+	  
+	  if(obj->gas>.04*obj->gas_max && obj->cdata->a==2){
+	    obj->cdata->a=3;
+	  }
+	  
+	  if(obj->gas>.25*obj->gas_max && obj->cdata->a==3){
+	    obj->cdata->a=1;
+	  }
+	  
+	  switch(obj->cdata->a){
+	  case 0:
+	    break;
+	  case 1:
+	    break;
+	  case 2:
+	    order.id=NOTHING;
+	    break;
+	  case 3:
+	    order.id=STOP;
+	    break;
+	  default:
+	    break;
+	  }
+	}
+      }
+      
+#if DEBUG
+      if(debugrisk && obj==cv){ 
+      printf("Risk(1) cdata: %d  %d\n",obj->cdata->a,order.id); 
+      } 
+#endif
+
+      break;
+    default:
+      break;
+    }
 
 
     /****************** 
@@ -595,6 +751,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       order.b=0;
       if(obj->dest!=NULL){
 	float rx,ry;
+
 	rx=obj->dest->x - obj->x;
 	ry=obj->dest->y - obj->y;
 	b=atan2(ry,rx);
@@ -636,31 +793,10 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       AddOrder(obj,&order);
       break;
     case TAKEOFF:
-
-      /* if is entering planet first STOP*/
-      if(obj->vy < 0 && obj->vx*obj->vx+obj->vy*obj->vy>100){
-	ExecStop(obj,0);
-	break;
-      }
-      b=PI/2;
-
-      /* MOVE */
       order.priority=20;
-      order.id=TURNACCEL;
+      order.id=TAKEOFF;
       order.time=20;
-      
-      order.a=b;            /* objetive */
-      order.b=0.2;          /* condition, precission */ 
-      order.c=0;
-
-      if(fabs(obj->a-b)>0.4){
-	order.id=TURN;
-	order.b=.08;
-	order.time=1;
-      }
-
       AddOrder(obj,&order);
-      
       break;
     case NOTHING:
       obj->ang_a=0;
@@ -674,31 +810,11 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     case EXPLORE:
     case GOTO:
     case RETREAT:
-#if DEBUG
-      if(cv==obj && debugai)printf("(%d): GOTO  time:%d g:%f\n",obj->id,time,order.h);
-      if(cv==obj && debugai)printf("(%d): GOTO  time:%d\n",obj->id,time);
-#endif
       if(obj->habitat==H_PLANET){
-
-#if DEBUG
-	if(debugai && obj->dest!=NULL){
-	  printf("(%c %d): ARRIVED TO %d\n",Type(obj),obj->id,obj->dest->id);
-	}
-#endif
-	/* 	DelAllOrder(obj); */
 	return;
       }
-#if DEBUG
-      if(cv==obj && debugai)printf("GOTO ord:%p\n",mainord);
-#endif
       if(danger){
 	if(obj->dest==NULL){
-#if DEBUG
-	  if(debugai){
-	    printf("(%d) %d Error ai() GOTO\n",obj->id,obj->pid);
-	  }
-#endif
-	  /* 	  ExecSave("dat/save"); */
 	  return;
 	}
 	order.a=obj->dest->x;
@@ -740,56 +856,25 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     execord=&(obj->actorder);
 
 #if DEBUG
-    if(debugai && cv==obj)printf("Executing ordid:%d time: %d\n",execord->id,time);
+    if(debugai && cv==obj){
+      printf("Executing ordid:%d time: %d\n",execord->id,time);
+      if(mainord!=NULL){
+	printf("main ordid: %d\n",mainord->id);
+      }
+    }
 #endif    
 
     if(execord->time>=0){
-      if(0&&cv==obj)printf("executing order: %d\n",execord->id);  
       switch(execord->id){
       case FIRE:
-	/* HERE this lines are not executed. */
 	printf("FIRE\n");
-	if(!obj->weapon->cont1 && obj->gas > obj->weapon->projectile.gascost && 
-	   d2_enemy<1000000 && d2_enemy>0){
-	  if(obj->dest==NULL){ /*  obsolete order */
-	    execord->time=0;
-	    break;
-	  }
-	  ia=obj->a - execord->a;
-	  if(ia > PI)ia-=2*PI;
-	  if(ia < -PI)ia+=2*PI;
-	  //	  if(cv==obj)printf("FIRE ia:%f\n",ia);  
-	  if( fabs(ia)<.05){
-	    obj->weapon=ChooseWeapon(obj);
-	    alcance2=.5*obj->weapon->projectile.max_vel*obj->weapon->projectile.life;
-	    alcance2*=alcance2;
-	    if(alcance2>d2_enemy){
-	      if(FireCannon(lhobjs,obj,NULL)==0){
-		Play(obj,FIRE0,1);
-	      }
-	      if(GameParametres(GET,GNET,0)==TRUE){
-		if(GetProc()==players[obj->player].proc){
-		  obj->ttl=0;
-		  SetModified(obj,SENDOBJMOD0);
-		}
-	      }
-	    }
-	  }
-	}
 	break;
       case NOTHING:
 
 #if DEBUG
 	if(debugai && cv==obj)printf("ai(): NOTHING %d\n",execord->time);
 #endif
-
 	if(obj->mode==LANDED && fabs(obj->a-PI/2)>0.05){
-	  execord->priority=20;
-	  execord->id=TURN;
-	  execord->a=PI/2;            /* objetive */
-	  execord->b=.04;
-	  execord->c=0;	
-	  execord->time=10;
 	  ExecTurn(obj,PI/2);
 	}
 	else{
@@ -799,51 +884,14 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	}
 	break;
       case TURNACCEL:
-#if DEBUG
-	if(debugai && cv==obj)printf("TURNACCEL %d\n",execord->time);
-#endif
-	if(obj->gas>0){
-	  obj->accel+=obj->engine.a;
-	  if(obj->accel > obj->engine.a_max)
-	    obj->accel=obj->engine.a_max;
-	  /* if max vel is reached, accel=0 */
-	  ia=b-execord->a;
-	  if(ia > PI)ia-=2*PI;
-	  else
-	    if(ia < -PI)ia+=2*PI;
-	  if(fabs(ia) < execord->b){
-	    if(v2>0.8*obj->engine.v2_max ){ 
-	      obj->accel=0; 
-#if DEBUG
-	      if(debugai && cv==obj)printf("v2 mayor:%f\n",v2);
-#endif
-	    }
-	    else{
-#if DEBUG
-	      if(debugai && cv==obj)printf("v2:%f\n",v2);
-#endif
-	    }
-#if DEBUG
-	    if(debugai && cv==obj)printf("iang (1):%f  %f\n",fabs(b-execord->a),execord->b);
-#endif
-	  }
-	  else{
-#if DEBUG
-	    if(debugai && cv==obj)printf("iang (2):%f  %f\n",fabs(b-execord->a),execord->b);
-#endif
-	  }
-	}
-	ExecTurn(obj,execord->a);
+	ExecTurnAccel(obj,execord->a,0.1);
 	break;
       case TURN:
-#if DEBUG
-	if(debugai && cv==obj)printf("TURN %d\n",execord->time);
-#endif
 	obj->accel=0;
 	ExecTurn(obj,execord->a);
 	break;
-
       case ACCEL:
+	ExecAccel(obj);
 	break;
 	
       case STOP:
@@ -854,9 +902,11 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	break;
       case ATTACK:
 #if DEBUG
-	if(0||(cv==obj &&debugai))printf("ATTACK %d\n",execord->time);
+	if(cv==obj && debugai)printf("ATTACK %d\n",execord->time);
 #endif
+
 	ExecAttack(lhobjs,obj,execord,mainord,d2_enemy);
+	
 	break;	
 
       case LAND:
@@ -865,6 +915,9 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 #endif
 	ExecLand(obj,execord);
 	break;
+      case TAKEOFF:
+	ExecTakeOff(obj);
+	  break;
       case EXPLORE:
       case RETREAT:
       case GOTO:
@@ -926,917 +979,6 @@ int HigherPoint(struct Planet *planet){
     s=s->next;
   }
   return(h);
-}
-
-void ExecGoto(Object *obj,struct Order *ord){
-  /* 
-     Send a ship to an universe point or to an object.
-     ord.a:  x coordinates of the objetive.
-     ord.b:  y coordinates of the objetive.
-     ord.c:  id of the objetive. -1 if is a universe point.
-     ord.d:  objetive type.
-     ord.e:  objetive id.
-     ord.f:  switch variable. (phase)
-     ord.g:  mass of the objetive
-     ord.h:  switch variable
-     ord.i:  subtype of the objetive
-     return:
-     0 if the objective is reached.
-
-     phase 0: (order.f)
-
-  */
-  float rx,ry;
-  float c;
-  float d2,d02;
-  float ab,bc,ac;
-  float b,v2;
-  int swaccel;
-
-
-  rx=ord->a - obj->x;
-  ry=ord->b - obj->y;
-
-  d2=rx*rx+ry*ry;
-
-  d02=40000+2000*(obj->id%10);
-  //  if(obj==cv)  printf("goto %d\n",GetTime());
-
-  /***** objetive reached *****/
-
-  switch((int)ord->d){
-  case PLANET:
-    d02=100000;  /* ori   d02=22500; */
-    if(ord->g>100000)d02=150000;
-    if(ord->g>125000)d02=200000;
-    if(d2<d02){  /* ori 40000 objetive reached. */
-      ExecBrake(obj,4);
-      return;
-    }
-    break;
-  case SHIP:
-    d02=40000+2000*(obj->id%10);
-    
-    if((int)ord->i==PILOT){d02=25;}
-    v2=obj->vx*obj->vx+obj->vy*obj->vy;
-    if(v2>225)d02*=2;
-    if(d2 <d02){  /* ori 40000 objetive reached. */
-      ExecStop(obj,0);
-      return;
-    }
-    break;
-  default:
-    d02=40+2*(obj->id%10);
-
-    if((int)ord->i==PILOT){d02=25;}
-    v2=obj->vx*obj->vx+obj->vy*obj->vy;
-    if(v2>225)d02*=2;
-    if(d2 <d02){  /* ori 40000 objetive reached. */
-      ExecStop(obj,0);
-      return;
-    }
-    break;
-  }
-  
-  if(d2 <d02){  /* ori 40000 objetive reached. */
-    ExecStop(obj,0);
-    printf("stop\n");
-    return;
-  }
-
-  /***** --objetive reached *****/
-
-  /**** direction angle *****/
-
-  c=atan2(ry,rx);
-  ac=obj->a-c;
-  if(ac > PI)ac-=2*PI;
-  if(ac < -PI)ac+=2*PI;
-  ac=ac >= 0 ? ac : -ac;
-
-  if((int)ord->f==1){
-    if(ac>.025){
-      ExecTurn(obj,c);
-      /*     return; */
-    }
-    else{
-      obj->ang_a=0;
-      ord->f=0;
-    }
-  }
-  else{
-    if(ac>.05){ 
-      ExecTurn(obj,c);
-      ord->f=1;
-      /*     return; */
-    }
-    else{
-      obj->ang_a=0;
-    }
-  }
-
-
-  /***** velocity angle *****/
-
-  v2=obj->vx*obj->vx+obj->vy*obj->vy;
-  b=atan2(obj->vy,obj->vx);  /*  velocity angle */
-  ab=obj->a-b;
-  if(ab > PI)ab-=2*PI;
-  if(ab < -PI)ab+=2*PI;
-  ab=ab >= 0 ? ab : -ab;
-  
-  bc=b-c;
-  if(bc > PI)bc-=2*PI;
-  if(bc < -PI)bc+=2*PI;
-  bc=bc >= 0 ? bc : -bc;
-  
-  if(obj->gas>0){
-    swaccel=0;
-
-
-   if(ab > .08 && bc > .08){
-      swaccel=1;
-    }
-    if(v2<0.9*obj->engine.v2_max*(1-0.4375*(obj->state<25))){
-      swaccel=1;
-    }
-    if(swaccel){
-      obj->accel+=obj->engine.a;
-      if(obj->accel > obj->engine.a_max)
-	obj->accel=obj->engine.a_max;
-    }
-    else{
-      obj->accel=0;
-    }
-  }
-  else{
-    obj->accel=0;
-  }
-  return;
-}
-
-
-void ExecGoto_00(Object *obj,struct Order *ord){
-  /* 
-     Send a ship to an universe point or to an object.
-     ord.a:  x coordinates of the objetive.
-     ord.b:  y coordinates of the objetive.
-     ord.c:  id of the objetive. -1 if is a universe point.
-     ord.d:  objetive type.
-     ord.e:  objetive id.
-     ord.f:  switch variable.
-     ord.g:  mass of the objetive
-     ord.h:  switch variable
-     ord.i:  subtype of the objetive
-     return:
-     0 if the objective is reached.
-  */
-  float rx,ry;
-  float c;
-  float d2,d02;
-  float ab,bc,ac;
-  float b,v2;
-  int swaccel;
-
-
-  rx=ord->a - obj->x;
-  ry=ord->b - obj->y;
-
-  d2=rx*rx+ry*ry;
-
-  d02=40000+2000*(obj->id%10);
-  //  if(obj==cv)  printf("goto %d\n",GetTime());
-
-
-  /***** objetive reached *****/
-
-  switch((int)ord->d){
-  case PLANET:
-    d02=100000;  /* ori   d02=22500; */
-    if(ord->g>100000)d02=150000;
-    if(ord->g>125000)d02=200000;
-    if(d2<d02){  /* ori 40000 objetive reached. */
-      ExecBrake(obj,4);
-      return;
-    }
-    break;
-  case SHIP:
-    d02=40000+2000*(obj->id%10);
-    
-    if((int)ord->i==PILOT){d02=25;}
-    v2=obj->vx*obj->vx+obj->vy*obj->vy;
-    if(v2>225)d02*=2;
-    if(d2 <d02){  /* ori 40000 objetive reached. */
-      ExecStop(obj,0);
-      return;
-    }
-    break;
-  default:
-    d02=40+2*(obj->id%10);
-
-    if((int)ord->i==PILOT){d02=25;}
-    v2=obj->vx*obj->vx+obj->vy*obj->vy;
-    if(v2>225)d02*=2;
-    if(d2 <d02){  /* ori 40000 objetive reached. */
-      ExecStop(obj,0);
-      return;
-    }
-    break;
-  }
-  
-  if(d2 <d02){  /* ori 40000 objetive reached. */
-    ExecStop(obj,0);
-    printf("stop\n");
-    return;
-  }
-
-  /***** --objetive reached *****/
-
-  /**** direction angle *****/
-
-  c=atan2(ry,rx);
-  ac=obj->a-c;
-  if(ac > PI)ac-=2*PI;
-  if(ac < -PI)ac+=2*PI;
-  ac=ac >= 0 ? ac : -ac;
-
-  if((int)ord->f==1){
-    if(ac>.025){
-      ExecTurn(obj,c);
-      /*     return; */
-    }
-    else{
-      obj->ang_a=0;
-      ord->f=0;
-    }
-  }
-  else{
-    if(ac>.05){ 
-      ExecTurn(obj,c);
-      ord->f=1;
-      /*     return; */
-    }
-    else{
-      obj->ang_a=0;
-    }
-  }
-
-
-  /***** velocity angle *****/
-
-  v2=obj->vx*obj->vx+obj->vy*obj->vy;
-  b=atan2(obj->vy,obj->vx);  /*  velocity angle */
-  ab=obj->a-b;
-  if(ab > PI)ab-=2*PI;
-  if(ab < -PI)ab+=2*PI;
-  ab=ab >= 0 ? ab : -ab;
-  
-  bc=b-c;
-  if(bc > PI)bc-=2*PI;
-  if(bc < -PI)bc+=2*PI;
-  bc=bc >= 0 ? bc : -bc;
-  
-  if(obj->gas>0){
-    swaccel=0;
-
-
-    if(ab > .08 && bc > .08){
-      swaccel=1;
-    }
-    if(v2<0.9*obj->engine.v2_max*(1-0.4375*(obj->state<25))){
-      swaccel=1;
-    }
-    if(swaccel){
-      obj->accel+=obj->engine.a;
-      //      if(obj->mode==LANDED)obj->mode=NAV;
-      if(obj->accel > obj->engine.a_max)
-	obj->accel=obj->engine.a_max;
-    }
-    else{
-      obj->accel=0;
-    }
-  }
-  else{
-    obj->accel=0;
-  }
-  return;
-}
-
-
-void ExecLand(Object *obj,struct Order *ord){
-  /*
-    version 01.Jan 2011 
-    Execute the order LAND in a planet.
-   */
-  float v2;
-  float x0;
-  float a,ia;
-  float b;
-  float dx,dy;
-  float vxmax,vymax;
-  float fvy;
-  float fa;/* 0.125; */
-  int swa,swvx,swvy;
-  int pmass;
-  int fabsdx;
-
-  b=PI/6; /* max ang */
-
-  if(obj->habitat!=H_PLANET){ /* obsolete order */
-    ord->time=0; 
-    return;
-  }
-
-  if(obj->mode==LANDED){
-    if(fabs(obj->a-PI/2)>0.05){
-      ExecTurn(obj,PI/2);
-      return;
-    }
-  }
-
-  v2=obj->vx*obj->vx+obj->vy*obj->vy;
-
-  /* Stopping */ 
-  if(v2>100){
-    ExecStop(obj,0);
-    return;
-  }
-
-  if(obj->vy*obj->vy>25){
-    ExecStop(obj,0);
-    return;
-  }
-
-  x0=ord->a+obj->radio+(ord->b-2.*obj->radio)*(obj->pid%20)/20.; /* Landing point */
-
-  dx=obj->x-x0;
-
-  if(dx>LXFACTOR/2 || dx<-LXFACTOR/2)dx*=-1;
-
-  if(dx>200)dx=200;
-  if(dx<-200)dx=-200;
-
-  vxmax=vymax=5;
-
-  fabsdx=fabs(dx);
-  if(fabsdx<100){vxmax=4;
-    if(fabsdx<50){vxmax=3;
-      if(fabsdx<25){vxmax=2;
-	if(fabsdx<15){vxmax=1;
-	  if(fabsdx<10){vxmax=.2;
-	  }
-	}
-      }
-    }
-  }
-
-  dy=obj->y-ord->f;
-
-  if(dy<100){vymax=4;
-    if(dy<50){vymax=2;
-      if(dy<30){vymax=1;
-      }
-    }
-  }
-
-  fvy=1-fabs(obj->vy/vymax);
-  if(fvy<0)fvy=0;
-  if(obj->vy>0)fvy=1;  
-
-/*  brake */
-  a=PI/2;
-
-  swvx=0;
-  if(dx>0){
-    if(obj->vx>-vxmax && obj->vx<-vxmax+1){a=-b;} /* OK */
-    if(obj->vx<-vxmax ){a=-b;swvx=1;}    /* brake */
-    if(obj->vx>-vxmax+1 ){a=b;swvx=1;} /*accel */
-  }
-  if(dx<0){
-    if(obj->vx>vxmax-1 && obj->vx<vxmax){a=b;} /* OK */
-    if(obj->vx<vxmax-1 ){a=-b;swvx=1;}  /* accel */
-    if(obj->vx>vxmax ){a=b;swvx=1;} /* brake */
-  }
-
-  swvy=0;
-  if(obj->vy<-vymax){swvy=1;}
-  if(obj->vy>1)swvy=0;
-  if(dy<0){swvy=1;}
-
-  if(swvy){
-    if(swvx){
-      if(a==-b)a=-b/2;
-      if(a==b)a=b/2;
-    }
-    else a=0;
-  }
-
-/* going down  */
-
-  if((fabs(obj->x-x0)< obj->radio)){
-
-    if(fabs(obj->vx)<1){
-      a=0;
-      swvx=0;
-      if(fabs(obj->a-PI/2)<.1)
-	obj->a=PI/2;
-      obj->vx=0;
-      obj->ang_a=0;
-      ord->f=ord->c;
-      dy=obj->y-ord->f;
-      if(dy<100)vymax=4;
-      if(dy<50)vymax=2;
-      if(dy<30)vymax=1;
-    }
-  }
-
-  ia=obj->a-a-PI/2;
-  if(ia > PI)ia-=2*PI;
-  if(ia < -PI)ia+=2*PI;
-
-  swa=0;
-  /*  if(ia>0.5*obj->engine.ang_a*DT*DT*(100./obj->mass)){ */
-  if(fabs(ia)>.07){
-
-
-
-    if(obj->a<PI/2-b)ia=-1;
-    if(obj->a>PI/2+b)ia=1;
-
-    if(obj->a<0)ia=-1;
-    if(obj->a<-PI/2)ia=1;
-
-
-    obj->ang_a+=obj->engine.ang_a*(ia > 0 ? -1 : 1);
-
-    if(obj->ang_a > obj->engine.ang_a_max) 
-      obj->ang_a=obj->engine.ang_a_max;
-    if(obj->ang_a < -obj->engine.ang_a_max)
-      obj->ang_a=-obj->engine.ang_a_max; 
-
-    if(ia>0 && obj->ang_a>0)obj->ang_a=0;
-    if(ia<0 && obj->ang_a<0)obj->ang_a=0;
-
-
-  }
-  else{
-    obj->ang_a=0;
-    obj->ang_v=0;
-    obj->a=a+PI/2;
-    swa=1;
-  }
-
-  if(swa==0){
-    if(swvy){
-      if(obj->a>0 && obj->a<PI)swa=1;
-    }
-  }
-  if((obj->vy > 0) && (obj->y > ord->f)){
-    swa=0;
-  }
-
-  /* accelerate */ 
-/*   if(d && obj==cv) */
-/*     printf("swvx=%d swvy=%d swa=%d dx=%.1f vxm=%.1f\n",swvx,swvy,swa,dx,vxmax); */
-
-  if(swa&&(swvx||swvy)){
-    pmass=obj->in->mass;
-    fa=1;
-
-    fa=(fabs(fabs(obj->vx)-vxmax)+fabs(fabs(obj->vy)-vymax))/10-0.1;
-    fa+=0.4*pmass/MAXPLANETMASS;
-    if(fa<.3)fa=.3; 
-    if(fa>1.1)fa=1.1; 
-
-    if(obj->gas>0){
-      obj->accel+=fa*obj->engine.a;
-      if(obj->accel > obj->engine.a_max)
-	obj->accel=obj->engine.a_max;
-    }
-  }
-  else{
-    obj->accel=0;
-  }
-  return;
-}
-
-
-void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct Order *morder,float d2){
-  /*
-    version 04 21Oct2010
-    attack subroutine
-  */
-  
-  float rx,ry,r2,b,d,ia,ib,ic,id;
-  float alcance2;
-  float angmin;
-  int swaccel=0;
-  int shot=0;
-
-  if(obj==NULL){
-    fprintf(stderr,"ERROR in ExecAttack()\n");
-    exit(-1); 
-  }
-
-  if(obj->dest==NULL){
-    ord->time=0;
-    return;
-  }
-  if(0&&obj==cv)printf("ExecAttack(1)\n");
-
-  if(obj->dest->in!=obj->in && obj->mode==LANDED){
-    ExecStop(obj,0);
-    return;
-  }
-  if(0&&obj==cv)printf("ExecAttack(2)\n");
-  if(morder!=NULL){
-    if(morder->id==STOP){
-      if(obj->vx*obj->vx+obj->vy*obj->vy>.4){
-	ExecStop(obj,0);
-	return;
-      }
-    }
-  }
-  if(0&&obj==cv)printf("ExecAttack(3)\n");
-  
-  /**** Shooting ******/
-
-  rx=obj->dest->x - obj->x;
-  ry=obj->dest->y - obj->y;
-  b=atan2(ry,rx);
-  r2=rx*rx+ry*ry;
-  ia=obj->a-b; /* angle between objetive and ship direction */
-  if(ia > PI)ia-=2*PI;
-  if(ia < -PI)ia+=2*PI;
-
-  if(0&&obj==cv)printf("aiming %f %f %f %f %f\n",fabs(ia),ia,obj->a,b,r2); 
-
-  angmin=0.05;
-  if(r2<10000)angmin*=2;
-
-  shot=0;
-  switch(obj->mode){
-  case NAV:
-    if(fabs(ia)<angmin){
-      if(0&&obj==cv)printf("aiming 2 %f %f \n",ia,ord->a); 
-      if(ia*ord->a<0 || fabs(ia)<.001){
-	if(0&&obj==cv)printf("aiming 3\n"); 
-	(ord->a)*=-1;
-	shot=1;
-      }
-    }
-    break;
-  case LANDED:
-    if(fabs(ia)<angmin){
-      shot=1;
-    }
-    break;
-  case SOLD:
-    return;    
-    break;
-  default:
-    fprintf(stderr,"mode %d unknown in ExecAttack() ship: (%d)%d\n",obj->mode,obj->player,obj->pid);
-    exit(-1);
-    break;
-  }
-
-  if(shot){
-    obj->weapon=ChooseWeapon(obj);
-    alcance2=.5*obj->weapon->projectile.max_vel*obj->weapon->projectile.life;
-    alcance2*=alcance2;
-    if(alcance2>rx*rx+ry*ry){
-      if(FireCannon(lhobjs,obj,obj->dest)==0){
-	Play(obj,FIRE0,1);
-      }
-      if(GameParametres(GET,GNET,0)==TRUE){
-	if(GetProc()==players[obj->player].proc){
-	  obj->ttl=0;
-	  SetModified(obj,SENDOBJMOD0);
-	}
-      }
-    }
-
-  }
-  /**** --Shooting ******/
-
-  /***** if a big asteroid is near: stop *****/
-  if(obj->dest->type==ASTEROID && 
-     (obj->dest->subtype==ASTEROID1 || obj->dest->subtype==ASTEROID2)){
-    if(d2<160000 && obj->vx*obj->vx+obj->vy*obj->vy>50){    
-      ExecStop(obj,0);
-      return;
-    }
-  }
-
-
-  /***** inner planet *****/
-  
-  if(obj->habitat==H_PLANET && obj->engine.a_max && obj->mode!=LANDED){
-
-
-    /***** if is near ground: go up *****/
-
-    if(obj->y<ord->b+(.35+.10*obj->in->mass/MAXPLANETMASS)*LYFACTOR){  /* refered to higher planet point */
-      ord->time=0;
-      if(obj->a<PI/2 && obj->a>-PI/2){
-	obj->ang_a+=obj->engine.ang_a;
-      }
-      else{
-	obj->ang_a-=obj->engine.ang_a;
-      }
-      
-      if(obj->ang_a > obj->engine.ang_a_max) 
-	obj->ang_a=obj->engine.ang_a_max; 
-      if(obj->ang_a < -obj->engine.ang_a_max) 
-	obj->ang_a=-obj->engine.ang_a_max; 
-      
-      ib=obj->a-PI/2;
-      if(ib > PI)ib-=2*PI;
-      if(ib < -PI)ib+=2*PI;
-
-      if(fabs(ib)<0.5){  /**obj->engine.ang_a*DT*DT*(100./obj->mass))  */
- 	obj->ang_a=0; 
-      }
-
-      if(obj->vy < 10+(float)obj->in->mass/MINPLANETMASS){
-	if(obj->engine.a_max){
-	  obj->accel+=obj->engine.a;
-	  if(obj->accel > obj->engine.a_max)
-	    obj->accel=obj->engine.a_max;
-	}
-      }
-      else{
-	obj->accel=0;
-      }
-      return;
-    }    /***** --if is near ground go up *****/
-    else{  
-      int vmax2=144;
-      if(obj->vx*obj->vx+obj->vy*obj->vy>vmax2 || obj->vy>0 ){
-	ExecStop(obj,0);
-	return;
-      }
-    }
-  }
-  /* --inner planet */
-  
-  /* turning  */
-  if(fabs(ia)>.1){
-    if(ia>0)ic=0.25;
-    if(ia<0)ic=-0.25;
-    ExecTurn(obj,b-ic);
-  }
-
-  /***** accel *****/
-
-  if(morder!=NULL){
-    if(morder->id==RETREAT||morder->id==STOP){
-      return;
-    }
-  }
-
-  switch(obj->type){
-  case SHIP:
-    swaccel=0;
-    if(obj->mode==LANDED){
-      if(obj->gas<.4*obj->gas_max){
-	obj->accel=0;  
-	return;
-      }
-      if(obj->weapon0.n<0.75*obj->weapon0.max_n){
-	obj->accel=0;  
-	return;
-      }
-    }
-    
-    if(obj->habitat==H_PLANET){
-      obj->accel=0;
-      swaccel=0;
-    }
-    else{
-      d=atan2(obj->vy,obj->vx);
-      id=obj->a-d; /* angle between ship and ship velocity */
-      if(id > PI)id-=2*PI;
-      if(id < -PI)id+=2*PI;
-
-      if(d2<40000){
-	swaccel=1;
-	obj->accel=0;
-	return;
-      }
-
-      if(fabs(id)<.1&& fabs(obj->vx*obj->vx+obj->vy*obj->vy - obj->engine.v2_max)<0.1){
-	obj->accel=0;
-	swaccel=0;
-	return;
-      }
-      else{swaccel=1;}
-      
-      
-      /* Accelerating */
-      if(fabs(id)>.1){
-	swaccel=1;
-      }
-    }
-
-    if(swaccel){
-      if(obj->engine.a_max){
-	obj->accel+=obj->engine.a;
-	if(obj->accel>obj->engine.a_max)obj->accel=obj->engine.a_max;
-      }
-    }
-    break;
-  default:
-    break;
-  }
-}
-
-void ExecTurn(Object *obj,float b){
-  /* 
-     version 02
-     The ship turns to angle b
-  */
-  int sgnia;
-  float inca;
-  float ia;
-
-  ia=obj->a-b;
-  if(ia > PI)ia-=2*PI;   /*  ia+=((ia<-PI)-(ia>PI))*(2*PI); */
-  else{
-    if(ia < -PI)ia+=2*PI;
-  }
-
-  if(fabs(ia)<.05 && fabs(obj->ang_v)<.05){ 
-    obj->a=b; 
-    obj->ang_a=obj->ang_v=0; 
-  } 
-  else{
-    
-    sgnia=ia>0?-1:1;
-
-
-    if(fabs(obj->ang_v)>fabs(0.28*ia)){ /* decelerate */
-     sgnia=obj->ang_v>0?-1:1;      
-    }      
-
-    if(1&&obj->mode==LANDED){
-      if(fabs(ia)>PI/2){
-	if(obj->a<-PI/2 || obj->a>PI/2)sgnia=-1;
-	if(obj->a<PI/2 )sgnia=1;
-      }
-    }
-
-
-    
-    inca=sgnia*obj->engine.ang_a;
-    
-    if(inca>0 && obj->ang_a<0)obj->ang_a=0;
-    else{
-      if(inca<0 && obj->ang_a>0)obj->ang_a=0;
-    }
-    
-    obj->ang_a+=inca;
-    
-    if(obj->ang_a > obj->engine.ang_a_max){ 
-      obj->ang_a=obj->engine.ang_a_max; 
-    }
-    else{
-      if(obj->ang_a < -obj->engine.ang_a_max) 
-	obj->ang_a=-obj->engine.ang_a_max; 
-    }
-  }
-  return;
-}
-
-
-void ExecStop(Object *obj,float v0){
-  /*
-    version 04
-    Stop the ship to a velocity lower than v0.
-   */
-  float a,b,ia;
-  float v2;
-  float ang_v;
-  float inca;
-  float A;
-
-  v0=0;
-
-  if(obj->mode==LANDED){
-    if(fabs(obj->a-PI/2)>0.05){
-      ExecTurn(obj,PI/2);
-    }
-    else{
-      obj->ang_v*=.95;
-      obj->ang_a=0;
-    }
-    return;
-  }
-
-  if(!obj->engine.a_max)return;
-
-  v2=obj->vx*obj->vx+obj->vy*obj->vy;
-
-  if(v2<0.01){
-
-    obj->accel=0;
-    if(obj->ang_v>0.025||obj->ang_v<.025){
-      obj->ang_v*=.95;
-      obj->ang_a=0;
-    }
-    return;
-  }
-  ang_v=atan2(obj->vy,obj->vx);
-
-  b=ang_v+PI;
-  if(b>PI)b-=2*PI;
-
-  a=obj->a - b;
-  if(a > PI)a-=2*PI;
-  if(a < -PI)a+=2*PI;
-  ia=fabs(a);
-
-  inca=obj->engine.ang_v_max*DT;
-
-  if(ia>inca){
-    if(obj->habitat!=H_PLANET)obj->accel*=.8;
-    ExecTurn(obj,b);
-  }
-  else{
-    obj->a=b;
-    obj->ang_a=0;
-  }
-  if(ia<PI/2){
-    if(v2>20)
-      A=1;
-    else if(v2>2)
-      A=.2;
-    else if(v2>.01)
-      A=0.01;
-    else{
-      A=0;
-      obj->accel=.5;
-    }
-    obj->accel+=A*obj->engine.a;
-    if(obj->accel>obj->engine.a_max)
-      obj->accel=obj->engine.a_max;
-  }
-  else{
-    obj->accel=0;
-  }
-}
-
-
-int ExecBrake(Object *obj,float v0){
-  /*
-    version 01
-    the ship decelerate to speed v0
-    returns:
-    0 objetive reached
-    1 velocity is greater than v0
-    2 error, ship has not engine
-   */
-  float a,b,ia;
-  float v2;
-
-  if(!obj->engine.a_max)return(2);
-
-  v2=obj->vx*obj->vx+obj->vy*obj->vy;
-
-  if(v2<v0*v0){
-    //    obj->accel=0;
-    return(0); /* reached objective */
-  }
-
-  b=atan2(obj->vy,obj->vx)+PI;
-  if(b>PI)b-=2*PI;
-
-  a=obj->a - b;
-  if(a > PI)a-=2*PI;
-  if(a < -PI)a+=2*PI;
-  ia=fabs(a);
-
-  if(ia>obj->engine.ang_v_max*DT){
-    obj->accel=0;
-    ExecTurn(obj,b);
-  }
-  else{
-    obj->a=b;
-    obj->ang_a=0;
-  }
-
-  if(ia<.1){
-    if(v2-v0*v0<50){
-      obj->accel=0;
-    }
-    obj->accel+=obj->engine.a;
-    if(obj->accel>obj->engine.a_max)
-      obj->accel=obj->engine.a_max;
-  }
-  else{
-    obj->accel=0;
-  }
-  return(1);
 }
 
 
@@ -1911,16 +1053,8 @@ Object *CCUpgrade(struct HeadObjList *lhobjs,struct Player *player){
 
     ls=ls->next;
   }
-  if(0){
-    if(retobj!=NULL){
-      printf("player:%d UPGRADE %d \n",retobj->player,retobj->pid);
-    }
-    else{
-      printf("player: UPGRADE NULL \n");
-    }
-  }  
+
   return(retobj);
-  
 }
 
 
@@ -1976,13 +1110,12 @@ int CCBuy(struct CCDATA *ccdata,struct Player player,int *planetid){
     return(-1);
   }
 
-  /* if there unknown planets, 5 explorer by planet max 8.*/
+  /* if there unknown planets, 7 explorer by planet max 12.*/
   np=GameParametres(GET,GNPLANETS,0);
 
-
-  if(np-ccdata->nkplanets>0 && ccdata->nexplorer<8){
-    if(ccdata->nkplanets>1 || ccdata->nexplorer<5){
-      if((float)ccdata->nenemy/ccdata->nplanets < 1.5){
+  if(ccdata->nexplorer<12){
+    if(ccdata->nkplanets>0){
+      if((float)np/ccdata->nkplanets*3.0 > ccdata->nexplorer){
 	*planetid=ccdata->planethighresource->id;
 	return(EXPLORER);
       }
@@ -2035,7 +1168,7 @@ int CCBuy(struct CCDATA *ccdata,struct Player player,int *planetid){
 
 void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
   /*
-    version 07 070411
+    version 08 311012
     Manage COMPUTER SHIPS orders.
     equivalent to human keyboard orders.
     one order by turn (20/s.)
@@ -2044,6 +1177,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
     Decide if buy ships
     Decide if send some ship to a planet.
     Decide if send some ship to explore.
+    Decide if retreat.
     Decide if send ship to another one, to form groups.(TODO)
   */
 
@@ -2081,7 +1215,6 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
 
 
   time=GetTime();
-
 
   /* gathering information */
   nplanets=GameParametres(GET,GNPLANETS,0)+1;
@@ -2189,7 +1322,6 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
 	CalcEnemyPlanetInfo(lhobjs,ccdata,obj);
       }
     }
-
     /*--Getting info from enemy */
     
     actord=ReadOrder(NULL,obj,MAINORD);
@@ -2210,6 +1342,43 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
       AddOrder(obj,&ord);
       actord=ReadOrder(NULL,obj,MAINORD);
     }
+
+    /* RETREAT */
+    if(obj->state<25 && actord->id!=RETREAT){
+      Object *obj_dest=NULL;
+      Object *obj_destb=NULL;
+      float d2,d2b;
+
+      obj_dest=NearestObj(lhobjs,obj,PLANET,PINEXPLORE,&d2); // HERE only one function
+      obj_destb=NearestObj(lhobjs,obj,PLANET,PALLY,&d2b);
+      
+      if(obj_dest!=NULL && obj_destb!=NULL ){
+	if(d2b<d2){
+	  obj_dest=obj_destb;
+	}
+      }
+      if(obj_dest==NULL){
+	obj_dest=obj_destb;
+      }   
+      if(obj_dest!=NULL){      
+	ord.priority=1;
+	ord.id=RETREAT;
+	ord.time=0;
+	ord.g_time=time;
+	ord.a=obj_dest->x;
+	ord.b=obj_dest->y;
+	ord.c=obj_dest->id;
+	ord.d=obj_dest->type;
+	ord.e=obj_dest->pid;
+	ord.f=ord.g=ord.h=0;
+	ord.i=ord.j=ord.k=ord.l=0;
+	
+	DelAllOrder(obj);
+	AddOrder(obj,&ord);
+	actord=ReadOrder(NULL,obj,MAINORD);
+      }
+    }
+    /* --RETREAT */
 
     switch(actord->id){
     case NOTHING:
@@ -2232,6 +1401,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
 	  case 2:
 	    if(pinfo1!=NULL){
 	      if(pinfo1->nassigned<MAXnf2a){ // HERE this number must be global
+		/* send fighter to meet planet */
 		nobjs[0].obj=ccdata->planet2meet;
 	      }
 	    }
@@ -2246,19 +1416,12 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
 	    break;
 	  case 3:
 	    if(obj->habitat==H_PLANET && obj->in->id==ccdata->planet2meet->id){
+	      /* send fighter to attack planet */
 	      nobjs[0].obj=ccdata->planet2attack;
+	      
 #if DEBUG
 	      if(debugwar){
 		printf("player: %d send %d to attack\n",ccdata->player,obj->pid);
-	      }
-#endif
-	    }
-	    if(0&&obj->habitat==H_PLANET && obj->in->id==ccdata->planet2attack->id){
-	      ccdata->time=0;
-	      ccdata->war=0;
-#if DEBUG
-	      if(debugwar){
-		printf("attack finished(0)\n");
 	      }
 #endif
 	    }
@@ -2321,60 +1484,59 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
 	break;
       case NAV:/* actual order=NOTHING */
 
-	if(1){
-	  if(obj->gas>0.25*obj->gas_max && obj->cdata->a==0){ /* return or explore*/
-	    naplanet=NearestObj(lhobjs,obj,PLANET,PALLY,&d2); /* double loop */
-	    niplanet=NearestObj(lhobjs,obj,PLANET,PINEXPLORE,&d2); /* double loop */
-	    
-	    neplanet=NULL;
-	    if(naplanet==NULL  && niplanet==NULL){ 
-	      neplanet=NearestObj(lhobjs,obj,PLANET,PENEMY,&d2); /* double loop */
-	    } 
-	    nplanet=NULL;
-	    if(naplanet!=NULL){
-	      nplanet=naplanet;
-	    }
-	    if(niplanet!=NULL){
-	      nplanet=niplanet;
-	    }
-	    if(nplanet==NULL){
-	      nplanet=neplanet;
-	    }
-	    
-	    if (nplanet!=NULL){
-	      ord.priority=1;
-	      ord.id=GOTO;
-	      ord.time=0;
-	      ord.g_time=time;
-	      ord.a=nplanet->x;
-	      ord.b=nplanet->y;
-	      ord.c=nplanet->id;
-	      ord.d=nplanet->type;
-	      ord.e=nplanet->pid;
-	      ord.f=ord.h=0;
-	      ord.g=nplanet->mass;
-	      DelAllOrder(obj);
-	      AddOrder(obj,&ord);
-	      ordersw++;
-	    }
-	    else{
-	      ord.priority=1;
-	      ord.id=EXPLORE;
-	      ord.time=0;
-	      ord.g_time=time;
-	      ord.a=0;
-	      ord.b=0;
-	      ord.c=-1;
-	      ord.d=0;
-	      ord.e=ord.f=ord.g=0;
-	      ord.h=1;
-	      ord.i=ord.j=ord.k=ord.l=0;
-	      DelAllOrder(obj);
-	      AddOrder(obj,&ord);	      
-	      ordersw++;
-	    }
+	if(obj->gas>0.25*obj->gas_max && obj->cdata->a==0){ /* return or explore*/
+	  naplanet=NearestObj(lhobjs,obj,PLANET,PALLY,&d2); /* double loop */
+	  niplanet=NearestObj(lhobjs,obj,PLANET,PINEXPLORE,&d2); /* double loop */
+	  
+	  neplanet=NULL;
+	  if(naplanet==NULL  && niplanet==NULL){ 
+	    neplanet=NearestObj(lhobjs,obj,PLANET,PENEMY,&d2); /* double loop */
+	  } 
+	  nplanet=NULL;
+	  if(naplanet!=NULL){
+	    nplanet=naplanet;
 	  }
-	} //if(1)
+	  if(niplanet!=NULL){
+	    nplanet=niplanet;
+	  }
+	  if(nplanet==NULL){
+	    nplanet=neplanet;
+	  }
+	  
+	  if (nplanet!=NULL){
+	    ord.priority=1;
+	    ord.id=GOTO;
+	    ord.time=0;
+	    ord.g_time=time;
+	    ord.a=nplanet->x;
+	    ord.b=nplanet->y;
+	    ord.c=nplanet->id;
+	    ord.d=nplanet->type;
+	    ord.e=nplanet->pid;
+	    ord.f=ord.h=0;
+	    ord.g=nplanet->mass;
+	    DelAllOrder(obj);
+	    AddOrder(obj,&ord);
+	    ordersw++;
+	  }
+	  else{
+	    ord.priority=1;
+	    ord.id=EXPLORE;
+	    ord.time=0;
+	    ord.g_time=time;
+	    ord.a=0;
+	    ord.b=0;
+	    ord.c=-1;
+	    ord.d=0;
+	    ord.e=ord.f=ord.g=0;
+	    ord.h=1;
+	    ord.i=ord.j=ord.k=ord.l=0;
+	    DelAllOrder(obj);
+	    AddOrder(obj,&ord);	      
+	    ordersw++;
+	  }
+	}
+	
 	break;
       case SOLD:
 	ls=ls->next;continue;
@@ -2399,6 +1561,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
       
       break;
     case GOTO:
+    case RETREAT:
       if(obj->mode==LANDED){
 	ord.priority=1;
 	ord.id=NOTHING;
@@ -2408,7 +1571,6 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
 	ord.i=ord.j=ord.k=ord.l=0;
 	DelAllOrder(obj);
 	AddOrder(obj,&ord);
-	
       }
       break;
     case EXPLORE:
@@ -2453,20 +1615,19 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
 	  AddOrder(obj,&ord);
 	  ordersw++;
 	}
-	else{ /*if there no known planets, no own planets: stop */ 
+	else{ /*if there no known planets, no own planets: explore */ 
 	  /* */
-	  if(sw==1){ 
-	    /* if is out universe and nplanet==NULL 
-	       -> GOTO known universe. goto 0,0 */
+	  if(!(sw&2)){ /* has gas */ 
 	    ord.priority=1;
-	    ord.id=GOTO;
-	    ord.time=0;
+	    ord.id=EXPLORE;
+	    ord.time=10;
 	    ord.g_time=time;
 	    ord.a=0;
 	    ord.b=0;
 	    ord.c=-1;
 	    ord.d=0;
-	    ord.e=ord.f=ord.g=ord.h=0;
+	    ord.e=ord.f=ord.g=0;
+	    ord.h=1;
 	    ord.i=ord.j=ord.k=ord.l=0;
 	    DelAllOrder(obj);
 	    AddOrder(obj,&ord);
@@ -2475,7 +1636,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
 	  else{
 	    ord.priority=1;
 	    ord.id=STOP;
-	    ord.time=0;
+	    ord.time=10;
 	    ord.g_time=time;
 	    ord.a=ord.b=ord.c=ord.d=ord.e=ord.f=ord.g=ord.h=0;
 	    ord.i=ord.j=ord.k=ord.l=0;
@@ -2530,50 +1691,67 @@ Object *ObjMinExperience(struct HeadObjList *lhobjs,int player){
   /* 
      return a LANDED object (EXPLORER or FIGHTER) from player player
      with less experience in order to sell it.
+     don't send the last one.
   */
   
   struct ObjList *ls;
   Object *obj;
   int level=0;
   float experience=0;
-  
+  int n=0;  
+
   obj=NULL;
   ls=lhobjs->next;
   while(ls!=NULL){
     if(ls->obj->player==player){
-      if(ls->obj->type==SHIP && ls->obj->mode==LANDED){
+      if(ls->obj->type==SHIP){
 
 	switch(ls->obj->subtype){
 	case EXPLORER:
 	case FIGHTER:
-	  if(obj==NULL){ /* first element */
-	    level=ls->obj->level;
-	    experience=ls->obj->experience;
-	    obj=ls->obj;
-	  }
-	  if(ls->obj->level<=level){
-	    if(ls->obj->level<level){
+	case QUEEN:
+	  n++;
+	  break;
+	default:
+	  break;
+	}
+	
+	if(ls->obj->mode==LANDED){
+	  switch(ls->obj->subtype){
+	  case EXPLORER:
+	  case FIGHTER:
+	    if(obj==NULL){ /* first element */
 	      level=ls->obj->level;
 	      experience=ls->obj->experience;
 	      obj=ls->obj;
 	    }
-	    else{
-	      if(ls->obj->experience<experience){
+	    if(ls->obj->level<=level){
+	      if(ls->obj->level<level){
+		level=ls->obj->level;
 		experience=ls->obj->experience;
 		obj=ls->obj;
 	      }
+	      else{
+		if(ls->obj->experience<experience){
+		  experience=ls->obj->experience;
+		  obj=ls->obj;
+		}
+	      }
+	      if(obj->level==0 && obj->experience==0 && n>1)return(ls->obj);
 	    }
-	    if(obj->level==0 && obj->experience==0)return(ls->obj);
+	    break;
+	  default:
+	    break;
 	  }
-	  break;
-	default:
-	  break;
-	}	
+	}
       }
     }
     ls=ls->next;
   }
-  return(obj);
+  if(n>1)
+    return(obj);
+  else
+    return(NULL);
 }
 
 
@@ -2625,24 +1803,19 @@ Object *Coordinates(struct HeadObjList *lhobjs,int id,float *x,float *y){
 }
 
 
-int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
+int Risk(struct HeadObjList *lhobjs,Object *obj){
   /* 
-     version 07 11Mar2011
+     version 08 16oct2012
      check if there are enemies, low fuel, ship is very damned or low ammunition
-     choose the order 
-     order can be ATTACK, TAKEOFF, GOTO, NOTHING, LAND, STOP.
-     -TODO Add GOAWAY
 
      returns the type of danger found:
      0  no danger,
      >0 if there some danger: enemies, low gas, low state
      1 if there an enemy
-     2 if has low gas or if the damage is high
-     in *orderid the id of the order
+     2 if has low gas or high damage.
   */
 
-  Object *planet_enemy,*planet_ally,*planet_inexplore,*ship_enemy;
-  float  d2_inexplore,d2_enemy,d2_ally;
+  Object *ship_enemy;
 
   int i;
   int num_actions=3;
@@ -2657,10 +1830,14 @@ int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
     exit(-1);
   }
 
-  *orderid=NOTHING; /*default, no problem */
+
+#if DEBUG
+  if((debugrisk)&&cv==obj){
+    printf("RISK\n");
+  }
+#endif
 
   ship_enemy=obj->cdata->obj[0];
-  obj->dest=ship_enemy;
 
   /******** no danger *************/
   if(ship_enemy == NULL && 
@@ -2675,16 +1852,6 @@ int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
   }     
   /********************************/
 
-  planet_enemy=obj->cdata->obj[1];
-  d2_enemy=obj->cdata->d2[1]; /* HERE not used */
-
-  planet_inexplore=obj->cdata->obj[2];
-  d2_inexplore=obj->cdata->d2[2];
-
-  planet_ally=obj->cdata->obj[3];
-  d2_ally=obj->cdata->d2[3];
-
-
   if(ship_enemy!=NULL){
 
     action[0]*=.5;action[2]*=.5;
@@ -2692,11 +1859,9 @@ int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
 
     if(obj->subtype==TOWER){
       if(ship_enemy->in==obj->in){
-	*orderid=ATTACK;
 	ret=1;
       }
       else{
-	*orderid=NOTHING;
 	ret=0;
       }
       return(ret);
@@ -2740,6 +1905,7 @@ int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
     if(obj->gas<.25*obj->gas_max){
       action[1]*=.5;
       action[2]*=1.2;
+      if(obj==cv)printf("\taction 2 %f\n",action[2]);
     }
     if(obj->mode==LANDED){
       if(obj->weapon0.n<.75*obj->weapon0.max_n){
@@ -2766,203 +1932,31 @@ int Risk(struct HeadObjList *lhobjs,Object *obj,int morderid,int *orderid){
   if(obj->weapon0.n+obj->weapon1.n+obj->weapon2.n<20){action[2]*=1.2;}
   if(obj->state<25){
     action[2]*=1.5;
-    if(obj->mode!=LANDED){
-      action[1]=0;
-    }
+    /* if(obj->mode!=LANDED){ */
+    /*   action[1]=0; */
+    /* } */
   }
-
-  if(morderid==RETREAT){
-    if(obj->mode!=LANDED){
-      action[0]=1;action[1]=0;
-      action[2]=0;    
-    }
-    /*HERENEW
-      if(obj->habitat==H_PLANET){
-      action[0]=0;action[1]=1;
-      action[2]=0;
-      }
-    */
-  }
-
 
   max_action=0;
   for(i=0;i<num_actions;i++){
 #if DEBUG
-    if((0||debugrisk)&&cv==obj)printf("%f ",action[i]);
+    if((debugrisk)&&cv==obj)printf("%f ",action[i]);
 #endif
     if(action[i]>action[max_action])max_action=i;
   }
+#if DEBUG
+    if(debugrisk&&cv==obj)printf("\n");
+#endif
 
 #if DEBUG
   if((debugrisk)&&cv==obj){
-    printf("maxaction=%d mode:%d\n",max_action,obj->mode);
-    printf("state %f\n",obj->state);
-    printf("gas %f\n",obj->gas);
-  }
-#endif
-  switch(max_action){
-  case 0:  /* NOTHING */
-    ret=0;
-    break;
-  case 1:  /* ATTACK */
-    *orderid=ATTACK;
-    ret=1;
-    if(obj->habitat==H_PLANET){
-      if(obj->gas<.25*obj->gas_max || obj->state<25){
-	if(obj->in->player==obj->player){
-	  if(obj->mode!=LANDED){
-	    *orderid=LAND;
-	  }
-	}
-      }
-      if(obj->mode!=LANDED && 
-	 morderid==STOP){
-	*orderid=LAND;
-      }
-      
-      if(ship_enemy->habitat==H_SPACE && morderid!=STOP){
-	if(obj->weapon0.n>0.5*obj->weapon0.max_n && obj->gas>.50*obj->gas_max && obj->state>50){
-	  if(obj->engine.a_max){
-	    *orderid=TAKEOFF;
-	  }
-	}
-	else{
-	  if(obj->mode!=LANDED){
-	    *orderid=LAND;
-	  }
-	}
-      }
-    }
-
-    break;
-  case 2:  /* GOTO nearest save planet */
-    ret=2;
-    *orderid=GOTO;
-
-    if(obj->cdata->a==0)obj->cdata->a=1;
-
-    obj->dest=NULL;
-
-    if(planet_ally!=NULL && planet_inexplore!=NULL){
-      if(d2_ally<d2_inexplore){
-	obj->dest=planet_ally;
-      }
-      else{
-	obj->dest=planet_inexplore;
-      }
-    }
-    
-    if(obj->dest==NULL){
-      obj->dest=planet_ally;
-      if(obj->dest==NULL){
-	obj->dest=planet_inexplore;
-      }
-    }
-
-    if(obj->dest==NULL){
-      obj->dest=planet_enemy;
-    }
-
-    if(obj->dest==NULL){
-      *orderid=EXPLORE;
-    }
-
-    if(obj->habitat==H_PLANET){
-      if(ship_enemy==NULL){
-	obj->dest=obj->in;
-      }
-    }
-
-    if(obj->habitat==H_PLANET){
-      if(obj->in==obj->dest){
-	*orderid=LAND;
-      }
-      else{
-	//	DelAllOrder(obj);
-	*orderid=TAKEOFF;  /* HERE if there no planets must attack here*/
-
-      }
-      if(obj->mode==LANDED){
-	*orderid=NOTHING;
-      }
-    }
-
-    /* 
-       If ship is without gas => STOP 
-    */
-#if DEBUG
-    if(debugrisk && obj==cv){ 
-      printf("Risk(0) cdata: %d  %d\n",obj->cdata->a,*orderid); 
-    } 
-#endif
-
-    if(obj->cdata){
-      if(obj->gas>.75*obj->gas_max){
-	obj->cdata->a=0;
-      }
-      if(obj->habitat==H_SPACE){
-	
-	if(obj->gas<.04*obj->gas_max && obj->cdata->a==1){
-	  *orderid=STOP;
-	  obj->cdata->a=2;
-	}
-	
-#if DEBUG
-	if(debugrisk && obj==cv){ 
-	  printf("Risk(-) cdata: %d  %d\n",obj->cdata->a,*orderid); 
-	} 
-#endif	
-	if(obj->gas<.03*obj->gas_max){
-	  obj->cdata->a=2;
-	}
-	
-	if(obj->gas>.04*obj->gas_max && obj->cdata->a==2){
-	  obj->cdata->a=3;
-	}
-	
-	if(obj->gas>.25*obj->gas_max && obj->cdata->a==3){
-	  obj->cdata->a=1;
-	}
-	
-	switch(obj->cdata->a){
-	case 0:
-	  break;
-	case 1:
-	  break;
-	case 2:
-	  *orderid=NOTHING;
-	  break;
-	case 3:
-	  *orderid=STOP;
-	  break;
-	default:
-	  break;
-	}
-      }
-    }
-  
-#if DEBUG
-    if(debugrisk && obj==cv){ 
-      printf("Risk(1) cdata: %d  %d\n",obj->cdata->a,*orderid); 
-    } 
-#endif
-    
-    break;
-  default:
-    fprintf(stderr,"ERROR in Risk()\n");
-    exit(-1);
-    break;
-  } /*--switch max_action */
-
-#if DEBUG  
-  if(debugrisk){
-    if(obj==cv && obj->dest!=NULL){
-      printf("Risk() (%d)CHOOSE: %d  %d\n",obj->pid,*orderid,obj->dest->id);
-    }
-    if(obj==cv)printf("ret: %d\n",ret);
+    printf("\tmaxaction=%d mode:%d\n",max_action,obj->mode);
+    printf("\t\tstate %f\n",obj->state);
+    printf("\t\tgas %f\n",obj->gas);
   }
 #endif
 
+  ret=max_action;
   return(ret);
 }
 
@@ -3052,7 +2046,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
   float vp,r,d0,d1,ang,ang0;
   float x2,y2;
   float rx,ry;
-  float vx1,vy1,vx2,vy2;
+  float vx1,vy1,vrx,vry;
   int i;
   Object *obj;
   float gascost;
@@ -3117,14 +2111,21 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     rx=obj2->x-obj1->x;
     ry=obj2->y-obj1->y;
     
-    vx2=-obj1->vx; /* objetive at rest */
-    vy2=-obj1->vy;
-    
-    d0=sqrt(rx*rx+ry*ry);
-    rx=obj2->x+vx2*d0/vp-obj1->x;
-    ry=obj2->y+vy2*d0/vp-obj1->y;
-    
-    ang0=atan2(ry,rx)-obj1->a;
+    if(obj1->level==0){
+      ang0=0;                 /* no correction */
+    }
+    else{
+      vrx=obj2->vx-obj1->vx;  /* objetive in movement */ 
+      vry=obj2->vy-obj1->vy; 
+      
+      d0=sqrt(rx*rx+ry*ry);
+      rx=obj2->x+vrx*d0/vp-obj1->x;
+      ry=obj2->y+vry*d0/vp-obj1->y;
+      
+      ang0=atan2(ry,rx)-obj1->a;
+      if(ang0>0.1)ang0=0.1; 
+      if(ang0<-0.1)ang0=-0.1; 
+    }
   }
   for(i=0;i<n;i++){
     ang=obj1->a+ang0+0.04*(0.5*(1-n)+i);
@@ -3160,34 +2161,34 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
       ry=obj2->y-obj1->y;
 
       if(obj1->level<1){
-	vx2=-obj1->vx; /* objetive at rest */
-	vy2=-obj1->vy;
+	vrx=-obj1->vx; /* objetive at rest */
+	vry=-obj1->vy;
 
 	d0=sqrt(rx*rx+ry*ry);
-	rx=obj2->x+vx2*d0/vp-obj1->x;
-	ry=obj2->y+vy2*d0/vp-obj1->y;
+	rx=obj2->x+vrx*d0/vp-obj1->x;
+	ry=obj2->y+vry*d0/vp-obj1->y;
       }
 
       if(obj1->level==1){
-	vx2=obj2->vx-obj1->vx; /* objetive in movement */
-	vy2=obj2->vy-obj1->vy;
+	vrx=obj2->vx-obj1->vx; /* objetive in movement */
+	vry=obj2->vy-obj1->vy;
 	
 	d0=sqrt(rx*rx+ry*ry);
-	rx=obj2->x+vx2*d0/vp-obj1->x;
-	ry=obj2->y+vy2*d0/vp-obj1->y;
+	rx=obj2->x+vrx*d0/vp-obj1->x;
+	ry=obj2->y+vry*d0/vp-obj1->y;
       }
 
       if(obj1->level>1){
-	vx2=obj2->vx-obj1->vx; /* objetive in movement */
-	vy2=obj2->vy-obj1->vy;
+	vrx=obj2->vx-obj1->vx; /* objetive in movement */
+	vry=obj2->vy-obj1->vy;
 
 	d0=sqrt(rx*rx+ry*ry);
-	rx=obj2->x+vx2*d0/vp-obj1->x;
-	ry=obj2->y+vy2*d0/vp-obj1->y;
+	rx=obj2->x+vrx*d0/vp-obj1->x;
+	ry=obj2->y+vry*d0/vp-obj1->y;
 	
 	d1=sqrt(rx*rx+ry*ry);
-	rx=obj2->x+vx2*d1/vp-obj1->x;
-	ry=obj2->y+vy2*d1/vp-obj1->y;
+	rx=obj2->x+vrx*d1/vp-obj1->x;
+	ry=obj2->y+vry*d1/vp-obj1->y;
       }
 
       ang0=atan2(ry,rx)-obj1->a;
@@ -3545,8 +2546,6 @@ int AddOrder(Object *obj,struct Order *order){
     0
   */  
   struct ListOrder *lord;
-
-  if(0&&cv==obj)printf("adding order: %d\n",order->id);
 
 
   lord=malloc(sizeof(struct ListOrder));
@@ -4068,7 +3067,7 @@ int AddobjCCData(struct CCDATA *ccdata,Object *obj){
 	    factor=(obj->level)*(obj->state)/100*(obj->state>75)*(obj->gas>=.80*obj->gas_max)*(obj->weapon0.n>.8*obj->weapon0.max_n)*(obj->mode==LANDED);
 	    //	    if(obj->type==SHIP && obj->subtype==PILOT)strength=-1;/* priority buy ship to pilots */
 	    if(obj->subtype!=TOWER && obj->subtype!=PILOT){
-	      factor*=(obj->state>95)*(obj->gas>.98*obj->gas_max)*(obj->weapon0.n>=.95*obj->weapon0.max_n);
+	      factor*=(obj->state>95)*(obj->gas>.98*obj->gas_max)*(obj->weapon0.n>=.95*obj->weapon0.max_n)*(obj->level>=players[pinfo->planet->player].maxlevel-2);
 	      // pinfo->strengtha+=strength*(obj->state>95)*(obj->gas>.98*obj->gas_max)*(obj->weapon0.n>=.95*obj->weapon0.max_n);
 	      pinfo->strengtha+=pow(2,factor);
 	    }
@@ -4077,6 +3076,11 @@ int AddobjCCData(struct CCDATA *ccdata,Object *obj){
 	}
 	else{ /* are allies */
 	  strength=pow(2,obj->level);
+	}
+
+	if(strength>80){
+	  printf("WARNING: AddObjCCdata() check for planet %d %f %f state:%f\n",pinfo->planet->id,strength,pinfo->strength,obj->state);
+	  strength=80;
 	}
 
 	pinfo->strength+=strength;  //HERE CHECK THIS 
@@ -4193,10 +3197,10 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
       printf("plow: NULL ");
     }
     if(ccdata->planetweak!=NULL){
-      printf("pwaek: %d ",ccdata->planetweak->id);
+      printf("pweak: %d ",ccdata->planetweak->id);
     }
     else{
-      printf("pwaek: NULL ");
+      printf("pweak: NULL ");
     }
     printf("\n");
   }
@@ -4376,13 +3380,15 @@ int NearestCCPlanets(struct CCDATA *ccdata,Object *obj,int status,struct NearObj
 
 int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
   /*
-    version 01 22Ene2011
+    version 02 Oct2012
     Calc planet to attack and from which
     copy the info in ccdata.
     return:
+
     0 if no  planets are found.
-    1 if there planets origin and destiny.
-    //TODO     2 if there are only dest  planet.
+    1 if there are planets origin and destiny.
+    2 if there is destiny planet only.
+    3 if there is origin planet only.
    */
  
   struct PlanetInfo *pinfo,*pinfo1;
@@ -4393,7 +3399,6 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
   int team0,team1,team2;
   int strategy;
   float strength=0;;
-  int rval;
 
 
   pinfo=ccdata->planetinfo;
@@ -4405,13 +3410,14 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
   
   strategy=player.strategy;
 
-  rval=100*Random(-1);
-  if(rval<30){
+  if(100*Random(-1)<30){
     strategy=(int)(NUMPLAYERSTRAT*Random(-1));
   }
 
 #if TEST
   strategy=PLAYERSTRATWEAK;
+  printf("WARCCPLANET() player: %d %d\n",
+	 ccdata->player,GetTime());
 #endif
 
   switch(strategy){
@@ -4566,8 +3572,9 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
 
       if(planet!=NULL){
 #if TEST
-	if(pinfo->strength>200){
+	if(pinfo->strength>80){
 	  printf("WARNING:  check for planet %d %f %f\n",pinfo->planet->id,strength,pinfo->strength);
+	  pinfo->strength=80;
 	}
 #endif
       }
@@ -4614,11 +3621,12 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
     ret=1;
   }
   else{
-    ret=0;
+    if(ccdata->planet2attack!=NULL)ret=2;
+    if(ccdata->planet2meet!=NULL)ret=3;
   }
 
 #if DEBUG  
-  if(debugwar && ret!=0){
+  if(debugwar &&  ret!=0){
     printf("WARCCPLANET() player: %d p2meet: %d p2attack: %d\n",
 	   ccdata->player,ccdata->planet2meet->id,ccdata->planet2attack->id);
   }
@@ -4627,53 +3635,84 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
 }
 
 
-int DecideIfWar(struct Player player,struct CCDATA *ccdata){
+int DecideWar(struct Player player,struct CCDATA *ccdata){
   /*
     Decide if go to War
    */
 
   int ret=0;
+  float ffighter=0;
+  float ftower=0;
+
+  if(ccdata->nenemy==0)return(0);
+
+  ffighter=(float)ccdata->nfighter/(float)ccdata->nplanets;
+  ftower=(float)ccdata->ntower/(float)ccdata->nplanets;
 
   switch(player.profile){
   case PLAYERPROFDEFAULT:
-    if(ccdata->nkplanets>5 &&
-       ccdata->ntower>10 &&
-       ccdata->nfighter>10 &&
-       ccdata->ninexplore==0){
-      ret=1; /* entering phase 1 */
+
+    /* with few planets */
+    if(ccdata->nplanets < 10){
+      if(ccdata->nkplanets > 5 &&
+	 ccdata->nfighter > 10 &&
+	 ftower > 2.8 &&
+	 ccdata->ninexplore==0){
+	ret=1; /* entering phase 1 */
+      }
     }
+    else{ /* with more planets */
+      if(ccdata->nkplanets > 10 &&
+	 ccdata->nfighter > 10 &&
+	 ffighter > 1 &&
+	 ftower > 2.8 &&
+	 ccdata->ninexplore==0){
+	ret=1; /* entering phase 1 */
+      }
+    }
+
+    /* if resources are needed */
     if(ccdata->nfighter>10 &&
        ccdata->ninexplore==0 &&
        player.balance<0 && 
-       (float)ccdata->nfighter/(float)ccdata->ntower>1){
+       ftower >= 3){
       ret=1;
     }
-    
-    if(ccdata->nfighter>30 &&
-       (float)ccdata->nfighter/(float)ccdata->ntower>1.5){
-      ret=1;
-    }
+
     break;
   case PLAYERPROFPACIFIST:
     ret=0;
     break;
   case PLAYERPROFAGRESSIVE:
-    if(ccdata->nkplanets>3 &&
-       ccdata->ntower>7 &&
-       ccdata->nfighter>10){
-      ret=1; /* entering phase 1 */
-    }
-    if(ccdata->nfighter>10 &&
-       player.balance<0 && 
-       (float)ccdata->nfighter/(float)ccdata->ntower>1){
-      ret=1;
-    }
-    if(ccdata->nfighter>15 &&
-       (float)ccdata->nfighter/(float)ccdata->ntower>1.5){
-      ret=1;
-    }
-    break;
 
+    /* with few planets */
+    if(ccdata->nplanets < 10){
+      if(ccdata->nkplanets > 5 &&
+	 ccdata->nfighter > 8 &&
+	 ftower > 2.0 &&
+	 ccdata->ninexplore==0){
+	ret=1; /* entering phase 1 */
+      }
+    }
+    else{ /* with more planets */
+      if(ccdata->nkplanets > 10 &&
+	 ccdata->nfighter > 10 &&
+	 ffighter > 0.7 &&
+	 ftower > 2.0 &&
+	 ccdata->ninexplore==0){
+	ret=1; /* entering phase 1 */
+      }
+    }
+
+    /* if resources are needed */
+    if(ccdata->nfighter>10 &&
+       ccdata->ninexplore==0 &&
+       player.balance<0 && 
+       ftower >= 3){
+      ret=1;
+    }
+
+    break;
   default:
     ret=0;
     break;
@@ -4776,33 +3815,6 @@ Object *GetNearPlanet(struct CCDATA *ccdata,Object *planet1,int mode){
   return(planet2);
 }
 
-
-int AddCCEnemyPlanetInfo(struct CCDATA *ccdata,Object *planet){
-  /*
-    NOT USED
-    returns:
-    1 if info is succesfully reset 
-    0 if not;
-  */
-
-  struct PlanetInfo *pinfo;
-
-  if(ccdata==NULL || planet==NULL)return(0);
-  return(0);
-  pinfo=ccdata->planetinfo;
-  while(pinfo!=NULL){
-    if(pinfo->planet==planet){
-      
-      pinfo->time=GetTime();
-      pinfo->nassigned=0;
-      pinfo->strengtha++;
-
-      return(1);
-    }
-    pinfo=pinfo->next;
-  }
-  return(0);
-}
 
 int IsInCCList(struct CCDATA *ccdata,Object *planet){
   /*
@@ -4936,8 +3948,8 @@ int ResetPlanetCCInfo(struct CCDATA *ccdata,Object *planet){
 
 int CalcEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object *obj){
   /*
-    returns:
-    1 if info is succesfully updated 
+    update the enemy planet info when the spaceship obj enters in it.
+    returns: 1 if info is succesfully updated 
     0 if not;
   */
   struct ObjList *ls;
@@ -4990,7 +4002,7 @@ int CalcEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object 
 
     ls=lhobjs->next;
     while(ls!=NULL){
-      if(ls->obj->habitat!=H_PLANET){ls=ls->next;continue;}
+      //      if(ls->obj->habitat!=H_PLANET){ls=ls->next;continue;}
       if(ls->obj->in!=planet){ls=ls->next;continue;}
       if((players[ls->obj->player].team==players[ccdata->player].team)){ls=ls->next;continue;}
       if(ls->obj->type!=SHIP){ls=ls->next;continue;}
@@ -5039,7 +4051,7 @@ int CalcEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,Object 
 int UpdateEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,int player){
   /*
     update the info of enemy planets:
-    decrease their strengh along time.
+    decrease their strength along time.
     returns:
     number of planets updated.
   */
@@ -5062,7 +4074,7 @@ int UpdateEnemyPlanetInfo(struct HeadObjList *lhobjs,struct CCDATA *ccdata,int p
 	float smin;
 	//	smin=0.8*3*(players[pinfo->planet->player].maxlevel-1);//HERE adjust this formula
 	if(players[pinfo->planet->player].nships>0){
-	  smin=3*pow(2,(float)players[pinfo->planet->player].level/players[pinfo->planet->player].nships);
+	  smin=(3+pinfo->planet->mass/50000)*pow(2,(float)players[pinfo->planet->player].level/players[pinfo->planet->player].nships);
 	}
 	else{
 	  smin=0;
@@ -5123,7 +4135,7 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
 
 
   struct PlanetInfo *pinfo1,*pinfo2; /* planets 2meet 2attack*/
-  int nf2a=6; /* num of fighter 2 attack */
+  int nf2a=MINnf2a; /* num of fighter 2 attack */
   static int cont;
 
 
@@ -5147,7 +4159,7 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
       return(NULL);
     }
 
-    if(ccdata->planet2attack->player==player.id){ /* planet conquered */
+    if(players[ccdata->planet2attack->player].team == players[player.id].team){ /* planet conquered */
 
 #if DEBUG
       if(debugwar){
@@ -5189,12 +4201,17 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
   switch(ccdata->war){
   case 0:
     ccdata->planet2meet=ccdata->planet2attack=NULL;
-    ccdata->war=DecideIfWar(player,ccdata);
+    ccdata->war=DecideWar(player,ccdata);
+#if TEST
+    if(ccdata->war>0)printf("player %d starting WAR %d %d\n",ccdata->player,GetTime(),ccdata->nenemy);
+#endif
     break;
   case 1:
-
     /* Choose planet to attack and from  */
-    if(WarCCPlanets(player,ccdata)==0){
+    if(WarCCPlanets(player,ccdata)!=1){ // HERE TODO review this for diferents values of 1
+#if TEST
+      printf("player %d resetting 0 WAR\n",ccdata->player);
+#endif
       ccdata->war=0;
       ccdata->planet2meet=ccdata->planet2attack=NULL;
       ccdata->time=0;
@@ -5202,31 +4219,25 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
     }
     else{
       ccdata->war=2; /* entering phase 2 */
-      //      if(ccdata->planet2meet==NULL || ccdata->planet2attack==NULL){
-      if(ccdata->planet2attack==NULL){
-#if DEBUG    
-	if(debugwar){
-	  printf("(0)player %d planet2meet or planet2attack NULL\n",player.id);
-	}
+#if TEST
+      printf("player %d entering phase 2\n",ccdata->player);
 #endif
-	ccdata->planet2meet=ccdata->planet2attack=NULL;
-	ccdata->time=0;
-	ccdata->war=0;
-	exit(-1);
-      }
     }
 
     break;
-  case 2:
+  case 2:  
+    /* waiting to get planet to meet full */
     if(pinfo1==NULL){
       ccdata->planet2meet=ccdata->planet2attack=NULL;
       ccdata->time=0;
       ccdata->war=0;
+#if TEST
+      printf("player %d resetting 1 WAR\n",ccdata->player);
+#endif
       return(NULL);
     }
 
-
-    nf2a=1.5*pinfo2->strength;
+    nf2a=2*pinfo2->strength;
     if(nf2a<MINnf2a)nf2a=MINnf2a;
     if(nf2a>MAXnf2a)nf2a=MAXnf2a;
 
@@ -5245,17 +4256,28 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
       ccdata->planet2meet=ccdata->planet2attack=NULL;
       ccdata->time=0;
       ccdata->war=0;
+#if TEST
+      printf("player %d resetting 2 WAR (dest stronger)\n",ccdata->player);
+#endif
       return(NULL);
     }
-
 
     if((pinfo1)->strengtha > nf2a){
       /* entering phase 3 */
       ccdata->time2=GetTime();
       ccdata->war=3;
+#if TEST
+      printf("player %d entering phase 3\n",ccdata->player);
+      printf("player: %d war: %d time: %d\n",ccdata->player,ccdata->war,GetTime()); 
+      printf("\t FROM %d: nf: %d st2a: % f nf2a:%d\n", 
+	     ccdata->planet2meet->id,(pinfo1)->nfighter,(pinfo1)->strengtha,nf2a); 
+      printf("\t TO %d:nf: %d st: %f nassigned: %d\n", 
+	     ccdata->planet2attack->id,pinfo2->nfighter,pinfo2->strength,pinfo2->nassigned);
+#endif
     }
     break;
-  case 3:
+  case 3: 
+    /* send ships to attack */
     if(pinfo1==NULL){
       fprintf(stderr,"ERROR in war: planet2meet NULL war:%d\n",ccdata->war);exit(-1);
     }
@@ -5263,10 +4285,13 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
       ccdata->planet2meet=ccdata->planet2attack=NULL;
       ccdata->time=0;
       ccdata->war=0;
+#if TEST
+      printf("player %d resetting 3 (attack NULL) WAR\n",ccdata->player);
+#endif
       return(NULL);
     }
 
-    nf2a=1.5*pinfo2->strength;
+    nf2a=2*pinfo2->strength;
     if(nf2a<MINnf2a)nf2a=MINnf2a;
     if(nf2a>MAXnf2a)nf2a=MAXnf2a;
 
@@ -5278,42 +4303,17 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
     }
 #endif    
 
-    if(GetTime()-ccdata->time2>100){ /* attack finished */
+    if(GetTime()-ccdata->time2>100){ /* spaceships sended */
       ccdata->planet2meet=ccdata->planet2attack=NULL;
-
+      printf("player %d attack finished(3) by reset\n",ccdata->player);
 #if DEBUG
       if(debugwar){
-	printf("attack finished(3)\n");
+      printf("player %d attack finished(3) by reset\n",ccdata->player);
       }
 #endif
 
       ccdata->time=0;
       ccdata->war=0;
-      return(NULL);
-    }
-
-    if(0&&pinfo2->nassigned>=nf2a){ /* entering phase 4 */
-      ccdata->war=4;
-#if DEBUG
-      if(debugwar){
-	printf("War() player %d entering phase 4\n",player.id);
-      }
-#endif
-    }
-
-    break;
-  case 4:
-    if(CountAssignedCCPlanetInfo(lhobjs,ccdata,ccdata->planet2meet)==0){ /* attack finished */
-      /* entering phase 0 */
-      ccdata->planet2meet=ccdata->planet2attack=NULL;
-      pinfo2->strength+=2;
-      ccdata->time=0;
-      ccdata->war=0;
-#if DEBUG
-      if(debugwar){
-	printf("attack finished(3)\n");
-      }
-#endif
       return(NULL);
     }
 
@@ -5340,7 +4340,6 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
   
   return(pinfo1);
 }
-
 
 int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *ccdata){
   /* 
@@ -5438,9 +4437,7 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
   }
 
   /*--decide what */
-  if(0&&cv!=NULL){
-    if(cv->player==player.id)printf("BuyorUpgrade(%d):%d\n",player.id,player.lastaction);
-  }
+
   switch(player.lastaction){
   case 0:
     break;
@@ -5518,3 +4515,959 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
   }
   return(ret);
 }
+
+
+/***********************************************
+            Exec routines
+***********************************************/
+
+int ExecGoto(Object *obj,struct Order *ord){
+  /* 
+     version 01
+     Send a ship to an universe point or to an object.
+     ord.a:  x coordinates of the objetive.
+     ord.b:  y coordinates of the objetive.
+     ord.c:  id of the objetive. -1 if is a universe point.
+     ord.d:  objetive type.
+     ord.e:  objetive id.
+     ord.f:  switch variable. (phase)
+     ord.g:  mass of the objetive
+     ord.h:  switch variable
+     ord.i:  subtype of the objetive
+     return:
+     1 if goes in the right direction and velocity.
+     0 in other case
+     phase 0: (order.f)
+  */
+  float rx,ry;
+  float c,e;
+  float d2,d02;
+  float bc,ac;
+  float b,v2;
+  int swaccel;
+  int ret=0;
+  float factor;
+
+#if DEBUG
+  if(debugexec&&obj==cv)printf("Execgoto %d\n",GetTime());
+#endif
+
+
+  rx=ord->a - obj->x;
+  ry=ord->b - obj->y;
+
+  d2=rx*rx+ry*ry;
+
+  d02=40000+2000*(obj->id%10);
+
+  /***** objetive reached *****/
+
+  v2=obj->vx*obj->vx+obj->vy*obj->vy;
+  switch((int)ord->d){
+  case PLANET:
+    d02=100000;  /* ori   d02=22500; */
+    if(ord->g>100000)d02=150000;
+    if(ord->g>125000)d02=200000;
+    if(d2<d02){  /* ori 40000 objetive reached. */
+      ExecBrake(obj,4);
+      return(0);
+    }
+    break;
+  case SHIP:
+    d02=40000+2000*(obj->id%10);
+    
+    if((int)ord->i==PILOT){d02=25;}
+    if(v2>225)d02*=2;
+    if(d2 <d02){  /* ori 40000 objetive reached. */
+      ExecStop(obj,0);
+      return(0);
+    }
+    break;
+  default:
+    d02=40+2*(obj->id%10);
+
+    if((int)ord->i==PILOT){d02=25;}
+    if(v2>225)d02*=2;
+    if(d2 <d02){  /* ori 40000 objetive reached. */
+      ExecStop(obj,0);
+      return(0);
+    }
+    break;
+  }
+  
+  if(d2 <d02){  /* ori 40000 objetive reached. */
+    ExecStop(obj,0);
+    printf("\tstop\n");
+    return(0);
+  }
+
+  /***** --objetive reached *****/
+
+  /**** direction angle *****/
+
+  c=atan2(ry,rx);
+  ac=obj->a-c;
+  if(ac > PI)ac-=2*PI;
+  if(ac < -PI)ac+=2*PI;
+
+  if(fabs(ac)<PI/2){
+    e=obj->a-2*ac;
+  }
+  else{
+    e=c;
+  }
+  if(e > PI)e-=2*PI;
+  if(e < -PI)e+=2*PI;
+
+  factor=d2/1e6;
+  if(factor<1)factor=1;
+  if(factor>4)factor=4;
+
+  b=atan2(obj->vy,obj->vx);  /*  velocity angle */
+  bc=b-c;
+  if(bc > PI)bc-=2*PI;
+  if(bc < -PI)bc+=2*PI;
+  bc=bc >= 0 ? bc : -bc;
+
+  if(bc > .07*factor){ 
+    ord->f=0;
+  }
+  if((int)ord->f==0){
+    if(bc>.035*factor){
+#if DEBUG
+      if(debugexec&&obj==cv)printf("\texecturn 1 in goto\n");
+#endif
+
+      ExecTurnAccel(obj,e,0.01*factor);
+      return(0);
+    }
+    else{
+      obj->ang_a=0;
+      ord->f=1;
+      // obj->accel=0;
+    }
+  }
+
+  /***** acceleration *****/
+#if DEBUG
+  if(debugexec&&obj==cv)printf("\tacceleration in goto ret:%d bc: %f factor:%f\n",ret,bc,factor);
+#endif
+
+  if(bc<0.7*factor){
+    if(v2>=0.9*obj->engine.v2_max*(1-0.4375*(obj->state<25))){
+      ret=1;
+    }
+  }
+
+  swaccel=0;
+  if(bc<0.035*factor){
+    if(v2<0.9*obj->engine.v2_max*(1-0.4375*(obj->state<25))){
+      swaccel=1;
+    }
+    else{
+      ret=1;
+      obj->accel=0;   /* don't waste too much gas */
+      /* point to right direction HERE check this in RETREAT*/
+      if(fabs(ac)>.1){
+	ExecTurn(obj,c);
+      }
+    }
+    if(swaccel  && obj->gas>0){
+      ret=0;
+      obj->accel+=obj->engine.a;
+      if(obj->accel > obj->engine.a_max){
+	obj->accel=obj->engine.a_max;
+      }
+    }
+    else{
+      obj->accel=0;
+#if DEBUG
+      if(debugexec&&obj==cv)printf("\taccel=0\n");
+#endif
+    }
+  }
+  return(ret);
+}
+
+
+void ExecLand(Object *obj,struct Order *ord){
+  /*
+    version 01.Jan 2011 
+    Execute the order LAND in a planet.
+   */
+  float v2;
+  float x0;
+  float a,ia;
+  float b;
+  float dx,dy;
+  float vxmax,vymax;
+  float fvy;
+  float fa;/* 0.125; */
+  int swa,swvx,swvy;
+  int pmass;
+  int fabsdx;
+
+  b=PI/6; /* max ang */
+
+  if(obj->habitat!=H_PLANET){ /* obsolete order */
+    ord->time=0; 
+    return;
+  }
+
+  if(obj->mode==LANDED){
+    if(fabs(obj->a-PI/2)>0.05){
+      ExecTurn(obj,PI/2);
+      return;
+    }
+  }
+
+  v2=obj->vx*obj->vx+obj->vy*obj->vy;
+
+  /* Stopping */ 
+  if(v2>100){
+    ExecStop(obj,0);
+    return;
+  }
+
+  if(obj->vy*obj->vy>25){
+    ExecStop(obj,0);
+    return;
+  }
+
+  x0=ord->a+obj->radio+(ord->b-2.*obj->radio)*(obj->pid%20)/20.; /* Landing point */
+
+  dx=obj->x-x0;
+
+  if(dx>LXFACTOR/2 || dx<-LXFACTOR/2)dx*=-1;
+
+  if(dx>200)dx=200;
+  if(dx<-200)dx=-200;
+
+  vxmax=vymax=5;
+
+  fabsdx=fabs(dx);
+  if(fabsdx<100){vxmax=4;
+    if(fabsdx<50){vxmax=3;
+      if(fabsdx<25){vxmax=2;
+	if(fabsdx<15){vxmax=1;
+	  if(fabsdx<10){vxmax=.2;
+	  }
+	}
+      }
+    }
+  }
+
+  dy=obj->y-ord->f;
+
+  if(dy<100){vymax=4;
+    if(dy<50){vymax=2;
+      if(dy<30){vymax=1;
+      }
+    }
+  }
+
+  fvy=1-fabs(obj->vy/vymax);
+  if(fvy<0)fvy=0;
+  if(obj->vy>0)fvy=1;  
+
+/*  brake */
+  a=PI/2;
+
+  swvx=0;
+  if(dx>0){
+    if(obj->vx>-vxmax && obj->vx<-vxmax+1){a=-b;} /* OK */
+    if(obj->vx<-vxmax ){a=-b;swvx=1;}    /* brake */
+    if(obj->vx>-vxmax+1 ){a=b;swvx=1;} /*accel */
+  }
+  if(dx<0){
+    if(obj->vx>vxmax-1 && obj->vx<vxmax){a=b;} /* OK */
+    if(obj->vx<vxmax-1 ){a=-b;swvx=1;}  /* accel */
+    if(obj->vx>vxmax ){a=b;swvx=1;} /* brake */
+  }
+
+  swvy=0;
+  if(obj->vy<-vymax){swvy=1;}
+  if(obj->vy>1)swvy=0;
+  if(dy<0){swvy=1;}
+
+  if(swvy){
+    if(swvx){
+      if(a==-b)a=-b/2;
+      if(a==b)a=b/2;
+    }
+    else a=0;
+  }
+
+/* going down  */
+
+  if((fabs(obj->x-x0)< obj->radio)){
+
+    if(fabs(obj->vx)<1){
+      a=0;
+      swvx=0;
+      if(fabs(obj->a-PI/2)<.1)
+	obj->a=PI/2;
+      obj->vx=0;
+      obj->ang_a=0;
+      ord->f=ord->c;
+      dy=obj->y-ord->f;
+      if(dy<100)vymax=4;
+      if(dy<50)vymax=2;
+      if(dy<30)vymax=1;
+    }
+  }
+
+  ia=obj->a-a-PI/2;
+  if(ia > PI)ia-=2*PI;
+  if(ia < -PI)ia+=2*PI;
+
+  swa=0;
+  /*  if(ia>0.5*obj->engine.ang_a*DT*DT*(100./obj->mass)){ */
+  if(fabs(ia)>.07){
+
+
+
+    if(obj->a<PI/2-b)ia=-1;
+    if(obj->a>PI/2+b)ia=1;
+
+    if(obj->a<0)ia=-1;
+    if(obj->a<-PI/2)ia=1;
+
+
+    obj->ang_a+=obj->engine.ang_a*(ia > 0 ? -1 : 1);
+
+    if(obj->ang_a > obj->engine.ang_a_max) 
+      obj->ang_a=obj->engine.ang_a_max;
+    if(obj->ang_a < -obj->engine.ang_a_max)
+      obj->ang_a=-obj->engine.ang_a_max; 
+
+    if(ia>0 && obj->ang_a>0)obj->ang_a=0;
+    if(ia<0 && obj->ang_a<0)obj->ang_a=0;
+
+
+  }
+  else{
+    obj->ang_a=0;
+    obj->ang_v=0;
+    obj->a=a+PI/2;
+    swa=1;
+  }
+
+  if(swa==0){
+    if(swvy){
+      if(obj->a>0 && obj->a<PI)swa=1;
+    }
+  }
+  if((obj->vy > 0) && (obj->y > ord->f)){
+    swa=0;
+  }
+
+  /* accelerate */ 
+
+  if(swa&&(swvx||swvy)){
+    pmass=obj->in->mass;
+    fa=1;
+
+    fa=(fabs(fabs(obj->vx)-vxmax)+fabs(fabs(obj->vy)-vymax))/10-0.1;
+    fa+=0.4*pmass/MAXPLANETMASS;
+    if(fa<.3)fa=.3; 
+    if(fa>1.1)fa=1.1; 
+
+    if(obj->gas>0){
+      obj->accel+=fa*obj->engine.a;
+      if(obj->accel > obj->engine.a_max)
+	obj->accel=obj->engine.a_max;
+    }
+  }
+  else{
+    obj->accel=0;
+  }
+  return;
+}
+
+
+void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct Order *morder,float d2){
+  /*
+    version 04 21Oct2010
+    attack subroutine
+  */
+  
+  float rx,ry,r2,c,b,ab,ac,ib,ic;
+  float angmin;
+  float alcance2;
+  int swaccel=0;
+  int shot=0;
+
+  if(obj==NULL){
+    fprintf(stderr,"ERROR in ExecAttack()\n");
+    exit(-1); 
+  }
+
+  if(obj->dest==NULL){
+    ord->time=0;
+    return;
+  }
+#if DEBUG
+  if(debugexec&&obj==cv)printf("Execattack %d d2:%f TYPE:%d id:%d\n",GetTime(),d2,obj->dest->type,obj->dest->pid);
+#endif
+  if(obj->dest->in!=obj->in && obj->mode==LANDED){ /* HERE check this condition */
+    ExecStop(obj,0);
+    return;
+  }
+
+  /* three phases, kinds of attack: only shoot, only turn (aim), accelerate    */
+
+  rx=obj->dest->x - obj->x;
+  ry=obj->dest->y - obj->y;
+  c=atan2(ry,rx);
+  r2=rx*rx+ry*ry;
+  ac=obj->a-c; /* angle between objetive and ship direction */
+  if(ac > PI)ac-=2*PI;
+  if(ac < -PI)ac+=2*PI;
+
+  if(morder!=NULL){
+    switch(morder->id){
+    case STOP:
+      if(obj->vx*obj->vx+obj->vy*obj->vy>.4){
+	ExecStop(obj,0);
+	return;
+      }
+      break;
+    case RETREAT: //HERE goto to point and attack if is in the right direction
+      
+#if DEBUG
+      if(debugexec&&obj==cv)printf("\tExecattack retreat c:%f id:%d\n",c,obj->dest->id);
+#endif
+      if(ExecGoto(obj,morder)==1){
+#if DEBUG
+	if(debugexec&&obj==cv)printf("\tExecattack retreat execgoto: 1 \n");
+#endif
+	if(!ExecTurn(obj,c)){ /* turn to enemy */
+	  //	    return;
+	}
+      }
+      else{
+#if DEBUG
+	if(debugexec&&obj==cv)printf("\tExecattack retreat execgoto: 0 \n");
+#endif
+	return;
+      }
+      break;
+    default:
+      break;
+    }
+  }
+  
+  /**** Shooting ******/
+
+  angmin=0.05;
+  if(r2<10000)angmin*=2;
+
+  shot=0;
+  switch(obj->mode){
+  case NAV:
+    if(fabs(ac)<angmin){
+      if(ac*ord->a<0 || fabs(ac)<.05){ //0.001
+	(ord->a)*=-1;
+	shot=1;
+      }
+    }
+    break;
+  case LANDED:
+    if(fabs(ac)<angmin){
+      shot=1;
+    }
+    break;
+  case SOLD:
+    return;    
+    break;
+  default:
+    fprintf(stderr,"mode %d unknown in ExecAttack() ship: (%d)%d\n",obj->mode,obj->player,obj->pid);
+    exit(-1);
+    break;
+  }
+
+  if(shot){
+    obj->weapon=ChooseWeapon(obj);
+    alcance2=.5*obj->weapon->projectile.max_vel*obj->weapon->projectile.life;
+    alcance2*=alcance2;
+    if(alcance2>rx*rx+ry*ry){
+      /* if(FireCannon(lhobjs,obj,obj->dest)==0){ */
+      /* 	Play(obj,FIRE0,1); */
+      /* } */
+      if(FireCannon(lhobjs,obj,obj->dest)==0){
+	Play(obj,FIRE0,1);
+      }
+
+      if(GameParametres(GET,GNET,0)==TRUE){
+	if(GetProc()==players[obj->player].proc){
+	  obj->ttl=0;
+	  SetModified(obj,SENDOBJMOD0);
+	}
+      }
+    }
+
+  }
+  /**** --Shooting ******/
+
+  /***** if a big asteroid is near: stop *****/
+  if(obj->dest->type==ASTEROID && 
+     (obj->dest->subtype==ASTEROID1 || obj->dest->subtype==ASTEROID2)){
+    if(d2<160000 && obj->vx*obj->vx+obj->vy*obj->vy>50){    
+      ExecStop(obj,0);
+      return;
+    }
+  }
+
+
+  /***** inner planet *****/
+
+  if(obj->habitat==H_PLANET && obj->engine.a_max && obj->mode!=LANDED){
+    
+    
+    /***** if is near ground: go up *****/
+    
+    if(obj->y<ord->b+(.35+.10*obj->in->mass/MAXPLANETMASS)*LYFACTOR){  /* refered to higher planet point */
+      ord->time=0;
+      if(obj->a<PI/2 && obj->a>-PI/2){
+	obj->ang_a+=obj->engine.ang_a;
+      }
+      else{
+	obj->ang_a-=obj->engine.ang_a;
+      }
+      
+      if(obj->ang_a > obj->engine.ang_a_max) 
+	obj->ang_a=obj->engine.ang_a_max; 
+      if(obj->ang_a < -obj->engine.ang_a_max) 
+	obj->ang_a=-obj->engine.ang_a_max; 
+      
+      ib=obj->a-PI/2;
+      if(ib > PI)ib-=2*PI;
+      if(ib < -PI)ib+=2*PI;
+      
+      if(fabs(ib)<0.5){  /**obj->engine.ang_a*DT*DT*(100./obj->mass))  */
+	obj->ang_a=0; 
+      }
+      
+      if(obj->vy < 10+(float)obj->in->mass/MINPLANETMASS){
+	if(obj->engine.a_max){
+	  obj->accel+=obj->engine.a;
+	  if(obj->accel > obj->engine.a_max)
+	    obj->accel=obj->engine.a_max;
+	}
+      }
+      else{
+	obj->accel=0;
+      }
+      return;
+    }    /***** --if is near ground go up *****/
+    else{  
+      /***** if is too fast STOP ******/
+      int vmax2=144;
+      if(obj->vx*obj->vx+obj->vy*obj->vy>vmax2 || obj->vy>0 ){
+	ExecStop(obj,0);
+	return;
+      }
+    }
+  }
+  
+  
+  /* --inner planet */
+ 
+  /* turning  */
+  if(fabs(ac)>.1){
+    if(ac>0)ic=0.25;  //HERE adjust this 0.25
+    if(ac<0)ic=-0.25;
+#if DEBUG
+    if(debugexec&&obj==cv)printf("\texecturn in attack 1\n");
+#endif
+    
+    if(ExecTurn(obj,c-ic)){
+      //   obj->ang_a=0;
+      //  obj->ang_v=0;  //HERE cheat
+    }
+  }
+  else{
+#if DEBUG
+    if(debugexec&&obj==cv)printf("\texecturn in attack 2 a: %f c: %f\n",obj->a,c);
+#endif
+    if(ExecTurn(obj,c)){
+      obj->a=c;
+      obj->ang_a=0;
+      obj->ang_v=0;  //HERE cheat
+    }
+  }
+  
+  /***** accel *****/
+
+  if(morder!=NULL){
+    if(morder->id==RETREAT||morder->id==STOP){
+      return;
+    }
+  }
+
+  switch(obj->type){
+  case SHIP:
+    swaccel=0;
+    switch(obj->habitat){
+    case H_PLANET:
+
+      if(obj->mode==LANDED){    /* don't take off */
+	if(obj->gas<.4*obj->gas_max){
+	  obj->accel=0;  
+	  return;
+	}
+	if(obj->weapon0.n<0.75*obj->weapon0.max_n){
+	  obj->accel=0;
+	  return;
+	}
+      }
+      /* none ship in planet than reaches this line must acelerate */
+      obj->accel=0;
+      swaccel=0;
+      
+      break;
+    case H_SPACE:
+      b=atan2(obj->vy,obj->vx);
+      ab=obj->a-b; /* angle between ship and ship velocity */
+      if(ab > PI)ab-=2*PI;
+      if(ab < -PI)ab+=2*PI;
+
+      if(d2<40000){
+	swaccel=1;
+	obj->accel=0;
+	return;
+      }
+      
+      if(fabs(ab)<.1 && fabs(obj->vx*obj->vx+obj->vy*obj->vy - obj->engine.v2_max)<0.1){
+	obj->accel=0;
+	swaccel=0;
+	return;
+      }
+      else{swaccel=1;}
+      
+      /* Accelerating */
+      if(fabs(ab)>.1){
+	swaccel=1;
+      }
+
+      break;
+    default:
+      return;
+      break;
+    }
+
+#if DEBUG
+    if(debugexec&&obj==cv)printf("\texecattack swaccel: %d\n",swaccel);
+#endif
+
+    
+    if(swaccel){
+      if(obj->engine.a_max){
+	obj->accel+=obj->engine.a;
+	if(obj->accel>obj->engine.a_max)obj->accel=obj->engine.a_max;
+      }
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+int ExecTakeOff(Object *obj){
+
+  if(obj->habitat!=H_PLANET)return(0);
+  ExecTurnAccel(obj,PI/2,0.1);
+  return(0);
+}
+
+
+int ExecAccel(Object *obj){
+  /*
+    returns:
+    1 if objetive is reached
+    0 otherwise
+  */
+
+  if(obj->gas <= 0)return(0);
+
+  obj->accel+=obj->engine.a;
+  if(obj->accel > obj->engine.a_max)
+    obj->accel=obj->engine.a_max;
+  
+  return(1);
+}
+
+
+
+int ExecTurnAccel(Object *obj,float c,float prec){
+  float b,ac,bc,v2;
+  float minang;
+  int ret=1;
+  /*
+    obj turns accelerating until the velocity reaches the angle c with a precision prec
+    also the obj must reach their maximum velocity .
+
+    returns:
+    1 if objetive is reached
+    0 otherwise
+  */
+
+#if DEBUG
+  if(debugexec&&obj==cv)printf("Execturnaccel\n");
+#endif
+
+  if(c > PI)c-=2*PI;
+  else
+    if(c < -PI)c+=2*PI;
+
+  ExecTurn(obj,c);
+
+  if(obj->gas <= 0)return(0);
+
+  ac=obj->a-c;
+  if(ac > PI)ac-=2*PI;
+  else
+    if(ac < -PI)ac+=2*PI;
+
+  if(obj->mode==LANDED)minang=PI/10;
+  else minang=PI/2;
+
+  if(fabs(ac) < minang){
+    obj->accel+=obj->engine.a;
+    if(obj->accel > obj->engine.a_max)
+      obj->accel=obj->engine.a_max;
+
+    /* if max vel is reached, accel=0 */
+    v2=obj->vx*obj->vx+obj->vy*obj->vy;
+    if(v2 > 0.8*obj->engine.v2_max ){ 
+      b=atan2(obj->vy,obj->vx);
+      bc=b-c;
+      if(bc > PI)bc-=2*PI;
+      else
+	if(bc < -PI)bc+=2*PI;
+      if(fabs(bc)<prec){
+	obj->accel=0; 
+	ret=1;
+      }
+    }
+  }
+  return(ret);
+}
+
+int ExecTurn(Object *obj,float c){
+  /* 
+     version 02
+     The ship turns to angle b
+     returns:
+     1 if objetive is reached
+     0 otherwise
+  */
+
+  int sgnia;
+  float inca;
+  float ac;
+  int ret=0;
+
+#if DEBUG
+  if(debugexec&&obj==cv)printf("Execturn %f\n",c);
+#endif
+
+  if(c > PI)c-=2*PI;
+  else
+    if(c < -PI)c+=2*PI;
+
+  ac=obj->a-c;
+  if(ac > PI)ac-=2*PI;   /*  ac+=((ac<-PI)-(ac>PI))*(2*PI); */
+  else{
+    if(ac < -PI)ac+=2*PI;
+  }
+
+  if(fabs(ac)<.05 && fabs(obj->ang_v)<.05){ 
+    obj->a=c; 
+    obj->ang_a=obj->ang_v=0; 
+    ret=1;
+  } 
+  else{
+    
+    sgnia=ac>0?-1:1;
+    if(fabs(obj->ang_v)>fabs(0.28*ac)){ /* decelerate */
+      sgnia=obj->ang_v>0?-1:1;      
+    }      
+    
+    if(obj->mode==LANDED){
+      if(fabs(ac)>PI/2){
+	if(obj->a<-PI/2 || obj->a>PI/2)sgnia=-1;
+	if(obj->a<PI/2 )sgnia=1;
+      }
+    }
+
+    inca=sgnia*obj->engine.ang_a;
+    
+    if(inca>0 && obj->ang_a<0)obj->ang_a=0;
+    else{
+      if(inca<0 && obj->ang_a>0)obj->ang_a=0;
+    }
+    
+    obj->ang_a+=inca;
+    if(obj->ang_a > obj->engine.ang_a_max){ 
+      obj->ang_a=obj->engine.ang_a_max; 
+    }
+    else{
+      if(obj->ang_a < -obj->engine.ang_a_max) 
+	obj->ang_a=-obj->engine.ang_a_max; 
+    }
+  }
+  return(ret);
+}
+
+
+int ExecStop(Object *obj,float v0){
+  /*
+    version 04
+    Stop the ship to a velocity lower than v0.
+    returns:
+    1 if objetive is reached
+    0 otherwise
+   */
+  float a,b,ia;
+  float v2;
+  float ang_v;
+  float inca;
+  float factor;
+  int ret=0;
+
+
+#if DEBUG
+  if(debugexec&&obj==cv)printf("ExecStop\n");
+#endif
+
+  if(v0<0.01)v0=0.01; /* limit to reach */
+
+  if(obj->mode==LANDED){
+    if(fabs(obj->a-PI/2)>0.05){
+      ExecTurn(obj,PI/2);
+    }
+    else{
+      obj->ang_v*=.95;
+      obj->ang_a=0;
+      ret=1;
+    }
+    return(ret);
+  }
+
+  if(!obj->engine.a_max)return(0);
+
+  v2=obj->vx*obj->vx+obj->vy*obj->vy;
+
+  if(v2<v0){
+    obj->accel=0;
+    if(obj->ang_v>0.025||obj->ang_v<.025){
+      obj->ang_v*=.95;
+      obj->ang_a=0;
+    }
+    return(1); /* objetive reached */
+  }
+
+  ang_v=atan2(obj->vy,obj->vx);
+
+  b=ang_v+PI;
+  if(b>PI)b-=2*PI;
+
+  a=obj->a - b;
+  if(a > PI)a-=2*PI;
+  if(a < -PI)a+=2*PI;
+  ia=fabs(a);
+
+  inca=obj->engine.ang_v_max*DT;
+
+  if(ia>inca){
+    if(obj->habitat!=H_PLANET)obj->accel*=.8;
+    ExecTurn(obj,b);
+  }
+  else{
+    obj->a=b;
+    obj->ang_a=0;
+  }
+  if(ia<PI/2){
+    if(v2>20)
+      factor=1;
+    else if(v2>2)
+      factor=.2;
+    else if(v2>.01)
+      factor=0.01;
+    else{
+      factor=0;
+      obj->accel=.5;
+    }
+    obj->accel+=factor*obj->engine.a;
+    if(obj->accel>obj->engine.a_max)
+      obj->accel=obj->engine.a_max;
+  }
+  else{
+    obj->accel=0;
+  }
+  return(ret);
+}
+
+
+int ExecBrake(Object *obj,float v0){
+  /*
+    version 01
+    the ship decelerate to speed v0
+    returns:
+    1 if objetive is reached
+    0 otherwise
+
+   */
+  float a,b,ia;
+  float v2;
+
+
+#if DEBUG
+  if(debugexec&&obj==cv)printf("ExecBrake\n");
+#endif
+
+  if(!obj->engine.a_max)return(0);
+
+  v2=obj->vx*obj->vx+obj->vy*obj->vy;
+
+  if(v2<v0*v0){
+    //    obj->accel=0;
+    return(1); /* objective reached */
+  }
+
+  b=atan2(obj->vy,obj->vx)+PI;
+  if(b>PI)b-=2*PI;
+
+  a=obj->a - b;
+  if(a > PI)a-=2*PI;
+  if(a < -PI)a+=2*PI;
+  ia=fabs(a);
+
+  if(ia>obj->engine.ang_v_max*DT){
+    obj->accel=0;
+    ExecTurn(obj,b);
+  }
+  else{
+    obj->a=b;
+    obj->ang_a=0;
+  }
+
+  if(ia<.1){
+    if(v2-v0*v0<50){
+      obj->accel=0;
+    }
+    obj->accel+=obj->engine.a;
+    if(obj->accel>obj->engine.a_max)
+      obj->accel=obj->engine.a_max;
+  }
+  else{
+    obj->accel=0;
+  }
+  return(0);
+}
+
+
+
+/************* old ***********/

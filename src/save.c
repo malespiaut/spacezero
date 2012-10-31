@@ -850,7 +850,6 @@ int ExecLoad(char *nom){
       perror("fscanf");
       exit(-1);
     }
-    /* testing */ players[i].strategy=3;
 
     players[i].modified=SENDOBJUNMOD;
     players[i].ttl=2000;

@@ -467,7 +467,7 @@ void NewWeapon(Weapon *weapon,int type){
     weapon->cont1=weapon->rate;
     weapon->mass=0;
     weapon->n=0;
-    weapon->max_n=5;
+    weapon->max_n=4;
     break;
   case CANNON9: /*  laser */
     weapon->projectile.type=LASER;/* SHOT4 */
@@ -812,7 +812,8 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
     if(freels!=NULL){
       
       if(freels->obj->type < TRACKPOINT) {
-	p[freels->obj->player].status=PLAYERMODIFIED;
+	int ply=freels->obj->player;
+	p[ply].status=PLAYERMODIFIED; // HERE SEGFAULT (TEST 1)
       }
       if(freels->obj->type==SHIP){
 	listheadplayer.update=1;
@@ -3450,7 +3451,7 @@ void Experience(Object *obj,float pts){
 	if(obj->weapon1.rate>9){
 	  obj->weapon1.rate--;
 	}
-	if(obj->weapon1.max_n<14){ /* max 15 missiles */
+	if(obj->weapon1.max_n<10){ /* max 11 missiles */
 	  obj->weapon1.max_n+=2;
 	}
 	obj->weapon1.projectile.damage*=1.+.2*DAMAGEFACTOR;

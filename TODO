@@ -12,7 +12,7 @@ libopenal_dev
 libvorbis-dev
 
 
-bugs:(last:120)
+bugs:(last:121)
 ====
 
 
@@ -173,7 +173,7 @@ BUGS version 0.82
 
 X-(100512) bug that create unnecessary trace points.
 X-(250912)[100](060511)enemy state bar greater than 100 (with very close planets, in net game, maybe unknown state)
-
+X-(061112)[121]-(231012) signal 11, Segmentation fault. in RemoveDeadObjs() 
 
 
 /*********************************************************************************/

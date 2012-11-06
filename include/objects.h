@@ -162,11 +162,12 @@
 #define PRICEENGINE5 500
 
 /* Planet states */
-#define POWN 1
-#define PALLY 2
-#define PINEXPLORE 3
-#define PENEMY 4
-#define PUNKNOWN 5
+#define PUNKNOWN   0
+#define POWN       1
+#define PALLY      1<<1
+#define PINEXPLORE 1<<2
+#define PENEMY     1<<3
+
 
 /* Terrain types */
 #define TERRAIN 0
@@ -629,7 +630,6 @@ float Distance2NearestShip(struct HeadObjList *lh,int player,int x,int y);
 float Distance2NearestShipLessThan(struct HeadObjList *lh,int player,int x,int y,float dmin);
 void NearestObjAll(struct HeadObjList *lhc,Object *obj,struct NearObject *objs);
 Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int status,float *d2);
-int NearestObjs(struct HeadObjList *lh,Object *obj,int type,int status,int n,struct NearObject *objs);
 
 void DestroyAllObj(struct HeadObjList *lh);
 void DestroyObj(Object *obj);

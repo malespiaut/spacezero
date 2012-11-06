@@ -68,6 +68,16 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
   int i;  
 
   /*   return NULL; */
+
+  if(player<0||player>GameParametres(GET,GNPLAYERS,0)+1){
+    fprintf(stderr, "ERROR in NewObj(): invalid player id %d\n", player);
+    fprintf(stderr, "\ttype :%d stype: %d\n", type,stype);
+    exit(-1);
+
+    return(NULL); 
+  }
+
+
   obj=malloc(sizeof(Object));
   MemUsed(MADD,+sizeof(Object));
   if(obj==NULL){
@@ -726,7 +736,7 @@ int CountModObjs(struct HeadObjList *lh,int type){
 
 
 
-Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p){
+Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *player){
   /* 
      version 0.3
      Remove all dead objects from the list lhobjs.
@@ -737,43 +747,42 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
      NULL if cv0 is removed
   */
 
-  struct ObjList *ls,*freels;
+  struct ObjList *ls,*ls0,*freels;
   Object *ret;
   char text[MAXTEXTLEN];
-  int sw=0;
+  int swdead=0;
   int swx=0;
   int gnet;
   int nplayers;
+  int cont=0;
 
   nplayers=GameParametres(GET,GNPLAYERS,0);
   ret=cv0;
   gnet=GameParametres(GET,GNET,0);
 
   ls=lhobjs->next;
-
+  ls0=NULL;
   while(ls!=NULL){
-    freels=NULL;
-    sw=0;
+    swdead=0;
     swx=0;
     if(gnet==TRUE){
-      if(ls->obj->modified==SENDOBJDEAD){sw=1;}
+      if(ls->obj->modified==SENDOBJDEAD){swdead=1;}
     }
     else{
-      if(ls->obj->state<=0){sw=1;}
+      if(ls->obj->state<=0){swdead=1;}
     }
 
-    
-    if(sw){
+    if(!swdead){ls0=ls;cont++;ls=ls->next;continue;}    
+    else{
       freels=ls;
-
       switch(ls->obj->type){
       case ASTEROID:
 	swx=1;
-
+	
 	if(ls->obj->habitat==H_PLANET && ls->obj->sw==0){  /* asteroid crashed */
 	  ls->obj->in->planet->gold+=50*pow(2,5-ls->obj->subtype);
 	}
-
+	
 	break;
       case SHIP:
 	swx=1;
@@ -790,7 +799,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
 	    ls->obj->in->planet->gold+=price;
 	  }
 	}
-
+	
 	break;
       case PROJECTILE:
 	if(ls->obj->subtype==MISSILE){
@@ -800,114 +809,97 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
       default:
 	break;
       }
-    }
-    if(swx){
-      Explosion(lhobjs,cv0,ls->obj,0);
-      /* sound */
-#if SOUND
-      Play(ls->obj,EXPLOSION0,1);
-#endif
-    }
-    
-    if(freels!=NULL){
       
-      if(freels->obj->type < TRACKPOINT) {
-	int ply=freels->obj->player;
-	p[ply].status=PLAYERMODIFIED; // HERE SEGFAULT (TEST 1)
+      if(swx){
+	Explosion(lhobjs,cv0,ls->obj,0);
+	/* sound */
+#if SOUND
+	Play(ls->obj,EXPLOSION0,1);
+#endif
       }
-      if(freels->obj->type==SHIP){
+      
+      if(ls->obj->type < TRACKPOINT) {
+	int ply=ls->obj->player;
+	
+	if(ply<0||ply>GameParametres(GET,GNPLAYERS,0)+1){
+	  printf("ply:%d type:%d id: %d %d\n",
+		 ply,ls->obj->type,ls->obj->pid,ls->obj->id);
+	}
+	player[ply].status=PLAYERMODIFIED; // HERE SEGFAULT (TEST 1, TEST 0)
+      }
+      if(ls->obj->type==SHIP){
 	listheadplayer.update=1;
-	if(freels->obj->type==SHIP)p[freels->obj->player].ndeaths++;
-	if( freels->obj->player == actual_player){
-	  snprintf(text,MAXTEXTLEN,"(%c %d) SHIP DESTROYED",Type(freels->obj),freels->obj->pid);
-	  if(!Add2TextMessageList(&listheadtext,text,freels->obj->id,freels->obj->player,0,100,0)){
+	if(ls->obj->type==SHIP)player[ls->obj->player].ndeaths++;
+	if(ls->obj->player == actual_player){
+	  snprintf(text,MAXTEXTLEN,"(%c %d) SHIP DESTROYED",Type(ls->obj),ls->obj->pid);
+	  if(!Add2TextMessageList(&listheadtext,text,ls->obj->id,ls->obj->player,0,100,0)){
 	    Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
 	  }
 	}
       }
-
-      if(freels->obj->subtype==QUEEN){
+      
+      if(ls->obj->subtype==QUEEN){
 	int gqueen;
-	if(freels->obj->player == actual_player){
+	if(ls->obj->player == actual_player){
 	  printf("QUEEN DESTROYED\n");
 	}
 	gqueen=GameParametres(GET,GQUEEN,0);
-
+	
 	if(gqueen==TRUE){
-	  DestroyAllPlayerObjs(lhobjs,freels->obj->player);
-	  if(freels->obj->player==actual_player0)gameover=TRUE;
+	  DestroyAllPlayerObjs(lhobjs,ls->obj->player);
+	  if(ls->obj->player==actual_player0)gameover=TRUE;
 	}
       }
-      if(freels->obj==cv0)ret=NULL;
-      RemoveObj(lhobjs,freels->obj);
+      if(ls->obj==cv0)ret=NULL;
+      RemoveObj(lhobjs,ls->obj);
+      lhobjs->n--;
+      
+      if(ls0==NULL){
+	lhobjs->next=lhobjs->next->next;
+	ls=lhobjs->next;
+      }
+      else{
+	ls0->next=ls0->next->next;
+	ls=ls0->next;
+      }
+      free(freels);
+      freels=NULL;
+      MemUsed(MADD,-sizeof(struct ObjList));
     }
-    ls=ls->next;
   }
   return(ret);
 }
 
 
-void RemoveObj(struct HeadObjList *lhobjs,Object *obj2remove){
+void RemoveObj(struct HeadObjList *lhobjs,Object *obj){
   /* 
-     Remove the object obj2remove from system.
+     Remove the object obj and references from system.
   */
 
-  struct ObjList *ls,*ls0,*ls1,*freels;
-  Object *obj;
-
-  if(obj2remove==NULL){
+  struct ObjList *ls;
+  
+  if(obj==NULL){
     fprintf(stderr,"ERROR en removeobj(), obj is NULL\n");
     return;
   }
-
-  freels=NULL;
+  
+  /* cleaning the memory and references */
+  
   ls=lhobjs->next;
-
-  ls0=lhobjs->next;
-
-  while(ls->obj!=obj2remove && ls!=NULL){
-    ls0=ls;
+  while(ls!=NULL){
+    if(ls->obj->parent==obj){
+      ls->obj->parent=NULL;
+    }
+    if(ls->obj->dest==obj){
+      ls->obj->dest=NULL;
+    }
     ls=ls->next;
   }
-  if(ls->obj==obj2remove){
-    if(ls != ls0){
-      freels=ls;
-      ls0->next=ls0->next->next;
-      ls=ls0->next;
-    }
-    else{ /* its the first element */ 
-      freels=ls;
-      lhobjs->next=lhobjs->next->next;
-      ls=lhobjs->next;
-      ls0=lhobjs->next;
-    }
-    
-    /* cleaning the memory and references */
-    
-    obj=freels->obj;
-    ls1=lhobjs->next;
-    while(ls1!=NULL){
-      if(ls1->obj->parent==obj){
-	ls1->obj->parent=NULL;
-      }
-      if(ls1->obj->dest==obj){
-	ls1->obj->dest=NULL;
-      }
-      ls1=ls1->next;
-    }
-    
-    DelAllOrder(freels->obj);
-    free(freels->obj);
-    freels->obj=NULL;
-    MemUsed(MADD,-sizeof(Object));
-    free(freels);
-    MemUsed(MADD,-sizeof(struct ObjList));
-    freels=NULL;
-    lhobjs->n--;
-  } /*  if(ls->obj==obj2remove) */
-  else{
-    fprintf(stderr,"ERROR en removeobj()\n");
-  }
+  
+  DelAllOrder(obj);
+  free(obj);
+  obj=NULL;
+  MemUsed(MADD,-sizeof(Object));
   return;
 }
 
@@ -1705,9 +1697,10 @@ Object *ObjNearThan(struct HeadObjList *lh,int player,int x,int y,float d2){
 
 
 
-Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int status,float *d2){
+Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int pstate,float *d2){
   /*
-    Return a pointer to the nearest object of obj with status status.
+    Return a pointer to the nearest object of obj in state pstate.
+    pstate can be own, ally, enemy or inexplore. 
     in d2 returns the distance^2.  
   */
 
@@ -1720,6 +1713,8 @@ Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int status,float 
   Object *obj2=NULL;
   int pheight2=0;
   int swp=0;
+  int sw=0;
+
 
 /*   if(!PLANETSKNOWN) */
 /*     if(IsInIntList((players[player].kplanets),ls->obj->id)==0)break; */
@@ -1759,31 +1754,21 @@ Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int status,float 
       break;
     }
 
-    switch(status){
-    case PENEMY:
-      if(obj2->player==player || obj2->player==0){ls=ls->next;continue;}
-      if(players[obj2->player].team==players[player].team){ls=ls->next;continue;}
-
-      break;
-    case PINEXPLORE:
-      if(obj2->player!=0){ls=ls->next;continue;}
-      break;
-    case PALLY:
-      if(players[obj2->player].team!=players[player].team)
-	{ls=ls->next;continue;}
-      break;
-    case PUNKNOWN:
-      fprintf(stderr,"ERROR: status not implemented\n");
-      exit(-1);
-      break;
-    default:
-      fprintf(stderr,"ERROR: status unknown\n");
-      exit(-1);
-      break;
+    sw=0;
+    if(pstate & PENEMY){
+      if((players[obj2->player].team!=players[player].team) &&  obj2->player!=0) {sw=1;}
     }
+    if(pstate & PINEXPLORE){
+      if(obj2->player==0){sw=1;}
+    }
+    if(pstate & PALLY){
+      if(players[obj2->player].team==players[player].team)
+	{sw=1;}
+    }
+    if(!sw){ls=ls->next;continue;}
+    
 
     if(obj2==obj){ls=ls->next;continue;}
-
 
     if(obj2->habitat==H_PLANET){
       if(obj->habitat!=H_PLANET){ls=ls->next;continue;}
@@ -1821,127 +1806,6 @@ Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int status,float 
   obj->dest=robj;
   return(robj);
 }
-
-int NearestObjs(struct HeadObjList *lh,Object *obj,int type,int status,int n,struct NearObject *objs){
-  /*
-    NOT USED. obsolete
-    Add to *objs the n nearest objs to obj found with status status of type type.
-    returns:
-    the number of objets added to *objs.
-  */
-
-  struct ObjList *ls;
-  float rx,ry,r2;
-  float x0,y0,x1,y1;
-  int player;
-  int sw1p,sw2p;
-  int i,j;
-  int m;
-  int gkplanets;
-
-  if(obj==NULL)return(0);
-  /*   printf("obj.type=%d   ID:%d\n",obj->type,obj->id); */
-
-  if(n>16)n=16;
-  
-  player=obj->player;
-  obj->dest_r2=-1;
-  sw1p=sw2p=FALSE;
-
-
-  for(i=0;i<n;i++){
-    objs[i].obj=NULL;
-    objs[i].d2=-1;
-   }
-
-  if(obj->habitat==H_PLANET){
-    sw1p=TRUE;
-  }
-
-  gkplanets=GameParametres(GET,GKPLANETS,0);
-
-  m=0;
-  ls=lh->next;
-  while(ls!=NULL){
-    if(ls->obj->type!=type){ls=ls->next;continue;}
-    if(ls->obj==obj){ls=ls->next;continue;}
-
-    if(ls->obj->type==SHIP && ls->obj->ttl<MINTTL){ls=ls->next;continue;}
-
-    if(type==PLANET){
-      if(gkplanets==FALSE) 
-	if(IsInIntList((players[player].kplanets),ls->obj->id)==0){
-	  ls=ls->next;continue;
-	}
-    }
-
-
-    if(sw1p && ls->obj->habitat==H_PLANET && 
-       ls->obj->in==obj->in)sw2p=TRUE;
-
-    if(status){
-      switch(status){
-      case PENEMY:
-	if(ls->obj->player==player || ls->obj->player==0)
-	  {ls=ls->next;continue;}
-	if(players[ls->obj->player].team==players[player].team)
-	  {ls=ls->next;continue;}
-	break;
-      case PINEXPLORE:
-	if(ls->obj->player!=0){ls=ls->next;continue;}
-	break;
-      case PALLY:
-	if(players[ls->obj->player].team!=players[player].team)
-	  {ls=ls->next;continue;}
-	break;
-      default:
-	break;
-      }
-    }
-
-    if(sw1p==FALSE && ls->obj->habitat==H_PLANET){ls=ls->next;continue;}
-
-    if(sw1p && ls->obj->habitat==H_PLANET &&
-       obj->in!=ls->obj->in){ls=ls->next;continue;}
-
-    if(sw2p){
-      if(ls->obj->habitat!=H_PLANET){ls=ls->next;continue;}
-    }
-
-    x0=obj->x;
-    y0=obj->y;
-    
-    x1=ls->obj->x;
-    y1=ls->obj->y;
-
-    if(sw1p && !sw2p){
-      x0=obj->in->x;
-      y0=obj->in->y;
-    }
-
-    rx=x0 - x1;
-    ry=y0 - y1;
-    r2=rx*rx+ry*ry;
-
-    /*HERE add planet height */    
-
-    for(i=0;i<n;i++){
-      if(r2<objs[i].d2 || objs[i].d2==-1){
-	for(j=0;j<n-i-1;j++){
-	  objs[n-j-1].obj=objs[n-j-2].obj;
-	  objs[n-j-1].d2=objs[n-j-2].d2;
-	}
-	m++;
-	objs[i].obj=ls->obj;
-	objs[i].d2=r2;
-	break;
-      }
-    }
-    ls=ls->next;
-  }
-  return(m);
-}
-
 
 void NearestObjAll(struct HeadObjList *lhc,Object *obj,struct NearObject *objs){
   /*

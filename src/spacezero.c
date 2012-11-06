@@ -85,7 +85,7 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.27"};
+char version[64]={"0.83.28"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Oct. 2012"};
@@ -1198,6 +1198,8 @@ gint MainLoop(gpointer data){
     keys.load=FALSE;
     keys.save=FALSE;
 
+    CheckGame("Checking game before save...",1);
+    printf("done\n");
 
     if(ExecSave(listheadobjs,savefile)==0){    
       snprintf(text,MAXTEXTLEN,"GAME SAVED.");

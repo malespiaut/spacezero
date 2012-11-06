@@ -659,7 +659,6 @@ int ExecLoad(char *nom){
   }
   GameParametres(SET,GENEMYKNOWN,tmpint);
 
-
   if(fscanf(fp,"%d",&tmpint)!=1){ 
     perror("fscanf");
     exit(-1);

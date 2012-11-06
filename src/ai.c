@@ -1346,20 +1346,10 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
     /* RETREAT */
     if(obj->state<25 && actord->id!=RETREAT){
       Object *obj_dest=NULL;
-      Object *obj_destb=NULL;
-      float d2,d2b;
+      float d2;
 
-      obj_dest=NearestObj(lhobjs,obj,PLANET,PINEXPLORE,&d2); // HERE only one function
-      obj_destb=NearestObj(lhobjs,obj,PLANET,PALLY,&d2b);
-      
-      if(obj_dest!=NULL && obj_destb!=NULL ){
-	if(d2b<d2){
-	  obj_dest=obj_destb;
-	}
-      }
-      if(obj_dest==NULL){
-	obj_dest=obj_destb;
-      }   
+      obj_dest=NearestObj(lhobjs,obj,PLANET,PINEXPLORE|PALLY,&d2); 
+
       if(obj_dest!=NULL){      
 	ord.priority=1;
 	ord.id=RETREAT;
@@ -1905,7 +1895,6 @@ int Risk(struct HeadObjList *lhobjs,Object *obj){
     if(obj->gas<.25*obj->gas_max){
       action[1]*=.5;
       action[2]*=1.2;
-      if(obj==cv)printf("\taction 2 %f\n",action[2]);
     }
     if(obj->mode==LANDED){
       if(obj->weapon0.n<.75*obj->weapon0.max_n){
@@ -3739,9 +3728,9 @@ struct PlanetInfo *GetPlanetInfo(struct CCDATA *ccdata,Object *planet){
 }
 
 
-Object *GetNearPlanet(struct CCDATA *ccdata,Object *planet1,int mode){
+Object *GetNearPlanet(struct CCDATA *ccdata,Object *planet1,int pstate){
   /*
-    returns the nearest planet to planet1 depends on the value mode
+    returns the nearest planet to planet1 depends on the value pstate
     returns:
     0 if not found
     1 if found.
@@ -3769,7 +3758,7 @@ Object *GetNearPlanet(struct CCDATA *ccdata,Object *planet1,int mode){
   pinfo=ccdata->planetinfo;
   while(pinfo!=NULL){
     
-    switch(mode){
+    switch(pstate){
     case POWN:
       if(pinfo->planet->player==0){pinfo=pinfo->next;continue;}
       if(ccdata->player!=pinfo->planet->player){pinfo=pinfo->next;continue;}
@@ -4305,7 +4294,6 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
 
     if(GetTime()-ccdata->time2>100){ /* spaceships sended */
       ccdata->planet2meet=ccdata->planet2attack=NULL;
-      printf("player %d attack finished(3) by reset\n",ccdata->player);
 #if DEBUG
       if(debugwar){
       printf("player %d attack finished(3) by reset\n",ccdata->player);

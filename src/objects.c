@@ -735,8 +735,7 @@ int CountModObjs(struct HeadObjList *lh,int type){
 }
 
 
-
-Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *player){
+Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p){
   /* 
      version 0.3
      Remove all dead objects from the list lhobjs.
@@ -747,22 +746,20 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
      NULL if cv0 is removed
   */
 
-  struct ObjList *ls,*ls0,*freels;
+  struct ObjList *ls,*freels;
   Object *ret;
   char text[MAXTEXTLEN];
   int swdead=0;
   int swx=0;
   int gnet;
-  int nplayers;
-  int cont=0;
 
-  nplayers=GameParametres(GET,GNPLAYERS,0);
   ret=cv0;
   gnet=GameParametres(GET,GNET,0);
 
   ls=lhobjs->next;
-  ls0=NULL;
+
   while(ls!=NULL){
+    freels=NULL;
     swdead=0;
     swx=0;
     if(gnet==TRUE){
@@ -772,17 +769,17 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
       if(ls->obj->state<=0){swdead=1;}
     }
 
-    if(!swdead){ls0=ls;cont++;ls=ls->next;continue;}    
-    else{
+    if(swdead){
       freels=ls;
+
       switch(ls->obj->type){
       case ASTEROID:
 	swx=1;
-	
+
 	if(ls->obj->habitat==H_PLANET && ls->obj->sw==0){  /* asteroid crashed */
-	  ls->obj->in->planet->gold+=50*pow(2,5-ls->obj->subtype);
+	  ls->obj->in->planet->gold+=100*pow(2,5-ls->obj->subtype);
 	}
-	
+
 	break;
       case SHIP:
 	swx=1;
@@ -799,7 +796,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
 	    ls->obj->in->planet->gold+=price;
 	  }
 	}
-	
+
 	break;
       case PROJECTILE:
 	if(ls->obj->subtype==MISSILE){
@@ -809,7 +806,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
       default:
 	break;
       }
-      
+    
       if(swx){
 	Explosion(lhobjs,cv0,ls->obj,0);
 	/* sound */
@@ -817,92 +814,111 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
 	Play(ls->obj,EXPLOSION0,1);
 #endif
       }
-      
-      if(ls->obj->type < TRACKPOINT) {
-	int ply=ls->obj->player;
-	
-	if(ply<0||ply>GameParametres(GET,GNPLAYERS,0)+1){
-	  printf("ply:%d type:%d id: %d %d\n",
-		 ply,ls->obj->type,ls->obj->pid,ls->obj->id);
-	}
-	player[ply].status=PLAYERMODIFIED; // HERE SEGFAULT (TEST 1, TEST 0)
+    }
+    
+    if(freels!=NULL){
+      if(freels->obj->type < TRACKPOINT) {
+	p[freels->obj->player].status=PLAYERMODIFIED; 
       }
-      if(ls->obj->type==SHIP){
-	listheadplayer.update=1;
-	if(ls->obj->type==SHIP)player[ls->obj->player].ndeaths++;
-	if(ls->obj->player == actual_player){
-	  snprintf(text,MAXTEXTLEN,"(%c %d) SHIP DESTROYED",Type(ls->obj),ls->obj->pid);
-	  if(!Add2TextMessageList(&listheadtext,text,ls->obj->id,ls->obj->player,0,100,0)){
+      if(freels->obj->type==SHIP){
+	if(freels->obj->type==SHIP)p[freels->obj->player].ndeaths++;
+	if( freels->obj->player == actual_player){
+	  snprintf(text,MAXTEXTLEN,"(%c %d) SHIP DESTROYED",Type(freels->obj),freels->obj->pid);
+	  if(!Add2TextMessageList(&listheadtext,text,freels->obj->id,freels->obj->player,0,100,0)){
 	    Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
 	  }
 	}
       }
       
-      if(ls->obj->subtype==QUEEN){
+      if(freels->obj->subtype==QUEEN){
 	int gqueen;
-	if(ls->obj->player == actual_player){
+	if(freels->obj->player == actual_player){
 	  printf("QUEEN DESTROYED\n");
 	}
 	gqueen=GameParametres(GET,GQUEEN,0);
 	
 	if(gqueen==TRUE){
-	  DestroyAllPlayerObjs(lhobjs,ls->obj->player);
-	  if(ls->obj->player==actual_player0)gameover=TRUE;
+	  DestroyAllPlayerObjs(lhobjs,freels->obj->player);
+	  if(freels->obj->player==actual_player0)gameover=TRUE;
 	}
       }
-      if(ls->obj==cv0)ret=NULL;
-      RemoveObj(lhobjs,ls->obj);
-      lhobjs->n--;
-      
-      if(ls0==NULL){
-	lhobjs->next=lhobjs->next->next;
-	ls=lhobjs->next;
-      }
-      else{
-	ls0->next=ls0->next->next;
-	ls=ls0->next;
-      }
-      free(freels);
-      freels=NULL;
-      MemUsed(MADD,-sizeof(struct ObjList));
+      if(freels->obj==cv0)ret=NULL;
+    }
+
+    ls=ls->next;
+
+    if(freels!=NULL){
+      RemoveObj(lhobjs,freels->obj);
     }
   }
   return(ret);
 }
 
 
-void RemoveObj(struct HeadObjList *lhobjs,Object *obj){
+void RemoveObj(struct HeadObjList *lhobjs,Object *obj2remove){
   /* 
-     Remove the object obj and references from system.
+     Remove the object obj2remove from system.
   */
 
-  struct ObjList *ls;
-  
-  if(obj==NULL){
+  struct ObjList *ls,*ls0,*ls1,*freels;
+  Object *obj;
+
+  if(obj2remove==NULL){
     fprintf(stderr,"ERROR en removeobj(), obj is NULL\n");
     return;
   }
-  
-  /* cleaning the memory and references */
-  
+
+  freels=NULL;
   ls=lhobjs->next;
-  while(ls!=NULL){
-    if(ls->obj->parent==obj){
-      ls->obj->parent=NULL;
-    }
-    if(ls->obj->dest==obj){
-      ls->obj->dest=NULL;
-    }
+  ls0=lhobjs->next;
+
+  while(ls->obj!=obj2remove && ls!=NULL){
+    ls0=ls;
     ls=ls->next;
   }
-  
-  DelAllOrder(obj);
-  free(obj);
-  obj=NULL;
-  MemUsed(MADD,-sizeof(Object));
+  if(ls->obj==obj2remove){
+    if(ls != ls0){
+      freels=ls;
+      ls0->next=ls0->next->next;
+      ls=ls->next;
+    }
+    else{ /* its the first element */ 
+      freels=ls;
+      lhobjs->next=lhobjs->next->next;
+      ls=ls->next;
+      ls0=ls->next;
+    }
+    
+    /* cleaning the memory and references */
+    
+    obj=freels->obj;
+    ls1=lhobjs->next;
+    while(ls1!=NULL){
+      if(ls1->obj->parent==obj){
+	ls1->obj->parent=NULL;
+      }
+      if(ls1->obj->dest==obj){
+	ls1->obj->dest=NULL;
+      }
+      ls1=ls1->next;
+    }
+    
+    DelAllOrder(freels->obj);
+    free(freels->obj);
+    freels->obj=NULL;
+    MemUsed(MADD,-sizeof(Object));
+    free(freels);
+
+    MemUsed(MADD,-sizeof(struct ObjList));
+    freels=NULL;
+    lhobjs->n--;
+  } /*  if(ls->obj==obj2remove) */
+  else{
+    fprintf(stderr,"ERROR en removeobj()\n");
+    exit(-1);
+  }
   return;
 }
-
 
 int CountPlayerShipObjs(struct HeadObjList *lh,int player,int *cont){
   /*

@@ -36,7 +36,7 @@
 /*  compile options: */
 #define SOUND 1  // compile with sound
 #define DEBUG 0
-#define TEST 0  // test stuff
+#define TEST 1  // test stuff
 #define TESTTIMES 0
 #define TESTNET 0 
 #define LATENCY 0//8000000

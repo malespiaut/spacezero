@@ -2464,7 +2464,7 @@ struct Order *ReadOrder(struct Order *order0,Object *obj,int mode){
 
     while(lo!=NULL){
 
-      if(lo->order.priority <5){   /* SegFault al load continuo */
+      if(lo->order.priority <5){
 	order=&(lo->order);
 	break;
       }

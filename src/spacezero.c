@@ -85,10 +85,10 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.28"};
+char version[64]={"0.83.29"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Oct. 2012"};
+char last_revision[]={"Nov. 2012"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -1823,7 +1823,7 @@ void key_eval(struct Keys *key){
   navcontrol=TRUE;
   if(key->order.state==TRUE)navcontrol=FALSE;
   
-  /* in map view dont control the ship*/ 
+  /* in map view don't control the ship*/ 
   if(gdraw.map==TRUE){
     key->accel.state=key->turnleft.state=key->turnright.state=key->fire.state=FALSE;
     key->automode.state=key->manualmode.state=FALSE;

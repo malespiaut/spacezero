@@ -770,6 +770,13 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
     }
 
     if(swdead){
+
+      if(ls->obj->type<TRACKPOINT){
+	int player=ls->obj->player;
+	players[player].status=PLAYERMODIFIED;
+	if(ls->obj->type==SHIP && player==actual_player)listheadplayer.update=1;
+      }
+
       freels=ls;
 
       switch(ls->obj->type){
@@ -785,6 +792,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
 	swx=1;
 	if(ls->obj->mode==SOLD)swx=0;
 	if(ls->obj->habitat==H_PLANET && swx){
+
 	  if(ls->obj->sw!=0){ /* ship killed */
 	    ls->obj->in->planet->gold+=0.025*GetPrice(ls->obj,0,0,0);
 	  }
@@ -795,6 +803,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
 	    price=factor*GetPrice(ls->obj,0,0,0);
 	    ls->obj->in->planet->gold+=price;
 	  }
+
 	}
 
 	break;
@@ -808,8 +817,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
       }
     
       if(swx){
-	Explosion(lhobjs,cv0,ls->obj,0);
-	/* sound */
+	Explosion(lhobjs,cv0,ls->obj,0); /* create new objects, doesnot change ls*/
 #if SOUND
 	Play(ls->obj,EXPLOSION0,1);
 #endif
@@ -818,11 +826,11 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
     
     if(freels!=NULL){
       if(freels->obj->type < TRACKPOINT) {
-	p[freels->obj->player].status=PLAYERMODIFIED; 
+	p[freels->obj->player].status=PLAYERMODIFIED;
       }
       if(freels->obj->type==SHIP){
 	if(freels->obj->type==SHIP)p[freels->obj->player].ndeaths++;
-	if( freels->obj->player == actual_player){
+	if( freels->obj->player == actual_player && freels->obj->mode!=SOLD){
 	  snprintf(text,MAXTEXTLEN,"(%c %d) SHIP DESTROYED",Type(freels->obj),freels->obj->pid);
 	  if(!Add2TextMessageList(&listheadtext,text,freels->obj->id,freels->obj->player,0,100,0)){
 	    Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
@@ -842,12 +850,12 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
 	  if(freels->obj->player==actual_player0)gameover=TRUE;
 	}
       }
-      if(freels->obj==cv0)ret=NULL;
     }
 
     ls=ls->next;
 
     if(freels!=NULL){
+      if(freels->obj==cv0)ret=NULL;
       RemoveObj(lhobjs,freels->obj);
     }
   }
@@ -1330,7 +1338,6 @@ int CountShips(struct HeadObjList *lh,int *planet,int *ships){
   for(i=0;i<SHIP_S_MAX+1;i++){
     ships[i]=0;
   }
-
   ls=lh->next;
   while(ls!=NULL){
 
@@ -1339,7 +1346,12 @@ int CountShips(struct HeadObjList *lh,int *planet,int *ships){
     ships[ls->obj->subtype]++;
     
     if(ls->obj->habitat==H_PLANET){
-      planet[ls->obj->in->id - 1]++;
+      if(ls->obj->in!=NULL){
+	planet[ls->obj->in->id - 1]++;
+      }
+      else{
+	fprintf(stderr,"ERROR in CountShips(): in NULL id: %d\n",ls->obj->id);
+      }
     }
     else{
       planet[MAXNUMPLANETS]++;
@@ -1414,6 +1426,7 @@ Object *SelectObjInObj(struct HeadObjList *lh,int id,int player){
 
   ls=lh->next;
   while(ls!=NULL){
+    //    if(ls->obj->state<0)printf("st0: %d\n",ls->obj->id);
     if(ls->obj->in == NULL){ls=ls->next;continue;}
     if(ls->obj->in->id != id){ls=ls->next;continue;}
     if(ls->obj->id == id){ls=ls->next;continue;}

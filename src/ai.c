@@ -609,7 +609,10 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 	      order.id=TAKEOFF;
 	    }
 	  }
-	}
+	  if(mainordid==EXPLORE){
+	    order.id=TAKEOFF;
+	  }
+	}// 	if(obj->habitat==H_PLANET){
       }
       else{
 	fprintf(stderr,"WARNING: enemy null\n");
@@ -1378,12 +1381,16 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
 	if(shipsinplanet[ls->obj->in->id] == -1){
 	  shipsinplanet[ls->obj->in->id]=CountShipsInPlanet(lhobjs,ls->obj->in->id,SHIP,-1,2);
 	}
+	/* don't send if it is alone */
 	if(shipsinplanet[ls->obj->in->id] < 2)break;
 
+	/* don't send if learning */
+	if(ls->obj->in->level - ls->obj->level > 2){
+	  break;
+	}
 
 	/* goto nearest inexplore or empty planet */
 	no=NearestCCPlanets(ccdata,obj,PINEXPLORE,nobjs);
-	
 
 	/* if war */
 	if(ccdata->war && obj->subtype==FIGHTER){
@@ -3117,6 +3124,7 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
   /*
     Calc the planet with less towers
     Calc the planet with less strength.
+    TODO Calc the higher level planet 
     Only planets with one or more ships are included.(planets that can build).
    */
 
@@ -3124,6 +3132,7 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
   int ntowers=0;
   float lowresources=0;
   int strength=0;
+  int highlevel =0;
   int sw=0;
 #if DEBUG
   struct PlanetInfo *pinfolow;
@@ -3137,6 +3146,7 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
 
   ccdata->planethighresource=NULL;
   ccdata->planetweak=NULL;
+  ccdata->planethighlevel=NULL;
 #if DEBUG
   pinfolow=NULL;
 #endif
@@ -3152,6 +3162,10 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
 	lowresources=pinfo->planet->planet->reggold/0.015-pinfo->ntower;
 	strength=pinfo->strength;
 	ccdata->planetweak=pinfo->planet;
+
+	ccdata->planethighlevel=pinfo->planet;  
+	highlevel=pinfo->planet->level;
+
 #if DEBUG
 	pinfolow=pinfo;
 #endif
@@ -3166,9 +3180,21 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
 	  pinfolow=pinfo;
 #endif
 	}
+
 	if(pinfo->strength<strength){
 	  strength=pinfo->strength;
 	  ccdata->planetweak=pinfo->planet;
+	}
+
+	if(pinfo->planet->level > highlevel){
+	  highlevel=pinfo->planet->level;
+	  ccdata->planethighlevel=pinfo->planet;
+	}
+	else{
+	  if(pinfo->planet->level==highlevel && Random(-1)>0.3){
+	    highlevel=pinfo->planet->level;
+	    ccdata->planethighlevel=pinfo->planet;
+	  }
 	}
       }
     }
@@ -4433,17 +4459,33 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
     /*** Buy Ships ***/
     /*
       buy a tower in the planet with less towers.
-      buy a fighter in the planet wiht less strength.
+      buy a fighter in the planet with higher level.
+      buy a fighter in the planet with less strength.
     */
     
     planetid=0;
     obj=NULL;
     buyid=CCBuy(ccdata,player,&planetid);
     //printf("BuyorUpgrade():\tCCBUY: %d\n",buyid);
-    if(ccdata->war){
-      if(buyid==FIGHTER && ccdata->planet2meet!=NULL){
-	if(player.id==ccdata->planet2meet->player){ 
-	  planetid=ccdata->planet2meet->id;
+
+    if(buyid==FIGHTER){
+
+      if(ccdata->planethighlevel!=NULL){
+	if(ccdata->planethighlevel->level>2){
+	  planetid=ccdata->planethighlevel->id;
+	}
+      }
+      if(ccdata->war){
+	if(ccdata->planet2meet!=NULL){
+	  if(player.id==ccdata->planet2meet->player){
+	    planetid=ccdata->planet2meet->id;
+
+	    if(ccdata->planethighlevel!=NULL){
+	      if(ccdata->planethighlevel->level > ccdata->planet2meet->level){
+		planetid=ccdata->planethighlevel->id;
+	      }
+	    }
+	  }
 	}
       }
     }
@@ -4468,6 +4510,15 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player player,struct CCDATA *
 	ret=1;
 	player.lastaction=0;
 	ccdata->time=0;
+	if(buyid==FIGHTER){
+	  if(ccdata->planethighlevel!=NULL){
+#if TEST
+	    if(ccdata->planethighlevel->level>2){
+	      printf("p hl: %d %d %d\n",ccdata->planethighlevel->id,ccdata->planethighlevel->player,ccdata->planethighlevel->level);
+	    }
+#endif
+	  }
+	}
       }
     }
     

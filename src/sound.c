@@ -136,7 +136,6 @@ int InitSound(void){
 
 
   /* Clear Error Code (so we can catch any new errors) */
-
   alutGetError();
   if (!alutInit (0,NULL)){
     reportError ();

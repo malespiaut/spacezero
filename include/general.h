@@ -36,7 +36,7 @@
 /*  compile options: */
 #define SOUND 1  // compile with sound
 #define DEBUG 0
-#define TEST 1  // test stuff
+#define TEST 0  // test stuff
 #define TESTTIMES 0
 #define TESTNET 0 
 #define LATENCY 0//8000000
@@ -46,8 +46,8 @@
 #define PI 3.14159265
 
 
-#define MINORSAVEVERSION "0.83.21" /* the save file must be at least this version */
-#define MINOROPTIONSVERSION "0.83.03" /* the options file must be at least this version */
+#define MINORSAVEVERSION "0.83.31" /* the save file version must be greter than this.*/
+#define MINOROPTIONSVERSION "0.83.03" /* the options file must be greater than this.*/
 
 #define MAXTEXTLEN 128
 

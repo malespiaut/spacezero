@@ -128,6 +128,9 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     key->esc=FALSE;
     return(0);
   }
+
+  if(key->ctrl==FALSE)key->w=FALSE;
+
   if(key->esc|key->tab|key->Pagedown|key->Pageup|key->home){
     key->order.state=FALSE;
     key->p=FALSE;
@@ -136,7 +139,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     return(0);
   }
   if(level==0){
-    key->g=key->s=key->p=key->t=key->r=key->b=key->w=key->e=FALSE;
+    key->g=key->s=key->p=key->t=key->r=key->b=key->e=FALSE;
     //aqui 
     strcpy(cad,"");
     strcpy(ord,"");
@@ -152,8 +155,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
   if(level==1){
     if(*pcv!=NULL){
 
-
-      strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",MAXTEXTLEN); 
+      strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE E: SELL   D:RETREAT",MAXTEXTLEN); 
       
       if(font!=NULL){
 	textw=gdk_text_width(font,cad,strlen(cad));
@@ -163,12 +165,12 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       }
       if(textw>GameParametres(GET,GWIDTH,0)){
 	strncpy(cad,"",1);
-	strncpy(cad,"G:GT  X:EXP  S:SLC  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",MAXTEXTLEN); 
+	strncpy(cad,"G:GT  X:EXP  S:SLC  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  E:SELL  D:RTRT",MAXTEXTLEN); 
       }
       
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT && CountNSelected(lhead,player)==1){
 	strncpy(cad,"S: SELECT   B: BUY   W: WRITE",MAXTEXTLEN); 
-	key->g=key->x=key->p=key->t=key->r=key->e=key->u=FALSE;
+	key->g=key->x=key->p=key->t=key->r=key->e=key->u=key->w=FALSE;
       }
 
       if(0&&CountNSelected(lhead,player)>1){
@@ -189,8 +191,8 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       
     }
     else{
-      strncpy(cad,"S: SELECT   W: WRITE",MAXTEXTLEN); 
-      key->g=key->x=key->p=key->t=key->r=key->b=key->u=key->e=FALSE;
+      strncpy(cad,"S: SELECT",MAXTEXTLEN); 
+      key->g=key->x=key->p=key->t=key->r=key->b=key->u=key->e=key->w=FALSE;
     }
 
     if(key->g==TRUE){
@@ -243,7 +245,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       strcpy(ord,"UPGRADE");
       key->u=FALSE;
     }
-    if(key->w==TRUE){
+    if(key->w==TRUE && key->ctrl==TRUE){
       level=2;
       order=WRITE;
       strcpy(ord,"WRITE : ");
@@ -724,6 +726,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	    snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship %d unknown.",obj_dest->pid);
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	    obj_dest=NULL;
+	    //	    keys.esc=TRUE;
 	  }
 	  else{
 	    printf("(%c %d) going to planet %d.\n",Type(obj),obj->pid,obj_dest->pid);
@@ -764,6 +767,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	printf("Not Allowed. Planet or spaceship unknown.\n");
 	snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship unknown.");
 	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	//	keys.esc=TRUE;
       }
       
       if(obj_dest!=NULL){
@@ -1019,7 +1023,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
     price=.5*GetPrice(obj,0,0,0);
     if(price>0){
-      printf("Price: %d eng: %d weapon: %d\n",
+      printf("\tPrice: %d eng: %d weapon: %d\n",
 	     price, obj->engine.type, obj->weapon->type);
       AddGold(players,obj->player,price);
       obj->mode=SOLD;

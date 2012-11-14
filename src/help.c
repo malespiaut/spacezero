@@ -555,6 +555,8 @@ void Usage(char *ver,char *l_rev){
 		  "up/down arrows\t manual/automatic mode.\n");
 
   (void) fprintf( stdout, 
+		  "Ctrl-w\t\t Write a meesage to other players.\n");
+  (void) fprintf( stdout, 
 		  "Ctrl +/-\t volume up/down.\n");
 
   (void) fprintf( stdout, 

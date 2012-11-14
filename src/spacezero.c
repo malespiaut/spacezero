@@ -36,6 +36,7 @@
 #include "spacezero.h"
 #include "statistics.h"
 #include "clock.h"
+#include "randomnamegen.h"
 
 #define TESTSAVE FALSE
 #define DEBUGFAST FALSE
@@ -85,7 +86,7 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.29"};
+char version[64]={"0.83.32"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Nov. 2012"};
@@ -851,7 +852,7 @@ gint MainLoop(gpointer data){
       DestroyObjList(&listheadplayer);
       listheadplayer.next=NULL;
       listheadplayer.n=0;
-      //      printf("updateplayerlist %d\n",GetTime());
+      /* printf("updateplayerlist %d\n",GetTime()); */
       CreatePlayerList(listheadobjs,&listheadplayer,actual_player);
       listheadplayer.update=0;
     }
@@ -1295,6 +1296,10 @@ gint MainLoop(gpointer data){
   if(keys.mright){
     keys.order.state=TRUE;
     keys.g=TRUE;
+  }
+
+  if(keys.ctrl==TRUE && keys.w==TRUE){
+    keys.order.state=TRUE;
   }
 
   if(keys.order.state==TRUE){
@@ -3697,9 +3702,43 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
   int ngalaxies=1;
   int valid;
   Point *gpos;
-
+  char *datadir;
+  char frectable[128];
+  FILE *fp;
+  int namegen=FALSE;
 
   /* HERE check this equation. galaxy size */
+
+
+  datadir=DATADIR;
+  strcpy(frectable,"");
+  strncat(frectable,datadir,MAXTEXTLEN-strlen(frectable));
+  strncat(frectable,"/letterfrequencytable",MAXTEXTLEN-strlen(frectable));
+
+  printf("Checking for letter frequency file: %s\n",frectable);
+  
+  namegen=TRUE;
+  if((fp=fopen(frectable,"rt"))==NULL){
+    fprintf(stdout,"Can't open the file: %s\n", frectable);
+    
+    datadir=INSTALL_DATA_DIR;
+    strcpy(frectable,"");
+    strncat(frectable,datadir,MAXTEXTLEN-strlen(frectable));
+    strncat(frectable,"/letterfrequencytable",MAXTEXTLEN-strlen(frectable));
+
+    printf("checking for letter frequency file 2 :%s\n",frectable);
+    
+    if((fp=fopen(frectable,"rt"))==NULL){
+      fprintf(stdout,"Can't open the file: %s\n", frectable);
+      namegen=FALSE;
+    }
+  }
+
+  if(namegen){
+    loadFrequencyTable(frectable);
+    printf("letter frequency table loaded\n");
+    fclose(fp);
+  }
 
   ngalaxies=GameParametres(GET,GNGALAXIES,0);
   nplanets=GameParametres(GET,GNPLANETS,0);
@@ -3803,13 +3842,21 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
 	  strncpy(obj->name,ptnames[i+1],OBJNAMESMAXLEN);
 	}
 	else{
-	  strncpy(obj->name,ptnames[0],OBJNAMESMAXLEN);
+	  if(namegen){
+	    strncpy(obj->name,getRandomName(0),OBJNAMESMAXLEN);
+	    printf("%s\n",obj->name);
+	  }
+	  else{
+	    strncpy(obj->name,ptnames[0],OBJNAMESMAXLEN);
+	  }
 	}
 	Add2ObjList(lheadobjs,obj);
 	np++;
       }
     }
   }
+
+
 
   if(np<nplanets){
     int m=nplanets-np;
@@ -3835,6 +3882,7 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
     printf("WARNING CreateUniverse(): number of planets incorrect: %d\n",np);
     exit(-1);
   }
+
   free(gpos);
 }
 
@@ -5303,6 +5351,7 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
     
     ccdatap[i].planethighresource=NULL;
     ccdatap[i].planetweak=NULL;
+    ccdatap[i].planethighlevel=NULL;
     ccdatap[i].planet2meet=NULL;
     ccdatap[i].planet2attack=NULL;
   }

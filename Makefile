@@ -34,49 +34,50 @@ CFLAGS=  -Wall -O3  -I./include -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(
 CFLAGS12=  -Wall -O3 -I./include -DGTK12 -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\" 
 PROGFLAGS=$(CFLAGS) -pg 
 PROFCC=  $(CC) -pg 
-PROGRAMA=$(BINDIR)/spacezero
+PROGRAM=$(BINDIR)/spacezero
 
 
 SOUND_OBJS= $(SRCPATH)sound.o  $(SRCPATH)streamsound.o
 SOUND_SRCS= $(SRCPATH)sound.c  $(SRCPATH)streamsound.c
 
 
-PROGRAMA_OBJS=$(SRCPATH)spacezero.o $(SRCPATH)objects.o $(SRCPATH)ai.o $(SRCPATH)save.o $(SRCPATH)shell.o $(SRCPATH)spacecomm.o $(SRCPATH)help.o $(SRCPATH)comm.o $(SRCPATH)graphics.o  $(SRCPATH)functions.o $(SRCPATH)data.o $(SRCPATH)menu.o $(SRCPATH)sectors.o $(SRCPATH)clock.o  $(SRCPATH)statistics.o $(SOUND_OBJS)
-PROGRAMA_SRCS=$(SRCPATH)spacezero.c $(SRCPATH)objects.c $(SRCPATH)ai.c $(SRCPATH)save.c $(SRCPATH)shell.c $(SRCPATH)spacecomm.c $(SRCPATH)help.c $(SRCPATH)comm.c $(SRCPATH)graphics.c  $(SRCPATH)functions.c $(SRCPATH)data.c $(SRCPATH)menu.c $(SRCPATH)sectors.c $(SRCPATH)clock.c$ $(SRCPATH)statistics.c $(SOUND_SRCS) 
+PROGRAM_OBJS=$(SRCPATH)spacezero.o $(SRCPATH)objects.o $(SRCPATH)ai.o $(SRCPATH)save.o $(SRCPATH)shell.o $(SRCPATH)spacecomm.o $(SRCPATH)help.o $(SRCPATH)comm.o $(SRCPATH)graphics.o  $(SRCPATH)functions.o $(SRCPATH)data.o $(SRCPATH)menu.o $(SRCPATH)sectors.o $(SRCPATH)clock.o  $(SRCPATH)statistics.o $(SRCPATH)randomnamegen.o $(SOUND_OBJS)
+PROGRAM_SRCS=$(SRCPATH)spacezero.c $(SRCPATH)objects.c $(SRCPATH)ai.c $(SRCPATH)save.c $(SRCPATH)shell.c $(SRCPATH)spacecomm.c $(SRCPATH)help.c $(SRCPATH)comm.c $(SRCPATH)graphics.c  $(SRCPATH)functions.c $(SRCPATH)data.c $(SRCPATH)menu.c $(SRCPATH)sectors.c $(SRCPATH)clock.c$ $(SRCPATH)statistics.c $(SRCPATH)randomnamegen.c $(SOUND_SRCS) 
 
 
 
 all: dirs spacezero
 
-spacezero: $(PROGRAMA_OBJS) 
-	$(CC) $(PROGRAMA_OBJS)  $(LDFLAGS) $(CFLAGS) -g -o $(PROGRAMA)
+spacezero: $(PROGRAM_OBJS) 
+	$(CC) $(PROGRAM_OBJS)  $(LDFLAGS) $(CFLAGS) -g -o $(PROGRAM)
 
-gtk12: $(PROGRAMA_SRCS) 
-	$(CC) `gtk-config --cflags` $(PROGRAMA_SRCS)  $(LDFLAGS12) $(CFLAGS12) -g -o $(PROGRAMA) `gtk-config --libs`
+gtk12: $(PROGRAM_SRCS) 
+	$(CC) `gtk-config --cflags` $(PROGRAM_SRCS)  $(LDFLAGS12) $(CFLAGS12) -g -o $(PROGRAM) `gtk-config --libs`
 
-static: $(PROGRAMA_OBJS) 
-	$(CC) -static $(GTKFLAGS) $(PROGRAMA_OBJS)  $(LDFLAGS) $(CFLAGS) -o $(PROGRAMA) 
+static: $(PROGRAM_OBJS) 
+	$(CC) -static $(GTKFLAGS) $(PROGRAM_OBJS)  $(LDFLAGS) $(CFLAGS) -o $(PROGRAM) 
 
 install:
 	-if [ ! -d $(INSTALL_DIR) ] ; then mkdir -p $(INSTALL_DIR) ; fi
 	-if [ ! -d $(INSTALL_DATA_DIR) ] ; then mkdir -p $(INSTALL_DATA_DIR); fi
 	-if [ ! -d $(INSTALL_DATA_DIR)/sounds/ ] ; then mkdir -p $(INSTALL_DATA_DIR)/sounds/; fi
 	cp $(SOUNDDIR)/* $(INSTALL_DATA_DIR)/sounds/
-	cp $(PROGRAMA) $(INSTALL_DIR)
+	cp $(DATADIR)/letterfrequencytable $(INSTALL_DATA_DIR)
+	cp $(PROGRAM) $(INSTALL_DIR)
 
 uninstall:
 	-rm $(INSTALL_DIR)/spacezero
 	-if [ ! -d $(INSTALL_DATA_DIR) ] ; then rm -r $(INSTALL_DATA_DIR); fi
 
-debug: 	$(PROGRAMA_OBJS) 
-	$(CC) $(GTKFLAGS) $(PROGRAMA_OBJS)  $(LDFLAGS) $(CFLAGS) -g -o $(PROGRAMA) 
+debug: 	$(PROGRAM_OBJS) 
+	$(CC) $(GTKFLAGS) $(PROGRAM_OBJS)  $(LDFLAGS) $(CFLAGS) -g -o $(PROGRAM) 
 
-prof: $(PROGRAMA_OBJS)
-	$(CC) $(GTKFLAGS) $(PROGRAMA_OBJS) $(LDFLAGS) $(CFLAGS) -pg -o $(PROGRAMA)
+prof: $(PROGRAM_OBJS)
+	$(CC) $(GTKFLAGS) $(PROGRAM_OBJS) $(LDFLAGS) $(CFLAGS) -pg -o $(PROGRAM)
 
 prof2: 
-	$(CC) $(PROGRAMA_SRCS) $(GTKFLAGS) $(PROGFLAGS)  -c
-	$(CC) $(PROGRAMA_OBJS) $(GTKFLAGS) $(PROGFLAGS)  $(GTKLIBS)
+	$(CC) $(PROGRAM_SRCS) $(GTKFLAGS) $(PROGFLAGS)  -c
+	$(CC) $(PROGRAM_OBJS) $(GTKFLAGS) $(PROGFLAGS)  $(GTKLIBS)
 
 dirs:
 	-if [ ! -d $(BINDIR) ] ; then mkdir $(BINDIR) ; fi

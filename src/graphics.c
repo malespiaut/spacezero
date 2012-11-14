@@ -302,6 +302,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   strcat(labelhelp,"f6\t\t\tshow game statistics.\n");
   strcat(labelhelp,"f7\t\t\tshow game messages log.\n");
   strcat(labelhelp,"m\t\t\tshow space map.\n");
+  strcat(labelhelp,"Ctrl-w\t\twrite a message to other players.\n");
   strcat(labelhelp,"Ctrl +/-\t\tvolume up/down.\n");
   strcat(labelhelp,"Ctrl-n\t\twindow, ship mode view.\n");
   strcat(labelhelp,"Ctrl-p\t\tpause game\n");

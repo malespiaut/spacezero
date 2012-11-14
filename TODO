@@ -167,6 +167,8 @@ X-()When select a planet, center map on it , if its known.
 X-()Measure distances in map view.
 X-(041012)!!AI (save14) attacks to the same strong planet.=>near to near
 X-(311012)!!Improve Risk()
+X-(121112)Ctrl-w write messages.
+X-(131112)Added random planet names
 
 BUGS version 0.82
 =================

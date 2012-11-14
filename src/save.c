@@ -530,11 +530,11 @@ int ExecLoad(char *nom){
   }
   
   if(strcmp(versionfile,MINORSAVEVERSION)>=0){
-    printf("Version:  game:(%s)  file:(%s) >= %s  ... OK\n",version,versionfile,MINORSAVEVERSION);
+    printf("Version:  game:(%s)  save file:(%s) >= %s  ... OK\n",version,versionfile,MINORSAVEVERSION);
   }
   else if(strcmp(versionfile,MINORSAVEVERSION)<0){
     fprintf(stderr,"Error: incompatible versions.\n");
-    printf("Version:  game:(%s)  file:(%s) < %s\n",version,versionfile,MINORSAVEVERSION);
+    fprintf(stderr,"\tVersion:  game:(%s)  save file:(%s) < %s\n",version,versionfile,MINORSAVEVERSION);
     fclose(fp);
     return(1);
   }
@@ -711,6 +711,7 @@ int ExecLoad(char *nom){
     
     ccdatap[i].planethighresource=NULL;
     ccdatap[i].planetweak=NULL;
+    ccdatap[i].planethighlevel=NULL;
     ccdatap[i].planet2meet=NULL;
     ccdatap[i].planet2attack=NULL;
   }
@@ -1652,11 +1653,7 @@ int CountOrders(Object *obj){
 
 
 void FprintfCCData(FILE *fp,struct CCDATA *ccdata){
-#if DEBUG
-  if(debugsave){
-    printf("\nsaving CCDATA player: %d\n",ccdata->player);
-  }
-#endif
+
   fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d %f\n",
 	  ccdata->player,ccdata->time,ccdata->time2,ccdata->nkplanets,ccdata->nplanets,
 	  ccdata->ninexplore,ccdata->nenemy,
@@ -1665,75 +1662,35 @@ void FprintfCCData(FILE *fp,struct CCDATA *ccdata){
 
   if(ccdata->planethighresource!=NULL){
     fprintf(fp,"%d ",ccdata->planethighresource->id);
-#if DEBUG
-    if(debugsave){
-      printf(" \t lowdefense: %d\n",ccdata->planethighresource->id);
-    }
-#endif
   }
   else{
     fprintf(fp,"%d ",0);
-#if DEBUG
-    if(debugsave){
-      printf(" \t lowdefense: %d\n",0);
-    }
-#endif
   }
   if(ccdata->planetweak!=NULL){
     fprintf(fp,"%d ",ccdata->planetweak->id);
-#if DEBUG
-    if(debugsave){
-      printf(" \t weak: %d\n",ccdata->planetweak->id);
-    }
-#endif
   }
   else{
     fprintf(fp,"%d ",0);
-#if DEBUG
-    if(debugsave){
-      printf(" \t weak: %d\n",0);
-    }
-#endif
+  }
+  if(ccdata->planethighlevel!=NULL){
+    fprintf(fp,"%d ",ccdata->planethighlevel->id);
+  }
+  else{
+    fprintf(fp,"%d ",0);
   }
   if(ccdata->planet2meet!=NULL){
     fprintf(fp,"%d ",ccdata->planet2meet->id);
-#if DEBUG
-    if(debugsave){
-      printf(" \t meet: %d\n",ccdata->planet2meet->id);
-    }
-#endif
   }
   else{
     fprintf(fp,"%d ",0);
-#if DEBUG
-    if(debugsave){
-      printf(" \t meet: %d\n",0);
-    }
-#endif
   }
   if(ccdata->planet2attack!=NULL){
     fprintf(fp,"%d ",ccdata->planet2attack->id);
-#if DEBUG
-    if(debugsave){
-      printf(" \t attack: %d\n",ccdata->planet2attack->id);
-    }
-#endif
   }
   else{
     fprintf(fp,"%d ",0);
-#if DEBUG
-    if(debugsave){
-      printf(" \t attack: %d\n",0);
-    }
-#endif
   }
-#if DEBUG
-  if(debugsave){
-    printf("=================\n");
-  }
-#endif
   FprintfPlanetInfoList(fp,ccdata);
-
 }
 
 
@@ -1787,7 +1744,7 @@ int CountPlanetInfoList(struct CCDATA *ccdata){
 
 void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
 
-  int pld,pw,p2m,p2a;
+  int pld,pw,phl,p2m,p2a;
 
 
   if(fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d%f",
@@ -1800,7 +1757,7 @@ void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
   }
   ccdata->pilot=NULL;
 
-  if(fscanf(fp,"%d%d%d%d",&pld,&pw,&p2m,&p2a)!=4){
+  if(fscanf(fp,"%d%d%d%d%d",&pld,&pw,&phl,&p2m,&p2a)!=5){
     perror("fscanf");
     exit(-1);
   } 
@@ -1809,6 +1766,7 @@ void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
     printf("player: %d\n",ccdata->player);
     printf("\tlow: %d\n",pld);
     printf("\tweak: %d\n",pw);
+    printf("\thlevel: %d\n",phl);
     printf("\tmeet: %d\n",p2m);
     printf("\tattack: %d\n",p2a);
   }
@@ -1820,6 +1778,7 @@ void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
 
   ccdata->planethighresource=NULL;
   ccdata->planetweak=NULL;
+  ccdata->planethighlevel=NULL;
   ccdata->planet2meet=NULL;
   ccdata->planet2attack=NULL;
 
@@ -1828,6 +1787,9 @@ void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
   }
   if(pw!=0){
     ccdata->planetweak=SelectObj(&listheadobjs,pw);
+  }
+  if(phl!=0){
+    ccdata->planethighlevel=SelectObj(&listheadobjs,phl);
   }
   if(p2m!=0){
     ccdata->planet2meet=SelectObj(&listheadobjs,p2m);

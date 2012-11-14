@@ -90,7 +90,7 @@ struct PlanetInfo{
   int nfighter;    /* number of explorers of the planet (team)*/
   int ntower;      /* number of explorers of the planet (team)*/
   int ncargo;      /* number of explorers of the planet (team)*/
-  int npilot;     /* number of pilots */
+  int npilot;      /* number of pilots */
   float strength;  /* total strenght  */
   float strengtha; /* strength to attack */
   int nassigned;
@@ -119,6 +119,7 @@ struct CCDATA{
 
   Object *planethighresource; 
   Object *planetweak;
+  Object *planethighlevel;
 
   Object *planet2meet;
   Object *planet2attack;

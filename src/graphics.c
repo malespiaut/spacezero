@@ -50,9 +50,15 @@
 
 extern struct Player *players;
 extern struct Parametres param;
+extern int record;
+extern double fps;
 extern char version[64];
 extern char last_revision[];
-int gdrawmenu=1;
+extern int gdrawmenu;
+
+#if TEST
+extern int g_nobjsend;
+#endif
 
 #if DEBUG
 int debugoptions=1;
@@ -80,6 +86,8 @@ GtkWidget *options13;
 GtkWidget *options14;
 GtkWidget *options15;
 GtkWidget *options16;
+GtkWidget *options17;
+GtkWidget *options18;
 GtkWidget *about1;
 GtkWidget *about2;
 GtkWidget *help1;
@@ -129,10 +137,12 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   GtkWidget *hbox2;
   GtkWidget *hbox3;
   GtkWidget *hbox4;
+  GtkWidget *hbox5;
 
 
   char label[164];
   char labelhelp[1088];
+  char text[MAXTEXTLEN];
 
   GtkTooltips *tooltips;
   GdkGeometry geometry;
@@ -340,11 +350,13 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
 
   /****************************************/
 
-  vbox2=gtk_vbox_new(FALSE,10);
   hbox1=gtk_hbox_new(FALSE,10);
   hbox2=gtk_hbox_new(FALSE,10);
   hbox3=gtk_hbox_new(FALSE,10);
   hbox4=gtk_hbox_new(FALSE,10);
+  hbox5=gtk_hbox_new(FALSE,10);
+
+  vbox2=gtk_vbox_new(FALSE,10);
   vbox3=gtk_vbox_new(FALSE,10);
   vbox4=gtk_vbox_new(FALSE,10);
  
@@ -352,14 +364,6 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_container_add(GTK_CONTAINER(winabout),vbox3);
   gtk_container_add(GTK_CONTAINER(winhelp),vbox4);
 
-
-  snprintf(label,128," num. of planets: (%d,%d)",MINNUMPLANETS,MAXNUMPLANETS);
-  options4=gtk_label_new(label);
-  gtk_widget_show(options4);
-/*   options5=gtk_entry_new(); */
-/*   gtk_entry_set_text(GTK_ENTRY(options5),"30"); */
-/*   gtk_entry_set_width_chars(GTK_ENTRY(options5),4); */
-/*   gtk_widget_show(options5); */
 
   options1=gtk_check_button_new_with_label("Known Universe");
   gtk_widget_show(options1);
@@ -377,16 +381,20 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_signal_connect(GTK_OBJECT (options3),"toggled",
  		     GTK_SIGNAL_FUNC(PrintMessage),"option3"); 
   
+  /**** num of planets ****/
   snprintf(label,128," num. of planets: (%d,%d)",MINNUMPLANETS,MAXNUMPLANETS);
   options4=gtk_label_new(label);
   gtk_widget_show(options4);
+
   options5=gtk_entry_new();
-  gtk_entry_set_text(GTK_ENTRY(options5),"20");
+  snprintf(text,MAXTEXTLEN,"%d",NUMPLANETS);
+  gtk_entry_set_text(GTK_ENTRY(options5),text);
 #ifndef GTK12  
   gtk_entry_set_width_chars(GTK_ENTRY(options5),4);
 #endif  
   gtk_widget_show(options5);
 
+  /**** num of players ****/
   snprintf(label,128," num. of players: (%d,%d)",MINNUMPLAYERS,MAXNUMPLAYERS);
   options6=gtk_label_new(label);
   gtk_widget_show(options6);
@@ -394,10 +402,11 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
 #ifndef GTK12  
   gtk_entry_set_width_chars(GTK_ENTRY(options7),4);
 #endif 
-  gtk_entry_set_text(GTK_ENTRY(options7),"2");
+  snprintf(text,MAXTEXTLEN,"%d",NUMPLAYERS);
+  gtk_entry_set_text(GTK_ENTRY(options7),text);
   gtk_widget_show(options7);
 
-
+  /**** Universe size ****/
   snprintf(label,128," Universe Size: (%d,%d)",MINULX,MAXULX);
   options8=gtk_label_new(label);
   gtk_widget_show(options8);
@@ -405,8 +414,25 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
 #ifndef GTK12  
     gtk_entry_set_width_chars(GTK_ENTRY(options9),8);
 #endif
-  gtk_entry_set_text(GTK_ENTRY(options9),"100000");
+  snprintf(text,MAXTEXTLEN,"%d",ULX);
+  gtk_entry_set_text(GTK_ENTRY(options9),text);
   gtk_widget_show(options9);
+
+  /**** Number of Galaxies ****/
+  snprintf(label,128," Number of Galaxies: (%d,%d)",MINNUMGALAXIES,MAXNUMGALAXIES);
+  options17=gtk_label_new(label);
+  gtk_widget_show(options17);
+  options18=gtk_entry_new();
+#ifndef GTK12  
+    gtk_entry_set_width_chars(GTK_ENTRY(options18),4);
+#endif
+  snprintf(text,MAXTEXTLEN,"%d",NUMGALAXIES);
+  gtk_entry_set_text(GTK_ENTRY(options18),text);
+  gtk_widget_show(options18);
+
+
+
+
 
 
   options10=gtk_button_new_with_label(" Set Default");
@@ -453,9 +479,11 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_box_pack_start(GTK_BOX(vbox2),options2,FALSE,FALSE,0);
   gtk_box_pack_start(GTK_BOX(vbox2),options3,FALSE,FALSE,0);
 
-  gtk_box_pack_start(GTK_BOX(vbox2),hbox1,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(vbox2),hbox2,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(vbox2),hbox3,FALSE,FALSE,0);
+
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox2,FALSE,FALSE,0); /* players */
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox1,FALSE,FALSE,0); /* planets */
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox3,FALSE,FALSE,0); /* universe size */
+  gtk_box_pack_start(GTK_BOX(vbox2),hbox5,FALSE,FALSE,0); /* number of galaxies */
 /*   gtk_box_pack_start(GTK_BOX(vbox2),options14,FALSE,FALSE,0); */
 
 
@@ -464,12 +492,19 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_box_pack_start(GTK_BOX(vbox2),options15,FALSE,FALSE,0);
   gtk_box_pack_start(GTK_BOX(vbox2),options16,FALSE,FALSE,0);
   gtk_box_pack_start(GTK_BOX(vbox2),hbox4,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(hbox1),options4,FALSE,FALSE,0);
+
+  gtk_box_pack_start(GTK_BOX(hbox1),options4,FALSE,FALSE,0); /* planets */
   gtk_box_pack_start(GTK_BOX(hbox1),options5,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(hbox2),options6,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(hbox2),options7,FALSE,FALSE,0);
-  gtk_box_pack_start(GTK_BOX(hbox3),options8,FALSE,FALSE,0);
+
+  gtk_box_pack_start(GTK_BOX(hbox2),options6,FALSE,FALSE,0); /* players */
+  gtk_box_pack_start(GTK_BOX(hbox2),options7,FALSE,FALSE,0); 
+
+  gtk_box_pack_start(GTK_BOX(hbox3),options8,FALSE,FALSE,0); /* universe size */
   gtk_box_pack_start(GTK_BOX(hbox3),options9,FALSE,FALSE,0);
+
+  gtk_box_pack_start(GTK_BOX(hbox5),options17,FALSE,FALSE,0); /* number of galaxies */
+  gtk_box_pack_start(GTK_BOX(hbox5),options18,FALSE,FALSE,0);
+
   gtk_box_pack_start(GTK_BOX(hbox4),options11,FALSE,FALSE,0);/*save */
   gtk_box_pack_start(GTK_BOX(hbox4),options10,FALSE,FALSE,0);/*load */
   gtk_box_pack_start(GTK_BOX(hbox4),options12,FALSE,FALSE,0);/*quit options*/
@@ -533,8 +568,10 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   gtk_widget_show(hbox2);
   gtk_widget_show(hbox3);
   gtk_widget_show(hbox4);
+  gtk_widget_show(hbox5);
   gtk_widget_show(vbox3);
   gtk_widget_show(vbox4);
+
 
 #ifndef GTK12
   gtk_window_resize(GTK_WINDOW(win_main),w,h);
@@ -2677,6 +2714,301 @@ float Distance(Object *obj,float x,float y){
 }
 
 
+void DrawInfo(GdkPixmap *pixmap,Object *obj,struct Draw *gdraw,struct HeadObjList *lheadobjs, struct TextMessageList *lheadtext){
+  /*
+    Show info of the player and actual ship.
+  */  
+
+  static int charw=10;
+  static int charh=10;
+  static int swgmess=0;
+  static int glen=0;
+
+  GdkGC *gcmessage;
+  int textw;
+  Object *planet;
+  Object *objt;
+  float d2;
+  char point[MAXTEXTLEN];
+  char tmpcad[16];
+  int x,y;
+  int h,m,s;
+  int i;
+  static int sw=0;
+  int lsw;
+  struct TextMessageList *lh;
+  int time;
+  int wwidth,wwidth2,wheight;
+  int incy;
+
+#if TEST
+  static int time0=0;
+  static int nobjsend0=0;
+  static int nobjsend=0;
+  GdkGC *gc;
+#endif
+
+
+  if(obj==NULL)return;
+  
+  if(sw==0){
+#if TEST
+    gc=penGreen;
+#endif
+    sw=1;
+#if TEST
+    nobjsend=g_nobjsend;
+    time0=GetTime();
+#endif
+  }
+  wwidth=GameParametres(GET,GWIDTH,0);
+  wheight=GameParametres(GET,GHEIGHT,0);
+  wwidth2=wwidth/2;
+
+  time=GetTime();
+
+#if TEST
+  if(time-time0>100){
+    time0=time;
+    nobjsend=g_nobjsend-nobjsend0;
+    nobjsend0=g_nobjsend;
+  }
+#endif
+  /* 
+   *    General info
+   */
+  if(gfont!=NULL){
+    charh=gdk_text_height(gfont,"pL",2);
+    charw=gdk_text_width(gfont,"O",1);
+  }
+  else{
+    charh=12;
+    charw=12;
+  }
+  incy=charh;
+  y=incy;
+  x=wwidth2-7*charw;
+  sprintf(point,"record: %d",record);
+  DrawString(pixmap,gfont,penGreen,x,y,point);
+
+#if TEST
+    x+=15*charw;
+    gc=penRed;
+    sprintf(point,"T:%d   Ss:%d   P:%d   Ast:%d  Tr:%d  Pi:%d Ob/s(%.1f) FPS:%.1f",
+	    CountObjs(lheadobjs,-1,-1,-1),
+	    CountObjs(lheadobjs,-1,SHIP,-1),
+	    CountObjs(lheadobjs,-1,PROJECTILE,-1),
+	    CountObjs(lheadobjs,-1,ASTEROID,-1),
+	    CountObjs(lheadobjs,-1,TRACE,-1),
+	    CountObjs(lheadobjs,-1,SHIP,PILOT),
+	    (float)(20.0*nobjsend/100),
+	    fps);
+    DrawString(pixmap,gfont,gc,x,y,point);
+
+    sprintf(point,"T:%d   E:%d   F:%d   T:%d Pi:%d",
+	    CountObjs(lheadobjs,obj->player,-1,-1),
+	    CountObjs(lheadobjs,obj->player,SHIP,EXPLORER),
+	    CountObjs(lheadobjs,obj->player,SHIP,FIGHTER),
+	    CountObjs(lheadobjs,obj->player,SHIP,TOWER),
+	    CountObjs(lheadobjs,obj->player,SHIP,PILOT));
+    
+    DrawString(pixmap,gfont,gc,x,y+15,point);
+#else
+    /* fps */
+    x=wwidth-10*charw;
+    sprintf(point,"FPS:%.1f",fps);
+    DrawString(pixmap,gfont,penRed,x,y,point);
+    /* --fps */
+#endif
+
+
+
+  y+=incy;
+  h=(int)(time/(20*60*60));
+  m=(int)(time/(20*60))-h*60;
+  s=(int)(time/(20))-h*3600-m*60;
+  
+  sprintf(point,"time: %d:",h);
+  if(m<10){
+    sprintf(tmpcad,"0%d:",m);
+  }
+  else{
+    sprintf(tmpcad,"%d:",m);
+  }
+  strncat(point,tmpcad,MAXTEXTLEN-strlen(point));
+
+  if(s<10){
+    sprintf(tmpcad,"0%d",s);
+  }
+  else{
+    sprintf(tmpcad,"%d",s);
+  }
+  strncat(point,tmpcad,MAXTEXTLEN-strlen(point));
+  x=wwidth2-7*charw;
+  DrawString(pixmap,gfont,penGreen,x,y,point);
+
+  
+  /* 
+   *      order info 
+   */
+
+  if(keys.order.state==FALSE){ 
+    gdraw->order=FALSE;
+    /* DrawString(pixmap,gfont,penRed,10,wheight+GameParametres(GET,GPANEL,0)/2+4,  */
+    /* 	       "O: Introduce command"); */
+    ShellTitle(0,NULL,pixmap,penRed,gfont,10,wheight+GameParametres(GET,GPANEL,0)/2+4);
+  }
+    /*
+     *    Ship info
+     */
+  if(obj!=NULL){
+    if(obj->type==SHIP && gdraw->info==TRUE){  
+      y=DrawShipInfo(pixmap,gfont,penGreen,obj,0,0);
+
+      sprintf(point,"============");
+      DrawString(pixmap,gfont,penGreen,10,y,point);
+      y+=incy;
+
+    }
+  }
+
+  /*
+   *  Player info
+   */
+  if(gdraw->info==TRUE){
+    y=DrawPlayerInfo(pixmap,gfont,penCyan,&players[obj->player],10,y);
+    sprintf(point,"============");
+    DrawString(pixmap,gfont,penGreen,10,y,point);
+    y+=incy;
+  
+    
+    /*
+     *   Planet info
+     */
+
+    if(obj!=NULL){
+      if(obj->habitat==H_PLANET){
+	planet=obj->in;
+	if(planet!=NULL){
+	  
+	  y=DrawPlanetInfo(pixmap,gfont,penGreen,planet,obj->player,10,y);
+	  sprintf(point,"============");
+	  DrawString(pixmap,gfont,penGreen,10,y,point);
+	  y+=incy;
+	}
+      }
+    }
+  }
+  /* Enemy info */
+  objt=NearestObj(lheadobjs,obj,SHIP,PENEMY,&d2);
+  if(obj!=NULL && objt!=NULL){
+    if(d2 < (obj->radar*obj->radar)){
+      DrawEnemyShipInfo(pixmap,gfont,penGreen,objt,wwidth,0);
+    }
+  }
+  
+  /* text messages */
+
+ /* net message */  
+  if(PendingTextMessage()){
+    GetTextMessage(point);
+    DrawMessageBox(pixmap,gfont,point,wwidth2,(int)(.25*wheight),MBOXBORDER);
+  }
+
+  /* game messages */
+
+  lh=lheadtext->next;
+  i=0;
+  lsw=0;
+  if(swgmess){
+    gdk_draw_rectangle(pixmap,    
+		       penBlack,
+		       TRUE,   
+		       10,
+		       wheight-incy*swgmess-10,
+		       glen+15,
+		       incy*swgmess+10);
+
+    gdk_draw_rectangle(pixmap,    
+		       penRed,
+		       FALSE,   
+		       10,
+		       wheight-incy*swgmess-10,
+		       glen+15,
+		       incy*swgmess+10);
+  }
+  glen=0;
+  while(lh!=NULL){
+    strncpy(point,lh->info.text,MAXTEXTLEN);
+    //    fprintf(stdout,"tmp  %s\n",point);
+    if(lh->info.dest!=obj->player && lh->info.dest !=-1){
+      lh->info.duration=-500;
+      lsw=1;
+      lh=lh->next;continue;
+    }
+     
+    if(lh->info.duration>0 && i<10){
+      switch(lh->info.value){
+      case 0:
+	gcmessage=penRed;
+	break;
+      default:
+	gcmessage=penWhite;
+	break;
+      }
+      /* 
+	 show messages with duration >0
+	 delete messages with duration <= -500
+	 (trying to avoid repetitive messages )
+      */
+      
+      DrawString(pixmap,gfont,gcmessage,20,wheight-incy*swgmess+incy*i+5,point);
+      if(gfont!=NULL){
+	textw=gdk_text_width(gfont,point,strlen(point));
+      }
+      else{
+	textw=charw*strlen(point);
+      }
+      if(textw>glen)glen=textw;
+      if(lh->info.print==0){
+	fprintf(stdout,"%s\n",point);
+	lh->info.print=1;
+      }
+      if(i<3){
+	lh->info.duration--;
+      }
+      i++;
+    }
+    else{
+      lh->info.duration--;
+    }
+
+    if(lh->info.duration<=-500)lsw=1;
+    
+    lh=lh->next;
+  }
+  swgmess=i;  
+  if(lsw){ /* cleaning the message list */
+    struct TextMessageList *freels;
+    /* printf("cleaning the message list\n"); */
+    lh=lheadtext;
+    while(lh->next!=NULL){
+      if(lh->next->info.duration<=-500){
+	/* printf("borrando:(%s)\n",lh->next->info.text); */
+	freels=lh->next;
+	lh->next=lh->next->next;
+	free(freels);
+	MemUsed(MADD,-sizeof(struct TextMessageList));
+	freels=NULL;
+	lheadtext->info.n--;
+	continue;
+      }
+      lh=lh->next;
+    }
+  }
+}
+
+
 int DrawPlayerInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct Player *player,int x0,int y0){
   /*
     Show info about the player
@@ -3506,6 +3838,11 @@ gint SetDefaultOptions(GtkWidget *widget,gpointer gdata){
   text=gtk_entry_get_text((GtkEntry *)options9);
   printf("\tUniverse size: %s\n",text);
 
+  snprintf(cad,MAXTEXTLEN,"%d",NUMGALAXIES);
+  gtk_entry_set_text((GtkEntry *)options18,cad);
+  text=gtk_entry_get_text((GtkEntry *)options18);
+  printf("\tNumber of galaxies: %s\n",text);
+
   gtk_toggle_button_set_active((GtkToggleButton *)options14,FALSE);
   state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
   printf("\tstate cooperative: %d\n",state);
@@ -3518,6 +3855,10 @@ gint SetDefaultOptions(GtkWidget *widget,gpointer gdata){
   state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
   printf("\tstate Queen mode: %d\n",state);
 
+  snprintf(cad,MAXTEXTLEN,"%d",NUMGALAXIES);
+  gtk_entry_set_text((GtkEntry *)options18,cad);
+  text=gtk_entry_get_text((GtkEntry *)options18);
+  printf("\tNumber of galaxies: %s\n",text);
   return(0);
 }
 
@@ -3539,7 +3880,7 @@ gint ShowWindowOptions(GtkWidget *widget,gpointer gdata){
   gboolean state;
   const gchar *text;
 #endif
-
+g_print("Reading options from file: %s\n",(char *) gdata);
 #if DEBUG
   if(debugoptions)g_print("Reading options from file: %s\n",(char *) gdata);
 #endif
@@ -3596,7 +3937,6 @@ gint ShowWindowOptions(GtkWidget *widget,gpointer gdata){
     value=GameParametres(GET,GNPLAYERS,0);
     snprintf(cad,MAXTEXTLEN,"%d",value);
     gtk_entry_set_text((GtkEntry *)options7,cad);
-
 #if DEBUG
     text=gtk_entry_get_text((GtkEntry *)options7);
     if(debugoptions)  printf("\tplayers: %s\n",text);
@@ -3605,11 +3945,18 @@ gint ShowWindowOptions(GtkWidget *widget,gpointer gdata){
     value=GameParametres(GET,GULX,0);
     snprintf(cad,MAXTEXTLEN,"%d",value);
     gtk_entry_set_text((GtkEntry *)options9,cad);
-
 #if DEBUG
     text=gtk_entry_get_text((GtkEntry *)options9);
     if(debugoptions)  printf("\tUniverse size: %s\n",text);
-#endif    
+#endif
+
+    value=GameParametres(GET,GNGALAXIES,0);
+    snprintf(cad,MAXTEXTLEN,"%d",value);
+    gtk_entry_set_text((GtkEntry *)options18,cad);
+#if DEBUG
+    text=gtk_entry_get_text((GtkEntry *)options18);
+    if(debugoptions)  printf("\tNumber of Galaxies: %s\n",text);
+#endif
     
     value=GameParametres(GET,GCOOPERATIVE,0);
     gtk_toggle_button_set_active((GtkToggleButton *)options14,value);
@@ -3634,7 +3981,8 @@ gint ShowWindowOptions(GtkWidget *widget,gpointer gdata){
     state=gtk_toggle_button_get_active((GtkToggleButton *)options16);
     if(debugoptions)  printf("\tQueen mode: %d\n",state);
 #endif
-    }
+
+  }
 
   /* show window */
   gtk_widget_show(winoptions);
@@ -3704,7 +4052,6 @@ gint SaveWindowOptions(GtkWidget *widget,gpointer gdata){
     SetSoundVolume((float)param.soundvol/100,VOLSET);
   }
 
-
   //  fprintf(fp,"%d ",(int)state);
 
    if(GameParametres(GET,GSOUND,0)==TRUE && GameParametres(GET,GMUSIC,0)==TRUE){
@@ -3719,13 +4066,14 @@ gint SaveWindowOptions(GtkWidget *widget,gpointer gdata){
      if(debugoptions)printf("stop music %d\n",status);
 #endif
    }  
-
+   /* number of planets */
    text=gtk_entry_get_text((GtkEntry *)options5); 
    value=atol(text);
    if(value<MINNUMPLANETS)value=MINNUMPLANETS;
    if(value>MAXNUMPLANETS)value=MAXNUMPLANETS;
    nplanets=value;
 
+   /* number of players */
    text=gtk_entry_get_text((GtkEntry *)options7); 
    nplayers=atol(text);
 
@@ -3743,6 +4091,7 @@ gint SaveWindowOptions(GtkWidget *widget,gpointer gdata){
    param.nplayers=nplayers;
    //   fprintf(fp,"%d ",nplayers); 
 
+   /* universe size */
    text=gtk_entry_get_text((GtkEntry *)options9); 
    value=atol(text);
    if(value<MINULX)value=MINULX;
@@ -3753,6 +4102,21 @@ gint SaveWindowOptions(GtkWidget *widget,gpointer gdata){
    param.ul=value;
    //   fprintf(fp,"%d ",value); 
 
+
+   /* Number of Galaxies */
+   text=gtk_entry_get_text((GtkEntry *)options18); 
+   value=atol(text);
+   if(value<MINNUMGALAXIES)value=MINNUMGALAXIES;
+   if(value>MAXNUMGALAXIES)value=MAXNUMGALAXIES;
+#if DEBUG
+   if(debugoptions)printf("\tNumber of galaxies: %d\n",value); 
+#endif
+   param.ngalaxies=value;
+   //   fprintf(fp,"%d ",value); 
+
+
+
+   /* buttons: cooperative, computer cooperative, queen mode */
    state=gtk_toggle_button_get_active((GtkToggleButton *)options14);
    if((int)state!=FALSE && (int)state!=TRUE)state=FALSE;
 #if DEBUG
@@ -3962,37 +4326,41 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 	
 	if(obj==cvobj || obj->selected==TRUE){color=1;}
 
-	snprintf(cad,MAXTEXTLEN,"%c%d id: %d ",mode,obj->level,obj->pid);
+	snprintf(cad,MAXTEXTLEN,"%c%d id:%d ",mode,obj->level,obj->pid);
 	
 	if(obj->state<100){
 	  strncpy(tmpcad,cad,MAXTEXTLEN);
-	  snprintf(cad,MAXTEXTLEN,"%s s:%.0f",tmpcad,obj->state);
+	  snprintf(cad,MAXTEXTLEN,"%ss:%.0f ",tmpcad,obj->state);
 	}
 	if(obj->gas<obj->gas_max){
 	  strncpy(tmpcad,cad,MAXTEXTLEN);
-	  snprintf(cad,MAXTEXTLEN,"%s e:%d",tmpcad,(int)(100*obj->gas/obj->gas_max));
+	  snprintf(cad,MAXTEXTLEN,"%se:%d ",tmpcad,(int)(100*obj->gas/obj->gas_max));
 	}
 	ord=ReadOrder(NULL,obj,MAINORD);
 	if(ord!=NULL){
 	  strncpy(tmpcad,cad,MAXTEXTLEN);
 	  switch(ord->id){
-   
+
+	  case RETREAT:
 	  case GOTO:
-	    if(ord->c!=-1){
-	      snprintf(cad,MAXTEXTLEN,"%s GT:%d",tmpcad,(int)ord->e);
+	    if(ord->id==RETREAT){
+	      strncat(tmpcad,"RT:",3);
 	    }
 	    else{
-	      strncpy(tmpcad,cad,MAXTEXTLEN);
-	      snprintf(cad,MAXTEXTLEN,"%s GT:(%d,%d)",
-		       tmpcad,
+	      strncat(tmpcad,"GT:",3);
+	    }
+	    if(ord->c!=-1){
+	      snprintf(cad,MAXTEXTLEN,"%s%d ",tmpcad,(int)ord->e);
+	    }
+	    else{
+	      snprintf(cad,MAXTEXTLEN,"%s(%d,%d) ",tmpcad,
 		       (int)(ord->a/SECTORSIZE)-(ord->a<0),
 		       (int)(ord->b/SECTORSIZE)-(ord->b<0));
 	    }
 	    break;
 	  case EXPLORE:
-	    snprintf(cad,MAXTEXTLEN,"%s EXP.",tmpcad);
+	    snprintf(cad,MAXTEXTLEN,"%sEXP ",tmpcad);
 	    break;
-	    
 	  default:
 	    break;
 	  }
@@ -4002,14 +4370,14 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 	if(obj->in!=NULL){
 	  pid=obj->in->pid;
 	  if(obj->in->player!=obj->player){
-	    snprintf(cad,MAXTEXTLEN,"%s IN:(%d)%d",tmpcad,obj->in->player,pid);
+	    snprintf(cad,MAXTEXTLEN,"%sIN:(%d)%d",tmpcad,obj->in->player,pid);
 	  }
 	  else{
-	    snprintf(cad,MAXTEXTLEN,"%s IN:%d",tmpcad,pid);
+	    snprintf(cad,MAXTEXTLEN,"%sIN:%d",tmpcad,pid);
 	  }
 	}
 	else{
-	  snprintf(cad,MAXTEXTLEN,"%s IN:%d",tmpcad,pid);
+	  snprintf(cad,MAXTEXTLEN,"%sIN:%d",tmpcad,pid);
 	}
 	textw=gdk_text_width(gfont,cad,strlen(cad));
 	if(textw>textsw)textsw=textw;
@@ -4024,7 +4392,7 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 	  if(cvobj->in==obj)color=1;
 	}
 
-	snprintf(cad,MAXTEXTLEN,"id: %d g:%.0f  %d",
+	snprintf(cad,MAXTEXTLEN,"id:%d g:%.0f  %d",
 		 obj->id,obj->planet->gold,shipsinplanets[obj->id - 1]);
 	textw=gdk_text_width(gfont,cad,strlen(cad));
 	if(textw>textpw)textpw=textw;

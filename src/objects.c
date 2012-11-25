@@ -1288,10 +1288,12 @@ int CountPlanets(struct HeadObjList *lh,int type){
   return n;
 }
 
-int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int type,int stype,int max){
+int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int player,int type,int stype,int max){
   /*
-    Count the number of ships in planet planetid of type and subtype.
+    Count the number of ships in planet planetid of type and subtype
+    of the player player.
     if type or subtype are equal to -1 count all.
+
     Returns the number of ships.
   */
 
@@ -1306,7 +1308,8 @@ int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int type,int stype,in
 	if(ls->obj->subtype!=stype){ls=ls->next;continue;}
       }
     }
-    
+    if(ls->obj->player!=player){ls=ls->next;continue;}    
+
     if(ls->obj->habitat==H_PLANET){
       if(ls->obj->in->id==planetid)n++;
       if(max>0 && n>=max)return(max);
@@ -1399,11 +1402,9 @@ Object *SelectpObj(struct HeadObjList *lh,int pid,int player){
 
   if(pid==0)return(NULL);
 
-  if(pid<=GameParametres(GET,GNPLANETS,0))return(SelectObj(lh,pid));
-
   ls=lh->next;
   while(ls!=NULL){
-    if(ls->obj->player != player){ls=ls->next;continue;}
+    if(ls->obj->type!=PLANET && ls->obj->player != player){ls=ls->next;continue;}
     if(ls->obj->pid==pid){
       return(ls->obj);
     }

@@ -273,17 +273,12 @@ int ExitStreamSound(void){
   /* deataching buffer*/
   alSourcei(*streamsource, AL_BUFFER, 0);  
   
-  
   /* Deleting sources */
-
   alDeleteSources(1,streamsource);  
-
 
   /* Deleting buffers */
   for(i=0;i<NUM_BUFFER_MUSIC;i++){
     alDeleteBuffers(1,&streambuffers[i]);
   }
-
-
   return (0);
 }

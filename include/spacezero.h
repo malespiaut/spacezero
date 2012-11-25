@@ -52,7 +52,6 @@ gint MenuLoop(gpointer data);
 gint Quit(GtkWidget *widget,gpointer gdata);
 
 void PrintGameOptions(void);
-void DrawInfo(GdkPixmap *pixmap,Object *);
 
 int UpdateObjs(void);
 void UpdateShip(Object *);

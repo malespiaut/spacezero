@@ -139,7 +139,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     return(0);
   }
   if(level==0){
-    key->g=key->s=key->p=key->t=key->r=key->b=key->e=FALSE;
+    key->g=key->s=key->p=key->t=key->r=key->b=key->d=key->e=FALSE;
     //aqui 
     strcpy(cad,"");
     strcpy(ord,"");
@@ -278,11 +278,10 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       /* keyb or mouse order */
       if(key->mright==TRUE  && *pcv!=NULL){
 	int view=GetView();
-
-	switch(view){
 	  int x,y,a,b,pid;
 	  Object *nearobj;
-
+	  
+	switch(view){
 	case VIEW_MAP:
 	  MousePos(GET,&x,&y);
 	  strcpy(pargoto,"");
@@ -324,36 +323,35 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
 	/* keyb order */
 	int nargs,id1,id2;
 	char arg1[MAXTEXTLEN],arg2[MAXTEXTLEN];
+
 	strcpy(par,"");
 	Keystrokes(LOAD,NULL,par);
+	DelCharFromCad(par,"1234567890,- fnFN");
 	strcpy(pargoto,"");
 	Keystrokes(LOAD,NULL,pargoto);
+	DelCharFromCad(pargoto,"1234567890,- fnFN");	
 	
-	if(1){
-	  
-	  // cambiar texto por coordenadas reales
-	  nargs=Get2Args(pargoto,&arg1[0],&arg2[0]);
-	  switch(nargs){
-	  case 0:
-	  case 1:
-	    break;
-	  case 2:
-	    id1=strtol(arg1,NULL,10);
-	    id2=strtol(arg2,NULL,10);
-	    /* pasar de sectores a coordenadas reales */
-	    sprintf(par,"%d %d",id1*SECTORSIZE+SECTORSIZE/2,id2*SECTORSIZE+SECTORSIZE/2);
-	    break;
-	  default:
-	    printf("ERROR (%d)\n",nargs);
-	    break;
-	  }
+	/* change text by real coordinates */
+	nargs=Get2Args(pargoto,&arg1[0],&arg2[0]);
+	switch(nargs){
+	case 0:
+	case 1:
+	  break;
+	case 2:
+	  id1=strtol(arg1,NULL,10);
+	  id2=strtol(arg2,NULL,10);
+	  /* pasar de sectores a coordenadas reales */
+	  sprintf(par,"%d %d",id1*SECTORSIZE+SECTORSIZE/2,id2*SECTORSIZE+SECTORSIZE/2);
+	  break;
+	default:
+	  printf("ERROR (%d)\n",nargs);
+	  break;
 	}
+	
       }
+
       strcpy(cad,"");
       strncat(cad,ord,MAXTEXTLEN-strlen(cad));
-      
-      DelCharFromCad(pargoto,"1234567890,- fnFN");
-      
       strncat(cad,pargoto,MAXTEXTLEN-strlen(cad));
       
       break;
@@ -667,12 +665,11 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   case GOTO:
 
     switch(nargs){
-    case 1:
+    case 1:  /* GOTO a planet or a ship */
       
       switch(arg1[0]){
       case 'n':
       case 'N':
-
 	/* goto nearest ally planet */
 	
 	obj_dest=NearestObj(lhead,obj,PLANET,PINEXPLORE,&d2); // HERE only one function
@@ -710,7 +707,6 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	
 	break;
       default:
-
 	id1=strtol(arg1,NULL,10);
 	if(id1!=0){
 	  obj_dest=SelectpObj(lhead,id1,obj->player);
@@ -765,7 +761,10 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       }
       else{
 	printf("Not Allowed. Planet or spaceship unknown.\n");
-	snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship unknown.");
+#if TEST
+	printf("\t arg1:(%s) par:(%s)\n",arg1,par);
+#endif
+	snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship (%s) unknown.",arg1);
 	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	//	keys.esc=TRUE;
       }
@@ -793,7 +792,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 
       }
       break;
-    case 2: // AQUI
+    case 2: //GOTO sector   // AQUI
       id1=strtol(arg1,NULL,10);
       id2=strtol(arg2,NULL,10);
 
@@ -1474,6 +1473,7 @@ int Keystrokes(int action,guint *kval,char *c){
 	  j++;
 	}
       }
+      if(j>MAXTEXTLEN-1)j=MAXTEXTLEN-1;
       memcpy(&c[j],&endln,sizeof(char));
       m=j;
     }

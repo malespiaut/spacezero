@@ -169,6 +169,7 @@ X-(041012)!!AI (save14) attacks to the same strong planet.=>near to near
 X-(311012)!!Improve Risk()
 X-(121112)Ctrl-w write messages.
 X-(131112)Added random planet names
+X-(211112)Number of galaxies added to options window
 
 BUGS version 0.82
 =================
@@ -176,7 +177,7 @@ BUGS version 0.82
 X-(100512) bug that create unnecessary trace points.
 X-(250912)[100](060511)enemy state bar greater than 100 (with very close planets, in net game, maybe unknown state)
 X-(061112)[121]-(231012) signal 11, Segmentation fault. in RemoveDeadObjs() 
-
+X-(191112)Bugfix related with CreatePlayerList()
 
 /*********************************************************************************/
 DONE:Version 0.80 (since 10 May. 2011)

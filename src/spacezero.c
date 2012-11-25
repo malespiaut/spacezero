@@ -37,6 +37,7 @@
 #include "statistics.h"
 #include "clock.h"
 #include "randomnamegen.h"
+#include "general.h"
 
 #define TESTSAVE FALSE
 #define DEBUGFAST FALSE
@@ -70,7 +71,9 @@ extern GdkGC *penPink;
 extern GdkGC *penCyan;
 extern GdkGC *penSoftRed;
 
-extern int gdrawmenu;
+int gdrawmenu=TRUE;
+struct Draw gdraw;
+
 struct Player *players;
 struct CCDATA *ccdatap;
 int actual_player,actual_player0;
@@ -86,7 +89,7 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.32"};
+char version[64]={"0.83.35"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Nov. 2012"};
@@ -133,8 +136,6 @@ unsigned int contabilidad[15];
 /*  sound */
 int soundenabled=TRUE;
 /* -- sound */
-
-struct Draw gdraw;
 
 char *savefile;
 char *recordfile;
@@ -291,6 +292,19 @@ int main(int argc,char *argv[]){
   printf("NET: %d\n",GameParametres(GET,GNET,0));
 
 
+  /***** set game options ******/
+  if(1){
+    GameParametres(SET,GULX,param.ul);
+    GameParametres(SET,GCOOPERATIVE,param.cooperative);
+    GameParametres(SET,GCOMPCOOPERATIVE,param.compcooperative);
+    GameParametres(SET,GQUEEN,param.queen);
+    GameParametres(SET,GPIRATES,param.pirates);
+    GameParametres(SET,GENEMYKNOWN,param.enemyknown);
+    GameParametres(SET,GNGALAXIES,param.ngalaxies);
+    GameParametres(SET,GNPLAYERS,param.nplayers);
+    GameParametres(SET,GNPLANETS,param.nplanets);
+  }
+
   /***** user defined keys ****/
 
   printf("Setting default user keys\n");
@@ -347,24 +361,6 @@ int main(int argc,char *argv[]){
     GameParametres(SET,GMUSIC,param.sound);
     GameParametres(SET,GSOUND,param.music);
     Play(NULL,-1,0); /* disable sound */
-  }
-
-  if(0&&soundenabled==TRUE){ //old
-    float master=0;
-    master=param.soundvol>param.musicvol?param.soundvol:param.musicvol;
-    master/=100;
-    SetMasterVolume(1,VOLSET);
-    SetSoundVolume((float)param.soundvol/100,VOLSET);
-    printf("Sound volume: %d\n",param.soundvol);
-    PlaySound(MUSIC,SLOOP,1);
-    if(param.music){
-      printf("Music volume: %d\n",param.musicvol);
-      SetMusicVolume((float)param.musicvol/100,VOLSET);
-    }
-    else{
-      Sound(SSTOP,MUSIC);
-      printf("Music is off\n");
-    }
   }
 
   if(soundenabled==TRUE){
@@ -490,11 +486,11 @@ gint MenuLoop(gpointer data){
   cont++;
 
   if((cont%20)==0){
-    gdrawmenu=1;
+    gdrawmenu=TRUE;
   }
 
   if(!gdrawmenu)return(TRUE); 
-  gdrawmenu=0;
+  gdrawmenu=FALSE;
 
   key_eval(&keys);
 
@@ -1027,7 +1023,11 @@ gint MainLoop(gpointer data){
 	    np=4+(int)level;
 	    np=np>12?12:np;
 	    CreatePirates(&listheadobjs,np,x0,y0,level);
+#if TEST
 	    snprintf(text,MAXTEXTLEN,"PIRATES!!! at sector: %d %d %f",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE),level);
+#else
+	    snprintf(text,MAXTEXTLEN,"PIRATES!!! at sector: %d %d",(int)(x0/SECTORSIZE),(int)(y0/SECTORSIZE));
+#endif
 	    if(!Add2TextMessageList(&listheadtext,text,0,-1,0,100,0)){
 	      Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
 	    }
@@ -1413,7 +1413,7 @@ gint MainLoop(gpointer data){
       DrawWindow(pixmap,gfont,penWhite,10,10,1,&windowgamelog);
     }
 
-    DrawInfo(pixmap,cv);
+    DrawInfo(pixmap,cv,&gdraw,&listheadobjs,&listheadtext);
   }/* if(paused==0) */
 
   if(!(cont%24)){  /* statistics */
@@ -3713,7 +3713,8 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
   datadir=DATADIR;
   strcpy(frectable,"");
   strncat(frectable,datadir,MAXTEXTLEN-strlen(frectable));
-  strncat(frectable,"/letterfrequencytable",MAXTEXTLEN-strlen(frectable));
+  strcat(frectable,"/");
+  strncat(frectable,LETTERFREQUENCYFILE,MAXTEXTLEN-strlen(frectable));
 
   printf("Checking for letter frequency file: %s\n",frectable);
   
@@ -3724,7 +3725,8 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
     datadir=INSTALL_DATA_DIR;
     strcpy(frectable,"");
     strncat(frectable,datadir,MAXTEXTLEN-strlen(frectable));
-    strncat(frectable,"/letterfrequencytable",MAXTEXTLEN-strlen(frectable));
+    strcat(frectable,"/");
+    strncat(frectable,LETTERFREQUENCYFILE,MAXTEXTLEN-strlen(frectable));
 
     printf("checking for letter frequency file 2 :%s\n",frectable);
     
@@ -4503,297 +4505,6 @@ void segfault_handler(int sign){
   /*  Quit(NULL,NULL); */
 }
 
-
-void DrawInfo(GdkPixmap *pixmap,Object *obj){
-  /*
-    Show info of the player and actual ship.
-  */  
-
-  static int charw=10;
-  static int charh=10;
-  static int swgmess=0;
-  static int glen=0;
-
-  GdkGC *gcmessage;
-  int textw;
-  Object *planet;
-  Object *objt;
-  float d2;
-  char point[MAXTEXTLEN];
-  char tmpcad[16];
-  int x,y;
-  int h,m,s;
-  int i;
-  static int sw=0;
-  int lsw;
-  struct TextMessageList *lh;
-  int time;
-  int wwidth,wwidth2,wheight;
-  int incy;
-
-#if TEST
-  static int time0=0;
-  static int nobjsend0=0;
-  static int nobjsend=0;
-  GdkGC *gc;
-#endif
-
-  if(sw==0){
-#if TEST
-    gc=penGreen;
-#endif
-    sw=1;
-#if TEST
-    nobjsend=g_nobjsend;
-    time0=GetTime();
-#endif
-  }
-  wwidth=GameParametres(GET,GWIDTH,0);
-  wheight=GameParametres(GET,GHEIGHT,0);
-  wwidth2=wwidth/2;
-
-  time=GetTime();
-
-#if TEST
-  if(time-time0>100){
-    time0=time;
-    nobjsend=g_nobjsend-nobjsend0;
-    nobjsend0=g_nobjsend;
-  }
-#endif
-  /* 
-   *    General info
-   */
-  if(gfont!=NULL){
-    charh=gdk_text_height(gfont,"pL",2);
-    charw=gdk_text_width(gfont,"O",1);
-  }
-  else{
-    charh=12;
-    charw=12;
-  }
-  incy=charh;
-  y=incy;
-  x=wwidth2-7*charw;
-  sprintf(point,"record: %d",record);
-  DrawString(pixmap,gfont,penGreen,x,y,point);
-
-#if TEST
-    x+=15*charw;
-    gc=penRed;
-    sprintf(point,"T:%d   Ss:%d   P:%d   Ast:%d  Tr:%d  Pi:%d Ob/s(%.1f) FPS:%.1f",
-	    CountObjs(&listheadobjs,-1,-1,-1),
-	    CountObjs(&listheadobjs,-1,SHIP,-1),
-	    CountObjs(&listheadobjs,-1,PROJECTILE,-1),
-	    CountObjs(&listheadobjs,-1,ASTEROID,-1),
-	    CountObjs(&listheadobjs,-1,TRACE,-1),
-	    CountObjs(&listheadobjs,-1,SHIP,PILOT),
-	    (float)(20.0*nobjsend/100),
-	    fps);
-    DrawString(pixmap,gfont,gc,x,y,point);
-
-    sprintf(point,"T:%d   E:%d   F:%d   T:%d Pi:%d",
-	    CountObjs(&listheadobjs,actual_player,-1,-1),
-	    CountObjs(&listheadobjs,actual_player,SHIP,EXPLORER),
-	    CountObjs(&listheadobjs,actual_player,SHIP,FIGHTER),
-	    CountObjs(&listheadobjs,actual_player,SHIP,TOWER),
-	    CountObjs(&listheadobjs,actual_player,SHIP,PILOT));
-    
-    DrawString(pixmap,gfont,gc,x,y+15,point);
-#else
-    /* fps */
-    x=wwidth-10*charw;
-    sprintf(point,"FPS:%.1f",fps);
-    DrawString(pixmap,gfont,penRed,x,y,point);
-    /* --fps */
-#endif
-
-
-
-  y+=incy;
-  h=(int)(time/(20*60*60));
-  m=(int)(time/(20*60))-h*60;
-  s=(int)(time/(20))-h*3600-m*60;
-  
-  sprintf(point,"time: %d:",h);
-  if(m<10){
-    sprintf(tmpcad,"0%d:",m);
-  }
-  else{
-    sprintf(tmpcad,"%d:",m);
-  }
-  strncat(point,tmpcad,MAXTEXTLEN-strlen(point));
-
-  if(s<10){
-    sprintf(tmpcad,"0%d",s);
-  }
-  else{
-    sprintf(tmpcad,"%d",s);
-  }
-  strncat(point,tmpcad,MAXTEXTLEN-strlen(point));
-  x=wwidth2-7*charw;
-  DrawString(pixmap,gfont,penGreen,x,y,point);
-
-  
-  /* 
-   *      order info 
-   */
-
-  if(keys.order.state==FALSE){ 
-    gdraw.order=FALSE;
-    /* DrawString(pixmap,gfont,penRed,10,wheight+GameParametres(GET,GPANEL,0)/2+4,  */
-    /* 	       "O: Introduce command"); */
-    ShellTitle(0,NULL,pixmap,penRed,gfont,10,wheight+GameParametres(GET,GPANEL,0)/2+4);
-  }
-    /*
-     *    Ship info
-     */
-  if(obj!=NULL){
-    if(obj->type==SHIP && gdraw.info==TRUE){  
-      y=DrawShipInfo(pixmap,gfont,penGreen,obj,0,0);
-
-      sprintf(point,"============");
-      DrawString(pixmap,gfont,penGreen,10,y,point);
-      y+=incy;
-
-    }
-  }
-
-  /*
-   *  Player info
-   */
-  if(gdraw.info==TRUE){
-    y=DrawPlayerInfo(pixmap,gfont,penCyan,&players[actual_player],10,y);
-    sprintf(point,"============");
-    DrawString(pixmap,gfont,penGreen,10,y,point);
-    y+=incy;
-  
-    
-    /*
-     *   Planet info
-     */
-
-    if(obj!=NULL){
-      if(obj->habitat==H_PLANET){
-	planet=obj->in;
-	if(planet!=NULL){
-	  
-	  y=DrawPlanetInfo(pixmap,gfont,penGreen,planet,obj->player,10,y);
-	  sprintf(point,"============");
-	  DrawString(pixmap,gfont,penGreen,10,y,point);
-	  y+=incy;
-	}
-      }
-    }
-  }
-  /* Enemy info */
-  objt=NearestObj(&listheadobjs,cv,SHIP,PENEMY,&d2);
-  if(cv!=NULL && objt!=NULL){
-    if(d2 < (cv->radar*cv->radar)){
-      DrawEnemyShipInfo(pixmap,gfont,penGreen,objt,wwidth,0);
-    }
-  }
-  
-  /* text messages */
-
- /* net message */  
-  if(PendingTextMessage()){
-    GetTextMessage(point);
-    DrawMessageBox(pixmap,gfont,point,wwidth2,(int)(.25*wheight),MBOXBORDER);
-  }
-
-  /* game messages */
-
-  lh=listheadtext.next;
-  i=0;
-  lsw=0;
-  if(swgmess){
-    gdk_draw_rectangle(pixmap,    
-		       penBlack,
-		       TRUE,   
-		       10,
-		       wheight-incy*swgmess-10,
-		       glen+15,
-		       incy*swgmess+10);
-
-    gdk_draw_rectangle(pixmap,    
-		       penRed,
-		       FALSE,   
-		       10,
-		       wheight-incy*swgmess-10,
-		       glen+15,
-		       incy*swgmess+10);
-  }
-  glen=0;
-  while(lh!=NULL){
-    strncpy(point,lh->info.text,MAXTEXTLEN);
-    //    fprintf(stdout,"tmp  %s\n",point);
-    if(lh->info.dest!=actual_player && lh->info.dest !=-1){
-      lh->info.duration=-500;
-      lsw=1;
-      lh=lh->next;continue;
-    }
-     
-    if(lh->info.duration>0 && i<10){
-      switch(lh->info.value){
-      case 0:
-	gcmessage=penRed;
-	break;
-      default:
-	gcmessage=penWhite;
-	break;
-      }
-      /* 
-	 show messages with duration >0
-	 delete messages with duration <= -500
-	 (trying to avoid repetitive messages )
-      */
-      
-      DrawString(pixmap,gfont,gcmessage,20,wheight-incy*swgmess+incy*i+5,point);
-      if(gfont!=NULL){
-	textw=gdk_text_width(gfont,point,strlen(point));
-      }
-      else{
-	textw=charw*strlen(point);
-      }
-      if(textw>glen)glen=textw;
-      if(lh->info.print==0){
-	fprintf(stdout,"%s\n",point);
-	lh->info.print=1;
-      }
-      if(i<3){
-	lh->info.duration--;
-      }
-      i++;
-    }
-    else{
-      lh->info.duration--;
-    }
-
-    if(lh->info.duration<=-500)lsw=1;
-    
-    lh=lh->next;
-  }
-  swgmess=i;  
-  if(lsw){ /* cleaning the message list */
-    struct TextMessageList *freels;
-    /* printf("cleaning the message list\n"); */
-    lh=&listheadtext;
-    while(lh->next!=NULL){
-      if(lh->next->info.duration<=-500){
-	/* printf("borrando:(%s)\n",lh->next->info.text); */
-	freels=lh->next;
-	lh->next=lh->next->next;
-	free(freels);
-	MemUsed(MADD,-sizeof(struct TextMessageList));
-	freels=NULL;
-	listheadtext.info.n--;
-	continue;
-      }
-      lh=lh->next;
-    }
-  }
-}
 
 void GetGold(void){
   /*

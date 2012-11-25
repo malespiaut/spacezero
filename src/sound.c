@@ -597,6 +597,7 @@ int Sound(int mode,int sid){
 #endif
       return(0);
     }
+
     status=GameParametres(GET,GSOUND,0);
     if(status==FALSE && (mode==SPLAY||mode==SPAUSE)){
 #if DEBUG

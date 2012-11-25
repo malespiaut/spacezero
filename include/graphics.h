@@ -106,6 +106,7 @@ void DrawSpaceShip(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc);
 
 int DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl);
 
+void DrawInfo(GdkPixmap *pixmap,Object *,struct Draw *,struct HeadObjList *,struct TextMessageList *);
 int DrawPlayerInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct Player *player,int x0,int y0);
 int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0,int y0);
 int DrawEnemyShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *,int,int);

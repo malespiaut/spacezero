@@ -24,8 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define FALSE 0
 #define TRUE 1
 #endif
-char letterFrequency[26][300];
-int tableLoaded;
+
 
 char *createName(int length);
 void loadFrequencyTable(char *filename);

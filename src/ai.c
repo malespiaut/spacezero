@@ -1379,7 +1379,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
       case LANDED:
 	/* sending ship to atack or to new planets */
 	if(shipsinplanet[ls->obj->in->id] == -1){
-	  shipsinplanet[ls->obj->in->id]=CountShipsInPlanet(lhobjs,ls->obj->in->id,SHIP,-1,2);
+	  shipsinplanet[ls->obj->in->id]=CountShipsInPlanet(lhobjs,ls->obj->in->id,ls->obj->player,SHIP,-1,2);
 	}
 	/* don't send if it is alone */
 	if(shipsinplanet[ls->obj->in->id] < 2)break;
@@ -3073,12 +3073,13 @@ int AddobjCCData(struct CCDATA *ccdata,Object *obj){
 	else{ /* are allies */
 	  strength=pow(2,obj->level);
 	}
-
+#if TEST
 	if(strength>80){
 	  printf("WARNING: AddObjCCdata() check for planet %d %f %f state:%f\n",pinfo->planet->id,strength,pinfo->strength,obj->state);
 	  strength=80;
+	  exit(-1);
 	}
-
+#endif
 	pinfo->strength+=strength;  //HERE CHECK THIS 
 
 	switch(obj->subtype){
@@ -3386,10 +3387,8 @@ int NearestCCPlanets(struct CCDATA *ccdata,Object *obj,int status,struct NearObj
       }
     }
     pinfo=pinfo->next;
-    
   }
   return(m);
-  
 }
 
 
@@ -3504,7 +3503,7 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
 	}
 	
 	d2=(pinfo->planet->x - pinfo1->planet->x)*(pinfo->planet->x - pinfo1->planet->x) +
-	  (pinfo->planet->y - pinfo1->planet->y)*(pinfo->planet->y - pinfo1->planet->y);      
+	  (pinfo->planet->y - pinfo1->planet->y)*(pinfo->planet->y - pinfo1->planet->y);
 	
 	if(d2<d2min){
 	  d2min=d2;
@@ -3557,7 +3556,6 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
 	  }
 	}
       }
-
       pinfo=pinfo->next;
     }
 
@@ -3587,9 +3585,9 @@ int WarCCPlanets(struct Player player,struct CCDATA *ccdata){
 
       if(planet!=NULL){
 #if TEST
-	if(pinfo->strength>80){
+	if(pinfo->strength>120){
 	  printf("WARNING:  check for planet %d %f %f\n",pinfo->planet->id,strength,pinfo->strength);
-	  pinfo->strength=80;
+	  pinfo->strength=120;
 	}
 #endif
       }
@@ -4148,19 +4146,16 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
     planet2meet
 */
 
-
   struct PlanetInfo *pinfo1,*pinfo2; /* planets 2meet 2attack*/
   int nf2a=MINnf2a; /* num of fighter 2 attack */
   static int cont;
-
 
   if(player.id==2)cont++;
 
   pinfo1=NULL;
   pinfo2=NULL;
+
   /* Decide if WAR */
-
-
   if(ccdata->war>=2){
     if(ccdata->planet2meet==NULL || ccdata->planet2attack==NULL){
 #if DEBUG
@@ -4194,6 +4189,49 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
 	printf("player: %d planet %d lost (%d)\n",player.id,ccdata->planet2meet->id,ccdata->war);
       }
 #endif
+
+#if TEST
+      printf("player: %d planet %d lost\n",player.id,ccdata->planet2meet->id);
+      printf("ATTACK aborted from %d to %d\n",ccdata->planet2meet->id,ccdata->planet2attack->id);
+#endif
+
+
+      // HERE Abort attack. change all GOTO by GOTO n
+
+      /**** Abort Attack ****/
+      {
+	struct ObjList *ls;
+	struct Order *mainord;
+	ls=lhobjs->next;
+	while(ls!=NULL){
+	  if(ls->obj->player != player.id){ls=ls->next;continue;}
+	  if(ls->obj->type != SHIP){ls=ls->next;continue;}
+	  mainord=ReadOrder(NULL,ls->obj,MAINORD);
+	  if(mainord==NULL){ls=ls->next;continue;}
+
+	  if(mainord->id==GOTO || mainord->id==RETREAT){
+	    if(mainord->c==ccdata->planet2meet->id){
+	      struct Order neword;
+	      
+	      DelAllOrder(ls->obj);
+	      neword.priority=1;
+	      neword.id=NOTHING;
+	      neword.time=1;
+	      neword.g_time=GetTime();
+	      neword.a=0;
+	      neword.b=0;
+	      neword.c=-1;
+	      neword.d=0;
+	      neword.e=neword.f=neword.g=0;
+	      neword.h=1;
+	      neword.i=neword.j=neword.k=neword.l=0;
+	      AddOrder(ls->obj,&neword);
+	    }
+	  }
+	  ls=ls->next;
+	}
+      }
+      /**** --Abort Attack ****/
       ccdata->planet2meet=ccdata->planet2attack=NULL;
       ccdata->time=0;
       ccdata->war=0;
@@ -4223,7 +4261,7 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player player,struct CC
     break;
   case 1:
     /* Choose planet to attack and from  */
-    if(WarCCPlanets(player,ccdata)!=1){ // HERE TODO review this for diferents values of 1
+    if(WarCCPlanets(player,ccdata)!=1){ // HERE TODO review this for differents values of 1
 #if TEST
       printf("player %d resetting 0 WAR\n",ccdata->player);
 #endif

@@ -603,7 +603,7 @@ void RemoveObj(struct HeadObjList *lhobjs,Object *obj2remove);
 int GameOver(struct HeadObjList *lhead,struct Player *players,int actual_player);
 
 int CountObjs(struct HeadObjList *lh,int player,int type,int subtype);
-int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int type,int subtype,int max);
+int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int player,int type,int subtype,int max);
 int CountShips(struct HeadObjList *lh,int *c,int *s);
 int CountPlayerShipObjs(struct HeadObjList *lh,int player,int *cont);
 int CountPlayerPlanets(struct HeadObjList *lh,struct Player player,int *cont);

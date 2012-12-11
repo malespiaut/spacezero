@@ -331,16 +331,17 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 #if DEBUG
   if(debugai && cv==obj){
     printf("DANGER:%d order: %d\n",danger,order.id); 
-    if(obj->dest!=NULL)
+    if(obj->dest!=NULL){
       printf("(%d) CHOICE: %d %d\n",obj->id,order.id,obj->dest->id);
-    else
+    }
+    else{
       printf("(%d) CHOICE: %d NULL\n",obj->id,order.id);
-
+    }
     printf("actorder:%d\n",obj->actorder.id);
   }
 #endif
 
-  if(obj->actorder.id==-1 && obj->norder<10){ 
+  if(obj->actorder.id==-1 && obj->norder < 10){ 
 
     order.priority=20;
     order.time=0;
@@ -722,7 +723,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       }
       
 #if DEBUG
-      if(debugrisk && obj==cv){ 
+      if((debugrisk||debugai) && obj==cv){ 
       printf("Risk(1) cdata: %d  %d\n",obj->cdata->a,order.id); 
       } 
 #endif
@@ -860,7 +861,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
 
 #if DEBUG
     if(debugai && cv==obj){
-      printf("Executing ordid:%d time: %d\n",execord->id,time);
+      printf("*****Executing ordid:%d time: %d id: %d\n",execord->id,time,obj->id);
       if(mainord!=NULL){
 	printf("main ordid: %d\n",mainord->id);
       }
@@ -2578,7 +2579,7 @@ int AddOrder(Object *obj,struct Order *order){
   if(obj->norder>10)printf("ship %d has %d orders\n",obj->id,obj->norder);
 #if DEBUG
   if(debugai && obj==cv){
-    printf("AddOrder()\n");
+    printf("AddOrder(%d)\n",order->id);
     PrintOrder(order);
     printf("------------\n");
     PrintOrder(&(obj->lorder->order));
@@ -4769,7 +4770,7 @@ int ExecGoto(Object *obj,struct Order *ord){
 
 void ExecLand(Object *obj,struct Order *ord){
   /*
-    version 01.Jan 2011 
+    version 02.Dec 2012 
     Execute the order LAND in a planet.
    */
   float v2;
@@ -4778,7 +4779,6 @@ void ExecLand(Object *obj,struct Order *ord){
   float b;
   float dx,dy;
   float vxmax,vymax;
-  float fvy;
   float fa;/* 0.125; */
   int swa,swvx,swvy;
   int pmass;
@@ -4797,6 +4797,14 @@ void ExecLand(Object *obj,struct Order *ord){
       return;
     }
   }
+
+#if DEBUG
+  if(debugai&&obj==cv){
+    printf("ExecLand\nvy:%f c:%f d:%f f:%f x:%f y:%f\n",
+	   obj->vy,ord->c,ord->d,ord->f,obj->x,obj->y);
+  }
+#endif
+
 
   v2=obj->vx*obj->vx+obj->vy*obj->vy;
 
@@ -4834,18 +4842,6 @@ void ExecLand(Object *obj,struct Order *ord){
     }
   }
 
-  dy=obj->y-ord->f;
-
-  if(dy<100){vymax=4;
-    if(dy<50){vymax=2;
-      if(dy<30){vymax=1;
-      }
-    }
-  }
-
-  fvy=1-fabs(obj->vy/vymax);
-  if(fvy<0)fvy=0;
-  if(obj->vy>0)fvy=1;  
 
 /*  brake */
   a=PI/2;
@@ -4862,11 +4858,38 @@ void ExecLand(Object *obj,struct Order *ord){
     if(obj->vx>vxmax ){a=b;swvx=1;} /* brake */
   }
 
-  swvy=0;
-  if(obj->vy<-vymax){swvy=1;}
-  if(obj->vy>1)swvy=0;
-  if(dy<0){swvy=1;}
 
+/* going down  */
+
+  if((fabs(obj->x-x0)< obj->radio)){
+   if(fabs(obj->vx)<1){
+      a=0;
+      swvx=0;
+      if(fabs(obj->a-PI/2)<.1)
+	obj->a=PI/2;
+      obj->vx=0;
+      obj->ang_a=0;
+      ord->f=ord->c;
+    }
+  }
+
+  dy=obj->y-ord->f;
+  if(dy<100){vymax=4;
+    if(dy<50){vymax=2;
+      if(dy<30){vymax=1;
+      }
+    }
+  }
+
+  swvy=0;
+  if(obj->vy<-vymax){
+    swvy=1;
+  }
+  
+  if(obj->vy>1)swvy=0;
+  if(dy<0){
+    swvy=1;
+  }
   if(swvy){
     if(swvx){
       if(a==-b)a=-b/2;
@@ -4875,41 +4898,17 @@ void ExecLand(Object *obj,struct Order *ord){
     else a=0;
   }
 
-/* going down  */
-
-  if((fabs(obj->x-x0)< obj->radio)){
-
-    if(fabs(obj->vx)<1){
-      a=0;
-      swvx=0;
-      if(fabs(obj->a-PI/2)<.1)
-	obj->a=PI/2;
-      obj->vx=0;
-      obj->ang_a=0;
-      ord->f=ord->c;
-      dy=obj->y-ord->f;
-      if(dy<100)vymax=4;
-      if(dy<50)vymax=2;
-      if(dy<30)vymax=1;
-    }
-  }
-
   ia=obj->a-a-PI/2;
   if(ia > PI)ia-=2*PI;
   if(ia < -PI)ia+=2*PI;
 
   swa=0;
-  /*  if(ia>0.5*obj->engine.ang_a*DT*DT*(100./obj->mass)){ */
   if(fabs(ia)>.07){
-
-
-
     if(obj->a<PI/2-b)ia=-1;
     if(obj->a>PI/2+b)ia=1;
 
     if(obj->a<0)ia=-1;
     if(obj->a<-PI/2)ia=1;
-
 
     obj->ang_a+=obj->engine.ang_a*(ia > 0 ? -1 : 1);
 
@@ -4920,8 +4919,6 @@ void ExecLand(Object *obj,struct Order *ord){
 
     if(ia>0 && obj->ang_a>0)obj->ang_a=0;
     if(ia<0 && obj->ang_a<0)obj->ang_a=0;
-
-
   }
   else{
     obj->ang_a=0;
@@ -4943,17 +4940,16 @@ void ExecLand(Object *obj,struct Order *ord){
 
   if(swa&&(swvx||swvy)){
     pmass=obj->in->mass;
-    fa=1;
 
     fa=(fabs(fabs(obj->vx)-vxmax)+fabs(fabs(obj->vy)-vymax))/10-0.1;
     fa+=0.4*pmass/MAXPLANETMASS;
     if(fa<.3)fa=.3; 
     if(fa>1.1)fa=1.1; 
-
     if(obj->gas>0){
       obj->accel+=fa*obj->engine.a;
-      if(obj->accel > obj->engine.a_max)
+      if(obj->accel > obj->engine.a_max){
 	obj->accel=obj->engine.a_max;
+      }
     }
   }
   else{
@@ -4961,6 +4957,7 @@ void ExecLand(Object *obj,struct Order *ord){
   }
   return;
 }
+
 
 
 void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct Order *morder,float d2){
@@ -5416,7 +5413,7 @@ int ExecStop(Object *obj,float v0){
 
 
 #if DEBUG
-  if(debugexec&&obj==cv)printf("ExecStop\n");
+  if(debugai&&obj==cv)printf("ExecStop\n");
 #endif
 
   if(v0<0.01)v0=0.01; /* limit to reach */

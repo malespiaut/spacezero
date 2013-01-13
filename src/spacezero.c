@@ -89,10 +89,10 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.36"};
+char version[64]={"0.83.37"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Nov. 2012"};
+char last_revision[]={"Dec. 2012"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -507,7 +507,8 @@ gint MenuLoop(gpointer data){
   /* clear window */
 
   gdk_draw_rectangle(pixmap,     
-		     drawing_area->style->black_gc,     
+		     penBlack,
+		     //		     drawing_area->style->black_gc,     
 		     TRUE,    
 		     0,0,     
 		     drawing_area->allocation.width,     
@@ -1034,7 +1035,6 @@ gint MainLoop(gpointer data){
 	    if(GameParametres(GET,GNET,0)==TRUE){
 	      SendTextMessage(text);
 	    }
-
 	  }
 	}
       }
@@ -1326,7 +1326,8 @@ gint MainLoop(gpointer data){
     if(gdraw.map==TRUE){
       if(drawmap){ 
 	gdk_draw_rectangle(pixmap,   
-			   drawing_area->style->black_gc,   
+			   penBlack,
+			   //			   drawing_area->style->black_gc,   
 			   TRUE, 
 			   0,0,   
 			   drawing_area->allocation.width,   
@@ -1337,7 +1338,8 @@ gint MainLoop(gpointer data){
 #if DEBUGFAST
       if(!(cont%120)){
 	gdk_draw_rectangle(pixmap,
-			   drawing_area->style->black_gc,
+			   penBlack,
+			   //			   drawing_area->style->black_gc,
 			   TRUE,
 			   0,0,
 			   drawing_area->allocation.width,
@@ -1346,7 +1348,8 @@ gint MainLoop(gpointer data){
       }
 #else
       gdk_draw_rectangle(pixmap,
-			 drawing_area->style->black_gc,
+			 penBlack,
+			 //			 drawing_area->style->black_gc,
 			 TRUE,
 			 0,0,
 			 drawing_area->allocation.width,
@@ -3602,7 +3605,11 @@ int UpdateObjs(void){
 	  UpdateShip(obj);
 	  /* level of a planet is the maxlevel of an object in it */
 	  if(obj->habitat==H_PLANET){
-	    if(obj->level > obj->in->level && obj->subtype!=PILOT)obj->in->level=obj->level;
+
+	    if(players[obj->player].team == players[obj->in->player].team){
+	      //	    if(obj->in->player==obj->player){
+	      if(obj->level > obj->in->level && obj->subtype!=PILOT)obj->in->level=obj->level;
+	    }
 	  }
 	  break;
 	  

@@ -56,81 +56,84 @@ int MAXnf2a=40;
 int MINnf2a=6;
 
 void aimissile(struct HeadObjList *lhobjs,Object *obj){
-  Object *ship_enemy;
-  float d2;
-  float a,b,ib;  
-  int level=1;
-  float factor=1;
+  Object *ship_enemy=NULL;
+  float d2,x2,y2;
+  float b,t1;  
 
   if(obj->gas<=0){
     obj->dest=NULL;
     return;
   }
 
-  if(obj->dest==NULL){
-    obj->dest=NearestObj(lhobjs,obj,SHIP,PENEMY,&d2);
-  }
-  ship_enemy=obj->dest;
-
-  if(ship_enemy!=NULL){
-    if(ship_enemy->habitat!=obj->habitat)ship_enemy=NULL;
-    if(d2>obj->radar*obj->radar)ship_enemy=NULL;
-  }
-  
-  if(ship_enemy==NULL){
-    obj->ang_a=obj->ang_v=0;
-    obj->dest=NULL;
-  }
-  else{
-    /* ship velocity angle */
-    a=atan2(obj->vy ,obj->vx);
-
-    /* objetive-ship angle */
-    b=atan2(ship_enemy->y - obj->y,ship_enemy->x - obj->x);
-
-    ib=2*(obj->a-b);
-
-    switch(level){
-    case 0:
-      factor=1;
-      break;
-    case 1:
-      if(fabs(ib)<0.25)factor=0.5;  /* 28º */
-      if(fabs(ib)<0.1)factor=0.25;
-      break;
-    default:
-      factor=1;
-      break;
-    }
-
-    if(ib<0){
-      if(obj->ang_a<0)obj->ang_a=0;
-      if(obj->ang_v<0)factor=1;
-      obj->ang_a+=factor*obj->engine.ang_a;
-      if(obj->ang_a>obj->engine.ang_a_max)obj->ang_a=obj->engine.ang_a_max;
-    }
-    if(ib>0){
-      if(obj->ang_a>0)obj->ang_a=0;
-      if(obj->ang_v>0)factor=1;
-      obj->ang_a-=factor*obj->engine.ang_a;
-      if(obj->ang_a<-obj->engine.ang_a_max)obj->ang_a=-obj->engine.ang_a_max;
-    }
-
-    if(fabs(obj->a-b)<0.1){
-      float v;
-      obj->ang_a=0;
-      obj->ang_v=0;
-      obj->a=b;
-      v=sqrt(obj->vx*obj->vx+obj->vy*obj->vy);
-      obj->vx=(v*cos(b)+9*obj->vx)/10;
-      obj->vy=(v*sin(b)+9*obj->vy)/10;
-    }
-  }
-  
   obj->accel+=obj->engine.a;
   if(obj->accel > obj->engine.a_max){
     obj->accel=obj->engine.a_max;
   }
+
+  /**** tarjet ****/
+  if(obj->dest==NULL){
+    obj->dest=NearestObj(lhobjs,obj,SHIP,PENEMY,&d2);
+    if(d2>obj->radar*obj->radar)obj->dest=NULL;
+  }
+
+  ship_enemy=obj->dest;
+
+  if(ship_enemy!=NULL){
+    int sw=0;
+    if(ship_enemy->habitat!=obj->habitat)sw=1;
+    if(ship_enemy->type==PLANET && obj->habitat==H_PLANET)sw=1;
+    if(sw)ship_enemy=NULL;
+  }
+
+  /* if there are no ships go to nearest enemy planet */
+
+  if(ship_enemy==NULL && obj->habitat==H_SPACE){
+    ship_enemy=NearestObj(lhobjs,obj,PLANET,PENEMY,&d2);
+    if(d2>obj->radar*obj->radar)ship_enemy=NULL;
+    obj->dest=ship_enemy;
+  }  
+  
+  if(ship_enemy==NULL){
+    obj->ang_a=obj->ang_v=0;
+    obj->dest=NULL;
+    return;
+  }
+
+  switch(obj->level){
+  case 0:
+  case 1:
+    /* objetive-ship angle */
+    b=atan2(ship_enemy->y - obj->y,ship_enemy->x - obj->x);
+    break;
+
+  case 2:
+    d2=(ship_enemy->x - obj->x)*(ship_enemy->x - obj->x) +
+      (ship_enemy->y - obj->y)*(ship_enemy->y - obj->y);
+    t1=sqrt(d2/obj->engine.v2_max/2);
+    x2=ship_enemy->x + (ship_enemy->vx)*t1;
+    y2=ship_enemy->y + (ship_enemy->vy)*t1;
+
+    b=atan2(y2 - obj->y,x2 - obj->x);
+    break;	
+
+  default:
+    d2=(ship_enemy->x - obj->x)*(ship_enemy->x - obj->x) +
+      (ship_enemy->y - obj->y)*(ship_enemy->y - obj->y);
+    t1=sqrt(d2/obj->engine.v2_max/2);
+    x2=ship_enemy->x + (ship_enemy->vx - obj->vx)*t1;
+    y2=ship_enemy->y + (ship_enemy->vy - obj->vy)*t1;
+    
+    d2=(x2 - obj->x)*(x2 - obj->x) +
+      (y2 - obj->y)*(y2 - obj->y);
+    t1=sqrt(d2/obj->engine.v2_max/2);
+    x2=ship_enemy->x + (ship_enemy->vx - obj->vx)*t1;
+    y2=ship_enemy->y + (ship_enemy->vy - obj->vy)*t1;
+  
+    b=atan2(y2 - obj->y,x2 - obj->x);
+    break;
+  }
+
+  ExecTurn(obj,b);
 }
 
 
@@ -4643,7 +4646,7 @@ int ExecGoto(Object *obj,struct Order *ord){
   v2=obj->vx*obj->vx+obj->vy*obj->vy;
   switch((int)ord->d){
   case PLANET:
-    d02=100000;  /* ori   d02=22500; */
+    d02=70000;  /* ori   d02=22500; */
     if(ord->g>100000)d02=150000;
     if(ord->g>125000)d02=200000;
     if(d2<d02){  /* ori 40000 objetive reached. */
@@ -4819,7 +4822,7 @@ void ExecLand(Object *obj,struct Order *ord){
     return;
   }
 
-  x0=ord->a+obj->radio+(ord->b-2.*obj->radio)*(obj->pid%20)/20.; /* Landing point */
+  x0=ord->a+obj->radio+(ord->b-2.*obj->radio)*(obj->pid%40)/40.; /* Landing point */
 
   dx=obj->x-x0;
 
@@ -5507,7 +5510,7 @@ int ExecBrake(Object *obj,float v0){
   v2=obj->vx*obj->vx+obj->vy*obj->vy;
 
   if(v2<v0*v0){
-    //    obj->accel=0;
+    obj->accel=0;
     return(1); /* objective reached */
   }
 
@@ -5528,8 +5531,8 @@ int ExecBrake(Object *obj,float v0){
     obj->ang_a=0;
   }
 
-  if(ia<.1){
-    if(v2-v0*v0<50){
+  if(ia<.18){
+    if(v2 < 4*v0*v0){
       obj->accel=0;
     }
     obj->accel+=obj->engine.a;

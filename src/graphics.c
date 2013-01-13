@@ -597,6 +597,8 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
 
 
   /******** colors **********/
+  penBlack= GetPen(NewColor(0,0,0),pixmap);
+  penWhite= GetPen(NewColor(65535,65535,65535),pixmap);  
   penRed= GetPen(NewColor(65535,0,0),pixmap);
   penGreen= GetPen(NewColor(0,65535,0),pixmap);
   penLightGreen= GetPen(NewColor(40000,65535,40000),pixmap);
@@ -604,7 +606,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   penYellow= GetPen(NewColor(65535,65535,0),pixmap);
   penWhite= GetPen(NewColor(65535,65535,65535),pixmap);
   penBlack= GetPen(NewColor(0,0,0),pixmap);
-  
+
   /*255 165   0 */
   penOrange= GetPen(NewColor(65535,42405,0),pixmap);
   /*238 130 238 */
@@ -3526,7 +3528,6 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct HeadTextLi
 
   textw=0;
 
-
   DrawString(pixmap,font,penBlue,x,y,title);
   textw0=gdk_text_width(font,title,strlen(title));
   if(textw0>textw){
@@ -4275,12 +4276,14 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
     hplanetlist.n=0;
     hplanetlist.next=NULL;
 
-
     charw=gdk_text_width(gfont,"O",1);
-    sw=1;
+    textpw=gdk_text_width(gfont,"PLANETS:",strlen("PLANETS:"));
+    textsw=gdk_text_width(gfont,"SHIPS:",strlen("SHIPS:"));
+
     for(i=0;i<SHIP_S_MAX+1;i++){
       ships[i]=0;
     }
+    sw=1;
   }
   
   snprintf(titleships,MAXTEXTLEN,"SHIPS: E:%d F:%d T:%d Q:%d",
@@ -4295,13 +4298,11 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
     DestroyTextList(&hshiplist);
     DestroyTextList(&hplanetlist);
 
-    textpw=gdk_text_width(gfont,"PLANETS:",strlen("PLANETS:"));
-    textsw=gdk_text_width(gfont,"SHIPS:",strlen("SHIPS:"));
-
     textw=gdk_text_width(gfont,cad,strlen(cad));
     if(textw>textpw)textpw=textw;
 
     color=0;
+
     if(cvobj!=NULL){
       if(cvobj->habitat==H_SPACE)color=1;
     }
@@ -4317,13 +4318,14 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
       color=0;
       switch(obj->type){
       case SHIP:
-	mode=Type(obj);
-	if(obj->ai==0)mode='M';
-	if(obj->type==SHIP && obj->subtype==PILOT)mode='A';	
-
 	if(obj->state<50 || obj->gas<0.5*obj->gas_max){color=2;}
 	if(obj->state<25 || obj->gas<0.25*obj->gas_max){color=3;}
-	
+	if(obj->type==SHIP && obj->subtype==PILOT){color=3;}
+
+	mode=Type(obj);
+	if(obj->ai==0){mode='M';color=3;}
+	if(obj->type==SHIP && obj->subtype==PILOT)mode='A';
+
 	if(obj==cvobj || obj->selected==TRUE){color=1;}
 
 	snprintf(cad,MAXTEXTLEN,"%c%d id:%d ",mode,obj->level,obj->pid);
@@ -4407,7 +4409,7 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
  
   XPrintTextList(pixmap,gfont,titleships,&hshiplist,10,15,textsw+charw+10,GameParametres(GET,GHEIGHT,0)-50); 
   
-   XPrintTextList(pixmap,gfont,"PLANETS:",&hplanetlist,GameParametres(GET,GWIDTH,0)-textpw-20,15,textpw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
+  XPrintTextList(pixmap,gfont,"PLANETS:",&hplanetlist,GameParametres(GET,GWIDTH,0)-textpw-20,15,textpw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
 
   return;
 }

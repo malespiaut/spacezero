@@ -246,6 +246,7 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
       obj->gas_max=100;
       obj->gas=obj->gas_max;
       obj->radio=6;
+      obj->level=parent->level;
       break;
     case LASER: /*  shot4 */
       obj->state=1;

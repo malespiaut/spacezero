@@ -169,8 +169,8 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       }
       
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT && CountNSelected(lhead,player)==1){
-	strncpy(cad,"S: SELECT   B: BUY   W: WRITE",MAXTEXTLEN); 
-	key->g=key->x=key->p=key->t=key->r=key->e=key->u=key->w=FALSE;
+	strncpy(cad,"R: REPEAT   S: SELECT   B: BUY   W: WRITE",MAXTEXTLEN); 
+	key->g=key->x=key->p=key->t=key->e=key->u=key->w=FALSE;
       }
 
       if(0&&CountNSelected(lhead,player)>1){
@@ -472,7 +472,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     /* ships orders */
 
     if(gameorder==FALSE){
-      
+      obj0=NULL;
       /* first selected goes to cv if cv is not selected*/
       ls=lhead->next;
       while(ls!=NULL){  //HERE create a selected list
@@ -511,10 +511,13 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     }
     
     /* --ships orders */
-
-    lastorder=order;
-    strcpy(lastpar,"");
-    strncpy(lastpar,par,16);
+    /* if lastorder is a valid order */
+    if(obj0!=NULL){
+      //      printf("CHANGING lastorder\n");
+      lastorder=order;
+      strcpy(lastpar,"");
+      strncpy(lastpar,par,16);
+    }
 
     strcpy(cad,"");
     strcpy(ord,"");
@@ -759,15 +762,6 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  break;
 	}
       }
-      else{
-	printf("Not Allowed. Planet or spaceship unknown.\n");
-#if TEST
-	printf("\t arg1:(%s) par:(%s)\n",arg1,par);
-#endif
-	snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship (%s) unknown.",arg1);
-	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
-	//	keys.esc=TRUE;
-      }
       
       if(obj_dest!=NULL){
 	ord.priority=1;
@@ -791,6 +785,17 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	AddOrder(obj,&ord);
 
       }
+      else{
+	printf("Not Allowed. Planet or spaceship unknown.\n");
+#if TEST
+	printf("\t arg1:(%s) par:(%s)\n",arg1,par);
+#endif
+	snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship (%s) unknown.",arg1);
+	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	//	keys.esc=TRUE;
+	ret=NULL;
+      }
+
       break;
     case 2: //GOTO sector   // AQUI
       id1=strtol(arg1,NULL,10);
@@ -827,6 +832,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       printf("shell() invalid entry\n");
       snprintf(stmess,MAXTEXTLEN,"shell() invalid entry.");
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      ret=NULL;
       break;
     }
 
@@ -897,7 +903,17 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       }
     }
-    
+    else{
+      printf("Not Allowed. Planet or spaceship unknown.\n");
+#if TEST
+      printf("\t arg1:(%s) par:(%s)\n",arg1,par);
+#endif
+      snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship (%s) unknown.",arg1);
+      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      //	keys.esc=TRUE;
+      ret=NULL;
+    }
+
     break;
 
   case STOP:
@@ -992,21 +1008,25 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  printf("Spaceship must be landed.\n");
 	  snprintf(stmess,MAXTEXTLEN,"Spaceship must be landed.");
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ret=NULL;
 	  break;
 	case SZ_NOTOWNPLANET:
 	  printf("You don't own this planet\n");
 	  snprintf(stmess,MAXTEXTLEN,"You don't own this planet.");
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ret=NULL;
 	  break;
 	case SZ_NOTENOUGHGOLD:
 	  printf("You have not enough gold\n");
 	  snprintf(stmess,MAXTEXTLEN,"You have not enough gold.");
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ret=NULL;
 	  break;
 	case SZ_NOTALLOWED:
 	  printf("Not allowed\n");
 	  snprintf(stmess,MAXTEXTLEN,"Not allowed.");
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ret=NULL;
 	  break;
 	case SZ_NOTIMPLEMENTED:
 	default:
@@ -1078,6 +1098,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   default:
     break;
   }
+
   return(ret);
 }
 

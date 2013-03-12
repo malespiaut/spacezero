@@ -39,11 +39,11 @@
 
 struct ObjTree *treeobjs=NULL;
 extern struct Player *players;
-extern struct HeadObjList listheadobjs;
-extern struct HeadObjList *listheadkplanets; /* lists of planets known by players */
+struct HeadObjList listheadobjs;       /* List of all objs */
+extern struct HeadObjList *listheadkplanets;  /* lists of planets known by players */
 extern struct HeadObjList listheadplayer;     /* list of objects of each player */
 extern struct TextMessageList listheadtext;
-extern struct CharListHead gameloglist;          /* list of all game messages */
+extern struct CharListHead gameloglist;       /* list of all game messages */
 extern struct Window windowgamelog;
 extern int actual_player,actual_player0;
 extern int record;
@@ -54,7 +54,7 @@ int g_projid=-2; /* id of the projectiles */
 
 
 
-Object *NewObj(struct HeadObjList *lhead,int type,int stype,
+Object *NewObj(int type,int stype,
 	       int x,int y,float vx,float vy,
 	       int weapontype,int engtype,int player,Object *parent,Object *in){
   
@@ -369,6 +369,32 @@ Object *NewObj(struct HeadObjList *lhead,int type,int stype,
 
 int Add2ObjList(struct HeadObjList *lhead,Object *obj){
   /* 
+     add obj to the list lhead 
+  */
+
+  switch(obj->type){
+
+  case SHIP:
+  case PLANET:
+    return(Add2ObjList_E(lhead,obj));
+    break;
+  case PROJECTILE:
+  case ASTEROID:
+  case ARTEFACT:
+  case TRACKPOINT:
+  case TRACE:
+    return(Add2ObjList_B(lhead,obj));
+    break;
+  default:
+    fprintf(stderr,"ERROR in Ass2ObjList(): type unknown\n");
+    exit(-1);
+    break;
+  }
+}
+
+
+int Add2ObjList_B(struct HeadObjList *lhead,Object *obj){
+  /* 
      add obj at the beginning of the list 
   */
 
@@ -387,8 +413,40 @@ int Add2ObjList(struct HeadObjList *lhead,Object *obj){
   lhead->n++;
   lhead->next->next=ls;
   return(0);
-
 }
+
+int Add2ObjList_E(struct HeadObjList *lhead,Object *obj){
+  /* 
+     add obj at the end of the list 
+  */
+
+  struct ObjList *ls;
+
+
+  if(lhead->next==NULL){    /* first item */
+    return(Add2ObjList_B(lhead,obj));
+  }
+  else{
+    ls=lhead->next;
+    while(ls->next!=NULL){
+      ls=ls->next;
+    }  
+    
+    ls->next=malloc(sizeof(struct ObjList));
+    MemUsed(MADD,+sizeof(struct ObjList));
+    if(ls->next==NULL){
+      fprintf(stderr,"ERROR in malloc Add2ObjList()\n");
+      exit(-1);
+    }
+    
+    ls->next->obj=obj;
+    ls->next->next=NULL;
+    lhead->n++;
+  }
+
+  return(0);
+}
+
 
 void NewWeapon(Weapon *weapon,int type){
   /*
@@ -1209,7 +1267,7 @@ void Explosion(struct HeadObjList *lh,Object *cv,Object *obj,int type){
       v=1.0*VELMAX*(Random(-1)); 
       vx=v*cos(a) + obj->vx;
       vy=v*sin(a) + obj->vy;
-      nobj=NewObj(lh,PROJECTILE,EXPLOSION,obj->x,obj->y,vx,vy,
+      nobj=NewObj(PROJECTILE,EXPLOSION,obj->x,obj->y,vx,vy,
 		  CANNON0,ENGINE0,obj->player,obj,obj->in);
       if(nobj!=NULL){
 	nobj->life*=(.25+Random(-1));
@@ -1225,7 +1283,7 @@ void Explosion(struct HeadObjList *lh,Object *cv,Object *obj,int type){
       v=0.5*VELMAX*(Random(-1)); 
       vx=v*cos(a) + obj->vx;
       vy=v*sin(a) + obj->vy;
-      nobj=NewObj(lh,PROJECTILE,EXPLOSION,obj->x,obj->y,vx,vy,
+      nobj=NewObj(PROJECTILE,EXPLOSION,obj->x,obj->y,vx,vy,
 		  CANNON0,ENGINE0,obj->player,obj,obj->in);
       if(nobj!=NULL){
 	Add2ObjList(lh,nobj);
@@ -1289,19 +1347,24 @@ int CountPlanets(struct HeadObjList *lh,int type){
   return n;
 }
 
-int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int player,int type,int stype,int max){
+int CountShipsInPlanet(struct HeadObjList *lh,int objid,int player,int type,int stype,int max){
   /*
-    Count the number of ships in planet planetid of type and subtype
+    Count the number of ships inside the object objid of type and subtype
     of the player player.
     if type or subtype are equal to -1 count all.
-
+    if lh is NULL use the all objects list.
     Returns the number of ships.
   */
 
   struct ObjList *ls;
   int n=0;
   
-  ls=lh->next;
+  if(lh!=NULL){
+    ls=lh->next;
+  }
+  else{
+    ls=listheadobjs.next;
+  }
   while(ls!=NULL){
     if(type!=-1){
       if(ls->obj->type!=type){ls=ls->next;continue;}
@@ -1311,12 +1374,12 @@ int CountShipsInPlanet(struct HeadObjList *lh,int planetid,int player,int type,i
     }
     if(ls->obj->player!=player){ls=ls->next;continue;}    
 
-    if(ls->obj->habitat==H_PLANET){
-      if(ls->obj->in->id==planetid)n++;
+    if(ls->obj->in!=NULL){
+      if(ls->obj->in->id==objid)n++;
       if(max>0 && n>=max)return(max);
     }
-    else{
-      if(planetid==0)n++;
+    else{ /* Count ships in space */
+      if(objid==0)n++;
       if(max>0 && n>=max)return(max);
     }
 
@@ -2274,6 +2337,7 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
   struct TextMessageList *list;
   struct TextMessageList *lh;
   int n=0;
+
   /* Add text at the end of the list */
 
   if(dest!=actual_player && dest!=-1){
@@ -2473,19 +2537,19 @@ int BuyShip(struct Player player,Object *obj,int type){
 
   switch(type){
   case EXPLORER:
-    obj_b=NewObj(&listheadobjs,SHIP,EXPLORER,
+    obj_b=NewObj(SHIP,EXPLORER,
 		 obj->x,s->y0,
 		 0,0,
 		 CANNON3,ENGINE3,obj->player,NULL,obj->in);
     break;
   case FIGHTER:
-    obj_b=NewObj(&listheadobjs,SHIP,FIGHTER, 
+    obj_b=NewObj(SHIP,FIGHTER, 
 		 obj->x,s->y0,
 		 0,0,
 		 CANNON4,ENGINE4,obj->player,NULL,obj->in);
     break;
   case TOWER:
-    obj_b=NewObj(&listheadobjs,SHIP,TOWER,
+    obj_b=NewObj(SHIP,TOWER,
 		 obj->x,s->y0,
 		 0,0,
 		 CANNON4,ENGINE1,obj->player,NULL,obj->in);
@@ -3027,7 +3091,7 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
     if(ls->obj->state<=0 && proc==players[ls->obj->player].proc){
       ls=ls->next;continue;
     }
-    /* objects than dont collide */
+    /* objects than don't collide */
     switch(ls->obj->type){
     case PROJECTILE:
       if(ls->obj->subtype==EXPLOSION && ls->obj->habitat==H_SPACE){  
@@ -3048,7 +3112,7 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
     default:
       break;
     }
-    /* --objects than dont collide */
+    /* --objects than don't collide */
 
     switch(ls->obj->habitat){
     case H_SPACE:
@@ -3316,10 +3380,6 @@ void Experience(Object *obj,float pts){
 	  SetModified(obj,SENDOBJALL);
 	/* } */
       }
-      if(obj->level > players[obj->player].maxlevel){
-	players[obj->player].maxlevel=obj->level;
-      }
-      
       obj->state=100;
       obj->gas=obj->gas_max;
       obj->shield+=(.9-obj->shield)/3.;

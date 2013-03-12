@@ -1,3 +1,4 @@
+
 /*****************************************************************************
  **  This is part of the SpaceZero program
  **  Copyright(C) 2006-2012  MRevenga
@@ -1039,7 +1040,7 @@ Object *CCUpgrade(struct HeadObjList *lhobjs,struct Player *player){
     else{ /* a tower */
       if(obj->subtype!=TOWER){ls=ls->next;continue;}
     }
-    /* dont upgrade learning spaceships*/
+    /* don't upgrade learning spaceships*/
     if(obj->in->level>obj->level+2){ls=ls->next;continue;} 
     if(sw==0){ /* first */
       minlevel=obj->level;
@@ -1383,7 +1384,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
       case LANDED:
 	/* sending ship to atack or to new planets */
 	if(shipsinplanet[ls->obj->in->id] == -1){
-	  shipsinplanet[ls->obj->in->id]=CountShipsInPlanet(lhobjs,ls->obj->in->id,ls->obj->player,SHIP,-1,2);
+	  shipsinplanet[ls->obj->in->id]=CountShipsInPlanet(NULL,ls->obj->in->id,ls->obj->player,SHIP,-1,2);
 	}
 	/* don't send if it is alone */
 	if(shipsinplanet[ls->obj->in->id] < 2)break;
@@ -1661,7 +1662,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player player){
   }
   free(shipsinplanet);
   return;
-}
+} /* --ControlCenter() */
 
 
 Object *ObjFromPlanet(struct HeadObjList *lhobjs,int planetid,int player){
@@ -2130,7 +2131,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
   for(i=0;i<n;i++){
     ang=obj1->a+ang0+0.04*(0.5*(1-n)+i);
     
-    obj=NewObj(lhobjs,PROJECTILE,obj1->weapon->projectile.type,
+    obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
 	       obj1->x+r*cos(ang),obj1->y+r*sin(ang),
 	       vp*cos(ang)+obj1->vx,vp*sin(ang)+obj1->vy,
 	       CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
@@ -2199,7 +2200,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     for(i=0;i<n;i++){
       //	ang=ang0+0.04*(int)((i+1)/2)*((i%2)*2-1);
       ang=obj1->a+ang0+0.04*(0.5*(1-n)+i);
-      obj=NewObj(lhobjs,PROJECTILE,obj1->weapon->projectile.type,
+      obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
 		 obj1->x+r*cos(ang),obj1->y+r*sin(ang),
 		 vp*cos(ang)+obj1->vx,vp*sin(ang)+obj1->vy,
 		 CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
@@ -2254,7 +2255,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     for(i=0;i<n;i++){
       //ang=ang0+0.04*(int)((i+1)/2)*((i%2)*2-1);
       ang=obj1->a+ang0+0.04*(0.5*(1-n)+i);
-      obj=NewObj(lhobjs,PROJECTILE,obj1->weapon->projectile.type,
+      obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
 	     obj1->x+r*cos(ang),obj1->y+r*sin(ang),
 	     vp*cos(ang),vp*sin(ang),
 		 CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
@@ -2277,7 +2278,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     break;
   case CANNON8:  /* missile */
     ang=obj1->a;
-    obj=NewObj(lhobjs,PROJECTILE,obj1->weapon->projectile.type,
+    obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
 	     obj1->x+r*cos(ang),obj1->y+r*sin(ang),
 	   vp*cos(ang)+obj1->vx,vp*sin(ang)+obj1->vy,
 	       CANNON0,ENGINE2,obj1->player,obj1,obj1->in);
@@ -2299,7 +2300,7 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     break;
   case CANNON9: /* laser */
     ang=obj1->a;
-    obj=NewObj(lhobjs,PROJECTILE,obj1->weapon->projectile.type,
+    obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
 	       obj1->x+r*cos(ang),obj1->y+r*sin(ang),
 	       vp*cos(ang)+obj1->vx,vp*sin(ang)+obj1->vy,
 	       CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
@@ -2694,12 +2695,12 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0,float lev
     y=1024*Random(-1);
     
     if(i==0){ /* EXPLORER*/
-      obj=NewObj(lhobjs,SHIP,EXPLORER,
+      obj=NewObj(SHIP,EXPLORER,
 		 x0+x,y0+y,0,0,
 		 CANNON3,ENGINE3,GameParametres(GET,GNPLAYERS,0)+1,NULL,NULL);
     }
     else{  /* FIGHTER*/
-      obj=NewObj(lhobjs,SHIP,FIGHTER,
+      obj=NewObj(SHIP,FIGHTER,
 		 x0+x,y0+y,0,0,
 		 CANNON4,ENGINE4,GameParametres(GET,GNPLAYERS,0)+1,NULL,NULL);
     }
@@ -2751,7 +2752,7 @@ void CreateAsteroids(struct HeadObjList *lhobjs,int n, float x0,float y0){
     x=400.0*rand()/RAND_MAX;
     y=400.0*rand()/RAND_MAX;
     size=(int)(3.0*rand()/RAND_MAX);
-    obj=NewObj(lhobjs,ASTEROID,size+1,
+    obj=NewObj(ASTEROID,size+1,
 	       x0+x,y+y0,vx,vy,
 	       CANNON0,ENGINE0,0,NULL,NULL);
     
@@ -3062,7 +3063,7 @@ int AddobjCCData(struct CCDATA *ccdata,Object *obj){
 	}
 
 	if(ccdata->player==obj->player){
-	  if(obj->level >= obj->in->level-2){  /* dont include learning ships*/
+	  if(obj->level >= obj->in->level-2){  /* don't include learning ships*/
 	    float factor=0;
 	    factor=(obj->level)*(obj->state)/100*(obj->state>75)*(obj->gas>=.80*obj->gas_max)*(obj->weapon0.n>.8*obj->weapon0.max_n)*(obj->mode==LANDED);
 	    //	    if(obj->type==SHIP && obj->subtype==PILOT)strength=-1;/* priority buy ship to pilots */

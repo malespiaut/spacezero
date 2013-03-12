@@ -7,7 +7,7 @@
     <title>Spacezero: "A RTS space game"</title>
     <link href="manual_files/cssscreen.css" rel="stylesheet" media="screen">
     <link href="manual_files/cssprint.css" rel="stylesheet" media="print">
-    <link rel="shortcut icon" href="manual_files/space.ico" type="image/ico" >
+    <link href="manual_files/space.ico" rel="shortcut icon" type="image/ico" >
   </head>
   <body id="manual">
     <div class="rightcolumn">
@@ -508,8 +508,6 @@
 	    pointer are displayed.
 	  </p>
 	  
-	  
-	  
 	  <table width="600"><tbody>
 	    <tr>
 	      <td>
@@ -634,7 +632,7 @@
 	  <p>In the left window: the historic values of the sum of the
 	  level of all spaceships.
 	    
-	  <p>In the right one: Player name, [max. level reached : sum
+	  <p>In the right one: Player name, [player level : sum
 	    of the level of all spaceships : average level], number of
 	    spaceships, (total number of spaceships created), planets, enemy
 	    destroyed and number of lost spaceships.
@@ -649,8 +647,6 @@
 	  In space, can be done little reparations. They obtain also some energy.
 	  
 
-
-
 	  <a name="experiencegold"></a>
 	  <h3>Experience and Levels:</h3>
 	  
@@ -658,34 +654,39 @@
 	  reaches a maximum is upgraded to the next
 	  level. This way it can get new arms, better defense
 	  and more power. If a spaceship is upgraded, its state and
-	    energy is restored to the maximum value.<br><br>
-	    
-	    The spaceships can get experience in any of the following ways:
-	    
+	  energy is restored to the maximum value.
+
+	  <br><br>
+	  The spaceships can get experience in any of the following ways:
+	  
 	  <p>
-	    <b>In combat</b>, when a spaceship is reached by a shot,
-	    destroying an enemy spaceship and conquering an enemy or
-	    empty planet.<br>
-	   
-	    When a spaceship conquer a planet there is a probability to
-	    received info from enemy (the coordinates of some
-	    planet). This probability increase with spaceship's level.
+	    <ul>
+	      <li><b>In combat</b>, when a spaceship is reached by a shot,
+		destroying an enemy spaceship and conquering an enemy or
+		empty planet.<br>
+		
+		When a spaceship conquer a planet there is a probability to
+		received info from enemy (the coordinates of some
+		planet). This probability increase with spaceship's level.
+		
+	      <li><b>Exploring</b>: Discovering new planets.
+		
+	      <li><b>Training</b>: all spaceships with a level equal or
+		superior to 3 can train other spaceships. For training,
+		both spaceships must be in same planet and the pupil must
+		be landed. The master also must be two levels
+		superior. The spaceship must be totally repaired.
+	      <li><b>Upgrade</b>: you can upgrade a spaceship (it cost
+		gold). You can only upgrade until one level below the
+		player level.
+		
+	    </ul>
 	    
-	  <p>
-	    <b>Exploring</b>: Discovering new planets.
+	    <h4>Player level:</h4> The player level is the maximun
+	    level reached for one of your spaceships. The level of the
+	    player will be increased only when the spaceship lands.
 	    
-	  <p>
-	    <b>Training</b>: all spaceships with a level equal or
-	    superior to 3 can train other spaceships. For training,
-	    both spaceships must be in same planet and the pupil must
-	    be landed. The master also must be two levels
-	    superior. The spaceship must be totally repaired.
-	    
-	  <p>
-	    <b>Upgrade</b>: you can upgrade a spaceship (it cost
-	    gold). You can only upgrade until one level below the
-	    highest level reached for one of your spaceships.
-	    
+
 	    
 	    <h3>Gold:</h3>
 	    
@@ -835,9 +836,7 @@
 	    the rest, especially the towers.</p>
 	  
 </td></tr></tbody></table>
-
 <hr>
-
 
 <a name="kcontrol"></a>
 <h3>Keyboard controls (default values):</h3>
@@ -972,6 +971,8 @@
     Page last updated Sep. 25, 2012</p>
 </div>
 </div>
+
+
 <div class="leftcolumn">
   <img src="manual_files/menu.png" height="125" width="125">  
   

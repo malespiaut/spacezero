@@ -78,9 +78,9 @@
 #define NUMPLAYERS 2
 #define NUMGALAXIES 1
 #define NUMPLANETS 30   /* num. planets in galaxy */
-#define ULX 100000      /*  default universe size */
-#define ULY 100000      /*  default universe size */
-
+#define ULX 80000      /*  default universe size */
+#define ULY 80000      /*  default universe size */
+#define PLAYERNAME "player"
 
 /* max and min option values */
 #define MAXNUMPLAYERS 8

@@ -185,13 +185,11 @@ void fscanfStatistics(FILE *fp){
 
 
 void DrawStatistics(GdkPixmap *pixmap,Rectangle *r){
-
   int i,j;
   int maxnplanets;
   float maxlevel;
   float dx,dy;
   int x0,x1,y0,y1;
-
 
   gdk_draw_rectangle(pixmap,    
 		     penBlack,
@@ -199,7 +197,6 @@ void DrawStatistics(GdkPixmap *pixmap,Rectangle *r){
 		     r->x,
 		     r->y,
 		     r->width,r->height);
-
 
   gdk_draw_rectangle(pixmap,    
 		     penGreen,
@@ -213,7 +210,6 @@ void DrawStatistics(GdkPixmap *pixmap,Rectangle *r){
   maxnplanets=0;
   maxlevel=0;
 
-
   for(i=0;i<np;i++){
     for(j=0;j<NSTATS;j++){
       if(stats[j].level[i]>maxlevel)maxlevel=stats[j].level[i];
@@ -222,21 +218,19 @@ void DrawStatistics(GdkPixmap *pixmap,Rectangle *r){
     if(players[i].level>maxlevel)maxlevel=players[i].level;
     if(players[i].nplanets>maxnplanets)maxnplanets=players[i].nplanets;
   }
-
-
       
   dx=(float)r->width/n;
-  dy=(float)r->height/maxlevel;
+  dy=((float)r->height-1)/maxlevel;
   dy*=0.9;
-  
+
   for(i=1;i<np;i++){
     x0=r->x;
-    y0=r->y+r->height-stats[0].level[i]*dy;
+    y0=r->y+(r->height-1)-stats[0].level[i]*dy;
 
     for(j=0;j<n-1;j++){
       x1=r->x+(j+1)*dx;
-      y1=r->y+r->height-stats[j+1].level[i]*dy;
-      gdk_draw_line(pixmap,    
+      y1=r->y+(r->height-1)-stats[j+1].level[i]*dy;
+      gdk_draw_line(pixmap,
 		    gcolors[players[i].color],
 		    x0,y0,
 		    x1,y1);
@@ -245,11 +239,10 @@ void DrawStatistics(GdkPixmap *pixmap,Rectangle *r){
       
     }
     x1=r->x+(j+1)*dx;
-    y1=r->y+r->height-players[i].level*dy;
+    y1=r->y+(r->height-1)-players[i].level*dy;
     gdk_draw_line(pixmap,    
 		  gcolors[players[i].color],
 		  x0,y0,
 		  x1,y1);
   }
-  
 }

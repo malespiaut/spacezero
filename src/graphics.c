@@ -119,9 +119,6 @@ GtkWidget *d_a;
 float Distance(Object *cv,float x0,float y0);
 
 GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres param){
-
-
-
   GtkWidget *vbox;
   GtkWidget *menubar;
   GtkWidget *menuitemsave;
@@ -828,9 +825,9 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
 
   guint key,keyval;
   
-  //  g_print("%d, %s, %u\n",event->keyval,event->string,gdk_keyval_to_unicode(event->keyval));   
-/*   g_print("%d, %s, %s, %d\n",event->keyval,event->string,gdk_keyval_name(event->keyval), */
-/* 	  gdk_keyval_from_name(gdk_keyval_name(event->keyval)));  */
+  /* g_print("%d, %s, %u\n",event->keyval,event->string,gdk_keyval_to_unicode(event->keyval));    */
+  /*   g_print("%d, %s, %s, %d\n",event->keyval,event->string,gdk_keyval_name(event->keyval), */
+  /* 	  gdk_keyval_from_name(gdk_keyval_name(event->keyval)));  */
   CountKey(1);
   gdrawmenu=TRUE;
 
@@ -1285,6 +1282,10 @@ void key_release(GtkWidget *widget,GdkEventKey *event,gpointer data){
   case 115:
     keys.s=FALSE;
     break;
+  case 87:
+  case 119:
+    keys.w=FALSE;
+    break;
   case 88:
   case 120:
     keys.x=FALSE;
@@ -1660,8 +1661,12 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
     break;
   case PILOT:
     s=ship7;
-    if(obj->mode!=LANDED)
+    if(obj->mode!=LANDED){
       s=ship8;
+      if(obj->player==ppirates){/* pirates */
+	s=ship9;
+      }
+    }
     break;
 
   default:
@@ -3280,9 +3285,13 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   if(font==NULL)  return(y+texth);
 
   //    obj->id=GetNProc()*g_objid+GetProc();    /* identifier */
-
-
-  snprintf(point,MAXTEXTLEN,"%s id: %d %c  L : %d",TypeCad(obj),obj->pid,mode,obj->level);
+  
+  if(obj->in!=NULL && obj->in->type==SHIP){
+    snprintf(point,MAXTEXTLEN,"%s id: %d(%d) %c  L : %d",TypeCad(obj),obj->pid,obj->in->pid,mode,obj->level);
+  }
+  else{
+    snprintf(point,MAXTEXTLEN,"%s id: %d %c  L : %d",TypeCad(obj),obj->pid,mode,obj->level);
+  }
   DrawString(pixmap,font,color,x0+x,y+texth,point);
   y+=incy;
 
@@ -3291,6 +3300,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   if(obj->items&ITPILOT){
     Object pilot;
     int gheight;
+    int n;
     gheight=GameParametres(GET,GHEIGHT,0);
     pilot.state=1;
     pilot.type=SHIP;
@@ -3300,8 +3310,14 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
     pilot.a=PI/2;
     pilot.accel=0;
     pilot.gas_max=1;
+    n=CountShipsInPlanet(NULL,obj->id,obj->player,SHIP,PILOT,0);
+
     DrawShip(pixmap,color,x0+x+pilot.radio,-(y+texth)+gheight,&pilot);
     gdk_draw_rectangle(pixmap,color,FALSE,x0+x,y+texth-texth,2*texth,2*texth);
+
+    snprintf(point,MAXTEXTLEN,"%d",n);
+    DrawString(pixmap,font,color,x0+x+2*texth+5,y+texth-texth+2*texth,point);
+
     y+=2*incy;  
   }
 
@@ -4160,9 +4176,9 @@ gint ShowWindow(GtkWidget *widget,gpointer gdata){
 
 
 gint QuitWindow(GtkWidget *widget,gpointer gdata){
-  printf("QUIT 1 window\n");
+  //  printf("QUIT 1 window\n");
   gtk_widget_hide((GtkWidget *)gdata);
-  printf("QUIT 2 window\n");
+  //  printf("QUIT 2 window\n");
   return TRUE;
 }
 
@@ -4329,12 +4345,11 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
 	if(obj==cvobj || obj->selected==TRUE){color=1;}
 
 	snprintf(cad,MAXTEXTLEN,"%c%d id:%d ",mode,obj->level,obj->pid);
-	
-	if(obj->state<100){
+	if(obj->state<95){
 	  strncpy(tmpcad,cad,MAXTEXTLEN);
 	  snprintf(cad,MAXTEXTLEN,"%ss:%.0f ",tmpcad,obj->state);
 	}
-	if(obj->gas<obj->gas_max){
+	if(obj->gas < 0.95*obj->gas_max){
 	  strncpy(tmpcad,cad,MAXTEXTLEN);
 	  snprintf(cad,MAXTEXTLEN,"%se:%d ",tmpcad,(int)(100*obj->gas/obj->gas_max));
 	}
@@ -4815,8 +4830,8 @@ int DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
     
     for(i=0;i<nplayers-1;i++){
       //      printf("%d %d\n",i,a[i]);
-      if(pl[a[i]].status>=PLAYERACTIVE){
-	snprintf(cad,MAXTEXTLEN,"player: %s, [L%d : %d : %1.1f], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",
+      if(pl[a[i]].status>=PLAYERACTIVE){  //HERE set default name
+	snprintf(cad,MAXTEXTLEN,"%d: %s, [L%d : %d : %1.1f], ships: %d (%d), planets: %d, kills: %d, deaths: %d.",i+1,
 		 pl[a[i]].playername,pl[a[i]].maxlevel,pl[a[i]].level,(float)pl[a[i]].level/(pl[a[i]].nships+0.0001),
 		 pl[a[i]].nships,pl[a[i]].nbuildships,
 		 pl[a[i]].nplanets,pl[a[i]].nkills,

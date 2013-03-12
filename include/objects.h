@@ -588,7 +588,7 @@ struct PlayerMod{    /* Used in communication  */
 
 int CopyObject(Object *obj,Object *nobj);
 void Experience(Object *obj,float points);
-Object *NewObj(struct HeadObjList *lhobjs,int type,int stype,
+Object *NewObj(int type,int stype,
 	       int x,int y,float vx,float vy,
 	       int weapontype,int engtype,int,Object *parent,Object *in);
 void ShipProperties(Object *obj,int stype,Object *in);
@@ -639,6 +639,8 @@ void DestroyPlanet(struct Planet *planet);
 int Add2TextMessageList(struct TextMessageList *lh,char *cad,int source,int dest,int mid,int time,int value);
 
 int Add2ObjList(struct HeadObjList *lhobjs,Object *obj);
+int Add2ObjList_B(struct HeadObjList *lhobjs,Object *obj);
+int Add2ObjList_E(struct HeadObjList *lhobjs,Object *obj);
 int DestroyObjList(struct HeadObjList *lh);
 int CountObjList(struct HeadObjList *hlist);
 int PrintObjList(struct HeadObjList *hl);

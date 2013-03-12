@@ -22,7 +22,8 @@
 		E-mail: mrevenga at users.sourceforge.net
 		version 0.82 Jan 2012
 ****/
-
+#include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 #include "functions.h"
 #include "general.h"

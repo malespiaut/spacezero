@@ -795,7 +795,7 @@ void SetDefaultParamValues(struct Parametres *par){
   strncpy(par->IP,DEFAULT_IP,MAXTEXTLEN);strncpy(&par->IP[MAXTEXTLEN-1],"\0",1);
   par->port=DEFAULT_PORT;
   par->port2=DEFAULT_PORT+1;
-  strcpy(par->playername,"player"); // HERE set default
+  strcpy(par->playername,PLAYERNAME);// set default
   
   strcpy(par->font,"6x13");
   strcpy(par->geom,"1024x550");

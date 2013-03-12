@@ -914,7 +914,7 @@ int ExecLoad(char *nom){
  
     id=g_objid;
     projid=g_projid;
-    nobj=NewObj(&listheadobjs,SHIP,SHIP0,
+    nobj=NewObj(SHIP,SHIP0,
 		obj.x,obj.y,obj.vx,obj.vy,
 		CANNON0,ENGINE0,0,NULL,NULL); //HEREIN
     if(nobj==NULL){
@@ -932,7 +932,6 @@ int ExecLoad(char *nom){
       data=NULL;
     }
     nobj->cdata=data;
-
 
     nobj->weapon=NULL;
     if(obj.weapon==&obj.weapon0)nobj->weapon=&nobj->weapon0;
@@ -958,7 +957,7 @@ int ExecLoad(char *nom){
       FscanfPlanet(fp,nplanet);
       nobj->planet=nplanet;
     }
-    Add2ObjList(&listheadobjs,nobj);
+    Add2ObjList_E(&listheadobjs,nobj);
     FscanfOrders(fp,nobj);
     
   }  /*for(i=0;i<num_objs;i++){    */
@@ -1014,7 +1013,6 @@ int ExecLoad(char *nom){
  
   /****CELLON****/
 
-
   
   /* 
    *   Asignation of pointers
@@ -1047,7 +1045,7 @@ int ExecLoad(char *nom){
   }
 #endif
   ls=listheadobjs.next;
-  i=num_objs-1;
+  i=0;
   while(ls!=NULL){
     obj0=ls->obj;
     
@@ -1055,7 +1053,7 @@ int ExecLoad(char *nom){
     obj0->dest=NULL;
     obj0->in=NULL;
 
-    if(obj0->type!=PLANET ){
+    if(obj0->type!=PLANET){
       obj0->planet=NULL;
 
       if(tbl[i].parent != 0){
@@ -1078,20 +1076,22 @@ int ExecLoad(char *nom){
 	}
       }
 
-      if(obj0->mode==LANDED){
-	Segment s;
-	if(obj0->habitat==H_PLANET){
-	  if(!GetLandedZone(&s,obj0->in->planet)){
-	    /* obj0->y=obj0->y0=s.y0+obj0->radio+1; */
+      if(0){ //HERE
+	if(obj0->mode==LANDED){
+	  Segment s;
+	  if(obj0->habitat==H_PLANET){
+	    if(!GetLandedZone(&s,obj0->in->planet)){
+	      /* obj0->y=obj0->y0=s.y0+obj0->radio+1; */
+	    }
+	    else{
+	      fprintf(stderr,"ERROR in EXECLOAD(): Loading a landed object with obj->in->planet==NULL \n");
+	      exit(-1);
+	    }
 	  }
-	  else{
-	    fprintf(stderr,"ERROR in EXECLOAD(): Loading a landed object with obj->in->planet==NULL \n");
-	    exit(-1);
-	  }
-	}  
+	}
       }
     }
-    i--;    
+    i++;    
     ls=ls->next;
   }
   
@@ -1299,7 +1299,7 @@ int FprintfPlanet(FILE *fp,Object *obj){
   return(0);
 }
 
-int FscanfObj(FILE *fp,Object *obj,struct ObjTable *t){
+int FscanfObj(FILE *fp,Object *obj,struct ObjTable *tbl){
   /*
     Read an object from the file *fp
   */
@@ -1429,11 +1429,11 @@ int FscanfObj(FILE *fp,Object *obj,struct ObjTable *t){
   }
   
   
-  t->id=obj->id;
-  t->parent=parent;
-  t->dest=dest;
-  t->in=in;
-  t->planet=0;
+  tbl->id=obj->id;
+  tbl->parent=parent;
+  tbl->dest=dest;
+  tbl->in=in;
+  tbl->planet=0;
   
   return(0);
 }

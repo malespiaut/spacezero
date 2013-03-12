@@ -249,7 +249,7 @@ int OpenComm(int mode,struct Parametres par,struct Sockfd *sockfd){
     ser_addr.sin_port = htons ( par.port);
     if(connect(sfd,(struct sockaddr *)&ser_addr,sizeof(ser_addr)) == -1){
       perror("conexion:");
-      fprintf(stderr,"port: %d",par.port);
+      fprintf(stderr,"port: %d\n",par.port);
       exit(-1);
     }
 
@@ -1652,7 +1652,7 @@ int ReadObjsfromBuffer(char *buf){
 
       parent=SelectObj(&listheadobjs,objnew.parent);
 
-      nobj=NewObj(&listheadobjs,objnew.type,objnew.subtype,
+      nobj=NewObj(objnew.type,objnew.subtype,
 		  objnew.x,objnew.y,
 		  objnew.vx,objnew.vy,
 		  CANNON0,objnew.engtype,objnew.player,parent,NULL);

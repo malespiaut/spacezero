@@ -89,10 +89,10 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.37"};
+char version[64]={"0.83.39"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Dec. 2012"};
+char last_revision[]={"Jan. 2013"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -113,13 +113,13 @@ static struct timeval init_time;
 extern struct Keys keys;
 extern struct Buffer buffer1,buffer2; /* buffers used in comm. */
 
-struct HeadObjList listheadobjs;       /* list of all objects */
-struct HeadObjList listheadplanets;    /* list of all planets */
-struct HeadObjList *listheadcontainer; /* lists of objects that contain objects: free space and planets*/
-struct HeadObjList *listheadkplanets;  /* lists of planets known by players */
-struct HeadObjList listheadplayer;     /* list of objects of each player */
+extern struct HeadObjList listheadobjs;    /* list of all objects */
+struct HeadObjList listheadplanets;        /* list of all planets */
+struct HeadObjList *listheadcontainer;     /* lists of objects that contain objects: free space and planets*/
+struct HeadObjList *listheadkplanets;      /* lists of planets known by players */
+struct HeadObjList listheadplayer;         /* list of objects of each player */
 
-struct CharListHead gameloglist;          /* list of all game messages */
+struct CharListHead gameloglist;           /* list of all game messages */
 struct Window windowgamelog;
 
 struct TextMessageList listheadtext;
@@ -271,9 +271,9 @@ int main(int argc,char *argv[]){
   recordfile=CreateRecordFile();
   keyboardfile=CreateKeyboardFile();
 #if TESTSAVE
-    strcat(savefiletmp,"/tmp/tmpsavespacezero");
+  strcat(savefiletmp,"/tmp/tmpsavespacezero");
 #endif
-
+  
   /*********** read options file and checking command line options *************/
   state=Arguments(argc,argv,&param,optionsfile);
   if(state){
@@ -587,7 +587,7 @@ gint MenuLoop(gpointer data){
     gdraw.menu=FALSE;
     gdraw.main=TRUE;
     Keystrokes(RESET,NULL,NULL);
-      printf("saving game param...\n");
+    printf("saving game param...\n");
     SetGameParametres(param);
     MakeTitle(param,title);
     gtk_window_set_title(GTK_WINDOW(win_main),title);
@@ -629,9 +629,7 @@ gint MenuLoop(gpointer data){
     }
   }
 
-
-
-    printf("exiting menu...\n");
+  printf("exiting menu...\n");
   }
   return(TRUE);
 }
@@ -1624,13 +1622,13 @@ gint Quit(GtkWidget *widget,gpointer gdata){
     Object *obj;
 
     printf("****************** Statistics ************************\n");
-    obj=NewObj(&listheadobjs,SHIP,EXPLORER,
+    obj=NewObj(SHIP,EXPLORER,
 	       0,0,0,0,
 	       CANNON0,ENGINE0,0,NULL,NULL);
     Add2ObjList(&listheadobjs,obj);
     if(obj!=NULL){
       if(debuginit)printf("Last obj id: %d\n",obj->id);
-      obj=NewObj(&listheadobjs,PROJECTILE,EXPLOSION,
+      obj=NewObj(PROJECTILE,EXPLOSION,
 		 0,0,0,0,
 		 CANNON0,ENGINE0,obj->player,obj,NULL);
       Add2ObjList(&listheadobjs,obj);
@@ -1941,7 +1939,7 @@ void key_eval(struct Keys *key){
 	/* PRODUCTION DELETE SATELLITES */	
 	if(key->s==TRUE && key->ctrl==FALSE){ 
 	  if(0){
-	    nobj=NewObj(&listheadobjs,SHIP,SATELLITE,
+	    nobj=NewObj(SHIP,SATELLITE,
 			ship_c->x-2.5*ship_c->radio*cos(ship_c->a),
 			ship_c->y-2.5*ship_c->radio*sin(ship_c->a),
 			ship_c->vx,ship_c->vy,
@@ -2337,11 +2335,10 @@ void UpdateShip(Object *obj){
   /***** if max vel is reached, reescaling *****/
 
   if(obj->type==SHIP){
-    vmax2=obj->engine.v2_max*(1-0.4375*(obj->state<25));
+    vmax2=obj->engine.v2_max*(1-0.4375*(obj->state<25)) + (obj->level*50)*(obj->accel>0);
     if(obj->subtype==PILOT)vmax2=15*15;
   }
   else{
-
     if(obj->engine.type>ENGINE0){
       vmax2=obj->engine.v2_max;
     }
@@ -2500,6 +2497,10 @@ void UpdateShip(Object *obj){
 	obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
       }
 
+      /* player level */
+      if((obj->level > players[obj->player].maxlevel)){
+	players[obj->player].maxlevel=obj->level;
+      }
 
     }  /*if(obj->mode==LANDED) */
 
@@ -3247,7 +3248,7 @@ void Collision(struct HeadObjList *lh){
 		  if(objt1->subtype<ASTEROID3){
 		    if(proc==players[objt1->player].proc){
 		      for(j=0;j<3;j++){
-			nobj=NewObj(&listheadobjs,ASTEROID,objt1->subtype+1, 
+			nobj=NewObj(ASTEROID,objt1->subtype+1, 
 				    objt1->x,objt1->y,objt1->vx+10.0*rand()/RAND_MAX-5,objt1->vy+10.0*rand()/RAND_MAX-5, 
 				    CANNON0,ENGINE0,0,NULL,objt1->in); 
 			nobj->a=PI/2;
@@ -3347,7 +3348,7 @@ void Collision(struct HeadObjList *lh){
 		else{/***** ship has landed *****/
 		  if(obj1->vy<0){
 		    obj1->mode=LANDED;
-		    
+	    
 		    if(obj1->items & ITPILOT){ /* if has a rescued pilot, eject him */
 		      if(EjectPilotsObj(&listheadobjs,obj1)){
 			listheadplayer.update=1;
@@ -3583,7 +3584,7 @@ int UpdateObjs(void){
 		objin=NULL;
 	      }
 	    }
-	    nobj=NewObj(&listheadobjs,TRACE,SHIP0,
+	    nobj=NewObj(TRACE,SHIP0,
 			obj->x,obj->y,
 			0,0,
 			CANNON0,ENGINE0,obj->player,obj,objin);
@@ -3759,7 +3760,7 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
   if(gpos==NULL){ 
     fprintf(stderr,"ERROR in malloc CreateUniverse()\n"); 
     exit(-1); 
-  } 
+  }
 
   for(i=0;i<ngalaxies;i++){
     gpos[i].x=0;
@@ -3844,7 +3845,7 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
       }
       while(valid==0);
 
-      obj=NewObj(lheadobjs,PLANET,SHIP0,x,y,0,0,CANNON0,ENGINE0,0,NULL,NULL);
+      obj=NewObj(PLANET,SHIP0,x,y,0,0,CANNON0,ENGINE0,0,NULL,NULL);
       if(obj!=NULL){
       
 	if(i<NUMPLANETNAMES-1 && j==0){
@@ -3853,7 +3854,6 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
 	else{
 	  if(namegen){
 	    strncpy(obj->name,getRandomName(0),OBJNAMESMAXLEN);
-	    printf("%s\n",obj->name);
 	  }
 	  else{
 	    strncpy(obj->name,ptnames[0],OBJNAMESMAXLEN);
@@ -3873,7 +3873,7 @@ void CreateUniverse(int ulx,int uly,struct HeadObjList *lheadobjs,char **ptnames
       x=ulx*Random(-1)-ulx/2;
       y=uly*Random(-1)-uly/2;
 
-      obj=NewObj(lheadobjs,PLANET,SHIP0,x,y,0,0,CANNON0,ENGINE0,0,NULL,NULL);
+      obj=NewObj(PLANET,SHIP0,x,y,0,0,CANNON0,ENGINE0,0,NULL,NULL);
       if(obj!=NULL){
 	if(i<NUMPLANETNAMES-1 && j==0){
 	  strncpy(obj->name,ptnames[i+1],OBJNAMESMAXLEN);
@@ -4076,7 +4076,7 @@ void CreateShips(struct HeadObjList *lheadobjs){
       exit(-1);
     }
 
-    obj=NewObj(lheadobjs,SHIP,QUEEN,
+    obj=NewObj(SHIP,QUEEN,
 	       0,0,0,0,
 	       CANNON5,ENGINE5,i,NULL,planet);
 
@@ -4142,7 +4142,7 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
       a=i*PI/3;
       x=450*sin(a);
       y=450*cos(a);
-      obj=NewObj(lheadobjs,ASTEROID,ASTEROID1,
+      obj=NewObj(ASTEROID,ASTEROID1,
 		 0,0,0,0,
 		 CANNON0,ENGINE0,2,NULL,NULL);
       obj->x=obj->x0=x;
@@ -4164,7 +4164,7 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
       a=i*PI/3;
       x=400*sin(a);
       y=400*cos(a);
-      obj=NewObj(lheadobjs,SHIP,FIGHTER,
+      obj=NewObj(SHIP,FIGHTER,
 		 0,0,0,0,
 		 CANNON4,ENGINE1,2,NULL,NULL);
       obj->x=obj->x0=x;
@@ -4182,7 +4182,7 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
   if(0){  
     x=400;
     y=100;
-    obj=NewObj(lheadobjs,SHIP,FIGHTER,
+    obj=NewObj(SHIP,FIGHTER,
 	       0,0,0,0,
 	       CANNON4,ENGINE3,2,NULL,NULL);
     obj->x=obj->x0=x;
@@ -4197,7 +4197,7 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
     Add2ObjList(lheadobjs,obj);
     x=-400;
     y=100;
-    obj=NewObj(lheadobjs,SHIP,FIGHTER,
+    obj=NewObj(SHIP,FIGHTER,
 	       0,0,0,0,
 	       CANNON4,ENGINE3,2,NULL,NULL);
     obj->x=obj->x0=x;
@@ -4216,7 +4216,7 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
   
   x=0;
   y=0;
-  obj=NewObj(lheadobjs,SHIP,FIGHTER,
+  obj=NewObj(SHIP,FIGHTER,
 	     0,0,0,0,
 	     CANNON4,ENGINE3,1,NULL,NULL);
   obj->x=obj->x0=x;
@@ -4983,7 +4983,7 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
   *cc=ccdatap;
 
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    snprintf(players[i].playername,MAXTEXTLEN,"player%d",i);
+    snprintf(players[i].playername,MAXTEXTLEN,"comp%d",i);
     players[i].id=i;
     players[i].status=PLAYERMODIFIED;
     players[i].pid=GameParametres(GET,GNPLANETS,0)+1;
@@ -5024,12 +5024,14 @@ void CreatePlayers(struct Player **p,struct CCDATA **cc){
     if(GameParametres(GET,GNET,0)==TRUE){
       if(i==1){
 	players[i].proc=1;
+	snprintf(players[i].playername,MAXTEXTLEN,"%s",PLAYERNAME);
 	if(strlen(clientname)>0){
-	  snprintf(players[i].playername,MAXTEXTLEN,"%s",clientname);	
+	  snprintf(players[i].playername,MAXTEXTLEN,"%s",clientname);
 	}
       }
       if(i==2){
 	players[i].control=HUMAN;
+	snprintf(players[i].playername,MAXTEXTLEN,"%s",PLAYERNAME);
 	if(strlen(param.playername)>0){
 	  snprintf(players[i].playername,MAXTEXTLEN,"%s",param.playername);
 	}

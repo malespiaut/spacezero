@@ -36,7 +36,7 @@ bugs:(last:121)
 -[115]-geom 1000x-12 check all arguments...
 	    -geom -name hola
 -[117]why dont explore (save08)(the last ship, no unknown planets)
-
+-[122]BUY: no money REPEAT -> old order 
 
  Version 0.6: (since 0707)
 ============
@@ -170,6 +170,12 @@ X-(311012)!!Improve Risk()
 X-(121112)Ctrl-w write messages.
 X-(131112)Added random planet names
 X-(211112)Number of galaxies added to options window
+X-(090113)planets are tarjets for missiles
+X-(140113)new pods for pirates.
+X-(150113)order REPEAT for PILOTS.
+X-(150113)Save items in the same order.
+
+
 
 BUGS version 0.82
 =================

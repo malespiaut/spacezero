@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2012  MRevenga
+ **  Copyright(C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,32 +17,39 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "menu.h"
+#include "help.h"
+#include "shell.h"
 #include "sound.h"
+#include "functions.h"
 
 extern struct Parametres param;
 struct Keys keys;
 
 struct MenuHead *MenuHeadNew(char *title){
   struct MenuHead *mh;
+  int ret;
 
   mh=malloc(sizeof(struct MenuHead));
   if(mh==NULL){
     fprintf(stderr,"ERROR in malloc MenuHeadNew()\n");
     exit(-1);
   }
-  strcpy(mh->title,"");
-  strncat(mh->title,title,MAXTEXTLEN-strlen(mh->title));
-  strncpy(&mh->title[MAXTEXTLEN-1],"\0",1);
+
+  ret=snprintf(mh->title,MAXTEXTLEN,"%s",title);
+  if(ret>=MAXTEXTLEN){
+    fprintf(stderr,"string too long. Truncated to:\"%s\"",title);
+  }
+
   mh->n=0;
   mh->nactive=0;
   mh->active=ITEM_ST_FALSE;
@@ -248,7 +255,7 @@ char *GetTextEntry(struct MenuItem *item,char *text){
     Keystrokes(RESET,NULL,NULL);
   }
   id=item->id;
-  //  strcpy(par,"");
+  /* strcpy(par,""); */
   Keystrokes(LOAD,NULL,textentry);
   strcpy(text,"");
   strncpy(text,textentry,MAXTEXTLEN);

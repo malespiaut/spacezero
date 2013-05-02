@@ -22,7 +22,8 @@
 	
 	<table width="600"><tbody><tr><td> 
 		
-		SpaceZero is a Real Time Strategy 2D space combat game for two players over a network.
+		SpaceZero is a Real Time Strategy 2D space combat game
+		for a single or two players over a network.
 		
 		<br>
 		  Your objective is to conquer all space.
@@ -79,10 +80,10 @@
 		  </tr>
 		  <tr>
 		    <td><img SRC="manual_files/tower0.png" alt="Defense Tower"></td>
-		    <td><h4>Defence Tower</h4></td>
+		    <td><h4>Defense Tower</h4></td>
 		    
-		    <td>The Defence Tower can only stay on planets. It has two
-		      objectives: the defence of the planet and the
+		    <td>The Defense Tower can only stay on planets. It has two
+		      objectives: the defense of the planet and the
 		      extraction of minerals.</td>
 		  </tr>
 		  <tr  bgcolor="#000000">
@@ -93,7 +94,13 @@
 		    <td>In queen mode game, if you lose it, you lose
 		      the game.</td>
 		  </tr>
-		  <tr>
+
+		</tbody></table>
+		
+		<h3>Other objects:</h3>
+		
+		<table width="600"  bgcolor="#222222"><tbody>
+		  <tr  bgcolor="#000000">
 		    <td><img SRC="manual_files/pilot.png" alt="pilot"></td>
 		    <td><h4>Astronaut</h4></td>
 		    
@@ -105,13 +112,8 @@
 		      another spaceship and returned to the ground where he
 		      will be able to acquire a new spaceship. The level of
 		      the new spaceship will be the same as the old
-		      one. The experience is set to zero.</td>
+		      one. Its experience is set to zero.</td>
 		  </tr>
-		</tbody></table>
-		
-		<h3>Other objects:</h3>
-		
-		<table width="600"  bgcolor="#222222"><tbody>
 		  <tr>
 		    <td><img SRC="manual_files/planet.png" alt="planet"
 			     width="64" bgcolor="#222222"></td>
@@ -209,8 +211,8 @@
 		      <ul>
 			<li> If the planet is empty or allied it will
 			be changed to STOP.
-			<li> In the case of an enemy planet the order
-		      will change to GOTO, attacking the enemies.
+			<li> In the case of an enemy planet, the order
+		      will be changed to GOTO, attacking the enemies.
 		      </ul>
 
 		  </ul>
@@ -345,7 +347,7 @@
 	    If you select a planet in the map view, all spaceships
 	    inside the planet will be selected.
 	  <p>
-	    The colour of the selected spaceships will be grey.
+	    The color of the selected spaceships will be grey.
 
 
 	  <h3>Selecting a target:</h3>
@@ -434,7 +436,7 @@
 	  
 	  <hr>	    
 	  <a name="infowindows"></a>
-	  <h3>Navigation information:</h3>
+	  <h3>Navigate information:</h3>
 	  <p>
 	    <table width="600"><tbody>
 	      <tr>
@@ -486,7 +488,7 @@
 		  In the free space the radar info is shown as a red
 		  circle centered at the spaceship. The different objects
 		  are represented as follows: big dots for planets, with
-		  the colour of the player that owns such planet. White
+		  the color of the player that owns such planet. White
 		  dots for the owned spaceships, blue dots the
 		  spaceships of the same team and red dots for the enemy
 		  spaceships.<br>
@@ -514,8 +516,8 @@
 		<img SRC="manual_files/map1.png" alt="radar">
 	      </td>
 	      <td>
-		The white colour is reserved for empty planets and
-		asteroids. The different objects have the colour of
+		The white color is reserved for empty planets and
+		asteroids. The different objects have the color of
 		their player. The planets are represented by big
 		dots, the spaceships by crosses, the asteroids by
 		white crosses, the astronauts in free space by
@@ -586,11 +588,9 @@
 
 		  <br>There is a line for every spaceship with the following information:
 
-		  <li>The type of the spaceship: F (fighter), T
-		    (tower), E (explorer), Q (queen) , A (astronaut)
-		    or M (if it is in manual mode).
-		    
-		  <li>Its level. 
+		  <li>The type of the spaceship and its level: F
+		    (fighter), T (tower), E (explorer), Q (queen) , A
+		    (astronaut) or M (if it is in manual mode).
 		    
 		  <li>Its ID. 
 		    
@@ -682,7 +682,7 @@
 		
 	    </ul>
 	    
-	    <h4>Player level:</h4> The player level is the maximun
+	    <h4>Player level:</h4> The player level is the maximum
 	    level reached for one of your spaceships. The level of the
 	    player will be increased only when the spaceship lands.
 	    
@@ -743,7 +743,7 @@
 		position. if there no one: random walk
 	    
 	      <li>level 2 and greater: looks for an unknown sector
-		farer than previous level. If there no one: random
+		further than the previous level. If there no one: random
 		walk
 	    </ul> 
 
@@ -844,7 +844,7 @@
 <table width="600"><tbody><tr><td> 
       <table border="1"><tbody>
 	<tr><td>up arrow	</td><td>accelerate/manual mode.</td></tr>
-	<tr><td>left,right arrows	</td><td>turn left, right.</td></tr>
+	<tr><td>left,right arrows	</td><td>turn left, right/manual mode.</td></tr>
 	<tr><td>SPACE		</td><td>fire.</td></tr>
 	<tr><td>tab		</td><td>change to next spaceship.</td></tr>
 	<tr><td>Ctrl-tab	</td><td>change to previous spaceship.</td></tr>
@@ -862,7 +862,7 @@
 	<tr><td>m		</td><td>show-hide space map.</td></tr>
 	<tr><td>arrow keys, SPACE/down arrow	</td><td>manual/automatic mode.</td></tr>
 	<tr><td>Ctrl-w	        </td><td>write a message to the other players.</td></tr>
-	<tr><td>Ctrl +/-	</td><td>volume up/down.</td></tr>
+	<tr><td>Ctrl +/-	</td><td>sound volume.</td></tr>
 	<tr><td>Ctrl-n		</td><td>window, spaceship mode view</td></tr>
 	<tr><td>Ctrl-p		</td><td>pause game</td></tr>
 	<tr><td>Ctrl-q		</td><td>quit game.</td></tr>
@@ -967,8 +967,8 @@
 
 
 <div class="footer"><hr>
-  <p>Copyright © 2010-2012 MRevenga <br>
-    Page last updated Sep. 25, 2012</p>
+  <p>Copyright © 2010-2013 MRevenga <br>
+    Page last updated April 23, 2013</p>
 </div>
 </div>
 

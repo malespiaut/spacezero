@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright (C) 2006-2012  MRevenga
+ **  Copyright (C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
+		version 0.84 April 2013
 ****/
 
 #ifndef _SPACECOMM_
@@ -71,7 +71,7 @@
    header messages ids
 */
 
-//#define SENDOBJ MSENDOBJS    /* send modified objects */
+/*#define SENDOBJ MSENDOBJS */   /* send modified objects */
 #define SENDGLOBAL 17
 #define SENDPLAYER 18
 #define SENDPLAYERMOD 19
@@ -136,11 +136,11 @@ struct ListNetMess{
   
 int OpenComm(int mode,struct Parametres param,struct Sockfd *sfd);
 int StartComm(int mode,struct Sockfd *sockfd);
-void *CommClient(struct Thread_arg *);
-void *CommServer(struct Thread_arg *);
+void *CommClient(void *);
+void *CommServer(void *);
 
-//int CopyObjs2Buffer(char *buf,struct HeadObjList lh);
-//int CopyObj2Buffer(struct Buffer *buffer,void *object,int type);
+/* int CopyObjs2Buffer(char *buf,struct HeadObjList lh); */
+/* int CopyObj2Buffer(struct Buffer *buffer,void *object,int type); */
 int ReadObjsfromBuffer(char *buf);
 int CopyGlobal2Buffer_00(char *buf);
 

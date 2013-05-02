@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2012  MRevenga
+ **  Copyright(C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,11 +17,11 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -257,7 +257,7 @@ int RecvFile(int fd,int sfd){
   buffer.size=BUFFERSIZE;
   buf=buffer.data;
 
-  //  printf("Receiving file. buffer size: %d\n",buffer.size);
+    /* printf("Receiving file. buffer size: %d\n",buffer.size); */
 
   if((nbytes=RecvBuffer(sfd,&buffer))==-1){
     perror("RecvFile() recv_buf");
@@ -295,7 +295,7 @@ int CopyFile2Buf(int fd,struct Buffer *buffer){
       } 
       buffer->size=newsize;
       buf=buffer->data+nbytes;
-      //      printf("Realloc(cfile2b) %d\n",buffer->size);
+      /* printf("Realloc(cfile2b) %d\n",buffer->size); */
     }
   }
   printf("NBYTES:%d\n",nbytes);
@@ -330,7 +330,7 @@ int SendBuffer(int sfd,struct Buffer *buffer){
 
   /* send the data */
 
-  //  printf("Sending buffer %d\n",buffer->n);
+  /* printf("Sending buffer %d\n",buffer->n); */
 
   remainbytes=buffer->n;
   buf=buffer->data;
@@ -348,7 +348,7 @@ int SendBuffer(int sfd,struct Buffer *buffer){
     remainbytes -= writed;
     buf += writed;
   }
-  //  printf("Sended buffer\n");
+  /* printf("Sended buffer\n"); */
   return(buffer->n-remainbytes);
 }
 
@@ -384,7 +384,7 @@ int RecvBuffer(int sfd,struct Buffer *buffer){
   b=&a;
 
   nbytes=(int)*b; /* bytes to receive */
-  //  printf("RecvBuffer(): receiving %d bytes\n",nbytes); 
+  /* printf("RecvBuffer(): receiving %d bytes\n",nbytes);  */
   /*  printf("(recv_men) numero de bytes:%d de tamano: %d\n",nbytes,nb); */
 
   if(nbytes>buffer->size){
@@ -394,7 +394,7 @@ int RecvBuffer(int sfd,struct Buffer *buffer){
       exit(-1);
     } 
     buffer->size=nbytes;
-    //    printf("Realloc(recvbuffer) %d\n",nbytes);
+    /* printf("Realloc(recvbuffer) %d\n",nbytes); */
   }
 
   buffer->n=0;

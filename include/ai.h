@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright (C) 2006-2012  MRevenga
+ **  Copyright (C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,11 +17,11 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 #ifndef _AI_
 #define _AI_
@@ -42,6 +42,10 @@
 #define MAXPRIORITY 1
 #define MAINORD 2
 #define FIRSTORD 3
+
+#define MAXnf2a 40
+#define MINnf2a 6
+
 
 /* order ids */
 
@@ -158,9 +162,11 @@ void DelFirstOrder(Object *obj);
 struct Order *ReadOrder(struct Order *,Object *obj,int);
 void PrintOrder(struct Order *ord);
 int AddOrder(Object *obj,struct Order *order);
-int CountOrder(Object *obj);
+int CountOrders(Object *obj);
 int ReadMaxPriority(Object *obj);
 void TestOrder(Object *obj);
+
+int CountPlanetInfoList(struct CCDATA *ccdata);
 
 void CreatePirates(struct HeadObjList *lhobjs,int,float,float,float);
 void CreateAsteroids(struct HeadObjList *lhobjs,int n, float x0,float y0);

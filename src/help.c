@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2012  MRevenga
+ **  Copyright(C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,11 +17,11 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -107,7 +107,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   if((fp=fopen(optfile,"rt"))==NULL){
 
     if((fp=fopen(optfile,"wt"))==NULL){
-      fprintf(stdout,"I cant create the file: %s\n", optfile);
+      fprintf(stdout,"I can't create the file: %s\n", optfile);
       exit(-1);
     }
     /* file doesn't exists */
@@ -116,7 +116,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
     SaveParamOptions(optfile,par);
 
     if((fp=fopen(optfile,"rt"))==NULL){
-      fprintf(stdout,"I cant open the file: %s", optfile);
+      fprintf(stdout,"I can't open the file: %s", optfile);
       exit(-1);
     }
     fclose(fp);
@@ -310,7 +310,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 	break;
       case ARG_ip:/*'ip': ip of the server */
 	if(i+1<argc){
-	  //	  par->IP=(argv[i+1]);
+	  /* par->IP=(argv[i+1]); */
 	  strncpy(par->IP,argv[i+1],MAXTEXTLEN);strncpy(&par->IP[MAXTEXTLEN-1],"\0",1);
 	  i++;
 	}
@@ -384,7 +384,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
  	if(i+1<argc){
 	  strncpy(par->geom,argv[i+1],32);
 	  strncpy(&par->geom[31],"\0",1);
-	  //HERE check param values.
+	  /* HERE check param values. */
 	  i++;
 	}
 	else{
@@ -506,9 +506,9 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "-nopirates\t Don't add a team of pirates.\n" );
   (void) fprintf( stdout, 
-		  "-enemyknown\t All anemies are known.\n" );
+		  "-enemyknown\t All enemies are known.\n" );
   (void) fprintf( stdout, 
-		  "-noenemyknown\t All anemies are unknown (default).\n" );
+		  "-noenemyknown\t All enemies are unknown (default).\n" );
   (void) fprintf( stdout, 
 		  "\nMULTIPLAYER OPTIONS:\n" );
   (void) fprintf( stdout, 
@@ -520,7 +520,7 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "up arrow\t accelerate/manual mode.\n");
   (void) fprintf( stdout, 
-		  "left/right arrows turn left/right.\n");
+		  "left-right arrows turn left-right/manual mode.\n");
   (void) fprintf( stdout, 
 		  "space\t\t fire.\n");
   (void) fprintf( stdout, 
@@ -701,7 +701,6 @@ int GetGeom(char *geom,int *w,int *h){
   char *pointer;
   char *endptr=NULL;
 
-  //  printf("GetGeom(): %s\n",geom);
   *w=DEFAULTWIDTH;
   *h=DEFAULTHEIGHT;
   len=strlen(geom);
@@ -761,7 +760,7 @@ void PrintWarnings(char *version){
   fprintf(stderr,"WARNING: This is the development version of SpaceZero (version %s)\nIt can contain bugs.\nNet and saved games can be incompatible with the official release.\nMaybe SpaceZero doesn't work properly.\n", version);
 
   if(sizeof(int)!=4){
-    fprintf(stderr,"\nWARNING: size of int %d bytes\n, maybe SpaceZero doesn't work properly\n",(int)sizeof(int));//HERE warning: format '%d' expects type 'int', but argument 3 has type 'long unsigned int'
+    fprintf(stderr,"\nWARNING: size of int %d bytes\n, maybe SpaceZero doesn't work properly\n",(int)sizeof(int));/* HERE warning: format '%d' expects type 'int', but argument 3 has type 'long unsigned int' */
   }
   fprintf(stderr,"\nWARNING: Communication between 64 and 32 bits machines not so tested,\nmaybe SpaceZero doesn't work properly.\n");
 
@@ -795,7 +794,7 @@ void SetDefaultParamValues(struct Parametres *par){
   strncpy(par->IP,DEFAULT_IP,MAXTEXTLEN);strncpy(&par->IP[MAXTEXTLEN-1],"\0",1);
   par->port=DEFAULT_PORT;
   par->port2=DEFAULT_PORT+1;
-  strcpy(par->playername,PLAYERNAME);// set default
+  strcpy(par->playername,PLAYERNAME); /* set default */
   
   strcpy(par->font,"6x13");
   strcpy(par->geom,"1024x550");

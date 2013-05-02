@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright (C) 2006-2012  MRevenga
+ **  Copyright (C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,11 +17,11 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 #ifndef _OBJECTS_
 #define _OBJECTS_
@@ -574,6 +574,7 @@ struct PlayerAll{
 
 struct PlayerMod{    /* Used in communication  */
   short id;
+  short maxlevel;    /* max ship level reached */ 
   short nplanets;    /* number of players planets */
   short nships;      /* number of players ships */
   short nbuildships; /* number of ships created */
@@ -684,7 +685,9 @@ int EjectPilotsObj(struct HeadObjList *lh,Object *obj);
 void CheckPilots(struct HeadObjList *hol,Object *);
 
 float Distance2(Object *obj1,Object *obj2);
+float Distance(Object *cv,float x0,float y0);
 
+int CheckObjsId(void);
 
 /*************************/
 
@@ -698,6 +701,7 @@ struct ObjTree *Look4ObjTree(struct ObjTree *,Object *);
 struct VerletList *CreateVerletList(struct HeadObjList hol);
 void PrintVerletList(struct VerletList *hvl);
 void DestroyVerletList(struct VerletList *hvl);
+
 
 
 #endif

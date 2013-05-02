@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2012  MRevenga
+ **  Copyright(C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,11 +17,11 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 
 #include <stdio.h>
@@ -39,7 +39,6 @@ int np;
 struct Stats stats_tmp;
 struct Stats stats[NSTATS];
 
-
 extern GdkGC *penGreen;
 extern GdkGC *penBlack;
 extern GdkGC *gcolors[];
@@ -56,7 +55,6 @@ void InitStatistics(void){
   n=0;
   cont=0;
   np=GameParametres(GET,GNPLAYERS,0)+2;
-  //  printf("InitStats: %d \n",np);
 
   stats_tmp.time=lasttime;
 
@@ -80,12 +78,10 @@ void AddStatistics(struct Stats *s){
   for(i=0;i<np;i++){
     stats_tmp.level[i]+=s->level[i];
     stats_tmp.nplanets[i]+=s->nplanets[i];
-    //    printf("%d %d\n",i,stats_tmp.nplanets[i]);
   }
   /*   */
   if(stats_tmp.time>lasttime+inctime){
     /* add to logger */
-    if(0)printf("Stats: logging %d %d %d\n",cont,n,np);
 
     for(i=0;i<np;i++){
       stats[n].level[i]=stats_tmp.level[i]/cont;
@@ -101,7 +97,6 @@ void AddStatistics(struct Stats *s){
 
     if(n==NSTATS){
       /* TODO renormalize */
-      //      printf("Stats: renormalize\n");
       k=0;
       for(j=0;j<n;j+=2){
 	for(i=0;i<np;i++){
@@ -112,7 +107,6 @@ void AddStatistics(struct Stats *s){
       }
       n/=2;
       inctime*=2;
-      //      PrintStatistics();
     }
   }
 }
@@ -165,9 +159,17 @@ void fscanfStatistics(FILE *fp){
 	perror("fscanf");
 	exit(-1);
       }
+      if(stats[i].level[j]<0){
+	fprintf(stderr,"ERROR fscanfStatistics(): level <0. Setting to zero\n");
+	stats[i].level[j]=0;
+      }
       if(fscanf(fp,"%d",&stats[i].nplanets[j])!=1){
 	perror("fscanf");
 	exit(-1);
+      }
+      if(stats[i].nplanets[j]<0){
+	fprintf(stderr,"ERROR fscanfStatistics(): nplanets <0. Setting to zero\n");
+	stats[i].nplanets[j]=0;
       }
     }
   }
@@ -205,10 +207,9 @@ void DrawStatistics(GdkPixmap *pixmap,Rectangle *r){
 		     r->y,
 		     r->width,r->height);
 
-
   /* max value */
   maxnplanets=0;
-  maxlevel=0;
+  maxlevel=1;
 
   for(i=0;i<np;i++){
     for(j=0;j<NSTATS;j++){

@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright (C) 2006-2012  MRevenga
+ **  Copyright (C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,11 +17,11 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 #ifndef _GENERAL_
 #define _GENERAL_
@@ -31,15 +31,15 @@
 #define TRUE 1
 #endif
 
-//#define GDK_DISABLE_DEPRECATED
+/* #define GDK_DISABLE_DEPRECATED */
 
 /*  compile options: */
-#define SOUND 1  // compile with sound
+#define SOUND 1  /* compile with sound */
 #define DEBUG 0
-#define TEST 0  // test stuff
+#define TEST 0  /* test stuff */
 #define TESTTIMES 0
 #define TESTNET 0 
-#define LATENCY 0//8000000
+#define LATENCY 0  /* 8000000 */
 /*  --compile options: */
 
 #define MODI(a) ((a) > 0 ? (a) : (-a))
@@ -52,8 +52,8 @@
 #define MAXTEXTLEN 128
 
 /* window properties */
-#define DEFAULTWIDTH 1024//900//1024//800//1024//1152
-#define DEFAULTHEIGHT 550//600 //500 //550//700//768
+#define DEFAULTWIDTH 1024 /* 900 1024  800 1024 1152 */
+#define DEFAULTHEIGHT 550 /* 600  500 550  700  768 */
 #define LXFACTOR 1024  /* normalization factor for surface planets */
 #define LYFACTOR 550   /* normalization factor for surface planets */
 #define PANEL_HEIGHT 20
@@ -63,7 +63,7 @@
 #define NUMSTARS 200
 #define GRAVITATION_RANGE2 4000000  /* max. gravity reach */
 #define G .1                        /* gravitation constant */
-#define DT .42//.42//.35 //.42
+#define DT .42 /* .42 .35 .42 */
 #define RESOURCEFACTOR 1.2     /* velocity factor for getting resource from planets */
 #define COSTFACTOR 1.0         /* multiplicative factor to ships cost */
 #define DAMAGEFACTOR .7;      /* (0.9) multiplicative factor to weapon damage */
@@ -111,7 +111,7 @@
 
 #define RADAR_RANGE 2000
 #define RADAR_RANGE2 4000000
-#define SECTORSIZE 1410 // sqrt(RADAR_RANGE2/2)
+#define SECTORSIZE 1410 /* sqrt(RADAR_RANGE2/2) */
 #define MAXASTEROIDDISTANCE2 784000000 /* max distance2 an asteroid can be seen (20 sectors )*/
 
 /* FILES */
@@ -122,7 +122,7 @@
 #define SAVEFILENET "saven"
 #define SAVEFILESINGLE SAVEFILE0 
 #define RECORDFILE "record"
-#define OPTIONSFILE "options2"
+#define OPTIONSFILE "options"
 #define KEYBOARDFILE "keymap" 
 #define LETTERFREQUENCYFILE "letterfrequencytable"
 

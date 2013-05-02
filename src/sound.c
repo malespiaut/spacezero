@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2012  MRevenga
+ **  Copyright(C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,11 +17,11 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 /*
 NUM_SOURCES simultaneus sounds
@@ -115,7 +115,7 @@ int InitSound(void){
   
 
   if((fp=fopen(filesoundnames[0],"rb"))==NULL){
-    fprintf(stdout,"Cant open the file: %s\n", filesoundnames[0]);
+    fprintf(stdout,"Can't open the file: %s\n", filesoundnames[0]);
     
     datadir=INSTALL_DATA_DIR;
     strcpy(filesoundnames[0],"");
@@ -125,7 +125,7 @@ int InitSound(void){
     printf("checking for sound 2 (%d):%s\n",0,filesoundnames[0]);
     
     if((fp=fopen(filesoundnames[0],"rb"))==NULL){
-      fprintf(stdout,"Cant open the file: %s\n", filesoundnames[0]);
+      fprintf(stdout,"Can't open the file: %s\n", filesoundnames[0]);
       Ssoundenabled=FALSE;  
       return(1);
     }
@@ -206,7 +206,6 @@ int InitSound(void){
   }
 
   for(i=1,j=1;i<NUM_BUFFERS && i<NUM_SOUNDS;i++){
-    //    data=alutLoadMemoryFromFile(filesoundnames[i],&format,&size,&frequency);
     data=LoadMemoryFromOggFile(filesoundnames[i],&format,&size,&frequency);
     if(data==NULL){
       fprintf(stderr,"Warning: file not found or corrupted: %s\n",filesoundnames[i]); 
@@ -217,7 +216,7 @@ int InitSound(void){
       alBufferData(buffers[j],format,data,size,frequency);
 #if SOUNDDEBUG
       printf("InitSound(): sound added: %s buffer(%d): %d data: %p \n",
-	     filesoundnames[i],j,buffers[j],data);
+	     filesoundnames[i],j,buffers[j],(void *)data);
 #endif
       buffertable[j]=i;
       free(data);
@@ -227,7 +226,7 @@ int InitSound(void){
 #if SOUNDDEBUG
     else{
       printf("InitSound(): sound not added: %s data: %p \n",
-	     filesoundnames[i],data);
+	     filesoundnames[i],(void *)data);
       
     }
 #endif
@@ -344,7 +343,6 @@ int PlaySound(int sid,int mode,float vol){
     while(cleandone<1);
     
     /* load the buffer */
-    //    data=alutLoadMemoryFromFile(filesoundnames[sid],&format,&size,&frequency);
     data=LoadMemoryFromOggFile(filesoundnames[sid],&format,&size,&frequency);
     if(data==NULL){
       fprintf(stderr,"Warning PlaySound(): file not found or corrupted: %s\n",filesoundnames[bufferfree]); 
@@ -357,7 +355,7 @@ int PlaySound(int sid,int mode,float vol){
       bufferid=bufferfree;
 #if SOUNDDEBUG
       printf("PlaySound():sound added: %s to buffer: %d(%d) in data: %p\n",
-	     filesoundnames[buffertable[bufferfree]],buffers[bufferfree],bufferfree,data);
+	     filesoundnames[buffertable[bufferfree]],buffers[bufferfree],bufferfree,(void *)data);
 #endif
       free(data);
       data=NULL;
@@ -505,7 +503,7 @@ int CleanBuffers(void){
       }
     }
     if(sw==0){/* buffer i no attached */
-      printf("deleting buffer(%d) in %p\n",i,&buffers[i]);
+      printf("deleting buffer(%d) in %p\n",i,(void *)&buffers[i]);
       alDeleteBuffers(1,&buffers[i]);      
       if ((error = alGetError()) != AL_NO_ERROR){
 	printf("alDeleteBuffers : %d ", error);
@@ -718,7 +716,6 @@ float SetMasterVolume(float vol,int action){
     SetSoundVolume(Ssoundvol,VOLSET);
     SetMusicVolume(Smusicvol,VOLSET);
   }
-  //  printf("master: %f\n",Smastervol);
   return(Smastervol);
 }
 
@@ -741,7 +738,6 @@ float SetSoundVolume(float vol,int action){
   default:
     break;
   }
-  //  printf ("Set sound volume %f %d\n",vol,action);
 
   if(nvol>1)nvol=1;
   if(nvol<0)nvol=0;
@@ -754,7 +750,6 @@ float SetSoundVolume(float vol,int action){
     alSourcef(sources[i],AL_GAIN,nvol*Smastervol);
   }
   Ssoundvol=nvol;
-  //  printf("Set sound volume: %f\n",nvol*Smastervol);
   return(Ssoundvol);
 }
 
@@ -777,17 +772,13 @@ static  ALfloat nvol=0;
   default:
     break;
   }
-  //  printf ("Set music volume %f %d\n",vol,action);
   if(nvol>1)nvol=1;
   if(nvol<0)nvol=0;
   
-  //  alSourcef(sources[0],AL_GAIN,nvol);
   if(music!=NULL){
     music->value=nvol*Smastervol;
     music->order=SO_SETVOL;
-    //    alSourcef(music->streamsource[0],AL_GAIN,nvol);
   }
-  //  printf("Set music volume: %f\n",nvol*Smastervol);
   Smusicvol=nvol;
   return(Smusicvol);
 }

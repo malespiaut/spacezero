@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2012  MRevenga
+ **  Copyright(C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,11 +17,11 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 #include <string.h>
 #include "general.h"
@@ -96,14 +96,6 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     return(0);
   }  
 
-  if(0&&*pcv==NULL){
-    printf("There are no ship selected!!\n");
-    key->order.state=FALSE;
-    level=0;
-    key->esc=FALSE;
-    return(0);
-  }
-
   cv=*pcv;
   if(cv0!=NULL){
     if(cv0!=cv){
@@ -140,7 +132,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
   }
   if(level==0){
     key->g=key->s=key->p=key->t=key->r=key->b=key->d=key->e=FALSE;
-    //aqui 
+    /* aqui  */
     strcpy(cad,"");
     strcpy(ord,"");
     strcpy(par,"");
@@ -172,23 +164,6 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
 	strncpy(cad,"R: REPEAT   S: SELECT   B: BUY   W: WRITE",MAXTEXTLEN); 
 	key->g=key->x=key->p=key->t=key->e=key->u=key->w=FALSE;
       }
-
-      if(0&&CountNSelected(lhead,player)>1){
-	strncpy(cad,"G: GOTO   X: EXPLORE   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE   W: WRITE   E: SELL   D:RETREAT",MAXTEXTLEN); 
-
-	if(font!=NULL){
-	  textw=gdk_text_width(font,cad,strlen(cad));
-	}
-	else{
-	  textw=12*strlen(cad);
-	}
-	if(textw>GameParametres(GET,GWIDTH,0)){
-	  strncpy(cad,"",1);
-	  strncpy(cad,"G:GT  X:EXP  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  W:WRT  E:SELL  D:RTRT",MAXTEXTLEN); 
-	}
-	key->s=FALSE;
-      }
-      
     }
     else{
       strncpy(cad,"S: SELECT",MAXTEXTLEN); 
@@ -288,7 +263,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
 	  strcpy(par,"");
 	  a=x;
 	  b=y;
-	  //	W2R(*pcv,&a,&b);
+	  /* W2R(*pcv,&a,&b); */
 	  Window2Real(*pcv,VIEW_MAP, x,y,&a,&b);
 	  
 	  nearobj=ObjNearThan(lhead,player,a,b,500000); /* 0.5 sectors */
@@ -303,7 +278,6 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
 	    Window2Sector(*pcv,&x,&y);
 	    sprintf(pargoto,"%d %d",x,y);
 	    sprintf(par,"%d %d",a,b);
-	    //	    printf("first: %d %d (%s)\n",a,b,pargoto);
 	  }
 	  key->enter=TRUE;
 	  break;
@@ -375,10 +349,9 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     case STOP:
     case TAKEOFF:
     case REPEAT:
-      //    case RETREAT:
+      /* case RETREAT: */
       strcpy(cad,"");
       snprintf(cad,MAXTEXTLEN,"%s %s",ord,par);
-      //      printf("RETREAT: %s\n",cad);
       break;
     case SELL:
       strcpy(cad,"");
@@ -475,7 +448,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       obj0=NULL;
       /* first selected goes to cv if cv is not selected*/
       ls=lhead->next;
-      while(ls!=NULL){  //HERE create a selected list
+      while(ls!=NULL){  /* HERE create a selected list */
 	if(ls->obj->selected==TRUE){
 	  if(ls->obj->player!=player){ls=ls->next;continue;}
 	  obj=ls->obj;
@@ -513,7 +486,6 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     /* --ships orders */
     /* if lastorder is a valid order */
     if(obj0!=NULL){
-      //      printf("CHANGING lastorder\n");
       lastorder=order;
       strcpy(lastpar,"");
       strncpy(lastpar,par,16);
@@ -675,7 +647,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       case 'N':
 	/* goto nearest ally planet */
 	
-	obj_dest=NearestObj(lhead,obj,PLANET,PINEXPLORE,&d2); // HERE only one function
+	obj_dest=NearestObj(lhead,obj,PLANET,PINEXPLORE,&d2);  /* HERE only one function */
 	obj_destb=NearestObj(lhead,obj,PLANET,PALLY,&d2b);
 	
 	if(obj_dest!=NULL && obj_destb!=NULL ){
@@ -725,7 +697,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	    snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship %d unknown.",obj_dest->pid);
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	    obj_dest=NULL;
-	    //	    keys.esc=TRUE;
+	    /* keys.esc=TRUE; */
 	  }
 	  else{
 	    printf("(%c %d) going to planet %d.\n",Type(obj),obj->pid,obj_dest->pid);
@@ -778,7 +750,6 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	ord.i=ord.j=ord.k=ord.l=0;
 	if(obj_dest->type==SHIP && obj_dest->subtype==PILOT){
 	  ord.i=PILOT;
-	  //	  printf("ord_i 1st: %f\n",ord.i);
 	}
 
 	DelAllOrder(obj);
@@ -792,12 +763,12 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 #endif
 	snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship (%s) unknown.",arg1);
 	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
-	//	keys.esc=TRUE;
+	/* keys.esc=TRUE; */
 	ret=NULL;
       }
 
       break;
-    case 2: //GOTO sector   // AQUI
+    case 2: /* GOTO sector    AQUI */
       id1=strtol(arg1,NULL,10);
       id2=strtol(arg2,NULL,10);
 
@@ -910,7 +881,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 #endif
       snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship (%s) unknown.",arg1);
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
-      //	keys.esc=TRUE;
+      /* keys.esc=TRUE; */
       ret=NULL;
     }
 
@@ -1087,7 +1058,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       snprintf(cad,MAXTEXTLEN,"%s: %s",players[obj->player].playername,text);      
 
       printf("=============\n");
-      //      printf("%s\n",cad);
+      /* printf("%s\n",cad); */
       printf("=============\n");
       if(GameParametres(GET,GNET,0)==TRUE){
 	SendTextMessage(cad);
@@ -1117,17 +1088,6 @@ void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
   Object *cv;
   int n;
   int view;
-
-  if(0){
-    if(*pcv==NULL){
-      printf("SOS: %p\n",cv0);
-      if(keys.mleft==TRUE){ /* mouse release */
-	cv0=SelectOneShip(&listheadobjs,region,NULL,keys.ctrl);
-	printf("SOS: %p\n",cv0);
-	*pcv=cv0;
-      }
-    }
-  }
 
   if(*pcv==NULL)return;
   cv=*pcv;
@@ -1169,7 +1129,7 @@ void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
   view=GetView();
 
   if(view==VIEW_NONE){
-    //    printf("VIEW: NONE\n");
+    /* printf("VIEW: NONE\n"); */
     return;
   }
   
@@ -1251,7 +1211,7 @@ void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
 	    }
 	    else{
 	      fprintf(stderr,"WARNING SelectionBox() cv0=NULL\n");
-	      //		exit(-1); // HERE PRODUCTION this never must happen
+	      /* exit(-1);  HERE PRODUCTION this never must happen */
 	    }
 	  }
 	  
@@ -1399,41 +1359,40 @@ char Keyval2Char(guint keyval){
   }
 
   snprintf(kname,24,"%s",gdk_keyval_name(keyval));
-  //  printf("kv2c: (%s)%d\n",kname,keyval);
 
   if(strlen(kname)==1)return(kname[0]);
   if(strlen(kname)==0)return((char)0);
 
 
   switch (keyval){
-  case 65456: // KP_0:
+  case 65456:  /* KP_0: */
     c='0';
     break;
-  case 65457: // KP_1:
+  case 65457:  /* KP_1: */
     c='1';
     break;
-  case 65458: // KP_2:
+  case 65458:  /* KP_2: */
     c='2';
     break;
-  case 65459: // KP_3:
+  case 65459:  /* KP_3: */
     c='3';
     break;
-  case 65460: // KP_4:
+  case 65460:  /* KP_4: */
     c='4';
     break;
-  case 65461: // KP_5:
+  case 65461:  /* KP_5: */
     c='5';
     break;
-  case 65462: // KP_6:
+  case 65462:  /* KP_6: */
     c='6';
     break;
-  case 65463: // KP_7:
+  case 65463:  /* KP_7: */
     c='7';
     break;
-  case 65464: // KP_8:
+  case 65464:  /* KP_8: */
     c='8';
     break;
-  case 65465: // KP_8:
+  case 65465:  /* KP_8: */
     c='9';
     break;
    }
@@ -1478,7 +1437,7 @@ int Keystrokes(int action,guint *kval,char *c){
       if(c!=NULL){
 	snprintf(kname,24,"%s",gdk_keyval_name(val[n-1]));
 	*c=Keyval2Char(val[n-1]);
-	//	memcpy(c,kname,sizeof(char));
+	/* memcpy(c,kname,sizeof(char)); */
       }
 
       m=1; 

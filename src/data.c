@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2012  MRevenga
+ **  Copyright(C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,11 +17,11 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -391,9 +391,9 @@ int PrintIntIList(struct HeadIntIList head){
   printf("\n");
   for(i=0;i<NINDEXILIST;i++){
     if(head.index[i]!=NULL)
-      printf("%p %d\n",head.index[i],head.index[i]->id);
+      printf("%p %d\n",(void *)head.index[i],head.index[i]->id);
     else
-      printf("%p\n",head.index[i]);
+      printf("%p\n",(void *)head.index[i]);
   }
   return(n);
 }
@@ -461,7 +461,7 @@ int Add2CharList(struct CharListHead *hlist,char *cad,int mode){
     } 
 
     snprintf(list->cad,n+1,"%s",cad);
-    //    strncpy(list->cad,cad,n+1);
+    /* strncpy(list->cad,cad,n+1); */
     list->next=NULL;
     hlist->next=list;
     hlist->n++;
@@ -509,7 +509,7 @@ int Add2CharList(struct CharListHead *hlist,char *cad,int mode){
       exit(-1); 
     } 
     snprintf(list->next->cad,n+1,"%s",cad);
-    //    strncpy(list->next->cad,cad,n+1);
+    /* strncpy(list->next->cad,cad,n+1); */
     list->next->next=NULL;
     hlist->n++;
 

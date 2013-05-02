@@ -12,7 +12,7 @@ libopenal_dev
 libvorbis-dev
 
 
-bugs:(last:121)
+bugs:(last:122)
 ====
 
 
@@ -36,7 +36,7 @@ bugs:(last:121)
 -[115]-geom 1000x-12 check all arguments...
 	    -geom -name hola
 -[117]why dont explore (save08)(the last ship, no unknown planets)
--[122]BUY: no money REPEAT -> old order 
+
 
  Version 0.6: (since 0707)
 ============
@@ -174,7 +174,7 @@ X-(090113)planets are tarjets for missiles
 X-(140113)new pods for pirates.
 X-(150113)order REPEAT for PILOTS.
 X-(150113)Save items in the same order.
-
+X-(120412)RETREAT en allied planet => STOP
 
 
 BUGS version 0.82
@@ -184,6 +184,8 @@ X-(100512) bug that create unnecessary trace points.
 X-(250912)[100](060511)enemy state bar greater than 100 (with very close planets, in net game, maybe unknown state)
 X-(061112)[121]-(231012) signal 11, Segmentation fault. in RemoveDeadObjs() 
 X-(191112)Bugfix related with CreatePlayerList()
+X-(160413)[122] in server NET. ERROR 2 in NearestObjAll()
+
 
 /*********************************************************************************/
 DONE:Version 0.80 (since 10 May. 2011)

@@ -1,6 +1,6 @@
- /*****************************************************************************
+/*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2012  MRevenga
+ **  Copyright(C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,17 +17,19 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "save.h"
-#include "statistics.h"
+
 
 extern int actual_player,actual_player0;
 extern int record;
@@ -47,37 +49,13 @@ extern int fobj[4];
 extern Object *cv;     /* coordenates center */
 extern struct Player *players;
 
-extern struct CCDATA *ccdatap; //HERE set to number of players
+extern struct CCDATA *ccdatap; /* HERE set to number of players */
 extern int *cell;
 
 struct Global gremote,glocal;
 #if DEBUG
 int debugsave=0;
 #endif
-
-
-int CreateDir(char *dir);
-void SaveRecord(char *file,struct Player *players,int record);
-int FprintfPlanet(FILE *fp,Object *obj);
-int FprintfObj(FILE *fp,Object *obj);
-
-int FscanfObj(FILE *fp,Object *obj,struct ObjTable *);
-int FscanfPlanet(FILE *fp,struct Planet *planet);
-
-int Check(void);
-int FprintfOrders(FILE *fp,Object *obj);
-int FscanfOrders(FILE *fp,Object *obj);
-int CountOrders(Object *obj);
-
-void FprintfCCData(FILE *fp,struct CCDATA *ccdata);
-void FscanfCCData(FILE *fp,struct CCDATA *ccdata);
-int CountPlanetInfoList(struct CCDATA *ccdata);
-
-void FprintfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo);
-void FprintfPlanetInfoList(FILE *fp,struct CCDATA *ccdata);
-void FscanfPlanetInfoList(FILE *fp,struct CCDATA *ccdata);
-void FscanfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo);
-
 
 
 int CreateDir(char *dir){
@@ -87,12 +65,12 @@ int CreateDir(char *dir){
     0 if the directory has been succesfully created or if it exist
     -1 if some error occurs and is not created.
   */  
-
+  
   errno=0;
   if(mkdir(dir,S_IFDIR|S_IRUSR|S_IWUSR|S_IXUSR)==-1){
     if(errno!=EEXIST){
       perror("mkdir");
-      printf("Cant create directory: %s\n",dir);
+      printf("Can't create directory: %s\n",dir);
       return(-1);
     }
   }
@@ -103,85 +81,79 @@ int CreateDir(char *dir){
 }
 
 char *CreateSaveFile(int server,int client){
-
+  
   char *file;
-
+  int ret;
+  
   file=malloc(MAXTEXTLEN*sizeof(char));
   if(file==NULL){
     fprintf(stderr,"ERROR in malloc ExecLoad()\n");
     exit(-1);
   }
-
+  
   strcpy(file,"");
   if(server==TRUE){
-    strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
-    strcat(file,"/");
-    strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
-    strcat(file,"/");
-    strncat(file,SAVEFILENET,MAXTEXTLEN-strlen(file));
+    ret=snprintf(file,MAXTEXTLEN,"%s/%s/%s",getenv("HOME"),SAVEDIR,SAVEFILENET);
+    if(ret>=MAXTEXTLEN){
+      fprintf(stderr,"string too long. Truncated to:\"%s\"",file);
+    }
   }
   else{
-    strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
-    strcat(file,"/");
-    strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
-    strcat(file,"/");
-    strncat(file,SAVEFILE0,MAXTEXTLEN-strlen(file));
+    ret=snprintf(file,MAXTEXTLEN,"%s/%s/%s",getenv("HOME"),SAVEDIR,SAVEFILE0);
+    if(ret>=MAXTEXTLEN){
+      fprintf(stderr,"string too long. Truncated to:\"%s\"",file);
+    }
   }
-
+  
   if(client==TRUE){
-    strcpy(file,"");
-    strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
-    strcat(file,"/");
-    strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
-    strcat(file,"/");
-    strncat(file,SAVEFILE1,MAXTEXTLEN-strlen(file));
+    ret=snprintf(file,MAXTEXTLEN,"%s/%s/%s",getenv("HOME"),SAVEDIR,SAVEFILE1);
+    if(ret>=MAXTEXTLEN){
+      fprintf(stderr,"string too long. Truncated to:\"%s\"",file);
+    }
   }
-
-
+  
+  
   return(file);
 }
 
 char *CreateRecordFile(void){
   char *file;
   FILE *fprecord;
+  int ret;
 
   file=malloc(MAXTEXTLEN*sizeof(char));
   if(file==NULL){
     fprintf(stderr,"ERROR in malloc ExecLoad()\n");
     exit(-1);
   }
-
-  strcpy(file,"");
-  strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
-  strcat(file,"/");
-  strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
-  strcat(file,"/");
-  strncat(file,RECORDFILE,MAXTEXTLEN-strlen(file));
-
-
+  ret=snprintf(file,MAXTEXTLEN,"%s/%s/%s",getenv("HOME"),SAVEDIR,RECORDFILE);
+  if(ret>=MAXTEXTLEN){
+    fprintf(stderr,"string too long. Truncated to:\"%s\"",file);
+  }  
+  
   if((fprecord=fopen(file,"rt"))==NULL){
-
+    
     if((fprecord=fopen(file,"wt"))==NULL){
-      fprintf(stdout,"Cant open the file: %s",file);
+      fprintf(stdout,"Can't open the file: %s",file);
       exit(-1);
     }
     fprintf(fprecord,"%d\n",0);
     fclose(fprecord);
-
+    
     if((fprecord=fopen(file,"rt"))==NULL){
-      fprintf(stdout,"Cant open the file: %s", file);
+      fprintf(stdout,"Can't open the file: %s", file);
       exit(-1);
     }
   }
-
+  
   if(fscanf(fprecord,"%d",&record)!=1){
     fprintf(stderr,"Setting record to 0\n");
     record=0;
   }
-
+  
   fclose(fprecord);
   printf("Record: %d\n",record);
-
+  
   return(file);
 }
 
@@ -191,29 +163,32 @@ char *CreateOptionsFile(void){
   /*
     check if exists the option file.
     if no, creates it.
-   */
+  */
   char *file;  
+  int ret;  
 
   file=malloc(128*sizeof(char));
   if(file==NULL){
     fprintf(stderr,"ERROR in malloc ExecLoad()\n");
     exit(-1);
   }
-
-  strcpy(file,"");
-  strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
-  strcat(file,"/");
-  strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
-  strncat(file,"/",MAXTEXTLEN-strlen(file));
+  
+  ret=snprintf(file,MAXTEXTLEN,"%s/%s/",getenv("HOME"),SAVEDIR);
+  if(ret>=MAXTEXTLEN){
+    fprintf(stderr,"string too long. Truncated to:\"%s\"",file);
+  }
   
   /* Test if the configuration directory exists */
   if(CreateDir(file)!=0){
-    printf("Cant create directory: %s\n",file);
+    printf("Can't create directory: %s\n",file);
     exit(-1);
   }
   /* --Test if the directory exists */
-
-  strncat(file,OPTIONSFILE,MAXTEXTLEN-strlen(file));
+  
+  ret=snprintf(file,MAXTEXTLEN,"%s/%s/%s",getenv("HOME"),SAVEDIR,OPTIONSFILE);
+  if(ret>=MAXTEXTLEN){
+    fprintf(stderr,"string too long. Truncated to:\"%s\"",file);
+  }
   return(file);
 }
 
@@ -222,29 +197,33 @@ char *CreateKeyboardFile(void){
   /*
     check if exists the keyborad file.
     if no, creates it.
-   */
+  */
   char *file;  
-
+  int ret;
+  
   file=malloc(128*sizeof(char));
   if(file==NULL){
     fprintf(stderr,"ERROR in malloc ExecLoad()\n");
     exit(-1);
   }
-
-  strcpy(file,"");
-  strncat(file,getenv("HOME"),MAXTEXTLEN-strlen(file));
-  strcat(file,"/");
-  strncat(file,SAVEDIR,MAXTEXTLEN-strlen(file));
-  strncat(file,"/",MAXTEXTLEN-strlen(file));
+  
+  ret=snprintf(file,MAXTEXTLEN,"%s/%s/",getenv("HOME"),SAVEDIR);
+  if(ret>=MAXTEXTLEN){
+    fprintf(stderr,"string too long. Truncated to:\"%s\"",file);
+  }
   
   /* Test if the configuration directory exists */
   if(CreateDir(file)!=0){
-    printf("Cant create directory: %s\n",file);
+    printf("Can't create directory: %s\n",file);
     exit(-1);
   }
   /* --Test if the directory exists */
+  
+  ret=snprintf(file,MAXTEXTLEN,"%s/%s/%s",getenv("HOME"),SAVEDIR,KEYBOARDFILE);
+  if(ret>=MAXTEXTLEN){
+    fprintf(stderr,"string too long. Truncated to:\"%s\"",file);
+  }
 
-  strncat(file,KEYBOARDFILE,MAXTEXTLEN-strlen(file));
   return(file);
 }
 
@@ -265,13 +244,13 @@ int ExecSave(struct HeadObjList lh,char *nom){
   struct CCDATA *ccdata;
   
   if((fp=fopen(nom,"wt"))==NULL){
-    fprintf(stdout,"ExecSave(): I cant open file %s\n",nom);
+    fprintf(stdout,"ExecSave(): I can't open file %s\n",nom);
     return(1);
   }
   
   fprintf(stdout,"Save(): Saving the game to %s ...\n",nom);
   
-  Check();
+  CheckObjsId();
   /* version */
   fprintf(fp,"%s\n",version);
   /*control*/
@@ -285,7 +264,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
   n=0;
   ls=lh.next;
   while(ls!=NULL){
-
+    
     switch(ls->obj->type){
     case TRACKPOINT:
     case TRACE:
@@ -294,7 +273,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
     default:
       break;
     }    
-
+    
     n++;
     ls=ls->next;
   }
@@ -380,7 +359,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
   
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
     nplanets=CountIntList(players[i].kplanets);
-
+    
     nsectors=0;
     ks=players[i].ksectors.list;
     while(ks!=NULL){
@@ -392,7 +371,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
       fprintf(stderr,"\tnsectors: %d ksectors: %d\n",nsectors,players[i].ksectors.n);
       fprintf(stderr,"\tnsectors: using value nsectors: %d\n",nsectors);
       players[i].ksectors.n=nsectors;
-      exit(-1);  //HERE 
+      exit(-1);  /* HERE  */
     }
     
     nsectors=players[i].ksectors.n;
@@ -418,7 +397,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
 	    players[i].nkills,
 	    players[i].points,
 	    nplanets,nsectors);
-
+    
     if(nplanets!=0){
       kps=players[i].kplanets;
       while(kps!=NULL){
@@ -437,7 +416,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
     
     fprintf(fp,"\n");
   }
-
+  
   /* --Global variables */
   
   /* 
@@ -446,7 +425,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
   ls=lh.next;
   
   while(ls!=NULL){
-
+    
     switch(ls->obj->type){
     case TRACKPOINT:
     case TRACE:
@@ -455,27 +434,27 @@ int ExecSave(struct HeadObjList lh,char *nom){
     default:
       break;
     }    
-
+    
     FprintfObj(fp,ls->obj);
     fprintf(fp,"\n");
     ls=ls->next;
   }
-
+  
   /* ccdata */
-
+  
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
     ccdata=&ccdatap[i];
     FprintfCCData(fp,ccdata);
   }  
-
+  
   /* --ccdata*/
-
+  
   /* statistics */
   fprintStatistics(fp);
-
+  
   /* --statistics */
-
-
+  
+  
   fprintf(fp,"%f\n",control);
   fclose(fp);
   /*  printf("control: %f\n",control); */
@@ -508,15 +487,15 @@ int ExecLoad(char *nom){
   Data *data;
   struct CCDATA *ccdata;
   int nkp,nks;
-  int *planet2meetid,*planet2attackid; //HERE set to number of players
+  int *planet2meetid,*planet2attackid; /* HERE set to number of players */
   int nx,ny;
-
+  
   /* 
    *     Del all the objects ...
    */
   
   if((fp=fopen(nom,"rt"))==NULL){
-    fprintf(stdout,"ExecLoad(): I cant open file %s\n",nom);return(1);
+    fprintf(stdout,"ExecLoad(): I can't open file %s\n",nom);return(1);
   }
   /* version */
   if(fscanf(fp,"%128s",versionfile)!=1){ /**/
@@ -538,12 +517,12 @@ int ExecLoad(char *nom){
     fclose(fp);
     return(1);
   }
-
+  
   if(fscanf(fp,"%d",&net)!=1){
     perror("fscanf");
     exit(-1);
   }
-
+  
   if(net!=GameParametres(GET,GNET,0)){
     fprintf(stderr,"Error: incompatible mode game.\n");
     fclose(fp);
@@ -564,7 +543,7 @@ int ExecLoad(char *nom){
   /* 
    *    Del all the lists 
    */
-
+  
   for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
     DestroyObjList(&listheadcontainer[i]);
     listheadcontainer[i].next=NULL;
@@ -579,7 +558,7 @@ int ExecLoad(char *nom){
     DestroyObjList(&listheadkplanets[i]);
     listheadkplanets[i].next=NULL;
     listheadkplanets[i].n=0;
-
+    
     ccdata=&ccdatap[i];  
     DestroyCCPlanetInfo(ccdata);
   }
@@ -621,74 +600,74 @@ int ExecLoad(char *nom){
     exit(-1);
   }
   GameParametres(SET,GNET,tmpint);
-
+  
   if(fscanf(fp,"%d",&tmpint)!=1){ 
     perror("fscanf");
     exit(-1);
   }
   GameParametres(SET,GNGALAXIES,tmpint);
-
+  
   if(fscanf(fp,"%d",&tmpint)!=1){ 
     perror("fscanf");
     exit(-1);
   }
   GameParametres(SET,GNPLAYERS,tmpint);
   printf("number of players: %d\n",tmpint);
-
+  
   if(fscanf(fp,"%d",&tmpint)!=1){
     perror("fscanf");
     exit(-1);
   }
   GameParametres(SET,GNPLANETS,tmpint);
-
+  
   if(fscanf(fp,"%d",&tmpint)!=1){ 
     perror("fscanf");
     exit(-1);
   }
   GameParametres(SET,GKPLANETS,tmpint);
-
+  
   if(fscanf(fp,"%d",&tmpint)!=1){ 
     perror("fscanf");
     exit(-1);
   }
   GameParametres(SET,GPIRATES,tmpint);
-
+  
   if(fscanf(fp,"%d",&tmpint)!=1){ 
     perror("fscanf");
     exit(-1);
   }
   GameParametres(SET,GENEMYKNOWN,tmpint);
-
+  
   if(fscanf(fp,"%d",&tmpint)!=1){ 
     perror("fscanf");
     exit(-1);
   }
   GameParametres(SET,GCOOPERATIVE,tmpint);
-
+  
   if(fscanf(fp,"%d",&tmpint)!=1){ 
     perror("fscanf");
     exit(-1);
   }
   GameParametres(SET,GCOMPCOOPERATIVE,tmpint);
-
+  
   if(fscanf(fp,"%d",&tmpint)!=1){ 
     perror("fscanf");
     exit(-1);
   }
   GameParametres(SET,GQUEEN,tmpint);
-
+  
   players=realloc(players,(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct Player));
   if(players==NULL){ 
     fprintf(stderr,"ERROR in realloc Execload(players)\n");
     exit(-1);
   } 
-
+  
   ccdatap=realloc(ccdatap,(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct CCDATA));
   if(ccdatap==NULL){ 
     fprintf(stderr,"ERROR in realloc Execload(ccdatap)\n");
     exit(-1);
   } 
-
+  
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
     ccdatap[i].player=i;
     ccdatap[i].planetinfo=NULL;
@@ -715,19 +694,19 @@ int ExecLoad(char *nom){
     ccdatap[i].planet2meet=NULL;
     ccdatap[i].planet2attack=NULL;
   }
-
+  
   planet2meetid=malloc((GameParametres(GET,GNPLAYERS,0)+2)*sizeof(int));
   if(planet2meetid==NULL){ 
     fprintf(stderr,"ERROR in malloc Execload(planet2meetid)\n");
     exit(-1);
   } 
-
+  
   planet2attackid=malloc((GameParametres(GET,GNPLAYERS,0)+2)*sizeof(int));
   if(planet2attackid==NULL){ 
     fprintf(stderr,"ERROR in malloc Execload(planet2attackid)\n");
     exit(-1);
   } 
-
+  
   listheadkplanets=realloc(listheadkplanets,(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct HeadObjList));
   if(listheadkplanets==NULL){
     fprintf(stderr,"ERROR in realloc Execload(listheadkplanets)\n");
@@ -818,12 +797,12 @@ int ExecLoad(char *nom){
       fobj[i]=gremote.fobj[i];
     }
   }
-
+  
   if(GameParametres(GET,GMODE,0)==SERVER){
     printf("actplayer: %d actplayer0: %d glocal: %d\n",actual_player,actual_player0,glocal.actual_player);
     actual_player=actual_player0=glocal.actual_player;
   }
-
+  
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
     if(fscanf(fp,"%128s%hd%d%d%hd%hd%hd%hd%hd%hd%d%d%d%d%d%f%d%d%d%d%d%d",
 	      players[i].playername,
@@ -850,12 +829,12 @@ int ExecLoad(char *nom){
       perror("fscanf");
       exit(-1);
     }
-
+    
     players[i].modified=SENDOBJUNMOD;
     players[i].ttl=2000;
-
+    
     /* building known sectors and known planets list */
-
+    
     players[i].kplanets=NULL;
     
     players[i].ksectors.n=0;
@@ -895,13 +874,13 @@ int ExecLoad(char *nom){
 	  Add2IntIList(&(players[i].ksectors),id);
       }
     }
-
+    
     /* --building known sectors and known planets list */
-
-
-  }//  for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++)
-
-
+    
+    
+  }  /* for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++) */
+  
+  
   printf("done\n");
   
   /* Loading the  objects */
@@ -911,12 +890,12 @@ int ExecLoad(char *nom){
   printf("\tLoading the objects...");
   for(i=0;i<num_objs;i++){
     FscanfObj(fp,&obj,&tbl[i]);
- 
+    
     id=g_objid;
     projid=g_projid;
     nobj=NewObj(SHIP,SHIP0,
 		obj.x,obj.y,obj.vx,obj.vy,
-		CANNON0,ENGINE0,0,NULL,NULL); //HEREIN
+		CANNON0,ENGINE0,0,NULL,NULL); /* HEREIN */
     if(nobj==NULL){
       fprintf(stderr,"\nERROR en ExecLoad(): NewObj() devuelve NULL\n");
       exit(-1);
@@ -932,7 +911,7 @@ int ExecLoad(char *nom){
       data=NULL;
     }
     nobj->cdata=data;
-
+    
     nobj->weapon=NULL;
     if(obj.weapon==&obj.weapon0)nobj->weapon=&nobj->weapon0;
     if(obj.weapon==&obj.weapon1)nobj->weapon=&nobj->weapon1;
@@ -944,7 +923,7 @@ int ExecLoad(char *nom){
     nobj->in=NULL;
     nobj->planet=NULL;
     nobj->lorder=NULL;
-    //    nobj->data=NULL;
+    /* nobj->data=NULL; */
     
     if(nobj->type==PLANET){
       nplanet=malloc(sizeof(struct Planet));
@@ -964,28 +943,28 @@ int ExecLoad(char *nom){
   
   /* --Loading the  objects */
   
-
+  
   /* load ccdata*/
-
+  
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
     ccdata=&ccdatap[i];
     FscanfCCData(fp,ccdata);
   }
   
   /* --load ccdata*/
-
+  
   /* statistics */
   fscanfStatistics(fp);
   
   /* --statistics */
-
-
+  
+  
   
   if(fscanf(fp,"%f",&control2)!=1){
     perror("fscanf");
     exit(-1);
   }
-
+  
   /* printf("control2: %f ...",control2); */
   if(control!=control2){
     fprintf(stderr,"ERROR Execload(). Error in save file. May be corrupted.\n");
@@ -995,8 +974,8 @@ int ExecLoad(char *nom){
     printf("OK\n");
   }
   printf("... done\n");
-
-
+  
+  
   
   /****CELLON ****/
   nx=GameParametres(GET,GULX,0)/2000;
@@ -1010,9 +989,9 @@ int ExecLoad(char *nom){
   for(i=0;i<nx*ny;i++){
     cell[i]=0;
   }
- 
+  
   /****CELLON****/
-
+  
   
   /* 
    *   Asignation of pointers
@@ -1052,10 +1031,10 @@ int ExecLoad(char *nom){
     obj0->parent=NULL;
     obj0->dest=NULL;
     obj0->in=NULL;
-
+    
     if(obj0->type!=PLANET){
       obj0->planet=NULL;
-
+      
       if(tbl[i].parent != 0){
 	obj0->parent=SelectObj(&listheadobjs,tbl[i].parent);
       }
@@ -1073,21 +1052,6 @@ int ExecLoad(char *nom){
 	if(obj1 != NULL){
 	  obj0->planet=obj1->planet;
 	  printf("assigning planet\n");
-	}
-      }
-
-      if(0){ //HERE
-	if(obj0->mode==LANDED){
-	  Segment s;
-	  if(obj0->habitat==H_PLANET){
-	    if(!GetLandedZone(&s,obj0->in->planet)){
-	      /* obj0->y=obj0->y0=s.y0+obj0->radio+1; */
-	    }
-	    else{
-	      fprintf(stderr,"ERROR in EXECLOAD(): Loading a landed object with obj->in->planet==NULL \n");
-	      exit(-1);
-	    }
-	  }
 	}
       }
     }
@@ -1156,7 +1120,7 @@ int ExecLoad(char *nom){
   planet2meetid=NULL;
   free(planet2attackid);
   planet2attackid=NULL;
-
+  
   return(0);
 } /* --ExecLoad() */
 
@@ -1168,7 +1132,7 @@ int FprintfObj(FILE *fp,Object *obj){
   int in,dest,parent,weapon;
   short modified;
   int ttl;
-
+  
   modified=SENDOBJUNMOD;
   ttl=0;
   /* positions saved normalized */
@@ -1212,7 +1176,7 @@ int FprintfObj(FILE *fp,Object *obj){
 	  obj->weapon0.rate,obj->weapon0.nshots,
 	  obj->weapon0.cont1,obj->weapon0.mass,
 	  obj->weapon0.n,obj->weapon0.max_n);
-
+  
   fprintf(fp,"%d %d %d %d %d %d %d %f ",
 	  obj->weapon0.projectile.type,
 	  obj->weapon0.projectile.durable,obj->weapon0.projectile.life,
@@ -1225,7 +1189,7 @@ int FprintfObj(FILE *fp,Object *obj){
 	  obj->weapon1.rate,obj->weapon1.nshots,
 	  obj->weapon1.cont1,obj->weapon1.mass,
 	  obj->weapon1.n,obj->weapon1.max_n);
-
+  
   fprintf(fp,"%d %d %d %d %d %d %d %f ",
 	  obj->weapon1.projectile.type,
 	  obj->weapon1.projectile.durable,obj->weapon1.projectile.life,
@@ -1277,7 +1241,7 @@ int FprintfPlanet(FILE *fp,Object *obj){
   int n;
   
   planet=obj->planet;
-
+  
   fprintf(fp,"%d %d %g %g %g ",
 	  planet->x,planet->y,
 	  planet->r,planet->reggold,planet->gold);
@@ -1305,7 +1269,7 @@ int FscanfObj(FILE *fp,Object *obj,struct ObjTable *tbl){
   */
   int in,dest,parent,weapon;
   short modified;  
-
+  
   if(fscanf(fp,"%d%d%16s%hd%hd%hd%hd%f%d%d%d%d%d%d%d%d%f%d%hd%hd%hd%hd%hd",
 	    &obj->id,&obj->pid,obj->name,&obj->player,&obj->type,
 	    &obj->subtype,&obj->level,&obj->experience,&obj->kills,
@@ -1365,7 +1329,7 @@ int FscanfObj(FILE *fp,Object *obj,struct ObjTable *tbl){
     perror("fscanf");
     exit(-1);
   }
-
+  
   if(fscanf(fp,"%d%d%d%d%d%d%d%f",
 	    &obj->weapon0.projectile.type,
 	    &obj->weapon0.projectile.durable,&obj->weapon0.projectile.life,
@@ -1506,47 +1470,6 @@ int FscanfPlanet(FILE *fp,struct Planet *planet){
   return(0);
 }
 
-
-int Check(void){
-  /* check if 2 objects has the same id */
-  
-  struct ObjList *ls;
-  int *tabla;
-  int i,j,n,id_i;
-  
-  
-  
-  n=listheadobjs.n;
-  
-  tabla=malloc(n*sizeof(int));
-  if(tabla==NULL){
-    fprintf(stderr,"ERROR in malloc Check()\n");
-    exit(-1);
-  }
-  
-  for(i=0;i<n;i++){
-    tabla[i]=0;
-  }
-  
-  ls=listheadobjs.next;
-  for(i=0;i<n;i++){
-    tabla[i]=ls->obj->id;
-    ls=ls->next;
-  }
-  
-  for(i=0;i<n-1;i++){
-    id_i=tabla[i];
-    for(j=i+1;j<n;j++){
-      if(tabla[j]==id_i && id_i !=-1){
-	printf("Check(): indice duplicado: i: %d j:%d id:%d \n",i,j,id_i);
-      }
-    }
-  }
-  free(tabla);
-  tabla=NULL;
-  return(0);
-}
-
 int FprintfOrders(FILE *fp,Object *obj){
   /*
     Print the orders of the object obj to the file *fp
@@ -1635,31 +1558,14 @@ int FscanfOrders(FILE *fp,Object *obj){
 }
 
 
-int CountOrders(Object *obj){
-  /*
-    Returns:
-    the number of orders of the object obj.
-  */
-  int n=0;
-  struct ListOrder *lo;
-  
-  lo=obj->lorder;
-  while(lo!=NULL){
-    n++;
-    lo=lo->next;
-  }
-  return(n);
-}
-
-
 void FprintfCCData(FILE *fp,struct CCDATA *ccdata){
-
+  
   fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d %f\n",
 	  ccdata->player,ccdata->time,ccdata->time2,ccdata->nkplanets,ccdata->nplanets,
 	  ccdata->ninexplore,ccdata->nenemy,
 	  ccdata->nexplorer,ccdata->nfighter,ccdata->npilot,ccdata->ntower,ccdata->ncargo,
 	  ccdata->sw,ccdata->war,ccdata->p2a_strength);
-
+  
   if(ccdata->planethighresource!=NULL){
     fprintf(fp,"%d ",ccdata->planethighresource->id);
   }
@@ -1697,10 +1603,10 @@ void FprintfCCData(FILE *fp,struct CCDATA *ccdata){
 void FprintfPlanetInfoList(FILE *fp,struct CCDATA *ccdata){
   struct PlanetInfo *pinfo;
   int n=0;  
-
+  
   n=CountPlanetInfoList(ccdata);
   fprintf(fp,"%d ",n);
-
+  
   if(n>0){
     pinfo=ccdata->planetinfo;
     while(pinfo!=NULL){
@@ -1712,7 +1618,7 @@ void FprintfPlanetInfoList(FILE *fp,struct CCDATA *ccdata){
 
 void FprintfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo){
   int objid;
-
+  
   if(pinfo->planet!=NULL){
     objid=pinfo->planet->id;
   }
@@ -1731,32 +1637,21 @@ void FprintfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo){
 	  pinfo->nassigned);
 }
 
-int CountPlanetInfoList(struct CCDATA *ccdata){
-  struct PlanetInfo *pinfo;
-  int n=0;  
-  pinfo=ccdata->planetinfo;
-  while(pinfo!=NULL){
-    n++;
-    pinfo=pinfo->next;
-  }
-  return(n);
-}
-
 void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
-
+  
   int pld,pw,phl,p2m,p2a;
-
-
+  
+  
   if(fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d%f",
-	  &ccdata->player,&ccdata->time,&ccdata->time2,&ccdata->nkplanets,&ccdata->nplanets,
-	  &ccdata->ninexplore,&ccdata->nenemy,
+	    &ccdata->player,&ccdata->time,&ccdata->time2,&ccdata->nkplanets,&ccdata->nplanets,
+	    &ccdata->ninexplore,&ccdata->nenemy,
 	    &ccdata->nexplorer,&ccdata->nfighter,&ccdata->npilot,&ccdata->ntower,&ccdata->ncargo,
 	    &ccdata->sw,&ccdata->war,&ccdata->p2a_strength)!=15){
     perror("fscanf");
     exit(-1);
   }
   ccdata->pilot=NULL;
-
+  
   if(fscanf(fp,"%d%d%d%d%d",&pld,&pw,&phl,&p2m,&p2a)!=5){
     perror("fscanf");
     exit(-1);
@@ -1771,17 +1666,17 @@ void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
     printf("\tattack: %d\n",p2a);
   }
 #endif
-
+  
   ccdata->time=0;
-
+  
   /***** pointers *****/
-
+  
   ccdata->planethighresource=NULL;
   ccdata->planetweak=NULL;
   ccdata->planethighlevel=NULL;
   ccdata->planet2meet=NULL;
   ccdata->planet2attack=NULL;
-
+  
   if(pld!=0){
     ccdata->planethighresource=SelectObj(&listheadobjs,pld);
   }
@@ -1805,9 +1700,9 @@ void FscanfCCData(FILE *fp,struct CCDATA *ccdata){
   }
 #endif
   ccdata->planetinfo=NULL;
-
+  
   FscanfPlanetInfoList(fp,ccdata);
-
+  
   return;
 }
 
@@ -1815,19 +1710,19 @@ void FscanfPlanetInfoList(FILE *fp,struct CCDATA *ccdata){
   struct PlanetInfo pinfo;
   int i;
   int n=0;  
-
+  
   n=CountPlanetInfoList(ccdata);
   if(fscanf(fp,"%d",&n)!=1){
     perror("fscanf");
     exit(-1);
   } 
-
+  
   for(i=0;i<n;i++){
     FscanfPlanetInfo(fp,&pinfo);
-  /* HERE create list and assign pointer */
+    /* HERE create list and assign pointer */
     AddPlanetInfo2CCData(ccdata,&pinfo);
   }
-
+  
 }
 
 void FscanfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo){
@@ -1836,7 +1731,7 @@ void FscanfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo){
   if(fscanf(fp,"%d%d%d%d%d%d%d%f%f%d",
 	    &objid,&pinfo->time,
 	    &pinfo->nexplorer,&pinfo->nfighter,&pinfo->nfighter,&pinfo->ntower,&pinfo->ncargo,
-	  &pinfo->strength,&pinfo->strengtha,
+	    &pinfo->strength,&pinfo->strengtha,
 	    &pinfo->nassigned)!=10){
     perror("fscanf");
     exit(-1);
@@ -1850,11 +1745,11 @@ void FscanfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo){
 }
 
 void SaveParamOptions(char *file,struct Parametres *par){
-
+  
   FILE *fp;
-
+  
   if((fp=fopen(file,"wt"))==NULL){
-    fprintf(stdout,"Cant open the file: %s",file);
+    fprintf(stdout,"Can't open the file: %s",file);
     exit(-1);
   }
   printf("saving options to file: %s\n",file);
@@ -1878,21 +1773,21 @@ void SaveParamOptions(char *file,struct Parametres *par){
 
 
 int LoadParamOptions(char *file,struct Parametres *par){
-
+  
   FILE *fp; 
   char optionsversion[MAXTEXTLEN]="";
-
+  
   if((fp=fopen(file,"rt"))==NULL){
-    fprintf(stdout,"Cant open the file: %s",file);
+    fprintf(stdout,"Can't open the file: %s",file);
     exit(-1);
   }
-
+  
   if(fscanf(fp,"%64s",optionsversion)!=1){
     perror("fscanf");
     exit(-1);
   }
   /* HERE check version */
-
+  
   if(strcmp(optionsversion,MINOROPTIONSVERSION)>=0){
     printf("Version:  game:(%s)  options file:(%s) >= %s  ... OK\n",version,optionsversion,MINOROPTIONSVERSION);
   }
@@ -1902,11 +1797,11 @@ int LoadParamOptions(char *file,struct Parametres *par){
     fclose(fp);
     return(1);
   }
-
+  
   if(fscanf(fp,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
-	 &par->ngalaxies,&par->nplanets, &par->nplayers, &par->ul,&par->kplanets,
-	 &par->sound,&par->music,&par->soundvol,&par->musicvol,
-	 &par->cooperative,&par->compcooperative,&par->queen,
+	    &par->ngalaxies,&par->nplanets, &par->nplayers, &par->ul,&par->kplanets,
+	    &par->sound,&par->music,&par->soundvol,&par->musicvol,
+	    &par->cooperative,&par->compcooperative,&par->queen,
 	    &par->pirates,&par->enemyknown,&par->port)!=15){
     perror("fscanf");
     exit(-1);
@@ -1932,7 +1827,7 @@ int LoadParamOptions(char *file,struct Parametres *par){
 } 
 
 void PrintParamOptions(struct Parametres *par){
-
+  
   printf("version:\"%s\"\n",version);
   printf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
 	 par->ngalaxies,par->nplanets, par->nplayers, par->ul,par->kplanets,
@@ -1948,30 +1843,30 @@ void PrintParamOptions(struct Parametres *par){
 
 
 void SaveUserKeys(char *file,struct Keys *keys){
-
+  
   FILE *fp;
-
+  
   if((fp=fopen(file,"wt"))==NULL){
-    fprintf(stdout,"Cant open the file: %s",file);
+    fprintf(stdout,"Can't open the file: %s",file);
     exit(-1);
   }
   printf("saving keymap to file: %s\n",file);
   fprintf(fp,"%s\n",version);
-  fprintf(fp,"fire %d\n",
+  fprintf(fp,"fire %ud\n",
 	  keys->fire.value);
-  fprintf(fp,"turnleft %d\n",
+  fprintf(fp,"turnleft %ud\n",
 	  keys->turnleft.value);
-  fprintf(fp,"turnright %d\n",
+  fprintf(fp,"turnright %ud\n",
 	  keys->turnright.value);
-  fprintf(fp,"accel %d\n",
+  fprintf(fp,"accel %ud\n",
 	  keys->accel.value);
-  fprintf(fp,"automode %d\n",
+  fprintf(fp,"automode %ud\n",
 	  keys->automode.value);
-  fprintf(fp,"manualmode %d\n",
+  fprintf(fp,"manualmode %ud\n",
 	  keys->manualmode.value);
-  fprintf(fp,"map %d\n",
+  fprintf(fp,"map %ud\n",
 	  keys->map.value);
-  fprintf(fp,"order %d\n",
+  fprintf(fp,"order %ud\n",
 	  keys->order.value);
   
   fclose(fp);
@@ -1980,30 +1875,30 @@ void SaveUserKeys(char *file,struct Keys *keys){
 int LoadUserKeys(char *keyfile,struct Keys *keys){
   FILE *fp;
   char cad[MAXTEXTLEN];
-
+  
   if((fp=fopen(keyfile,"rt"))==NULL){
     printf("file does not exist\n");
-
+    
     /* if doesn't exist, create with default values */
     SaveUserKeys(keyfile,keys);
-
+    
   }
   else{
     fclose(fp);
   }
-
+  
   /* Read keys  */
-
+  
   if((fp=fopen(keyfile,"rt"))==NULL){
-    fprintf(stdout,"I cant open the file: %s", keyfile);
+    fprintf(stdout,"I can't open the file: %s", keyfile);
     exit(-1);
   }
-    
+  
   if(fscanf(fp,"%128s",cad)!=1){ /* HERE check version */
     perror("fscanf");
     exit(-1);
   }
-
+  
   if(strcmp(cad,MINOROPTIONSVERSION)>=0){
     printf("Version:  game:(%s)  keymap file:(%s) >= %s  ... OK\n",
 	   version,cad,MINOROPTIONSVERSION);
@@ -2015,65 +1910,48 @@ int LoadUserKeys(char *keyfile,struct Keys *keys){
     fclose(fp);
     return(1);
   }
-
+  
   if(fscanf(fp,"%128s",cad)!=1){ 
     perror("fscanf");
     exit(-1);
   }
-  if(fscanf(fp,"%d",&keys->fire.value)!=1){
+  if(fscanf(fp,"%ud",&keys->fire.value)!=1){
     perror("fscanf");
     exit(-1);
   }
-
+  
   if(fscanf(fp,"%128s",cad)!=1){ 
     perror("fscanf");
     exit(-1);
   }
-  if(fscanf(fp,"%d",&keys->turnleft.value)!=1){
+  if(fscanf(fp,"%ud",&keys->turnleft.value)!=1){
     perror("fscanf");
     exit(-1);
   }
-
+  
   if(fscanf(fp,"%128s",cad)!=1){ 
     perror("fscanf");
     exit(-1);
   }
-  if(fscanf(fp,"%d",&keys->turnright.value)!=1){
+  if(fscanf(fp,"%ud",&keys->turnright.value)!=1){
     perror("fscanf");
     exit(-1);
   }
-
+  
   if(fscanf(fp,"%128s",cad)!=1){ 
     perror("fscanf");
     exit(-1);
   }
-  if(fscanf(fp,"%d",&keys->accel.value)!=1){
+  if(fscanf(fp,"%ud",&keys->accel.value)!=1){
     perror("fscanf");
     exit(-1);
   }
-
+  
   if(fscanf(fp,"%128s",cad)!=1){ 
     perror("fscanf");
     exit(-1);
   }
-  if(fscanf(fp,"%d",&keys->automode.value)!=1){
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%128s",cad)!=1){ 
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%d",&keys->manualmode.value)!=1){
-    perror("fscanf");
-    exit(-1);
-  }
-
-  if(fscanf(fp,"%128s",cad)!=1){ 
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%d",&keys->map.value)!=1){
+  if(fscanf(fp,"%ud",&keys->automode.value)!=1){
     perror("fscanf");
     exit(-1);
   }
@@ -2081,11 +1959,28 @@ int LoadUserKeys(char *keyfile,struct Keys *keys){
     perror("fscanf");
     exit(-1);
   }
-  if(fscanf(fp,"%d",&keys->order.value)!=1){
+  if(fscanf(fp,"%ud",&keys->manualmode.value)!=1){
     perror("fscanf");
     exit(-1);
   }
-
+  
+  if(fscanf(fp,"%128s",cad)!=1){ 
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%ud",&keys->map.value)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%128s",cad)!=1){ 
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%ud",&keys->order.value)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+  
   fclose(fp);
   return(0);
 }
@@ -2094,7 +1989,7 @@ int LoadUserKeys(char *keyfile,struct Keys *keys){
 void SaveRecord(char *file,struct Player *players,int record){
   int i,j;
   FILE *fp;
-
+  
   j=-1;
   for(i=0;i<GameParametres(GET,GNPLAYERS,0);i++){
     if(players[i].points>=record){
@@ -2104,7 +1999,7 @@ void SaveRecord(char *file,struct Player *players,int record){
   }
   if(j!=-1){
     if((fp=fopen(file,"wt"))==NULL){
-      fprintf(stdout,"I cant open the file: %s",file);
+      fprintf(stdout,"I can't open the file: %s",file);
       exit(-1);
     }
     fprintf(fp,"%d",record);

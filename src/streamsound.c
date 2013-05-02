@@ -1,6 +1,6 @@
 /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2012  MRevenga
+ **  Copyright(C) 2006-2013  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,11 +17,11 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2012 ******************
+/*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.82 Jan 2012
-****/
+		version 0.84 april 2013
+**************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,7 +41,7 @@
 
 
 ALuint *streamsource;
-  ALuint *streambuffers;//[NUM_BUFFER_MUSIC];
+  ALuint *streambuffers;/* [NUM_BUFFER_MUSIC]; */
 
 static void reportError(void){
   
@@ -51,7 +51,7 @@ static void reportError(void){
 }
 
 
-void *Stream(struct StreamedSound *arg);
+void *Stream(void *);
 
 
 struct StreamedSound * StreamSound (char *filename,int mode){
@@ -158,12 +158,14 @@ struct StreamedSound * StreamSound (char *filename,int mode){
   stream_param->order=0;
   stream_param->value=0;
   
-  pthread_create (&t,&attr,(void *)Stream,stream_param);
+  pthread_create (&t,&attr,Stream,stream_param);
   return (stream_param); 
 }
 
 
-void *Stream(struct StreamedSound *arg){
+void *Stream(void /* struct StreamedSound */ *a){
+
+  struct StreamedSound *arg=(struct StreamedSound *)a;
   int procesed_buffers;
   ALuint tmp_buffer;
   int bytes;
@@ -178,8 +180,10 @@ void *Stream(struct StreamedSound *arg){
   int nbuffers=arg->nbuffers;
   int buffersize=arg->buffersize;
   
+
+
   while ( arg->state!=SS_STOP){
-    usleep(50000);    //0.05 s
+    usleep(50000);    /* 0.05 s */
     
     switch(arg->order){
     case SO_NONE:
@@ -204,7 +208,6 @@ void *Stream(struct StreamedSound *arg){
     arg->order=SO_NONE;
     
     if(arg->state==SS_PAUSE){
-      //      printf("music paused\n");
       continue;
     }
     

@@ -1718,7 +1718,7 @@ int ReadObjsfromBuffer(char *buf){
       strncpy(textmen1.text+header.nbytes,"\0",1);
       fprintf(stdout,"MEN RECV: %s\n",textmen1.text);
 
-      if(strncmp(textmen1.text,"GAME PAUSED",12)==0){
+      if(strncmp(textmen1.text,"Game PAUSED",12)==0){
 	textmen1.time=4;
       }
 

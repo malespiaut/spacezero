@@ -89,7 +89,7 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.83.41"};
+char version[64]={"0.83.42"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"May 2013"};
@@ -1713,7 +1713,6 @@ void key_eval(struct Keys *key){
     GameParametres(SET,GPAUSED,FALSE);
     key->ctrl=FALSE;
     key->p=FALSE;
-    Sound(SPLAY,MUSIC);
   }
   if(key->ctrl==TRUE && key->p==TRUE && GameParametres(GET,GPAUSED,0)==FALSE){
     GameParametres(SET,GPAUSED,TRUE);
@@ -1722,9 +1721,16 @@ void key_eval(struct Keys *key){
     Shell(0,NULL,NULL,NULL,NULL,NULL,NULL,NULL); /* reset shell() */
     key->order.state=FALSE; /* aqui01 salir de order mode */
     navcontrol=TRUE;
-    Sound(SPAUSE,MUSIC);
   }
   
+  if(GameParametres(GET,GPAUSED,0)==TRUE){
+    Sound(SPAUSE,MUSIC);
+  }
+  else{
+    Sound(SPLAY,MUSIC);
+  }
+
+
   /* mouse */
   if(key->mleft==TRUE){
   }

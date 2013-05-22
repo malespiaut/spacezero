@@ -1840,6 +1840,9 @@ Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int pstate,float 
     switch(obj2->type){
     case SHIP:
       if(obj2->ttl<MINTTL){ls=ls->next;continue;}
+      if(obj2->state<=0){
+	ls=ls->next;continue; 
+      }
       if(obj2->subtype==PILOT){
 	ls=ls->next;continue; /* ignoring pilots */
 	if(obj2->mode==LANDED){ls=ls->next;continue;}

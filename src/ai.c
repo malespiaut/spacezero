@@ -2715,7 +2715,7 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0,float lev
     obj->habitat=H_SPACE;
     obj->weapon=&obj->weapon0;
 
-    exp=level*15+level*100*Random(-1);
+    exp=level*15+level*PIRATESTRENGTH*Random(-1);
     if(exp>750)exp=750;
     incexp=exp<100?exp:100;
     do{

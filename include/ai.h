@@ -83,7 +83,7 @@
 #define PLAYERSTRATSTRONG 2  /* from strongest to nearest */
 #define PLAYERSTRATWEAK 3  /* attack weakest from nearest */
 
-
+#define PIRATESTRENGTH 85  /* factor for initial experience for pirates. (0..750)  */
 
 
 struct PlanetInfo{

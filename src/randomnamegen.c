@@ -60,7 +60,10 @@ void loadFrequencyTable(char *filename){
     exit(-1); 
   } 
 
-  fread(dataBuffer, 1, size, fp);
+  if(fread(dataBuffer, 1, size, fp)!=size){
+    fprintf(stderr,"Error. fread(): Error reading file: %s\n",filename);
+    exit(-1);
+  }
   fclose(fp);
   
   token = strtok(dataBuffer, "\n");

@@ -29,6 +29,8 @@
 
 #include "general.h"
 
+#define NSTATS 64
+
 struct Stats{
   int time;
   float level[MAXNUMPLAYERS+2];
@@ -38,14 +40,15 @@ struct Stats{
 
 void InitStatistics(void);
 
-void AddStatistics(struct Stats *s);
+void UpdateStatistics(void);
 
 void fprintStatistics(FILE *fp);
 void fscanfStatistics(FILE *fp);
 
 void PrintStatistics(void);
 
-void DrawStatistics(GdkPixmap *pixmap,Rectangle *r);
+void Statistics_Draw(GdkPixmap *pixmap,Rectangle *r);
+
 
 
 #endif

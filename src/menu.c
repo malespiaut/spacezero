@@ -31,6 +31,7 @@
 #include "shell.h"
 #include "sound.h"
 #include "functions.h"
+#include "locales.h"
 
 extern struct Parametres param;
 struct Keys keys;
@@ -277,11 +278,11 @@ struct MenuHead *CreateMenu(void){
   /****** create all menu headers *******/
 
   mhead=MenuHeadNew("");
-  moptions=MenuHeadNew("OPTIONS");
-  mmultiplayeroptions=MenuHeadNew("MULTIPLAYER OPTIONS");
-  mgeneraloptions=MenuHeadNew("GENERAL OPTIONS");
-  mgameoptions=MenuHeadNew("GAME OPTIONS");
-  mkeyboard=MenuHeadNew("Keyboard: ENTER > press key > ENTER");
+  moptions=MenuHeadNew(GetLocale(L_HOPTIONS));
+  mmultiplayeroptions=MenuHeadNew(GetLocale(L_HMULTIPLAYEROPTIONS));
+  mgeneraloptions=MenuHeadNew(GetLocale(L_HGENERALOPTIONS));
+  mgameoptions=MenuHeadNew(GetLocale(L_HGAMEOPTIONS));
+  mkeyboard=MenuHeadNew(GetLocale(L_HKEYBOARD));
 
   
   /******* main menu *********/
@@ -291,21 +292,21 @@ struct MenuHead *CreateMenu(void){
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=moptions;   /* linking with options menu */
-  Add2MenuHead(mhead,&item,"OPTIONS");
+  Add2MenuHead(mhead,&item,GetLocale(L_OPTIONS));
 
   item.id=ITEM_start;
   item.type=MENUITEMACTION;
   item.active=ITEM_ST_SHOW;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mhead,&item,"START GAME");
+  Add2MenuHead(mhead,&item,GetLocale(L_STARTGAME));
 
   item.id=ITEM_quit;
   item.type=MENUITEMACTION;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mhead,&item,"QUIT GAME");
+  Add2MenuHead(mhead,&item,GetLocale(L_QUITGAME));
 
 
   /******* options menu *********/
@@ -315,7 +316,7 @@ struct MenuHead *CreateMenu(void){
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=mgeneraloptions;/* link with general options menu */
-  Add2MenuHead(moptions,&item,"General Options");
+  Add2MenuHead(moptions,&item,GetLocale(L_GENERALOPTIONS));
 
 
   item.id=0;
@@ -325,28 +326,28 @@ struct MenuHead *CreateMenu(void){
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=mgameoptions;/* link with game options menu */
-  Add2MenuHead(moptions,&item,"Game Options");
+  Add2MenuHead(moptions,&item,GetLocale(L_GAMEOPTIONS));
 
   item.id=0;
   item.type=MENUITEMTEXT;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=mkeyboard;
-  Add2MenuHead(moptions,&item,"Keyboard");
+  Add2MenuHead(moptions,&item,GetLocale(L_KEYBOARD));
 
   item.id=0;
   item.type=MENUITEMTEXT;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=mmultiplayeroptions;/* link with multiplayer options menu */;
-  Add2MenuHead(moptions,&item,"Multiplayer Options");
+  Add2MenuHead(moptions,&item,GetLocale(L_MULTIPLAYEROPTIONS));
 
   item.id=ITEM_default;
   item.type=MENUITEMACTION;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(moptions,&item,"Set Default Options");
+  Add2MenuHead(moptions,&item,GetLocale(L_DEFAULTOPTIONS));
 
   /***** menu general options *********/
 
@@ -355,28 +356,28 @@ struct MenuHead *CreateMenu(void){
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgeneraloptions,&item,"Name:");
+  Add2MenuHead(mgeneraloptions,&item,GetLocale(L_NAME));
 
   item.id=ITEM_sound;
   item.type=MENUITEMTEXTENTRY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgeneraloptions,&item,"Sound effects volume:");
+  Add2MenuHead(mgeneraloptions,&item,GetLocale(L_SVOL));
 
   item.id=ITEM_music;
   item.type=MENUITEMTEXTENTRY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgeneraloptions,&item,"Music volume:");
+  Add2MenuHead(mgeneraloptions,&item,GetLocale(L_MVOL));
 
   item.id=ITEM_geom;
   item.type=MENUITEMTEXTENTRY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgeneraloptions,&item,"Window geometry: ");
+  Add2MenuHead(mgeneraloptions,&item,GetLocale(L_WINDOWGEOM));
 
 
   /****** menu game options ******/
@@ -386,70 +387,70 @@ struct MenuHead *CreateMenu(void){
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgameoptions,&item,"Number of players: ");
+  Add2MenuHead(mgameoptions,&item,GetLocale(L_NUMPLAYERS));
 
   item.id=ITEM_n;
   item.type=MENUITEMTEXTENTRY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgameoptions,&item,"Number of planets: ");
+  Add2MenuHead(mgameoptions,&item,GetLocale(L_NUMPLANETS));
 
   item.id=ITEM_g;
   item.type=MENUITEMTEXTENTRY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgameoptions,&item,"Number of galaxies: ");
+  Add2MenuHead(mgameoptions,&item,GetLocale(L_NUMGALAXIES));
 
   item.id=ITEM_l;
   item.type=MENUITEMTEXTENTRY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgameoptions,&item,"Size of Universe: ");
+  Add2MenuHead(mgameoptions,&item,GetLocale(L_SIZEUNIVERSE));
 
   item.id=ITEM_k;
   item.type=MENUITEMBOOL;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgameoptions,&item,"Planets are known: ");
+  Add2MenuHead(mgameoptions,&item,GetLocale(L_PLANETKNOWN));
 
   item.id=ITEM_pirates;
   item.type=MENUITEMBOOL;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgameoptions,&item,"Pirates: ");
+  Add2MenuHead(mgameoptions,&item,GetLocale(L_PIRATES));
 
   item.id=ITEM_enemyknown;
   item.type=MENUITEMBOOL;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgameoptions,&item,"Enemies are known: ");
+  Add2MenuHead(mgameoptions,&item,GetLocale(L_ENEMIESKNOWN));
 
   item.id=ITEM_cooperative;
   item.type=MENUITEMBOOL;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgameoptions,&item,"Cooperative mode: ");
+  Add2MenuHead(mgameoptions,&item,GetLocale(L_COOPMODE));
 
   item.id=ITEM_compcooperative;
   item.type=MENUITEMBOOL;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgameoptions,&item,"Computer cooperative mode: ");
+  Add2MenuHead(mgameoptions,&item,GetLocale(L_COMPMODE));
 
   item.id=ITEM_queen;
   item.type=MENUITEMBOOL;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mgameoptions,&item,"Queen mode: ");
+  Add2MenuHead(mgameoptions,&item,GetLocale(L_QUEENMODE));
 
   /***** Keyboard Options *****/
   item.id=ITEM_fire;
@@ -457,56 +458,56 @@ struct MenuHead *CreateMenu(void){
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mkeyboard,&item,"Shoot:");
+  Add2MenuHead(mkeyboard,&item,GetLocale(L_SHOOT));
 
   item.id=ITEM_turnleft;
   item.type=MENUITEMGRABKEY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mkeyboard,&item,"Turn left:");
+  Add2MenuHead(mkeyboard,&item,GetLocale(L_TURNLEFT));
 
   item.id=ITEM_turnright;
   item.type=MENUITEMGRABKEY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mkeyboard,&item,"Turn right:");
+  Add2MenuHead(mkeyboard,&item,GetLocale(L_TURNRIGHT));
 
   item.id=ITEM_accel;
   item.type=MENUITEMGRABKEY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mkeyboard,&item,"Accel:");
+  Add2MenuHead(mkeyboard,&item,GetLocale(L_ACCEL));
 
   item.id=ITEM_manualmode;
   item.type=MENUITEMGRABKEY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mkeyboard,&item,"Manual mode:");
+  Add2MenuHead(mkeyboard,&item,GetLocale(L_MANUALMODE));
 
   item.id=ITEM_automode;
   item.type=MENUITEMGRABKEY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mkeyboard,&item,"Auto mode:");
+  Add2MenuHead(mkeyboard,&item,GetLocale(L_AUTOMODE));
 
   item.id=ITEM_map;
   item.type=MENUITEMGRABKEY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mkeyboard,&item,"Map:");
+  Add2MenuHead(mkeyboard,&item,GetLocale(L_MAP));
 
   item.id=ITEM_order;
   item.type=MENUITEMGRABKEY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mkeyboard,&item,"Order:");
+  Add2MenuHead(mkeyboard,&item,GetLocale(L_MORDER));
 
 
   /***** multiplayer menu options *****/
@@ -515,28 +516,28 @@ struct MenuHead *CreateMenu(void){
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mmultiplayeroptions,&item,"IP address:");
+  Add2MenuHead(mmultiplayeroptions,&item,GetLocale(L_IPADDRESS));
 
   item.id=ITEM_port;
   item.type=MENUITEMTEXTENTRY;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mmultiplayeroptions,&item,"port:");
+  Add2MenuHead(mmultiplayeroptions,&item,GetLocale(L_PORT));
 
   item.id=ITEM_server;
   item.type=MENUITEMACTION;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mmultiplayeroptions,&item,"Start Server.");
+  Add2MenuHead(mmultiplayeroptions,&item,GetLocale(L_STARTSERVER));
 
   item.id=ITEM_client;
   item.type=MENUITEMACTION;
   item.active=ITEM_ST_FALSE;
   strcpy(item.value,"");
   item.nexthead=NULL;
-  Add2MenuHead(mmultiplayeroptions,&item,"Connect to Server.");
+  Add2MenuHead(mmultiplayeroptions,&item,GetLocale(L_CONNECTSERVER));
 
 
   /*  PrintMenuHead(moptions); */

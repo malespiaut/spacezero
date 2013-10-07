@@ -65,7 +65,7 @@
 
 /* objects subtypes 0-16*/
 /* ship subtypes (SHIP)*/
-#define SHIP0 0
+#define SHIP0 0  /* no ship, any ship */
 #define SHIP1 1
 #define SHIP2 2
 #define SHIP3 3
@@ -74,6 +74,13 @@
 #define SHIP6 6
 #define SHIP7 7
 #define SHIP_S_MAX SHIP7
+
+/* Asteroid subtypes */
+#define ASTEROID1 1
+#define ASTEROID2 2
+#define ASTEROID3 3
+
+
 
 /* predefined ships */ 
 #define EXPLORER SHIP1
@@ -98,10 +105,17 @@
 #define PRICESHIP2 200
 #define PRICESHIP3 300
 #define PRICESHIP4 400
-#define PRICESHIP5 200
+#define PRICESHIP5 50
 #define PRICESHIP6 200
 #define PRICESHIP7 50
 
+/* mass of ships */
+#define MASSEXPLORER 50
+#define MASSFIGHTER 100
+#define MASSQUEEN 400
+#define MASSSATELLITE 10
+#define MASSTOWER 100
+#define MASSPILOT 10
 
 
 /* projectile subtypes (PROJECTILE) 49-64*/
@@ -115,9 +129,12 @@
 #define LASER SHOT4
 
 
+/* objects live */
+
+#define LIVEPILOT 5000
+
 /* ship items */
 #define ITSURVIVAL 1  /* has a survival pod */ 
-#define ITPILOT    2     /* transport pilots */
 
 
 /* weapons types */
@@ -172,11 +189,6 @@
 /* Terrain types */
 #define TERRAIN 0
 #define LANDZONE 1
-
-/* Asteroid types */
-#define ASTEROID1 1
-#define ASTEROID2 2
-#define ASTEROID3 3
 
 /* player status */
 #define PLAYERNULL 0       /* not used */
@@ -238,7 +250,7 @@ typedef struct{
 typedef struct{
   int type;
   int rate;       /* time the weapon is ready again */
-  int nshots;     /* number of shots */
+  int nshots;     /* number of shots, guns */
   int cont1;      /* if !=0 cant shot again */ 
   int mass;       /* mass of the projectile */
   int n;          /* number of ammunition */
@@ -271,6 +283,13 @@ typedef struct{
 }Data;
 
 
+typedef struct{
+  int capacity;                  /* max. mass capacity */
+  int mass;                      /* actual mass cargo */
+  int n;                         /* number of objects */ 
+  struct HeadObjList *hlist;     /* objects list */
+}Cargo;
+
 struct _Object{
   int id;           /* global identifier */
   int pid;          /* player identifier */
@@ -291,7 +310,6 @@ struct _Object{
   int mass;         /* mass */
 
   int items;        /* survival ship, ...*/
-  int cargo;        /* capacity of the bodega TODO. In planets: no of ships */
   int radio;        /* ship radio */
   float cost;       /* cost of the object per unit time*/
   int damage;       /* damage of the ship in collision*/
@@ -322,6 +340,8 @@ struct _Object{
   int sw;
   short trace;
   int norder;       /* number of pending orders */
+  Cargo cargo;        /* capacity of the bodega TODO. In planets: no of ships */
+
   struct Order actorder;
   struct _Object *parent;     /* pointer to parent obj */
   struct _Object *dest;       /* pointer to nearest enemy object */
@@ -335,6 +355,7 @@ struct _Object{
   Weapon weapon2;     /* laser beam */
   Engine engine;      /* motor */
   Data *cdata;        /* data base */
+
 };
 typedef struct _Object Object;
 
@@ -357,7 +378,6 @@ struct ObjectAll{   /* SENDOBJALL */
   int radar;        /* radar range */
   int mass;         /* mass */
 
-  int cargo;        /* capacity of the dock TODO*/
   unsigned int items;
   int radio;        /* ship radio */
   float cost;       /* cost of the object per unit time*/
@@ -390,7 +410,7 @@ struct ObjectAll{   /* SENDOBJALL */
   short trace;
  
   int norder;       /* number of pending orders */
-  struct Order actorder;
+  struct Order actorder;  /* actual order */
 
   int parent;       /* pointer to parent obj */
   int dest;         /* pointer to nearest enemy object */
@@ -401,6 +421,7 @@ struct ObjectAll{   /* SENDOBJALL */
   Weapon weapon1;    /* actual weapon */
   Weapon weapon2;    /* actual weapon */
   Engine engine;     /* motor */
+  Cargo cargo;        /* capacity of the dock TODO*/
 };
 
 struct ObjectNew{   /* SENDOBJNEW */
@@ -488,7 +509,7 @@ struct ObjList{
 struct HeadObjList{
   int n;
   int update;
-  struct ObjList *next;
+  struct ObjList *list;
 };
 
 struct ObjTree{
@@ -527,7 +548,8 @@ struct Player{
   short team;        /* each player belongs to a team */
   short profile;     /* */
   short strategy;    /* */
-  short maxlevel;    /* max ship level reached */
+  short gmaxlevel;    /* max ship level reached */
+  short maxlevel;    /* actual max ship level */
   short level;       /* sum of ships level */
   int color;         /*    */
   int cv;            /* id of the actual ship */
@@ -542,6 +564,9 @@ struct Player{
   int points;        /*  */
   short modified;    /* used in communication */
   short ttl;         /* used in communication */
+  int goldships;     /* gold used in buy ships */
+  int goldupdates;   /* gold used in upgrade ships */
+  float goldweapon;  /*  gold used in gas and ammunition */
 
   struct IntList *kplanets;       /* list of known planets */
   struct HeadIntIList ksectors;   /* list of known universe sectors */
@@ -556,7 +581,8 @@ struct PlayerAll{
   short team;        /* each player belongs to a team */
   short profile;     /* */
   short strategy;    /* */
-  short maxlevel;    /* max ship level reached */
+  short gmaxlevel;    /* max ship level reached */
+  short maxlevel;    /* actual max ship level */
   int color;       /*    */
   int cv;          /* id of the actual ship */
   int nplanets;    /* number of players planets */
@@ -570,11 +596,15 @@ struct PlayerAll{
   int points;      /*  */
   short modified;    /* used in communication */
   short ttl;
+  int goldships;     /* gold used in buy ships */
+  int goldupdates;   /* gold used in upgrade ships */
+  float goldweapon;  /*  gold used in gas and ammunition */
 };
 
 struct PlayerMod{    /* Used in communication  */
   short id;
-  short maxlevel;    /* max ship level reached */ 
+  short gmaxlevel;    /* max ship level reached */ 
+  short maxlevel;    /* actual max ship level */
   short nplanets;    /* number of players planets */
   short nships;      /* number of players ships */
   short nbuildships; /* number of ships created */
@@ -630,7 +660,7 @@ Object *ObjNearThan(struct HeadObjList *lh,int player,int x,int y,float dmin2);
 float Distance2NearestShip(struct HeadObjList *lh,int player,int x,int y);
 float Distance2NearestShipLessThan(struct HeadObjList *lh,int player,int x,int y,float dmin);
 void NearestObjAll(struct HeadObjList *lhc,Object *obj,struct NearObject *objs);
-Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int status,float *d2);
+Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int stype,int status,float *d2);
 
 void DestroyAllObj(struct HeadObjList *lh);
 void DestroyObj(Object *obj);
@@ -681,13 +711,23 @@ int UpdateCell(struct HeadObjList *lh,int *cell);
 int ValueCell(int *cell,Object *obj,int x,int y);
 
 int CreatePilot( Object *obj);
-int EjectPilotsObj(struct HeadObjList *lh,Object *obj);
-void CheckPilots(struct HeadObjList *hol,Object *);
+
+
 
 float Distance2(Object *obj1,Object *obj2);
 float Distance(Object *cv,float x0,float y0);
 
 int CheckObjsId(void);
+
+
+int CargoAdd(Object *obj1,Object *obj2);
+int CargoRem(Object *obj1,Object *obj2);
+int CargoDestroy(Object *obj);
+void CargoCheck(struct HeadObjList *hol,Object *);
+int CargoEjectObjs(Object *obj,int type,int subtype);
+Object *CargoGet(Object *obj1,int type,int subtype);
+int CargoIsObj(Object *obj,Object *obj2);
+int CargoPrint(Object *obj);
 
 /*************************/
 

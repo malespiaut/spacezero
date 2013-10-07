@@ -46,8 +46,8 @@
 #define PI 3.14159265
 
 
-#define MINORSAVEVERSION "0.83.31" /* the save file version must be greter than this.*/
-#define MINOROPTIONSVERSION "0.83.03" /* the options file must be greater than this.*/
+#define MINORSAVEVERSION "0.85.08" /* the save file version must be greater than this.*/
+#define MINOROPTIONSVERSION "0.85.01" /* the options file must be greater than this.*/
 
 #define MAXTEXTLEN 128
 
@@ -63,7 +63,7 @@
 #define NUMSTARS 200
 #define GRAVITATION_RANGE2 4000000  /* max. gravity reach */
 #define G .1                        /* gravitation constant */
-#define DT .42 /* .42 .35 .42 */
+#define DT .42 /* .35  .42 .35 .42 */
 #define RESOURCEFACTOR 1.2     /* velocity factor for getting resource from planets */
 #define COSTFACTOR 1.0         /* multiplicative factor to ships cost */
 #define DAMAGEFACTOR .7;      /* (0.9) multiplicative factor to weapon damage */
@@ -178,7 +178,8 @@ enum SZ_Error{
   SZ_NOTOWNPLANET , 
   SZ_NOTENOUGHGOLD,
   SZ_NOTALLOWED,
-  SZ_NOTIMPLEMENTED
+  SZ_NOTIMPLEMENTED,
+  SZ_NOTENOUGHROOM
 };
 /*   --Error codes for all functions */
 
@@ -257,7 +258,7 @@ struct Keys{
   int load,save;
   int left,right,up,down;  /* move map */
   int tab;                 /* change to next ship */
-  int may,ctrl,esc;
+  int may,ctrl,alt,esc;
   int home;
   int Pagedown,Pageup;         /* next, previous planet */
   int f1,f2,f3,f4,f5,f6,f7,f8,f9,f10;   /* choose ship */
@@ -278,6 +279,7 @@ struct Keys{
   int g;  /* shell */
   int x;  /* shell */
   int t;  /* shell */
+  int o;  /* shell */
   int r;  /* shell */
   int w;  /* shell */
   int e;  /* shell */
@@ -295,9 +297,5 @@ struct Keys{
   key map;
   key order;
 };
-
-
-
-
 
 #endif

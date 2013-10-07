@@ -427,13 +427,13 @@ int Add2CharList(struct CharListHead *hlist,char *cad,int mode){
     return(2);
   }
   n=strlen(cad);
-  if(n>32)n=32; /* max of log messages */
+  if(n>MAXTEXTLEN)n=MAXTEXTLEN; /* max of log messages */
 
   if(mode==1){ /* check if is recently added => don't add*/
     m=0;
     list=hlist->next;
     while(list!=NULL){
-      if(strncmp(cad,list->cad,32)==0){
+      if(strncmp(cad,list->cad,MAXTEXTLEN)==0){
 	if(m > hlist->n-20){
 	  return(2);
 	}

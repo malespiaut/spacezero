@@ -107,10 +107,8 @@ int InitSound(void){
   *****/ 
 
   datadir=DATADIR;
-  strcpy(filesoundnames[0],"");
-  strncat(filesoundnames[0],datadir,MAXTEXTLEN-strlen(filesoundnames[0]));
-  strncat(filesoundnames[0],"/sounds/",MAXTEXTLEN-strlen(filesoundnames[0]));
-  strncat(filesoundnames[0],soundnames[0],MAXTEXTLEN-strlen(filesoundnames[0]));
+  snprintf(filesoundnames[0],MAXTEXTLEN,"%s/sounds/%s",datadir,soundnames[0]);
+  
   printf("Checking for sound(%d): %s\n",0,filesoundnames[0]);
   
 
@@ -118,10 +116,7 @@ int InitSound(void){
     fprintf(stdout,"Can't open the file: %s\n", filesoundnames[0]);
     
     datadir=INSTALL_DATA_DIR;
-    strcpy(filesoundnames[0],"");
-    strncat(filesoundnames[0],datadir,MAXTEXTLEN-strlen(filesoundnames[0]));
-    strncat(filesoundnames[0],"/sounds/",MAXTEXTLEN-strlen(filesoundnames[0]));
-    strncat(filesoundnames[0],soundnames[0],MAXTEXTLEN-strlen(filesoundnames[0]));
+    snprintf(filesoundnames[0],MAXTEXTLEN,"%s/sounds/%s",datadir,soundnames[0]);
     printf("checking for sound 2 (%d):%s\n",0,filesoundnames[0]);
     
     if((fp=fopen(filesoundnames[0],"rb"))==NULL){
@@ -193,10 +188,7 @@ int InitSound(void){
   /* soundfiles */
 
   for(i=0;i<NUM_SOUNDS;i++){
-    strcpy(filesoundnames[i],"");
-    strncat(filesoundnames[i],datadir,MAXTEXTLEN-strlen(filesoundnames[i]));
-    strncat(filesoundnames[i],"/sounds/",MAXTEXTLEN-strlen(filesoundnames[i]));
-    strncat(filesoundnames[i],soundnames[i],MAXTEXTLEN-strlen(filesoundnames[i]));
+    snprintf(filesoundnames[i],MAXTEXTLEN,"%s/sounds/%s",datadir,soundnames[i]);
     printf("\tsound(%d): %s\n",i,filesoundnames[i]);
   }
   
@@ -227,7 +219,6 @@ int InitSound(void){
     else{
       printf("InitSound(): sound not added: %s data: %p \n",
 	     filesoundnames[i],(void *)data);
-      
     }
 #endif
   }

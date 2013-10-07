@@ -60,8 +60,9 @@
 		  will be displayed.
 		  <p>See <a href="#kcontrol">Keyboard control</a> for more options. 
 		  <hr>
-		  <h3>Spaceships:</h3>
-		  There are four types of spaceships: Explorer, Fighter, Defense Tower and Queen spaceship.
+		  <h3>Spaceships:</h3> There are five types of
+		  spaceships: Explorer, Fighter, Defence Tower, Queen
+		  spaceship and defence satellite. 
 		  
 		  
 		  <table width="600"  bgcolor="#222222"><tbody>
@@ -79,11 +80,11 @@
 		      Better weapons and faster than the explorer. </td>
 		  </tr>
 		  <tr>
-		    <td><img SRC="manual_files/tower0.png" alt="Defense Tower"></td>
-		    <td><h4>Defense Tower</h4></td>
+		    <td><img SRC="manual_files/tower0.png" alt="Defence Tower"></td>
+		    <td><h4>Defence Tower</h4></td>
 		    
-		    <td>The Defense Tower can only stay on planets. It has two
-		      objectives: the defense of the planet and the
+		    <td>The Defence Tower can only stay on planets. It has two
+		      objectives: the defence of the planet and the
 		      extraction of minerals.</td>
 		  </tr>
 		  <tr  bgcolor="#000000">
@@ -94,6 +95,15 @@
 		    <td>In queen mode game, if you lose it, you lose
 		      the game.</td>
 		  </tr>
+		  <tr>
+		    <td><img SRC="manual_files/satellite.png"
+		    alt="defence satellite"></td>
+		    <td><h4>Defence satellite</h4></td>
+		    
+		    <td>Unmanned ship. Useful for space exploration
+		    and planet defence.</td>
+		  </tr>
+
 
 		</tbody></table>
 		
@@ -118,21 +128,67 @@
 		  <tr>
 		    <td><img SRC="manual_files/planet.png" alt="planet"
 			     width="64" bgcolor="#222222"></td>
-		    <td><h4>Planets</h4></td><td> You must conquer
-		      them.</td>
+		    <td><h4>Planets</h4></td>
+		    <td> You must conquer them.</td>
 		  <tr bgcolor="#000000">
 		    <td><img SRC="manual_files/asteroid.png"
 			     alt="Asteroid"></td>
-		    <td><h4>Asteroids</h4><td>
-		      
-		      Everywhere. Destroying them, you get
-		      gold. </td>
+		    <td><h4>Asteroids</h4></td>
+		    <td>Everywhere. Destroying them, you get
+		    gold. </td>
 		  </tr>
 		  <tr>
 		    
 		</tbody></table>
+
+
+		<h3>Ship Properties:</h3>
+
+		<table width="600"  bgcolor="#222222"><tbody>
+		  <tr  bgcolor="#000000">
+		    <td></td><td></td><td>Mass</td><td>Max. velocity<br> (pixels/s)</td><td>Weapons</td><td>Cargo</td><td>Radar range<br>(in sectors)</td></tr>
+
+		  <tr  bgcolor="#000000">
+		    <td><img SRC="manual_files/explorer0.png" alt="Explorer ship" bgcolor="#222222"></td>
+		    <td><h4>Explorer</h4></td>
+		    <td>50</td><td>30</td><td>shots</td><td>30</td><td>2</td>
+		  </tr>
+
+		  <tr  bgcolor="#000000">
+		    <td><img SRC="manual_files/fighter0.png" alt="Fighter ship" bgcolor="#222222"></td>
+		    <td><h4>Fighter</h4></td>
+		    <td>100</td><td>30</td><td>shoots, missile, laser</td><td>30</td><td>1</td>
+		  </tr>
+
+		  <tr  bgcolor="#000000">
+		    <td><img SRC="manual_files/tower0.png" alt="Tower ship" bgcolor="#222222"></td>
+		    <td><h4>Defence Tower</h4></td>
+		    <td>100</td><td>0</td><td>shoots</td><td>0</td><td>1</td>
+		  </tr>
+
+		  <tr  bgcolor="#000000">
+		    <td><img SRC="manual_files/queen0.png" alt="Queen ship" bgcolor="#222222"></td>
+		    <td><h4>Queen</h4></td>
+		    <td>400</td><td>30</td><td>shoots</td><td>100</td><td>3</td>
+		  </tr>
+
+		  <tr  bgcolor="#000000">
+		    <td><img SRC="manual_files/satellite.png" alt="Defence satellite" bgcolor="#222222"></td>
+		    <td><h4>Satellite</h4></td>
+		    <td>10</td><td>30</td><td>shoots</td><td>0</td><td>3</td>
+		  </tr>
+
+		  <tr  bgcolor="#000000">
+		  <td><img SRC="manual_files/pilot.png" alt="pilot"></td>
+		    <td><h4>Astronaut</h4></td>
+		    <td>10</td><td>20</td><td>none</td><td>0</td><td>1</td>
+		  </tr>
+
+	  		    
+		</tbody></table>
 		
 		<hr>
+		<a name="orders"></a>
 		<h3>Orders menu:</h3> It is possible to give orders to
 		spaceships: pressing the "o" key, an orders menu is
 		displayed at the bottom of the main window. When you
@@ -147,11 +203,11 @@
 		    "PageUp", "PageDown" or
 		    "Home".
 		</ul>
-		Several options are available:
+		Several orders are available:
 		
 		<br><br>
 		
-		<table  width="600" bgcolor="#222222"><tbody>
+		<table  width="600" bgcolor="#222222" border="0"><tbody>
 		  <tr>
 		    <td width="100">GOTO</td>
 		    <td>You can send your spaceships to different targets in many ways:
@@ -165,7 +221,7 @@
 			<li>Giving the sector coordinates separated
 			  by blank or coma. Example: GOTO 23,12
 			<li>Go to the nearest planet with n. Example:
-			  GOTO n. Will go to the nearest ally or known
+			  GOTO n. Will go to the nearest allied or known
 			  free planet.
 			<li>Instead of the spaceship id you can write
 			  F1, F2, etc. for the selected marked spaceships
@@ -205,7 +261,7 @@
 		  <li> You can also assign a target planet adding its
 		  id after the order. Example: RETREAT 23 will send
 		  your selected spaceships to planet 23 (it can be
-		  ally or enemy).
+		  allied or enemy).
 		    <p>
 		      Once entering planet the order will be
 		      changed:
@@ -222,9 +278,21 @@
 		  
 		  <tr bgcolor="#000000">
 		    <td>TAKE OFF</td>
-		    <td>To take off. (not so useful by now)</td>
+		    <td>To take off.</td>
 		  </tr>
 		  <tr>
+		    <td>ORBIT</td>
+		    <td>The Spaceship will take off and orbit around
+		    the planet.  If it starts at outer space it will
+		    go first close to nearest planet.<br>  
+
+		      It will never thrust while orbiting. Under
+		    attack it only turns and shot. With low
+		    ammunition, fuel or great damages, it will return to
+		    the nearest allied planet. </td>
+		  </tr>
+
+		  <tr bgcolor="#000000">
 		    <td>BUY</td>
 		    <td>You can buy any available spaceship, if you have
 		      enough gold. The spaceship must be landed. <br> 
@@ -232,23 +300,24 @@
 		      buy Towers.<br>
 		    The Pilots only can buy Fighters.</td>
 		  </tr>
-		  <tr bgcolor="#000000">
-		    
+		  <tr>
 		    <td>UPGRADE</td>
 		    <td>You can upgrade your spaceship until one level
 		      lower than the greatest level reached. The spaceship
 		      must be landed.</td>
 		  </tr>
-		  <tr >
-		    <td>REPEAT</td>
-		    <td>Repeat the last order given.</td>
-		  </tr>
 		  <tr bgcolor="#000000">
 		    <td>SELL</td>
 		    <td>To sell a spaceship. You'll get the half of its
-		      original value. The spaceship must be landed.</td>
+		      original value. The spaceship must be landed.<br>
+		      If it is not landed will be destroyed.
+
+		    </td>
 		  </tr>
-		  
+		  <tr>
+		    <td>REPEAT</td>
+		    <td>Repeat the last order given.</td>
+		  </tr>		  
 	  </tr>
 	  </tbody></table>
 	  
@@ -278,7 +347,7 @@
 	      <li>If an enemy spaceship is near then attack.
 	      <li>If it is close to asteroids, it will go towards them.
 	      <li>If it has little fuel or no ammunition it will go to the
-		nearest ally planet.
+		nearest allied planet.
 	      <li>When landed, it doesn't take off until it obtains a
 		minimum amount of fuel and ammunition.
 	    </ul>
@@ -299,7 +368,7 @@
 
 	    <ul>
 	    <li>if the spaceship has low ammunition, low fuel or is very
-	    damaged it goes to the nearest ally planet.
+	    damaged it goes to the nearest allied planet.
 	    </ul>
 
 	    <li> RETREAT:<br> 
@@ -352,7 +421,7 @@
 
 
 	  <h3>Selecting a target:</h3>
-	  <table>
+	  <table><tbody>
 	    <tr><td>
 		<img SRC="manual_files/target.png" alt="radar">
 	      </td>
@@ -370,7 +439,7 @@
 		  
 	      </td>
 	    </tr>
-	  </table>
+	    </tbody> </table>
 
 
 	    <h3>Weapons:</h3>
@@ -399,6 +468,28 @@
 	    In manual mode you can change amongst the weapons pressing
 	    1, 2 or 3 keys (If the weapon is available or it has
 	    ammunition).
+	  </p>
+
+
+	  <h3>Defence satellites:</h3>
+	  <table><tbody>
+	    <tr><td>
+		<img SRC="manual_files/satellites.png" alt="satellites">
+	      </td>
+	      <td>
+		In order to get defence satellites orbiting around
+		your planets you must proceed as following: <br>
+		<ul>
+		<li>Buy some satellites (spaceships must be landed). <br>
+		<li>Give them the ORBIT order. <br>
+		<li>Once the spaceships are orbiting eject the satellites pressing &lt;Alt-s&gt;.
+		</ul>  
+		You can destroy the satellites selecting and giving them the order DESTROY.<br>
+		All the satellites that are far away from a planet will be lost.
+	      </td>
+	    </tr>
+	    </tbody> </table>
+
 	  </p>
 	  <hr>
 	  <h3>Window and spaceship centered view modes.</h3>
@@ -653,7 +744,7 @@
 	  
 	  Spaceships experience increase during the game. When a spaceship
 	  reaches a maximum is upgraded to the next
-	  level. This way it can get new arms, better defense
+	  level. This way it can get new arms, better defence
 	  and more power. If a spaceship is upgraded, its state and
 	  energy is restored to the maximum value.
 
@@ -847,21 +938,23 @@
 	<tr><td>up arrow	</td><td>accelerate/manual mode.</td></tr>
 	<tr><td>left,right arrows	</td><td>turn left, right/manual mode.</td></tr>
 	<tr><td>SPACE		</td><td>fire.</td></tr>
+	<tr><td>1, 2, 3		</td><td>choose weapon.</td></tr>
+	<tr><td>o		</td><td>enter in order menu.</td></tr>
+	<tr><td>Esc		</td><td>exit from order menu.<br>cancel an order.<br>close info windows.</td></tr>
 	<tr><td>tab		</td><td>change to next spaceship.</td></tr>
 	<tr><td>Ctrl-tab	</td><td>change to previous spaceship.</td></tr>
 	<tr><td>PageDown	</td><td>change to next planet.</td></tr>
 	<tr><td>PageUp	        </td><td>change to previous planet.</td></tr>
 	<tr><td>Home	        </td><td>change to first spaceship in outer space.</td></tr>
-	<tr><td>1, 2, 3		</td><td>choose weapon.</td></tr>
 	<tr><td>Ctrl-[f1f2f3f4]	</td><td>mark a spaceship.</td></tr>
 	<tr><td>f1, f2, f3, f4	</td><td>select a previous marked spaceship.</td></tr>
 	<tr><td>f5		</td><td>show a spaceship list.</td></tr>
 	<tr><td>f6		</td><td>show game statistics.</td></tr>
 	<tr><td>f7		</td><td>show game messages log.</td></tr>
-	<tr><td>o		</td><td>enter in order menu.</td></tr>
-	<tr><td>Esc		</td><td>exit from order menu.<br>cancel an order.<br>close info windows.</td></tr>
 	<tr><td>m		</td><td>show-hide space map.</td></tr>
 	<tr><td>arrow keys, SPACE/down arrow	</td><td>manual/automatic mode.</td></tr>
+	<tr><td>Alt-s		</td><td>Eject satellite.</td></tr>
+	<tr><td>Alt-p		</td><td>Eject Pilot.</td></tr>
 	<tr><td>Ctrl-w	        </td><td>write a message to the other players.</td></tr>
 	<tr><td>Ctrl +/-	</td><td>sound volume.</td></tr>
 	<tr><td>Ctrl-n		</td><td>window, spaceship mode view</td></tr>
@@ -884,7 +977,7 @@
 
 	</tbody></table>
 	
-	<a name="commandline"></a>	      
+	<a name="commandline"></a>
 	<h3>Command line options:</h3>
 	
 	<table border="0" width="700"><tbody>
@@ -909,6 +1002,8 @@
 	    <tr><td>-nomenu.         </td><td>Starts automatically, without menu.</td></tr>
 	    <tr><td>-name playername. </td><td>Where playername is the name of the player.</td></tr>
 	    <tr><td>-font font.  </td><td>Change the default font by font (XLFD format).</td></tr>
+	    <tr><td>-lang [en,es].         </td><td>Game language. English(default) and spanish supported.</td></tr>
+
 	</tbody></table>
 	<br>
 	<table border="1" width="600"><tbody>
@@ -932,7 +1027,7 @@
 	<table border="1" width="600"><tbody>
 	    <th>MULTIPLAYER OPTIONS</th>
 	    <tr><td>-ip IP.   </td><td>Where IP is the ip of the server.</td></tr>
-	    <tr><td>-port n.  </td><td>Where n and n+1 are the ports used. (default 50100).</td></tr>
+	    <tr><td>-port n.  </td><td>Where n and n+1 are the used ports. (default 50100).</td></tr>
 	</tbody></table>
 	
 	<br>
@@ -969,7 +1064,7 @@
 
 <div class="footer"><hr>
   <p>Copyright © 2010-2013 MRevenga <br>
-    Page last updated April 23, 2013</p>
+    Page last updated October 7, 2013</p>
 </div>
 </div>
 
@@ -981,6 +1076,7 @@
     <ul>
       <li><a href="#kcontrol">Keyboard control</a></li>
       <li><a href="#commandline">Command options</a></li>
+      <li><a href="#orders">Giving orders</a></li>
       <li><a href="#selecting">Selecting Spaceships</a></li>
       <li><a href="#gamemodes">Game modes</a></li>
       <li><a href="#infowindows">Information windows</a></li>
@@ -991,6 +1087,5 @@
   
   <div>&nbsp;</div>
   
-
 </body>
 </html>

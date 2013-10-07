@@ -23,40 +23,45 @@
 		version 0.84 april 2013
 **************************************************************/
 
-#include "general.h"
-#include "save.h"
 
 #ifndef _HELP_
 #define _HELP_
 
-#define ARG_0 0
-#define ARG_h 1
-#define ARG_g 2
-#define ARG_n 3
-#define ARG_p 4
-#define ARG_t 5
-#define ARG_l 6
-#define ARG_s 7
-#define ARG_c 8
-#define ARG_ip 9
-#define ARG_port 10
-#define ARG_name 11
-#define ARG_sound 12
-#define ARG_music 13
-#define ARG_soundvol 14
-#define ARG_musicvol 15
-#define ARG_k 16
-#define ARG_cooperative 17
-#define ARG_compcooperative 18
-#define ARG_queen 19
-#define ARG_pirates 20
-#define ARG_nopirates 21
-#define ARG_enemyknown 22
-#define ARG_noenemyknown 23
-#define ARG_font 24
-#define ARG_geom 25
-#define ARG_nomenu 26
-#define ARG_fontlist 27
+#include "general.h" 
+/* #include "save.h" */
+
+enum Arguments{
+  ARG_0,		/* 0*/
+  ARG_h,		/* 1*/
+  ARG_g,		/* 2*/
+  ARG_n,		/* 3*/
+  ARG_p,		/* 4*/
+  ARG_t,		/* 5*/
+  ARG_l,		/* 6*/
+  ARG_s,		/* 7*/
+  ARG_c,		/* 8*/
+  ARG_ip,		/* 9*/
+  ARG_port,		/* 10*/
+  ARG_name,		/* 11*/
+  ARG_sound,		/* 12*/
+  ARG_music,		/* 13*/
+  ARG_soundvol,		/* 14*/
+  ARG_musicvol,		/* 15*/
+  ARG_k,		/* 16*/
+  ARG_cooperative,	/* 17*/
+  ARG_compcooperative,	/* 18*/
+  ARG_queen,		/* 19*/
+  ARG_pirates,		/* 20*/
+  ARG_nopirates,	/* 21*/
+  ARG_enemyknown,	/* 22*/
+  ARG_noenemyknown,	/* 23*/
+  ARG_font,		/* 24*/
+  ARG_geom,		/* 25*/
+  ARG_nomenu,		/* 26*/
+  ARG_fontlist,		/* 27*/
+  ARG_lang,		/* 28*/
+  ARG_NUM
+};
 
 struct Parametres{
   int ngalaxies;
@@ -84,6 +89,7 @@ struct Parametres{
   char font[MAXTEXTLEN];
   char geom[MAXTEXTLEN];
   int fontlist;
+  char lang[MAXTEXTLEN];
 };
 
 struct Validargum{

@@ -43,8 +43,8 @@ SOUND_OBJS= $(SRCPATH)sound.o  $(SRCPATH)streamsound.o
 SOUND_SRCS= $(SRCPATH)sound.c  $(SRCPATH)streamsound.c
 
 
-PROGRAM_OBJS=$(SRCPATH)spacezero.o $(SRCPATH)objects.o $(SRCPATH)ai.o $(SRCPATH)save.o $(SRCPATH)shell.o $(SRCPATH)spacecomm.o $(SRCPATH)help.o $(SRCPATH)comm.o $(SRCPATH)graphics.o  $(SRCPATH)functions.o $(SRCPATH)data.o $(SRCPATH)menu.o $(SRCPATH)sectors.o $(SRCPATH)clock.o  $(SRCPATH)statistics.o $(SRCPATH)randomnamegen.o $(SOUND_OBJS)
-PROGRAM_SRCS=$(SRCPATH)spacezero.c $(SRCPATH)objects.c $(SRCPATH)ai.c $(SRCPATH)save.c $(SRCPATH)shell.c $(SRCPATH)spacecomm.c $(SRCPATH)help.c $(SRCPATH)comm.c $(SRCPATH)graphics.c  $(SRCPATH)functions.c $(SRCPATH)data.c $(SRCPATH)menu.c $(SRCPATH)sectors.c $(SRCPATH)clock.c $(SRCPATH)statistics.c $(SRCPATH)randomnamegen.c $(SOUND_SRCS) 
+PROGRAM_OBJS=$(SRCPATH)spacezero.o $(SRCPATH)objects.o $(SRCPATH)ai.o $(SRCPATH)save.o $(SRCPATH)shell.o $(SRCPATH)spacecomm.o $(SRCPATH)help.o $(SRCPATH)comm.o $(SRCPATH)graphics.o  $(SRCPATH)functions.o $(SRCPATH)data.o $(SRCPATH)menu.o $(SRCPATH)sectors.o $(SRCPATH)clock.o  $(SRCPATH)statistics.o $(SRCPATH)randomnamegen.o $(SRCPATH)locales.o $(SOUND_OBJS) 
+PROGRAM_SRCS=$(SRCPATH)spacezero.c $(SRCPATH)objects.c $(SRCPATH)ai.c $(SRCPATH)save.c $(SRCPATH)shell.c $(SRCPATH)spacecomm.c $(SRCPATH)help.c $(SRCPATH)comm.c $(SRCPATH)graphics.c  $(SRCPATH)functions.c $(SRCPATH)data.c $(SRCPATH)menu.c $(SRCPATH)sectors.c $(SRCPATH)clock.c $(SRCPATH)statistics.c $(SRCPATH)randomnamegen.c $(SRCPATH)locales.c $(SOUND_SRCS) 
 
 
 
@@ -63,8 +63,10 @@ install:
 	-if [ ! -d $(INSTALL_DIR) ] ; then mkdir -p $(INSTALL_DIR) ; fi
 	-if [ ! -d $(INSTALL_DATA_DIR) ] ; then mkdir -p $(INSTALL_DATA_DIR); fi
 	-if [ ! -d $(INSTALL_DATA_DIR)/sounds/ ] ; then mkdir -p $(INSTALL_DATA_DIR)/sounds/; fi
-	cp $(SOUNDDIR)/* $(INSTALL_DATA_DIR)/sounds/
+	-if [ ! -d $(INSTALL_DATA_DIR)/locales/ ] ; then mkdir -p $(INSTALL_DATA_DIR)/locales/; fi
+	cp $(SOUNDDIR)/*.ogg $(INSTALL_DATA_DIR)/sounds/
 	cp $(DATADIR)/letterfrequencytable $(INSTALL_DATA_DIR)
+	cp $(DATADIR)/locales/*.txt $(INSTALL_DATA_DIR)/locales/
 	cp $(PROGRAM) $(INSTALL_DIR)
 	@echo executable files copied to: $(INSTALL_DIR)
 	@echo data files copied to: $(INSTALL_DATA_DIR)

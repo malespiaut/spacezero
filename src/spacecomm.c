@@ -52,6 +52,7 @@ SENDOBJUNMOD0
 #include "data.h"
 #include "functions.h"
 #include "clock.h"
+#include "locales.h"
 #include <time.h>
 
 #define SENDORDERS 1
@@ -725,7 +726,7 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
   
 
   proc=GetProc();
-  ls=hl.next;
+  ls=hl.list;
   while(ls!=NULL ){
     if(proc!=players[ls->obj->player].proc){
       ls=ls->next;continue;
@@ -963,13 +964,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     odyn.state=obj->state;
 
 
-    if(debugpilot&&obj->type==SHIP && obj->subtype==PILOT){
-      int intype=0;
-      if(obj->in!=NULL){
-	intype=obj->in->type;
-      }
-    }
-    
     /* aqui    memcpy((struct Objectdynamic *)buf,&odyn,nbytes); */
     memcpy(buf,&odyn,nbytes);
     buffer->n+=nbytes;
@@ -991,13 +985,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     oaall.vx=obj->vx;
     oaall.vy=obj->vy;   
     
-    if(debugpilot&&obj->type==SHIP && obj->subtype==PILOT){
-      int intype=0;
-      if(obj->in!=NULL){
-	intype=obj->in->type;
-      }
-    }
-
     oaall.a=obj->a;
     oaall.ang_v=obj->ang_v;
     oaall.ang_a=obj->ang_a;
@@ -1010,14 +997,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     oaall.inid=0;
     if(obj->in!=NULL){
       oaall.inid=obj->in->id; 
-    }
-
-
-    if(debugpilot&&obj->type==SHIP && obj->subtype==PILOT){
-      int intype=0;
-      if(obj->in!=NULL){
-	intype=obj->in->type;
-      }
     }
 
 
@@ -1094,7 +1073,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     oall.radar=obj->radar;
     oall.mass=obj->mass;
 
-    oall.cargo=obj->cargo;
+    oall.cargo.capacity=obj->cargo.capacity;
     oall.items=obj->items;
     oall.radio=obj->radio;
     oall.cost=obj->cost;
@@ -1143,15 +1122,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     memcpy(&oall.weapon1,&obj->weapon1,sizeof(Weapon));
     memcpy(&oall.weapon2,&obj->weapon2,sizeof(Weapon));
     memcpy(&oall.engine,&obj->engine,sizeof(Engine));
-
-
-
-    if(debugpilot&&obj->type==SHIP && obj->subtype==PILOT){
-      int intype=0;
-      if(obj->in!=NULL){
-	intype=obj->in->type;
-      }
-    }
 
     /* aqui    memcpy((struct ObjectAAll *)buf,&oall,nbytes); */
     memcpy(buf,&oall,nbytes);
@@ -1310,13 +1280,6 @@ int ReadObjsfromBuffer(char *buf){
 	  nobj->state=objdyn.state;
 	  nobj->ttl=0;
 
-	  if(debugpilot){
-	    int inid=0,intype=0;
-	    if(nobj->in!=NULL){
-	      inid=nobj->in->id;
-	      intype=nobj->in->type;
-	    }
-	  }
       }
       else{   /* New object or object has been killed in client side*/
 	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJMOD) id: %d  doesn't exists\n",
@@ -1423,18 +1386,18 @@ int ReadObjsfromBuffer(char *buf){
       nobj->selected=objall.selected;
       nobj->radar=objall.radar;
       nobj->mass=objall.mass;
-      nobj->cargo=objall.cargo;
+      nobj->cargo.capacity=objall.cargo.capacity;
 
-      if(nobj->items & ITPILOT){
-	if(!(objall.items & ITPILOT)){
-	  if(nobj->type==SHIP && nobj->subtype==PILOT){
-	    if(debugpilot){
-	      fprintf(stdout,"checking for pilots in %d (%d)\n",nobj->id,nobj->pid);
-	    }
-	    EjectPilotsObj(&listheadobjs,nobj);
-	  }
-	}
-      }
+      /* if(nobj->items & ITPILOT){ */
+      /* 	if(!(objall.items & ITPILOT)){ */
+      /* 	  if(nobj->type==SHIP && nobj->subtype==PILOT){ */
+      /* 	    if(debugpilot){ */
+      /* 	      fprintf(stdout,"checking for pilots in %d (%d)\n",nobj->id,nobj->pid); */
+      /* 	    } */
+      /* 	    EjectPilotsObj(&listheadobjs,nobj); */
+      /* 	  } */
+      /* 	} */
+      /* } */
 
       nobj->items=objall.items;
       nobj->radio=objall.radio;
@@ -1504,14 +1467,6 @@ int ReadObjsfromBuffer(char *buf){
       nobj->in=SelectObj(&listheadobjs,objall.inid);
 
 
-      if(debugpilot){
-	int inid=0,intype=0;
-	if(nobj->in!=NULL){
-	  inid=nobj->in->id;
-	  intype=nobj->in->type;
-	}
-      }
-
       if(nobj->in!=NULL){
 
 	nobj->planet=NULL;
@@ -1519,9 +1474,9 @@ int ReadObjsfromBuffer(char *buf){
 	if(nobj->in->type==PLANET){
 	  nobj->planet=nobj->in->planet;
 	}
-	if(nobj->in->type==SHIP){
-	  nobj->in->items=nobj->in->items| ITPILOT;
-	}
+	/* if(nobj->in->type==SHIP){ */
+	/*   nobj->in->items=nobj->in->items| ITPILOT; */
+	/* } */
       }
       else{
 	if(debugpilot&&nobj->type==SHIP && nobj->subtype==PILOT){
@@ -1756,6 +1711,7 @@ int ReadObjsfromBuffer(char *buf){
 	player->team=playerall.team;
 	player->profile=playerall.profile;
 	player->strategy=playerall.strategy;
+	player->gmaxlevel=playerall.gmaxlevel;
 	player->maxlevel=playerall.maxlevel;
 	player->color=playerall.color;
 	player->cv=playerall.cv;
@@ -1797,9 +1753,10 @@ int ReadObjsfromBuffer(char *buf){
 	pid=pmod.id;
 #if DEBUG
 	if(debugcomm1){
-	  fprintf(stdout,"recv. SENDPLAYERMOD %d %d %d\n",pid,pmod.maxlevel,GetTime());
+	  fprintf(stdout,"recv. SENDPLAYERMOD %d %d %d\n",pid,pmod.gmaxlevel,GetTime());
 	}
 #endif
+	players[pid].gmaxlevel=pmod.gmaxlevel;
 	players[pid].maxlevel=pmod.maxlevel;
 	players[pid].nplanets=pmod.nplanets;
 	players[pid].nships=pmod.nships;
@@ -1840,7 +1797,11 @@ int ReadObjsfromBuffer(char *buf){
 		  if(GetProc()==players[i].proc){
 		    if(IsInIntList((players[i].kplanets),pnt->id)==0){
 		      players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);
-		      snprintf(text,MAXTEXTLEN,"(%s) PLANET %d discovered",players[obj->player].playername,pnt->id);
+		      snprintf(text,MAXTEXTLEN,"(%s) %s %d %s",
+			       players[obj->player].playername,
+			       GetLocale(L_PLANET),
+			       pnt->id,
+			       GetLocale(L_DISCOVERED));
 		      if(!Add2TextMessageList(&listheadtext,text,obj->id,i,0,100,0)){
 			Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
 		      }
@@ -1860,7 +1821,10 @@ int ReadObjsfromBuffer(char *buf){
 	  {
 	    char text[MAXTEXTLEN];
 	    if(GetProc()==players[mess.a].proc){
-	      snprintf(text,MAXTEXTLEN,"PLANET %d LOST",mess.b);
+	      snprintf(text,MAXTEXTLEN,"%s %d %s",
+		       GetLocale(L_PLANET),
+		       mess.b,
+		       GetLocale(L_LOST));
 	      if(!Add2TextMessageList(&listheadtext,text,mess.b,mess.a,0,100,2)){
 		Add2CharListWindow(&gameloglist,text,0,&windowgamelog);
 	      }
@@ -1897,20 +1861,20 @@ int ReadObjsfromBuffer(char *buf){
 	habitat.type=cv->habitat;
 	habitat.obj=cv->in;
       }
-      /* check for pilots */
-      if((nobj->items & ITPILOT)){
+      /* check for pilots */  /* HERE must not be necesary eject pilots */
+      /* if((nobj->items & ITPILOT)){ */
 
-	/* when landed */
-	if(nobj->mode==LANDED){
-	  EjectPilotsObj(&listheadobjs,nobj);
-	  nobj->items=(nobj->items)&(~ITPILOT);
-	}
+      /* 	/\* when landed *\/ */
+      /* 	if(nobj->mode==LANDED){ */
+      /* 	  EjectPilotsObj(&listheadobjs,nobj); */
+      /* 	  nobj->items=(nobj->items)&(~ITPILOT); */
+      /* 	} */
 
-	/* when destroyed */
-	if(nobj->modified==SENDOBJDEAD){
-	  EjectPilotsObj(&listheadobjs,nobj);
-	}
-      }
+      /* 	/\* when destroyed *\/ */
+      /* 	if(nobj->modified==SENDOBJDEAD){ */
+      /* 	  EjectPilotsObj(&listheadobjs,nobj); */
+      /* 	} */
+      /* } */
 
       /* --check for pilots */
 
@@ -2581,7 +2545,7 @@ int SetModifiedAll(struct HeadObjList *lh,int type,int mode,int force){
 
 
   proc=GetProc();
-  ls=lh->next;
+  ls=lh->list;
   while(ls!=NULL){
     if(proc!=players[ls->obj->player].proc){ls=ls->next;continue;}
 
@@ -2612,7 +2576,7 @@ int CheckModifiedPre(struct HeadObjList *lh,int proc){
   int n=0;
 
   
-  ls=lh->next;
+  ls=lh->list;
   /*  printf("======\n"); */
   while(ls!=NULL){
     obj=ls->obj;
@@ -2724,7 +2688,7 @@ int CheckModifiedPost(struct HeadObjList *lh,int proc){
   int n=0;
 
 
-  ls=lh->next;
+  ls=lh->list;
   /*  printf("======\n"); */
   while(ls!=NULL){
     obj=ls->obj;
@@ -2853,7 +2817,7 @@ void Setttl0(struct HeadObjList *lh){
   gcooperative=GameParametres(GET,GCOOPERATIVE,0);
   genemyknown=GameParametres(GET,GENEMYKNOWN,0);
 
-  ls=lh->next;
+  ls=lh->list;
   while(ls!=NULL){
     if(proc!=players[ls->obj->player].proc){
       ls=ls->next;continue;
@@ -3046,7 +3010,7 @@ void Setttl(struct HeadObjList *lh,int n){
   genemyknown=GameParametres(GET,GENEMYKNOWN,0);
 
   if(n>=0){ /* all objects are set to ttl=n */
-    ls=lh->next;
+    ls=lh->list;
     while(ls!=NULL){
       if(proc!=players[ls->obj->player].proc){
 	ls=ls->next;continue;
@@ -3058,7 +3022,7 @@ void Setttl(struct HeadObjList *lh,int n){
   }  /*--n<0 */
 
 
-  ls=lh->next;
+  ls=lh->list;
   while(ls!=NULL){
       
     if(proc!=players[ls->obj->player].proc){
@@ -3383,6 +3347,7 @@ int ServerProcessBuffer(struct Buffer *buffer){
 	player->team=playerall.team;
 	player->profile=playerall.profile;
 	player->strategy=playerall.strategy;
+	player->gmaxlevel=playerall.gmaxlevel;
 	player->maxlevel=playerall.maxlevel;
 	player->color=playerall.color;
 	player->cv=playerall.cv;
@@ -3606,6 +3571,7 @@ int CopyPlayer2Buffer(struct Buffer *buffer,  struct Player *player){
   playerall->team=player->team;
   playerall->profile=player->profile;
   playerall->strategy=player->strategy;
+  playerall->gmaxlevel=player->gmaxlevel;
   playerall->maxlevel=player->maxlevel;
   playerall->color=player->color;
   playerall->cv=player->cv;
@@ -3645,7 +3611,8 @@ int CopyPlayerMod2Buffer(struct Buffer *buffer,  struct Player *player){
   }
 
   pmod.id=player->id;
-  pmod.maxlevel=player->maxlevel; 
+  pmod.gmaxlevel=player->gmaxlevel;
+  pmod.maxlevel=player->maxlevel;
   pmod.nplanets=player->nplanets;
   pmod.nships=player->nships;
   pmod.nbuildships=player->nbuildships;

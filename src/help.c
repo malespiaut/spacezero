@@ -28,6 +28,10 @@
 #include <string.h>
 #include "help.h"
 #include "spacecomm.h"
+#include "save.h"
+
+#define MAXARGLEN 32
+
 
 void PrintArguments(struct Parametres param,char *title){
 
@@ -58,6 +62,7 @@ void PrintArguments(struct Parametres param,char *title){
   printf("\tPORT: %d\n",param.port);
   printf("\tfont type: %s\n",param.font);
   printf("\twindow geometry: %s\n",param.geom);
+  printf("\tlanguage: %s\n",param.lang);
 }
 
 
@@ -71,7 +76,7 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   
 
   int i;
-  char arg[32]="";
+  char arg[MAXARGLEN]="";
 
   struct Validargum validarg[]={{"h",ARG_h},{"g",ARG_g},{"n",ARG_n},
 				{"p",ARG_p},{"t",ARG_t},{"l",ARG_l},
@@ -88,7 +93,8 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 				{"enemyknown",ARG_enemyknown},
 				{"noenemyknown",ARG_noenemyknown},
 				{"nomenu",ARG_nomenu},
-				{"fontlist",ARG_fontlist},
+				{"fontlist",ARG_fontlist},			
+				{"lang",ARG_lang},
 				{"",ARG_0}};
   int narg=0;
   FILE *fp;
@@ -249,7 +255,8 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
   /*************** command line values ******************/
   for(i=0;i<argc;i++){
     if(*argv[i]=='-'){
-      strncpy(arg,&argv[i][1],25);strncpy(&arg[24],"\0",1);
+      snprintf(arg,MAXARGLEN,"%s",&argv[i][1]);
+      strncpy(&arg[MAXARGLEN-1],"\0",1); 
       narg=SearchArg(arg,&validarg[0]);
       if(narg<0){ 
  	printf("\ninvalid option -%s\n",arg); 
@@ -310,8 +317,8 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 	break;
       case ARG_ip:/*'ip': ip of the server */
 	if(i+1<argc){
-	  /* par->IP=(argv[i+1]); */
-	  strncpy(par->IP,argv[i+1],MAXTEXTLEN);strncpy(&par->IP[MAXTEXTLEN-1],"\0",1);
+	  snprintf(par->IP,MAXTEXTLEN,"%s",argv[i+1]);
+	  strncpy(&par->IP[MAXTEXTLEN-1],"\0",1);
 	  i++;
 	}
 	else{
@@ -330,8 +337,8 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 	break;
       case ARG_name: /* name:  player name */
  	if(i+1<argc){
-	  strncpy(par->playername,argv[i+1],32);
-	  strncpy(&par->playername[31],"\0",1);
+	  snprintf(par->playername,MAXTEXTLEN,"%s",argv[i+1]);
+	  strncpy(&par->playername[MAXTEXTLEN-1],"\0",1);
 	  i++;
 	}
 	else{
@@ -372,8 +379,8 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 	break;
       case ARG_font: /* font type  */
  	if(i+1<argc){
-	  strncpy(par->font,argv[i+1],128);
-	  strncpy(&par->font[127],"\0",1);
+	  snprintf(par->font,MAXTEXTLEN,"%s",argv[i+1]);
+	  strncpy(&par->font[MAXTEXTLEN-1],"\0",1);
 	  i++;
 	}
 	else{
@@ -382,8 +389,8 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
 	break;
       case ARG_geom: /* window geometry */
  	if(i+1<argc){
-	  strncpy(par->geom,argv[i+1],32);
-	  strncpy(&par->geom[31],"\0",1);
+	  snprintf(par->geom,MAXTEXTLEN,"%s",argv[i+1]);
+	  strncpy(&par->geom[MAXTEXTLEN-1],"\0",1);
 	  /* HERE check param values. */
 	  i++;
 	}
@@ -419,10 +426,14 @@ int Arguments(int argc,char *argv[],struct Parametres *par,char *optfile){
       case ARG_fontlist:
 	par->fontlist=TRUE;
 	break;
+      case ARG_lang:
+	snprintf(par->lang,MAXTEXTLEN,"%s",argv[i+1]);
+	strncpy(&par->lang[MAXTEXTLEN-1],"\0",1);
+	break;
       default:
 	printf("\ninvalid option -%s\n",arg);
-	printf("\ntry 'spacezero -h' for help\n");
-	printf("\nExiting ...\n");
+	printf("try 'spacezero -h' for help\n");
+	printf("Exiting ...\n");
 	exit(-1);
 	break;
       }
@@ -481,6 +492,8 @@ void Usage(char *ver,char *l_rev){
 		  "-font font\t change the default font by font.\n" );
   (void) fprintf( stdout, 
 		  "-nomenu \t Starts automatically, without menu.\n" );
+  (void) fprintf( stdout, 
+		  "-lang [en,es] \t Game language. English(default) and spanish supported.\n" );
   (void) fprintf( stdout, 
 		  "\nGAME OPTIONS:\n" );
   (void) fprintf( stdout, 
@@ -601,6 +614,7 @@ int CheckArgs(struct Parametres p){
      1 if there are a non valid number
      0 if the the values are in range
    */
+  int sw;
 
   if(p.nplanets<MINNUMPLANETS){
     printf("Number of planets must be > %d\n",MINNUMPLANETS);
@@ -663,6 +677,23 @@ int CheckArgs(struct Parametres p){
     return(1);
   }
 
+  /* language */
+  sw=1;
+  if(sw&&strncmp(p.lang,"en",10)==0){
+    sw=0;
+  }
+  if(sw&&strncmp(p.lang,"es",10)==0){
+    sw=0;
+  }
+  if(sw&&strncmp(p.lang,"it",10)==0){
+    sw=0;
+  }
+  if(sw){
+    printf("language not suported: %s\n",p.lang);
+    printf("supported languages:\n\t(en)glish\n\t(es)pañol\n");
+    return(1);
+  }
+  /* --language */
 
   /* TODO */
   /***** ip *****/ 
@@ -679,6 +710,9 @@ int SearchArg(char *target,struct Validargum *v){
 
   while(v[i].id>0){
     if(strncmp(target,v[i].cad,24)==0){
+#if TEST
+      printf("%s\n",v[i].cad); 
+#endif
       return(v[i].id);
     }
     i++;
@@ -791,13 +825,17 @@ void SetDefaultParamValues(struct Parametres *par){
 
   par->server=FALSE;
   par->client=FALSE;
-  strncpy(par->IP,DEFAULT_IP,MAXTEXTLEN);strncpy(&par->IP[MAXTEXTLEN-1],"\0",1);
+
+  snprintf(par->IP,MAXTEXTLEN,"%s",DEFAULT_IP);
+  strncpy(&par->IP[MAXTEXTLEN-1],"\0",1);
+
   par->port=DEFAULT_PORT;
   par->port2=DEFAULT_PORT+1;
   strcpy(par->playername,PLAYERNAME); /* set default */
   
   strcpy(par->font,"6x13");
   strcpy(par->geom,"1024x550");
+  strcpy(par->lang,"en");
 }
 
 void SetDefaultUserKeys(struct Keys *keys){
@@ -805,10 +843,6 @@ void SetDefaultUserKeys(struct Keys *keys){
   keys->turnleft.value=65361;
   keys->turnright.value=65363;
   keys->accel.value=65362;
-  /*
-    keys->automode.value=105; 
-    keys->manualmode.value=97; 
-  */
   keys->automode.value=65364;
   keys->manualmode.value=65362;
   keys->map.value=109;

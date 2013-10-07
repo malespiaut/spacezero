@@ -262,9 +262,8 @@ int ExecSave(struct HeadObjList lh,char *nom){
   
   /* Saving the number of objects */
   n=0;
-  ls=lh.next;
+  ls=lh.list;
   while(ls!=NULL){
-    
     switch(ls->obj->type){
     case TRACKPOINT:
     case TRACE:
@@ -375,7 +374,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
     }
     
     nsectors=players[i].ksectors.n;
-    fprintf(fp,"%s %d %d %d %d %d %d %d %d %d %d %d %d %d %d %f %d %d %d %d %d %d ",
+    fprintf(fp,"%s %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %f %d %d %d %d %d %d %f %d %d ",
 	    players[i].playername,
 	    players[i].id,
 	    players[i].status,
@@ -385,6 +384,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
 	    players[i].team,
 	    players[i].profile,
 	    players[i].strategy,
+	    players[i].gmaxlevel,
 	    players[i].maxlevel,
 	    players[i].color,
 	    players[i].cv,
@@ -396,6 +396,9 @@ int ExecSave(struct HeadObjList lh,char *nom){
 	    players[i].ndeaths,
 	    players[i].nkills,
 	    players[i].points,
+	    players[i].goldships,
+	    players[i].goldupdates,
+	    players[i].goldweapon,
 	    nplanets,nsectors);
     
     if(nplanets!=0){
@@ -422,8 +425,8 @@ int ExecSave(struct HeadObjList lh,char *nom){
   /* 
    *   Saving the objects 
    */  
-  ls=lh.next;
-  
+
+  ls=lh.list;
   while(ls!=NULL){
     
     switch(ls->obj->type){
@@ -433,12 +436,43 @@ int ExecSave(struct HeadObjList lh,char *nom){
       break;
     default:
       break;
-    }    
+    }
     
     FprintfObj(fp,ls->obj);
+
+    fprintf(fp,"%d %d %d ",
+	    ls->obj->cargo.capacity,
+	    ls->obj->cargo.mass,
+	    ls->obj->cargo.n);
     fprintf(fp,"\n");
     ls=ls->next;
   }
+
+  /* cargo list*/
+  ls=lh.list; 
+  while(ls!=NULL){ 
+    switch(ls->obj->type){
+    case TRACKPOINT:
+    case TRACE:
+      ls=ls->next;continue;
+      break;
+    default:
+      break;
+    }
+
+    fprintf(fp,"%d %d ",ls->obj->id,ls->obj->cargo.n); 
+    if(ls->obj->cargo.hlist!=NULL){  
+      struct ObjList *ls2;  
+      ls2=ls->obj->cargo.hlist->list;  
+      while(ls2!=NULL){  
+ 	fprintf(fp,"%d ",ls2->obj->id);
+ 	ls2=ls2->next;  
+      }  
+    } 
+    fprintf(fp,"\n"); 
+    ls=ls->next; 
+  } 
+  /* --cargo list*/
   
   /* ccdata */
   
@@ -535,7 +569,7 @@ int ExecLoad(char *nom){
   fflush(NULL);
   
   DestroyAllObj(&listheadobjs);
-  listheadobjs.next=NULL;
+  listheadobjs.list=NULL;
   listheadobjs.n=0;
   ship_c=NULL;
   cv=NULL;
@@ -546,7 +580,7 @@ int ExecLoad(char *nom){
   
   for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
     DestroyObjList(&listheadcontainer[i]);
-    listheadcontainer[i].next=NULL;
+    listheadcontainer[i].list=NULL;
     listheadcontainer[i].n=0;
   }
 #if DEBUG
@@ -556,7 +590,7 @@ int ExecLoad(char *nom){
 #endif
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
     DestroyObjList(&listheadkplanets[i]);
-    listheadkplanets[i].next=NULL;
+    listheadkplanets[i].list=NULL;
     listheadkplanets[i].n=0;
     
     ccdata=&ccdatap[i];  
@@ -713,7 +747,7 @@ int ExecLoad(char *nom){
     exit(-1);
   }
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    listheadkplanets[i].next=NULL;
+    listheadkplanets[i].list=NULL;
     listheadkplanets[i].n=0;
   }
   
@@ -723,7 +757,7 @@ int ExecLoad(char *nom){
     exit(-1);
   }
   for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
-    listheadcontainer[i].next=NULL;
+    listheadcontainer[i].list=NULL;
     listheadcontainer[i].n=0;
   }
   
@@ -804,8 +838,8 @@ int ExecLoad(char *nom){
   }
   
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    if(fscanf(fp,"%128s%hd%d%d%hd%hd%hd%hd%hd%hd%d%d%d%d%d%f%d%d%d%d%d%d",
-	      players[i].playername,
+    if(fscanf(fp,"%128s%hd%d%d%hd%hd%hd%hd%hd%hd%hd%d%d%d%d%d%f%d%d%d%d%d%d%f%d%d",
+    	      players[i].playername,
 	      &players[i].id,
 	      &players[i].status,
 	      &players[i].pid,
@@ -814,6 +848,7 @@ int ExecLoad(char *nom){
 	      &players[i].team,
 	      &players[i].profile,
 	      &players[i].strategy,
+	      &players[i].gmaxlevel,
 	      &players[i].maxlevel,
 	      &players[i].color,
 	      &players[i].cv,
@@ -825,7 +860,10 @@ int ExecLoad(char *nom){
 	      &players[i].ndeaths,
 	      &players[i].nkills,
 	      &players[i].points,
-	      &nkp,&nks)!=22){
+	      &players[i].goldships,
+	      &players[i].goldupdates,
+	      &players[i].goldweapon,
+	      &nkp,&nks)!=26){
       perror("fscanf");
       exit(-1);
     }
@@ -890,7 +928,6 @@ int ExecLoad(char *nom){
   printf("\tLoading the objects...");
   for(i=0;i<num_objs;i++){
     FscanfObj(fp,&obj,&tbl[i]);
-    
     id=g_objid;
     projid=g_projid;
     nobj=NewObj(SHIP,SHIP0,
@@ -938,8 +975,48 @@ int ExecLoad(char *nom){
     }
     Add2ObjList_E(&listheadobjs,nobj);
     FscanfOrders(fp,nobj);
-    
+   
+    if(fscanf(fp,"%d%d%d", 
+	      &nobj->cargo.capacity, 
+	      &nobj->cargo.mass, 
+	      &nobj->cargo.n)!=3){
+      perror("fscanf");
+      exit(-1);
+    } 
+
+    nobj->cargo.mass=0; 
+    nobj->cargo.n=0; 
+    nobj->cargo.hlist=NULL;
+ 
+
   }  /*for(i=0;i<num_objs;i++){    */
+
+
+  /*HERE TODO cargo list*/
+  {
+    int n;
+    for(i=0;i<num_objs;i++){
+
+      if(fscanf(fp,"%d%d",&id,&n)!=2){
+	perror("fscanf");
+	exit(-1);
+      }  
+      obj0=SelectObj(&listheadobjs,id);
+
+      for(j=0;j<n;j++){
+	if(fscanf(fp,"%d",&id)!=1){
+	  perror("fscanf");
+	  exit(-1);
+	}
+	obj1=SelectObj(&listheadobjs,id);
+	/* TODO add obj1 to obj0 list */
+	printf("cargoadd %d:\n",obj0->cargo.n);
+	CargoAdd(obj0,obj1);
+      }
+    }
+  }
+  /* --cargo list*/
+
   
   /* --Loading the  objects */
   
@@ -1023,7 +1100,7 @@ int ExecLoad(char *nom){
     }
   }
 #endif
-  ls=listheadobjs.next;
+  ls=listheadobjs.list;
   i=0;
   while(ls!=NULL){
     obj0=ls->obj;
@@ -1141,7 +1218,7 @@ int FprintfObj(FILE *fp,Object *obj){
 	  obj->id,obj->pid,obj->name,obj->player,obj->type,
 	  obj->subtype,obj->level,obj->experience,obj->kills,
 	  obj->durable,obj->visible,obj->radar,obj->mass,
-	  obj->items,obj->cargo,obj->radio,obj->cost,obj->damage,
+	  obj->items,obj->cargo.capacity,obj->radio,obj->cost,obj->damage,
 	  obj->ai,modified,ttl,obj->habitat,obj->mode);
   
   
@@ -1227,7 +1304,7 @@ int FprintfObj(FILE *fp,Object *obj){
     FprintfPlanet(fp,obj);
   }
   FprintfOrders(fp,obj);
-  
+
   return(0);
 }
 
@@ -1274,7 +1351,7 @@ int FscanfObj(FILE *fp,Object *obj,struct ObjTable *tbl){
 	    &obj->id,&obj->pid,obj->name,&obj->player,&obj->type,
 	    &obj->subtype,&obj->level,&obj->experience,&obj->kills,
 	    &obj->durable,&obj->visible,&obj->radar,&obj->mass,
-	    &obj->items,&obj->cargo,&obj->radio,&obj->cost,&obj->damage,
+	    &obj->items,&obj->cargo.capacity,&obj->radio,&obj->cost,&obj->damage,
 	    &obj->ai,&modified,&obj->ttl,&obj->habitat,&obj->mode)!=23){
     perror("fscanf");
     exit(-1);
@@ -1728,9 +1805,9 @@ void FscanfPlanetInfoList(FILE *fp,struct CCDATA *ccdata){
 void FscanfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo){
   int objid;
   Object *planet;
-  if(fscanf(fp,"%d%d%d%d%d%d%d%f%f%d",
+  if(fscanf(fp,"%d%d%d%d%d%d%d%f%f%d",    /* HEREBUG FIXED*/
 	    &objid,&pinfo->time,
-	    &pinfo->nexplorer,&pinfo->nfighter,&pinfo->nfighter,&pinfo->ntower,&pinfo->ncargo,
+	    &pinfo->nexplorer,&pinfo->nfighter,&pinfo->npilot,&pinfo->ntower,&pinfo->ncargo,
 	    &pinfo->strength,&pinfo->strengtha,
 	    &pinfo->nassigned)!=10){
     perror("fscanf");
@@ -1768,6 +1845,7 @@ void SaveParamOptions(char *file,struct Parametres *par){
   fprintf(fp,"%s\n",par->font);
   if(strlen(par->geom)==0)snprintf(par->geom,MAXTEXTLEN,"%dx%d",DEFAULTWIDTH,DEFAULTHEIGHT);
   fprintf(fp,"%s\n",par->geom);
+  fprintf(fp,"%s\n",par->lang);
   fclose(fp);
 } 
 
@@ -1819,6 +1897,10 @@ int LoadParamOptions(char *file,struct Parametres *par){
     exit(-1);
   }
   if(fscanf(fp,"%128s",par->geom)!=1){
+    perror("fscanf");
+    exit(-1);
+  }
+  if(fscanf(fp,"%128s",par->lang)!=1){
     perror("fscanf");
     exit(-1);
   }

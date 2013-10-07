@@ -40,7 +40,7 @@
 
 void initshell(void);
 void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,int x,int y);
-int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *,struct HeadObjList *hl,struct Player *players,struct Keys *,Object **cv);
+int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *,struct HeadObjList *hl,struct Player *players,struct Keys *,Object **cv,char *cad);
 Object *ExecOrder(struct HeadObjList *hl,Object *obj,int player,int order,char *par);
 void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **,int);
 int Keystrokes(int mode,guint *val,char *c);

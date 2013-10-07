@@ -31,6 +31,7 @@
 #include "spacecomm.h"
 #include "functions.h"
 #include "graphics.h"
+#include "locales.h"
 
 extern struct Player *players;
 extern struct Habitat habitat;
@@ -45,11 +46,11 @@ int debugshell=FALSE;
 
 int GetView(void);
 
-int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadObjList *lhead,struct Player *ps,struct Keys *key,Object **pcv){
+int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadObjList *lhead,struct Player *ps,struct Keys *key,Object **pcv,char *cad){
   /*
     version 04
   */
-  static char cad[MAXTEXTLEN]="";
+/*   static char cad[MAXTEXTLEN]=""; */
   static char ord[16]="";
   static char par[MAXTEXTLEN]="";
   static char pargoto[MAXTEXTLEN]="";
@@ -61,9 +62,6 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
   static int lastorder=0;
   static Object *cv0=NULL;
 
-  char pr1[12];
-  char pr2[12];
-  char pr3[12];
 
   int i;
   int player=1;
@@ -131,7 +129,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     return(0);
   }
   if(level==0){
-    key->g=key->s=key->p=key->t=key->r=key->b=key->d=key->e=FALSE;
+    key->g=key->x=key->s=key->p=key->t=key->o=key->r=key->b=key->u=key->e=key->d=FALSE;
     /* aqui  */
     strcpy(cad,"");
     strcpy(ord,"");
@@ -147,7 +145,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
   if(level==1){
     if(*pcv!=NULL){
 
-      strncpy(cad,"G: GOTO   X: EXPLORE   S: SELECT   P: STOP   T: TAKEOFF   R: REPEAT   B: BUY   U: UPGRADE E: SELL   D:RETREAT",MAXTEXTLEN); 
+      strncpy(cad,"G:GOTO   X:EXPLORE   S:SELECT   P:STOP   T:TAKEOFF   O:ORBIT   R:REPEAT   B:BUY   U:UPGRADE   E:SELL   D:RETREAT",MAXTEXTLEN); 
       
       if(font!=NULL){
 	textw=gdk_text_width(font,cad,strlen(cad));
@@ -157,18 +155,26 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       }
       if(textw>GameParametres(GET,GWIDTH,0)){
 	strncpy(cad,"",1);
-	strncpy(cad,"G:GT  X:EXP  S:SLC  P:STP  T:TOFF  R:RPT  B:BUY  U:UPG  E:SELL  D:RTRT",MAXTEXTLEN); 
+	strncpy(cad,"G:GT  X:EXP  S:SLC  P:STP  T:TOFF  O:ORB  R:RPT  B:BUY  U:UPG  E:SELL  D:RTRT",MAXTEXTLEN); 
       }
       
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT && CountNSelected(lhead,player)==1){
-	strncpy(cad,"R: REPEAT   S: SELECT   B: BUY   W: WRITE",MAXTEXTLEN); 
+	strncpy(cad,"R: REPEAT   S: SELECT   B: BUY",MAXTEXTLEN); 
 	key->g=key->x=key->p=key->t=key->e=key->u=key->w=FALSE;
       }
+
+      if((*pcv)->type==SHIP && (*pcv)->subtype==SATELLITE && CountNSelected(lhead,player)==1){
+	strncpy(cad,"E:DESTROY   S:SELECT",MAXTEXTLEN); 
+	key->g=key->x=key->p=key->t=key->o=key->r=key->b=key->u=key->d=FALSE;
+      }
+
     }
     else{
-      strncpy(cad,"S: SELECT",MAXTEXTLEN); 
-      key->g=key->x=key->p=key->t=key->r=key->b=key->u=key->e=key->w=FALSE;
+      strncpy(cad,"S:SELECT",MAXTEXTLEN);
+      key->g=key->x=key->p=key->t=key->o=key->r=key->b=key->u=key->e=key->d=FALSE;
     }
+
+
 
     if(key->g==TRUE){
       level=2;
@@ -201,6 +207,12 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       order=TAKEOFF;
       strcpy(ord,"TAKEOFF");
       key->t=FALSE;
+    }
+    if(key->o==TRUE){
+      level=2;
+      order=ORBIT;
+      strcpy(ord,"ORBIT");
+      key->o=FALSE;
     }
     if(key->r==TRUE){
       level=2;
@@ -331,12 +343,15 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       break;
     case BUY:
       strcpy(cad,"");
-      snprintf(pr1,12,"%d",GetPrice(NULL,EXPLORER,ENGINE3,CANNON3));
-      snprintf(pr2,12,"%d",GetPrice(NULL,FIGHTER,ENGINE4,CANNON4));
-      snprintf(pr3,12,"%d",GetPrice(NULL,TOWER,ENGINE1,CANNON4));
-      snprintf(cad,MAXTEXTLEN,"1: EXPLORER(%s)   2: FIGTHER(%s)   3: TOWER(%s)",pr1,pr2,pr3);
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT){
-	snprintf(cad,MAXTEXTLEN,"                  2: FIGTHER(%s)",pr2);
+	snprintf(cad,MAXTEXTLEN,"                  2: FIGTHER(%d)",GetPrice(NULL,FIGHTER,ENGINE4,CANNON4));
+      }
+      else{
+	snprintf(cad,MAXTEXTLEN,"1: EXPLORER(%d)   2: FIGTHER(%d)   3: TOWER(%d)   4: SATELLITE(%d)",
+		 GetPrice(NULL,EXPLORER,ENGINE3,CANNON3),
+		 GetPrice(NULL,FIGHTER,ENGINE4,CANNON4),
+		 GetPrice(NULL,TOWER,ENGINE1,CANNON4),
+		 GetPrice(NULL,SATELLITE,ENGINE1,CANNON3));
       }
       level=3;
       break;
@@ -348,6 +363,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     case EXPLORE:
     case STOP:
     case TAKEOFF:
+    case ORBIT:
     case REPEAT:
       /* case RETREAT: */
       strcpy(cad,"");
@@ -355,8 +371,15 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       break;
     case SELL:
       strcpy(cad,"");
-      snprintf(cad,MAXTEXTLEN,"%s %s  %d %s",ord,par,
-	      (int)(0.5*GetPrice(cv,0,0,0)),"   (Esc to cancel)");
+      if(cv->mode==LANDED){
+	snprintf(cad,MAXTEXTLEN,"%s %s  %d %s",ord,par,
+		 (int)(0.5*GetPrice(cv,0,0,0)),"   (Esc to cancel)");
+      }
+      else{
+	snprintf(cad,MAXTEXTLEN,"DESTROYING %s%s",
+		 par,
+		 "   (Esc to cancel)");
+      }
       break;
     case WRITE:
       strcpy(par,"");
@@ -376,11 +399,13 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     switch(order){
     case BUY:
       Keystrokes(LOAD,NULL,par);
-      DelCharFromCad(par,"123");
+      DelCharFromCad(par,"1234");
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT){
 	DelCharFromCad(par,"2");
       }
       switch(strtol(par,NULL,10)){
+      case 0:
+	break;
       case 1:
 	strcpy(cad,"EXPLORER"); 
 	break;
@@ -390,7 +415,11 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       case 3:
 	strcpy(cad,"TOWER"); 
 	break;
+      case 4:
+	strcpy(cad,"SATELLITE"); 
+	break;
       default:
+	fprintf(stderr,"Not implemented. order no.%ld\n",strtol(par,NULL,10));
 	break;
       }
       break;
@@ -422,9 +451,12 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
        order=lastorder;
        strcpy(par,"");
        strncpy(par,lastpar,16);
+#if TEST
+       printf("REPEAT:(%d) %s \n",lastorder,par);
+#endif
     } 
 
-    if(order==GOTO||order==TAKEOFF||order==EXPLORE||order==STOP||order==RETREAT){
+    if(order==GOTO||order==TAKEOFF||order==ORBIT||order==EXPLORE||order==STOP||order==RETREAT){
       key->automode.state=TRUE;
     }
 
@@ -447,7 +479,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     if(gameorder==FALSE){
       obj0=NULL;
       /* first selected goes to cv if cv is not selected*/
-      ls=lhead->next;
+      ls=lhead->list;
       while(ls!=NULL){  /* HERE create a selected list */
 	if(ls->obj->selected==TRUE){
 	  if(ls->obj->player!=player){ls=ls->next;continue;}
@@ -512,7 +544,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     printf("order: dclick\n");
   }
 
-  DrawString(pixmap,font,color,10,GameParametres(GET,GHEIGHT,0)+GameParametres(GET,GPANEL,0)/2+4,cad);
+/*   DrawString(pixmap,font,color,10,GameParametres(GET,GHEIGHT,0)+GameParametres(GET,GPANEL,0)/2+4,cad);  */
   return(0);
 }
 
@@ -566,6 +598,15 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       return(NULL);
     }
     if(obj->engine.type<=ENGINE1)return(NULL);
+    break;
+  case ORBIT:
+    /* if(obj->habitat!=H_PLANET)return(NULL); */
+    if(obj->type==SHIP && obj->subtype==PILOT)return(NULL);
+    if(obj->type==SHIP && obj->subtype==TOWER && obj->ai==0){
+      obj->ai=1;
+      return(NULL);
+    }
+    if(obj->engine.type<=ENGINE1)return(NULL);
 
     break;
   case RETREAT:
@@ -581,16 +622,23 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     break;
   case SELL:
     if(obj->type==SHIP && obj->subtype==PILOT){
-      printf("You can't sell pilots\n");
-      snprintf(stmess,MAXTEXTLEN,"You can't sell pilots");
+      printf("%s.\n",GetLocale(L_CANTSELLPILOTS));
+      snprintf(stmess,MAXTEXTLEN,"%s",GetLocale(L_CANTSELLPILOTS));
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       return(NULL);
     }
+/*     if(obj->mode!=LANDED){ */
+/*       printf("obj %d %d solded\n",obj->pid,obj->id); */
+/*       obj->state=0; */
+/*     } */
+
+    if(obj->mode!=LANDED)break;
+
   case BUY:
   case UPGRADE:
     if(obj->mode!=LANDED){
-      printf("You must be landed.\n");
-      snprintf(stmess,MAXTEXTLEN,"You must be landed.");
+      printf("%s.\n",GetLocale(L_MUSTBELANDED));
+      snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_MUSTBELANDED));
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       return(NULL);
     }
@@ -606,6 +654,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   switch(order){
 
   case TAKEOFF:
+  case ORBIT:
   case RETREAT:
   case EXPLORE:
   case STOP:
@@ -647,8 +696,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       case 'N':
 	/* goto nearest ally planet */
 	
-	obj_dest=NearestObj(lhead,obj,PLANET,PINEXPLORE,&d2);  /* HERE only one function */
-	obj_destb=NearestObj(lhead,obj,PLANET,PALLY,&d2b);
+	obj_dest=NearestObj(lhead,obj,PLANET,SHIP0,PINEXPLORE,&d2);  /* HERE only one function */
+	obj_destb=NearestObj(lhead,obj,PLANET,SHIP0,PALLY,&d2b);
 	
 	if(obj_dest!=NULL && obj_destb!=NULL ){
 	  if(d2b<d2){
@@ -693,39 +742,61 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	switch(obj_dest->type){
 	case PLANET: /* if planet is unknown*/
 	  if(IsInIntList((players[obj->player].kplanets),id1)==0){
-	    printf("Not Allowed. Planet or spaceship %d unknown.\n",obj_dest->pid);
-	    snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship %d unknown.",obj_dest->pid);
+	    printf("%s. %d %s.\n",
+		   GetLocale(L_NOTALLOWED),
+		   obj_dest->pid,
+		   GetLocale(L_PLANETORSPACESHIPUNKNOWN));
+	    snprintf(stmess,MAXTEXTLEN,"%s. %d %s.\n",
+		   GetLocale(L_NOTALLOWED),
+		   obj_dest->pid,
+		   GetLocale(L_PLANETORSPACESHIPUNKNOWN));
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	    obj_dest=NULL;
 	    /* keys.esc=TRUE; */
 	  }
 	  else{
-	    printf("(%c %d) going to planet %d.\n",Type(obj),obj->pid,obj_dest->pid);
-	    snprintf(stmess,MAXTEXTLEN,"(%c %d) going to planet %d.",Type(obj),obj->pid,obj_dest->pid);
+	    printf("(%c %d) %s %d.\n",
+		   Type(obj),obj->pid,
+		   GetLocale(L_GOINGTOPLANET),
+		   obj_dest->pid);
+	    snprintf(stmess,MAXTEXTLEN,"(%c %d) %s %d.",
+		     Type(obj),obj->pid,
+		     GetLocale(L_GOINGTOPLANET),
+		     obj_dest->pid);
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  break;
 	case SHIP:/* ship belongs to another player*/
 	  if(obj_dest->player!=obj->player){
 	    obj_dest=NULL;
-	    printf("Not Allowed. Destiny is an enemy spaceship.\n");
-	    snprintf(stmess,MAXTEXTLEN,"Not Allowed. Destiny is an enemy spaceship.");
+	    printf("%s. Destiny is an enemy spaceship.\n",GetLocale(L_NOTALLOWED));
+	    snprintf(stmess,MAXTEXTLEN,"%s. Destiny is an enemy spaceship.",
+		     GetLocale(L_NOTALLOWED));
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  else{
 	    if(obj_dest==obj){
-	      printf("(%c %d) Not Allowed. Destiny %d is equal than origin.\n",
-		     Type(obj),obj->pid,obj_dest->pid);
-	    snprintf(stmess,MAXTEXTLEN,"(%c %d) Not Allowed. Destiny %d is equal than origin.",
-		     Type(obj),obj->pid,obj_dest->pid);
-	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	      printf("(%c %d) %s. %s.\n",
+		     Type(obj),obj->pid,
+		     GetLocale(L_NOTALLOWED),
+		     GetLocale(L_DESTINYEQUALORIGIN));
+
+	      snprintf(stmess,MAXTEXTLEN,"(%c %d) %s. %s.",
+		       Type(obj),obj->pid,
+		       GetLocale(L_NOTALLOWED),
+		       GetLocale(L_DESTINYEQUALORIGIN));
+	      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	      obj_dest=NULL;
-	      }	
+	    }	
 	    else{
-	      printf("(%c %d) going to spaceship %d.\n",
-		     Type(obj),obj->pid,obj_dest->pid);
-	      snprintf(stmess,MAXTEXTLEN,"(%c %d) going to spaceship %d.",
-		       Type(obj),obj->pid,obj_dest->pid);
+	      printf("(%c %d) %s %d.\n",
+		     Type(obj),obj->pid,
+		     GetLocale(L_GOINGTOSPACESHIP),
+		     obj_dest->pid);
+	      snprintf(stmess,MAXTEXTLEN,"(%c %d) %s %d.",
+		       Type(obj),obj->pid,
+		       GetLocale(L_GOINGTOSPACESHIP),
+		       obj_dest->pid);
 	      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	    }
 	  }
@@ -757,11 +828,17 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 
       }
       else{
-	printf("Not Allowed. Planet or spaceship unknown.\n");
+	printf("%s. %s.\n",
+	       GetLocale(L_NOTALLOWED),
+	       GetLocale(L_PLANETORSPACESHIPUNKNOWN));
 #if TEST
 	printf("\t arg1:(%s) par:(%s)\n",arg1,par);
 #endif
-	snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship (%s) unknown.",arg1);
+	snprintf(stmess,MAXTEXTLEN,"%s. (%s) %s.",
+		 GetLocale(L_NOTALLOWED),
+		 arg1,
+		 GetLocale(L_PLANETORSPACESHIPUNKNOWN));
+
 	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	/* keys.esc=TRUE; */
 	ret=NULL;
@@ -789,12 +866,14 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       DelAllOrder(obj);
       AddOrder(obj,&ord);
 
-      printf("(%c %d) going to sector %d %d.\n",
-	     Type(obj),
-	     obj->pid,
-	       (id1-SECTORSIZE/2)/SECTORSIZE,
-	       (id2-SECTORSIZE/2)/SECTORSIZE);
-      snprintf(stmess,MAXTEXTLEN,"(%c %d) going to sector %d %d.",Type(obj),obj->pid,
+      printf("(%c %d) %s %d %d.\n",
+	     Type(obj),obj->pid,
+	     GetLocale(L_GOINGTOSECTOR),
+	     (id1-SECTORSIZE/2)/SECTORSIZE,
+	     (id2-SECTORSIZE/2)/SECTORSIZE);
+      snprintf(stmess,MAXTEXTLEN,"(%c %d) %s %d %d.",
+	       Type(obj),obj->pid,
+	       GetLocale(L_GOINGTOSECTOR),
 	       (id1-SECTORSIZE/2)/SECTORSIZE,
 	       (id2-SECTORSIZE/2)/SECTORSIZE);
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
@@ -823,8 +902,13 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     ord.i=ord.j=ord.k=ord.l=0;
     DelAllOrder(obj);
     AddOrder(obj,&ord);
-    printf("(%c %d) going to explore.\n",Type(obj),obj->pid);
-    snprintf(stmess,MAXTEXTLEN,"(%c %d) going to explore.",Type(obj),obj->pid);
+    printf("(%c %d) %s.\n",
+	   Type(obj),obj->pid,
+	   GetLocale(L_GOINGTOEXPLORE));
+    snprintf(stmess,MAXTEXTLEN,"(%c %d) %s.",
+	     Type(obj),obj->pid,
+	     GetLocale(L_GOINGTOEXPLORE));
+
     ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
     break;
 
@@ -869,17 +953,25 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	if(obj!=NULL)obj->selected=FALSE;
 	obj_dest->selected=TRUE;
 	ret=obj_dest;
-	printf("(%c %d) selected.\n",Type(obj_dest),obj_dest->pid);
-	snprintf(stmess,MAXTEXTLEN,"(%c %d) selected.",Type(obj_dest),obj_dest->pid);
+	printf("(%c %d) %s.\n",Type(obj_dest),obj_dest->pid,GetLocale(L_SELECTED));
+	snprintf(stmess,MAXTEXTLEN,"(%c %d) %s.",
+		 Type(obj_dest),
+		 obj_dest->pid,
+		 GetLocale(L_SELECTED));
 	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       }
     }
     else{
-      printf("Not Allowed. Planet or spaceship unknown.\n");
+      printf("%s. %s.\n",
+	     GetLocale(L_NOTALLOWED),
+	     GetLocale(L_PLANETORSPACESHIPUNKNOWN));
 #if TEST
       printf("\t arg1:(%s) par:(%s)\n",arg1,par);
 #endif
-      snprintf(stmess,MAXTEXTLEN,"Not Allowed. Planet or spaceship (%s) unknown.",arg1);
+      snprintf(stmess,MAXTEXTLEN,"%s. (%s) %s.",
+	       GetLocale(L_NOTALLOWED),
+	       arg1,
+	       GetLocale(L_PLANETORSPACESHIPUNKNOWN));
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       /* keys.esc=TRUE; */
       ret=NULL;
@@ -924,13 +1016,50 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       ord.time=40;
       ord.g_time=time;
       
-      ord.a=ord.b=ord.c=ord.d=0;
+      ord.a=ord.b=ord.c=ord.d=0; 
       ord.e=ord.f=ord.g=ord.h=0;
       ord.i=ord.j=ord.k=ord.l=0;
+
       DelAllOrder(obj_dest);
       AddOrder(obj_dest,&ord);
-      printf("(%c %d) taking off.\n",Type(obj),obj->pid);
-      snprintf(stmess,MAXTEXTLEN,"(%c %d) taking off.",Type(obj),obj->pid);
+      printf("(%c %d) %s.\n",Type(obj),obj->pid,GetLocale(L_TAKINGOFF));
+      snprintf(stmess,MAXTEXTLEN,"(%c %d) %s.",
+	       Type(obj),obj->pid,
+	       GetLocale(L_TAKINGOFF));
+      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+    }
+    break;
+    
+  case ORBIT:
+    obj_dest=obj;
+    if(obj_dest!=NULL){
+      ord.priority=1;
+      ord.id=ORBIT;
+      ord.time=40;
+      ord.g_time=time;
+      if(obj->habitat==H_SPACE){
+      ord.a=0;                   /* phase */
+      }
+      if(obj->habitat==H_PLANET){
+	ord.a=1;                   /* phase */
+      }
+      ord.b=50+50*Random(-1);    /* height */
+      ord.c=0.5+0.5*Random(-1);  /* elon */
+      ord.d=1; 
+      if(Random(-1)>0.5)ord.d=-1; /* sense */
+      ord.e=ord.f=ord.g=ord.h=0;
+      ord.i=ord.j=ord.k=ord.l=0;
+#if TEST
+      printf("a:%f b:%f c:%f\n",ord.a,
+	       ord.b,
+	     ord.c);
+#endif
+      DelAllOrder(obj_dest);
+      AddOrder(obj_dest,&ord);
+      printf("(%c %d) %s.\n",Type(obj),obj->pid,GetLocale(L_TAKINGOFF));
+      snprintf(stmess,MAXTEXTLEN,"(%c %d) %s.",
+	       Type(obj),obj->pid,
+	       GetLocale(L_TAKINGOFF));
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
     }
     break;
@@ -938,36 +1067,52 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   case BUY:
     if(obj!=NULL){
       id1=strtol(arg1,NULL,10);
-      if(id1>=1 && id1<=3){
+      if(id1>=1 && id1<=4){
 	status=SZ_OK;
 	switch(id1){
-	case 1:
+	case 1: /* EXPLORER */
 	  status=BuyShip(players[obj->player],obj,EXPLORER);
 	  if(status==SZ_OK){
-	    printf("Explorer buyed.\n");
-	    snprintf(stmess,MAXTEXTLEN,"Explorer buyed.");
+	    printf("%s %s.\n",GetLocale(L_EXPLORER),GetLocale(L_BUYED));
+	    snprintf(stmess,MAXTEXTLEN,"%s %s.",GetLocale(L_EXPLORER),GetLocale(L_BUYED));
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  break;
-	case 2:
+	case 2:  /* FIGHTER */
 	  status=BuyShip(players[obj->player],obj,FIGHTER);
 	  if(status==SZ_OK){
-	    printf("Fighter buyed.\n");
-	    snprintf(stmess,MAXTEXTLEN,"Fighter buyed.");
+	    printf("%s %s.\n",GetLocale(L_FIGHTER),GetLocale(L_BUYED));
+	    snprintf(stmess,MAXTEXTLEN,"%s %s.",
+		     GetLocale(L_FIGHTER),
+		     GetLocale(L_BUYED));
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  break;
-	case 3:
+	case 3:  /* TOWER */
 	  status=BuyShip(players[obj->player],obj,TOWER);
 	  if(status==SZ_OK){
-	    printf("Tower buyed.\n");
-	    snprintf(stmess,MAXTEXTLEN,"Tower buyed.");
+	    printf("%s %s.\n",GetLocale(L_TOWER),GetLocale(L_BUYED));
+	    snprintf(stmess,MAXTEXTLEN,"%s %s.",
+		     GetLocale(L_TOWER),
+		     GetLocale(L_BUYED));
+	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  }
+	  break;
+	case 4:  /* SATELLITE */
+	  status=BuyShip(players[obj->player],obj,SATELLITE);
+	  if(status==SZ_OK){
+	    printf("%s %s.\n",GetLocale(L_SATELLITE),GetLocale(L_BUYED));
+	    snprintf(stmess,MAXTEXTLEN,"%s %s.",
+		     GetLocale(L_SATELLITE),
+		     GetLocale(L_BUYED));
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  break;
 	default:
+	  fprintf(stderr,"Not implemented. order no.%d\n",id1);
 	  break;
 	}
+
 	switch(status){
 	case SZ_OK:
 	  break;
@@ -976,8 +1121,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	case SZ_UNKNOWNERROR:
 	  break;
 	case SZ_OBJNOTLANDED:
-	  printf("Spaceship must be landed.\n");
-	  snprintf(stmess,MAXTEXTLEN,"Spaceship must be landed.");
+	  printf("%s.\n",GetLocale(L_SPACESHIPMUSTBELANDED));
+	  snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_SPACESHIPMUSTBELANDED));
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  ret=NULL;
 	  break;
@@ -988,14 +1133,20 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  ret=NULL;
 	  break;
 	case SZ_NOTENOUGHGOLD:
-	  printf("You have not enough gold\n");
-	  snprintf(stmess,MAXTEXTLEN,"You have not enough gold.");
+	  printf("%s\n",GetLocale(L_YOUHAVENOTGOLD));
+	  snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_YOUHAVENOTGOLD));
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  ret=NULL;
 	  break;
 	case SZ_NOTALLOWED:
-	  printf("Not allowed\n");
-	  snprintf(stmess,MAXTEXTLEN,"Not allowed.");
+	  printf("%s\n",GetLocale(L_NOTALLOWED));
+	  snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_NOTALLOWED));
+	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ret=NULL;
+	  break;
+	case SZ_NOTENOUGHROOM:
+	  printf("%s\n",GetLocale(L_NOROOM));
+	  snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_NOROOM));
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  ret=NULL;
 	  break;
@@ -1008,42 +1159,63 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     }
     break;
   case SELL:
-    printf("Selling spaceship with id: %d\n",obj->pid);
-    snprintf(stmess,MAXTEXTLEN,"Selling spaceship with id: %d",obj->pid);
-    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
-    price=.5*GetPrice(obj,0,0,0);
-    if(price>0){
-      printf("\tPrice: %d eng: %d weapon: %d\n",
-	     price, obj->engine.type, obj->weapon->type);
-      AddGold(players,obj->player,price);
-      obj->mode=SOLD;
-      obj->items=0;
+    if(obj->mode==LANDED){
+      printf("%s: %d\n",
+	     GetLocale(L_SELLINGSPACESHIP),
+	     obj->pid);
+      snprintf(stmess,MAXTEXTLEN,"%s: %d",
+	       GetLocale(L_SELLINGSPACESHIP),
+	       obj->pid);
+      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      price=.5*GetPrice(obj,0,0,0);
+      if(price>0){
+	printf("\tPrice: %d eng: %d weapon: %d\n",
+	       price, obj->engine.type, obj->weapon->type);
+	AddGold(players,obj->player,price);
+	obj->mode=SOLD;
+	obj->items=0;
+	obj->state=-1;
+      }
+    }
+    else{
+      printf("obj %d %d solded\n",obj->pid,obj->id);
       obj->state=-1;
     }
     break;
 
   case UPGRADE:
-    if(obj->level+1 < players[obj->player].maxlevel){
+    if(obj->level+1 < players[obj->player].gmaxlevel){
       price=GetPrice(obj,0,0,0);
       if(price>0){
 	if(players[obj->player].gold>price){
 	  players[obj->player].gold-=price;
+	  players[obj->player].goldupdates+=price;
 	  Experience(obj,(int)(100*pow(2,obj->level) - obj->experience+1));
-	  printf("(%c %d) upgraded to level %d.\n",Type(obj),obj->pid,obj->level);
-	  snprintf(stmess,MAXTEXTLEN,"(%c %d) upgraded to level %d.",Type(obj),obj->pid,obj->level);
+	  printf("(%c %d) %s %d.\n",
+		 Type(obj),obj->pid,
+		 GetLocale(L_UPGRADETOLEVEL),
+		 obj->level);
+	  snprintf(stmess,MAXTEXTLEN,"(%c %d) %s %d.",
+		   Type(obj),obj->pid,
+		   GetLocale(L_UPGRADETOLEVEL),
+		   obj->level);
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	}
 	else{
-	  printf("You have not enough gold\n");
-	  snprintf(stmess,MAXTEXTLEN,"You have not enough gold.");
+	  printf("%s\n",GetLocale(L_YOUHAVENOTGOLD));
+	  snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_YOUHAVENOTGOLD));
 	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  ret=NULL;
 	}
       }
     }
     else{
-      printf("You can upgrade until level %d\n",players[obj->player].maxlevel-1);
-      snprintf(stmess,MAXTEXTLEN,"You can upgrade until level %d",players[obj->player].maxlevel-1);
+      printf("%s %d\n",
+	     GetLocale(L_YOUCANUPGRADE),
+	     players[obj->player].gmaxlevel-1);
+      snprintf(stmess,MAXTEXTLEN,"%s %d",
+	       GetLocale(L_YOUCANUPGRADE),
+	       players[obj->player].gmaxlevel-1);
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       ret=NULL;
     }
@@ -1269,15 +1441,15 @@ void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
 	  }
 	  n=CountSelected(&listheadobjs,cv->player);
 	  if(n<6){
-	    printf("Selected spaceships:\n");
+	    printf("%s:\n",GetLocale(L_SPACESHIPSSELECTED));
 	    PrintSelected(&listheadobjs); 
 	    if(n==0)printf("NONE\n");
 	  }
 	  else{
-	    printf("Selected %d spaceships.\n",n);
+	    printf("%d %s.\n",n,GetLocale(L_SPACESHIPSSELECTED));
 	  }
 	  if(n>0){
-	    snprintf(stmess,MAXTEXTLEN,"Selected %d spaceships.",n);
+	    snprintf(stmess,MAXTEXTLEN,"%d %s.",n,GetLocale(L_SPACESHIPSSELECTED));
 	    ShellTitle(2,NULL,NULL,NULL,NULL,0,0);
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
@@ -1560,18 +1732,23 @@ int Get2Args(char *cad,char *arg1,char *arg2){
 
 
 void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,int x,int y){
-  static char cad0[64]="O: Introduce command";
-  static char cad1[64]="";
+  static char cad0[MAXTEXTLEN]="";
+  static char cad1[MAXTEXTLEN]="";
   static int n_mess=0;
+  static int sw=0;
   char *cad;
 
+  if(sw==0){
+    strncpy(cad0,GetLocale(L_INTRODUCECOMMAND),MAXTEXTLEN);
+    sw++;
+  }
   if(mess!=NULL)
   switch (order){
     case 0:
       break;
     case 1:
       if(mess!=NULL && n_mess<=0){
-	strncpy(cad1,mess,64);
+	strncpy(cad1,mess,MAXTEXTLEN);
 	n_mess=60;
 	return;
       }

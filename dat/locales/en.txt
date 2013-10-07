@@ -1,0 +1,153 @@
+/* game menu */
+
+000 OPTIONS
+001 MULTIPLAYER OPTIONS
+002 GENERAL OPTIONS
+003 GAME OPTIONS
+004 Keyboard: ENTER > press key > ENTER
+005 OPTIONS
+006 Start Game
+007 Quit Game
+008 General Options
+009 Game Options
+010 Keyboard
+011 Multiplayer Options
+012 Default Options
+013 Name: 
+014 Sound EffectsVolume: 
+015 Music Volume: 
+016 Window Geometry: 
+017 Number of Players: 
+018 Number of Planets: 
+019 Number of Galaxies: 
+020 Size of Universe: 
+021 Planets are known: 
+022 Pirates: 
+023 Enemies are known: 
+024 Cooperative mode: 
+025 Computer Cooperative mode: 
+026 Queen mode: 
+027 Shoot: 
+028 Turn left: 
+029 Turn right: 
+030 Accel: 
+031 Manual mode: 
+032 Auto mode: 
+033 Map: 
+034 Order: 
+035 IP address: 
+036 port: 
+037 Start Server
+038 Connect to Server
+
+/* windows menu */
+
+039 SAVE
+040 LOAD
+041 Options
+042 About
+043 Help
+
+/* game texts*/
+
+044 ENERGY
+045 STATE
+046 EXPERIENCE
+047 Amm.
+048 Sector
+049 sectors
+050 kills
+051 Order
+052 Distance
+053 Time
+054 record
+055 PLAYER
+056 GOLD
+057 NPLANETS
+058 NSHIPS
+059 Deaths
+060 Points
+061 PLANET
+062 RESOURCES
+063 MASS
+064 LEVEL
+065 Game statistics
+066 planets
+067 ships
+068 player
+
+/* orders */
+
+069 GOTO
+070 TAKE OFF
+071 ORBIT
+072 NOTHING
+073 STOP
+074 EXPLORE
+075 RETREAT
+
+/* messages */
+
+076 ENEMIES NEAR
+077 under attack
+078 ASTEROIDS NEAR
+079 ARRIVED TO
+080 Received info from enemy
+081 HELP
+082 SHIP DESTROYED
+083 QUEEN DESTROYED
+084 LOST
+085 Ejecting pilot from ship
+086 saved in planet
+087 pilot
+088 PIRATES!! at sector
+089 ASTEROIDS!! at sector
+090 GAME SAVED
+091 game saved to file
+092 rescued by
+093 discovered
+
+/*order messages */
+
+094 You can't sell pilots
+095 You must be landed
+096 Not allowed
+097 Planet or spaceship unknown
+098 going to sector
+099 going to planet
+100 going to spaceship
+101 going to explore
+102 taking off
+103 Explorer
+104 Fighter
+105 Tower
+106 Spaceship must be landed
+107 You have not enough gold
+108 buyed
+109 selected
+110 Spaceships selected
+111 Destiny is equal than origin
+112 O: Introduce command
+113 Selling spaceship
+114 You can upgrade until level
+115 upgrade to level
+
+/* Options window */
+
+116 Changes will take effect after rerun spacezero
+117 (sound and music when save)
+118 Known Universe
+119 Music OFF
+120 Sound OFF
+121 num. of planets
+122 num. of players
+123 Universe Size
+124 Number of Galaxies
+125 Cooperative mode
+126 Computer cooperative mode
+127 Queen mode
+128 Save
+129 Set Default
+130 Cancel
+131 Satellite
+132 There is no room

@@ -1,0 +1,153 @@
+/* game menu */
+    
+000 OPCIONES
+001 OPCIONES MULTIJUGADOR
+002 OPCIONES GENERALES
+003 OPCIONES DEL JUEGO
+004 Teclado > ENTER > pulsa tecla > ENTER
+005 OPCIONES
+006 Comenzar el Juego
+007 Salir del Juego
+008 Opciones Generales
+009 Opciones del Juego
+010 Teclado
+011 Opciones Multijugador
+012 Cargar Opciones por Defecto
+013 Nombre: 
+014 Volumen efectos de sonido: 
+015 Volumen de la música: 
+016 Tamaño de la ventana: 
+017 Número de jugadores: 
+018 Número de planetas: 
+019 Número de galaxias: 
+020 Tamaño del Universo: 
+021 Los planetas son conocidos: 
+022 Piratas: 
+023 Los enemigos son conocidos: 
+024 Modo cooperativo: 
+025 Computer Cooperative mode: 
+026 Modo Reina: 
+027 Disparo: 
+028 Girar izquierda: 
+029 Girar derecha: 
+030 Acelerar: 
+031 Modo manual: 
+032 Modo automático: 
+033 Mapa: 
+034 Orden: 
+035 Dirección IP: 
+036 Puerto: 
+037 Comenzar el servidor
+038 Conectar con el servidor
+    
+/* windows menu */
+    
+039 SALVAR
+040 CARGAR
+041 Opciones
+042 Acerca de
+043 Ayuda
+    
+/* game texts*/
+    
+044 ENERGÍA
+045 ESTADO
+046 EXPERIENCIA
+047 Munic.
+048 Sector
+049 sectores
+050 Eliminadas
+051 Orden
+052 Distancia
+053 Tiempo
+054 record
+055 JUGADOR
+056 ORO
+057 NPLANETAS
+058 NNAVES
+059 Perdidas
+060 Puntos
+061 Planeta
+062 RECURSOS
+063 MASA
+064 NIVEL
+065 Estadísticas
+066 planetas
+067 naves
+068 jugador
+   
+/* orders */
+    
+069 GOTO
+070 TAKE OFF
+071 ORBIT
+072 NOTHING
+073 STOP
+074 EXPLORE
+075 RETREAT
+    
+/* messages */
+    
+076 ENEMIGOS CERCA
+077 está siendo atacado
+078 Asteroides cerca
+079 he llegado a
+080 Recibida información del enemigo
+081 AYUDA!!
+082 NAVE DESTRUIDA
+083 QUEEN DESTRUIDA
+084 PERDIDO
+085 Expulsando piloto de la nave
+086 rescatado en planeta
+087 piloto
+088 PIRATAS!! en el sector
+089 ASTEROIDES!! en el sector
+090 JUEGO GUARDADO
+091 juego guardado en el fichero
+092 rescatado por
+093 descubierto
+    
+/*order messages */
+    
+094 No puedes verder pilotos
+095 Debes estar aterrizado
+096 No permitido
+097 Planeta o nave desconocida
+098 yendo hacia sector
+099 yendo hacia planeta
+100 yendo hacia nave
+101 saliendo a explorar
+102 despegando
+103 Explorer
+104 Fighter
+105 Tower
+106 La nave debe estar sobre tierra
+107 No tienes bastante dinero
+108 comprada
+109 seleccionados
+110 Naves seleccionadas
+111 Destino es el mismo que el origen
+112 O: Introduce orden
+113 Vendiendo nave
+114 Sólo puedes mejorar hasta el nivel
+115 mejorado al nivel
+    
+/* Options window */
+    
+116 Los cambios se aplicarán después de volver a ejecutar spacezero
+117 (sonido y música al salvar)
+118 El Universo es conocido
+119 Música OFF
+120 Sonido OFF
+121 núm. de planetas
+122 núm. de jugadores
+123 Tamaño del Universo
+124 Número de Galaxias
+125 Modo Cooperativo
+126 Modo AI Cooperativo 
+127 Modo Queen
+128 Salvar
+129 Cargar valores por defecto
+130 Cancelar
+131 Satélite
+132 La bodega está llena.

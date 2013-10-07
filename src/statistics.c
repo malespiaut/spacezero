@@ -28,14 +28,14 @@
 #include "general.h"
 #include "functions.h"
 #include "statistics.h"
-
-#define NSTATS 64
+#include "graphics.h"
 
 int lasttime;
 int inctime;
-int n;
-int cont;
-int np;
+int stats_n;
+int stats_np;
+int stats_cont;
+
 struct Stats stats_tmp;
 struct Stats stats[NSTATS];
 
@@ -52,13 +52,13 @@ void InitStatistics(void){
 
   lasttime=GetTime();
   inctime=24;
-  n=0;
-  cont=0;
-  np=GameParametres(GET,GNPLAYERS,0)+2;
+  stats_n=0;
+  stats_cont=0;
+  stats_np=GameParametres(GET,GNPLAYERS,0)+2;
 
   stats_tmp.time=lasttime;
 
-  for(i=0;i<np;i++){
+  for(i=0;i<stats_np;i++){
     stats_tmp.level[i]=0;
     stats_tmp.nplanets[i]=0;
     for(j=0;j<NSTATS;j++){
@@ -69,44 +69,46 @@ void InitStatistics(void){
 }
 
 
-void AddStatistics(struct Stats *s){
+void UpdateStatistics(void){
   int i,j,k;
 
-  stats_tmp.time=GetTime();
 
-  cont++;
-  for(i=0;i<np;i++){
-    stats_tmp.level[i]+=s->level[i];
-    stats_tmp.nplanets[i]+=s->nplanets[i];
+  stats_tmp.time=GetTime();
+  stats_cont++;
+  for(i=0;i<stats_np;i++){
+    stats_tmp.level[i]+=players[i].level+players[i].nships;
+    stats_tmp.nplanets[i]+=players[i].nplanets;
   }
-  /*   */
+
   if(stats_tmp.time>lasttime+inctime){
     /* add to logger */
 
-    for(i=0;i<np;i++){
-      stats[n].level[i]=stats_tmp.level[i]/cont;
-      stats[n].nplanets[i]=stats_tmp.nplanets[i]/cont;
+    for(i=0;i<stats_np;i++){
+      stats[stats_n].level[i]=stats_tmp.level[i]/stats_cont;
+      stats[stats_n].nplanets[i]=stats_tmp.nplanets[i]/stats_cont;
 
       stats_tmp.level[i]=0;
       stats_tmp.nplanets[i]=0;
     }
 
-    n++;
+    stats_n++;
     lasttime=stats_tmp.time;
-    cont=0;
+    stats_cont=0;
 
-    if(n==NSTATS){
-      /* TODO renormalize */
+    if(stats_n==NSTATS){
+      /* renormalize */
       k=0;
-      for(j=0;j<n;j+=2){
-	for(i=0;i<np;i++){
+      for(j=0;j<stats_n-1;j+=2){ /* FIXED IN  0.84.01 */
+	for(i=0;i<stats_np;i++){
 	  stats[k].level[i]=(stats[j].level[i]+stats[j+1].level[i])/2;
 	  stats[k].nplanets[i]=(stats[j].nplanets[i]+stats[j+1].nplanets[i])/2;
 	}
 	k++;
       }
-      n/=2;
-      inctime*=2;
+      stats_n/=2;
+      if(inctime<43200){ /* max 30 min */
+	inctime*=2;
+      }
     }
   }
 }
@@ -115,8 +117,9 @@ void AddStatistics(struct Stats *s){
 void PrintStatistics(void){
   int i;
 
+
   printf("stats %d %d\n",lasttime, inctime);
-  for(i=1;i<np;i++){
+  for(i=1;i<stats_np;i++){
     printf("%d: %.1f %d \n",i,stats[NSTATS-1].level[i],stats[NSTATS-1].nplanets[i]);
   }
   printf("\n");
@@ -126,16 +129,16 @@ void PrintStatistics(void){
 void fprintStatistics(FILE *fp){
   int i,j;
   
-  fprintf(fp,"%d %d %d %d %d ",lasttime,inctime,n,np,cont);
+  fprintf(fp,"%d %d %d %d %d ",lasttime,inctime,stats_n,stats_np,stats_cont);
 
   for(i=0;i<NSTATS;i++){
-    for(j=0;j<np;j++){
+    for(j=0;j<stats_np;j++){
       fprintf(fp,"%.1f %d ",stats[i].level[j],stats[i].nplanets[j]);
     }
   }
 
   fprintf(fp,"%d ",stats_tmp.time);
-  for(i=0;i<np;i++){
+  for(i=0;i<stats_np;i++){
     fprintf(fp,"%.1f %d ",stats_tmp.level[i],stats_tmp.nplanets[i]);
   }
 
@@ -148,13 +151,13 @@ void fscanfStatistics(FILE *fp){
 
   InitStatistics();
 
-  if(fscanf(fp,"%d%d%d%d%d",&lasttime,&inctime,&n,&np,&cont)!=5){
+  if(fscanf(fp,"%d%d%d%d%d",&lasttime,&inctime,&stats_n,&stats_np,&stats_cont)!=5){
     perror("fscanf");
     exit(-1);
   }
 
   for(i=0;i<NSTATS;i++){
-    for(j=0;j<np;j++){
+    for(j=0;j<stats_np;j++){
       if(fscanf(fp,"%f",&stats[i].level[j])!=1){
 	perror("fscanf");
 	exit(-1);
@@ -177,7 +180,7 @@ void fscanfStatistics(FILE *fp){
     perror("fscanf");
     exit(-1);
   }
-  for(i=0;i<np;i++){
+  for(i=0;i<stats_np;i++){
     if(fscanf(fp,"%f%d",&stats_tmp.level[i],&stats_tmp.nplanets[i])!=2){
 	perror("fscanf");
 	exit(-1);
@@ -185,65 +188,8 @@ void fscanfStatistics(FILE *fp){
   }
 }
 
-
-void DrawStatistics(GdkPixmap *pixmap,Rectangle *r){
-  int i,j;
-  int maxnplanets;
-  float maxlevel;
-  float dx,dy;
-  int x0,x1,y0,y1;
-
-  gdk_draw_rectangle(pixmap,    
-		     penBlack,
-		     TRUE,   
-		     r->x,
-		     r->y,
-		     r->width,r->height);
-
-  gdk_draw_rectangle(pixmap,    
-		     penGreen,
-		     FALSE,   
-		     r->x,
-		     r->y,
-		     r->width,r->height);
-
-  /* max value */
-  maxnplanets=0;
-  maxlevel=1;
-
-  for(i=0;i<np;i++){
-    for(j=0;j<NSTATS;j++){
-      if(stats[j].level[i]>maxlevel)maxlevel=stats[j].level[i];
-      if(stats[j].nplanets[i]>maxnplanets)maxnplanets=stats[j].nplanets[i];
-    }
-    if(players[i].level>maxlevel)maxlevel=players[i].level;
-    if(players[i].nplanets>maxnplanets)maxnplanets=players[i].nplanets;
-  }
-      
-  dx=(float)r->width/n;
-  dy=((float)r->height-1)/maxlevel;
-  dy*=0.9;
-
-  for(i=1;i<np;i++){
-    x0=r->x;
-    y0=r->y+(r->height-1)-stats[0].level[i]*dy;
-
-    for(j=0;j<n-1;j++){
-      x1=r->x+(j+1)*dx;
-      y1=r->y+(r->height-1)-stats[j+1].level[i]*dy;
-      gdk_draw_line(pixmap,
-		    gcolors[players[i].color],
-		    x0,y0,
-		    x1,y1);
-      x0=x1;
-      y0=y1;
-      
-    }
-    x1=r->x+(j+1)*dx;
-    y1=r->y+(r->height-1)-players[i].level*dy;
-    gdk_draw_line(pixmap,    
-		  gcolors[players[i].color],
-		  x0,y0,
-		  x1,y1);
-  }
+void Statistics_Draw(GdkPixmap *pixmap,Rectangle *r){
+  DrawStatistics(pixmap,r,stats,stats_n,stats_np);
 }
+
+

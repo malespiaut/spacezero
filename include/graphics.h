@@ -27,6 +27,9 @@
 #define _GRAPHICS_
 
 #include "help.h" 
+#include "objects.h"
+#include "menu.h"
+#include "statistics.h"
 
 /* constants used by DrawMessageBox() */
 #define MBOXDEFAULT 0
@@ -97,7 +100,6 @@ int CountKey(int mode);
 
 GdkColor *NewColor(int red,int green,int blue);
 GdkGC *GetPen(GdkColor *c,GdkPixmap *pixmap);
-void WriteCad(GdkPixmap *pixmap,char *cad,int x,int y,GdkGC *color);
 
 int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *,struct Habitat habitat,Object *cv,Vector r_rel);
 void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj);
@@ -150,4 +152,7 @@ int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,
 
 void PrintFontNames(int n);
 void PrintFontName(char *fname,int n);
+
+void DrawStatistics(GdkPixmap *pixmap,Rectangle *r,struct Stats *stats,int,int);
+
 #endif

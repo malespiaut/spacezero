@@ -28,7 +28,10 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "menu.h"
 #include "save.h"
+#include "players.h"
+
 
 
 extern int actual_player,actual_player0;
@@ -43,16 +46,13 @@ extern struct HeadObjList *listheadcontainer; /* lists of objects that contain o
 extern struct HeadObjList *listheadkplanets; /* list of all planets */
 extern struct Habitat habitat;
 
-extern struct Global gclient;
 extern int fobj[4];
-
 extern Object *cv;     /* coordenates center */
-extern struct Player *players;
-
-extern struct CCDATA *ccdatap; /* HERE set to number of players */
 extern int *cell;
 
-struct Global gremote,glocal;
+struct Global gclient,gremote,glocal;
+
+
 #if DEBUG
 int debugsave=0;
 #endif
@@ -242,13 +242,17 @@ int ExecSave(struct HeadObjList lh,char *nom){
   float control;
   struct IntList *ks,*kps;
   struct CCDATA *ccdata;
-  
+  struct Player *players; 
+
+
   if((fp=fopen(nom,"wt"))==NULL){
     fprintf(stdout,"ExecSave(): I can't open file %s\n",nom);
     return(1);
   }
   
   fprintf(stdout,"Save(): Saving the game to %s ...\n",nom);
+
+  players=GetPlayers();
   
   CheckObjsId();
   /* version */
@@ -477,7 +481,7 @@ int ExecSave(struct HeadObjList lh,char *nom){
   /* ccdata */
   
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    ccdata=&ccdatap[i];
+    ccdata=GetCCData(i);
     FprintfCCData(fp,ccdata);
   }  
   
@@ -524,12 +528,16 @@ int ExecLoad(char *nom){
   int *planet2meetid,*planet2attackid; /* HERE set to number of players */
   int nx,ny;
   
+  struct Player *players;  
+  
+
   /* 
    *     Del all the objects ...
    */
   
   if((fp=fopen(nom,"rt"))==NULL){
-    fprintf(stdout,"ExecLoad(): I can't open file %s\n",nom);return(1);
+    fprintf(stdout,"ExecLoad(): I can't open file %s\n",nom);
+    return(1);
   }
   /* version */
   if(fscanf(fp,"%128s",versionfile)!=1){ /**/
@@ -541,7 +549,7 @@ int ExecLoad(char *nom){
     perror("fscanf");
     exit(-1);
   }
-  
+
   if(strcmp(versionfile,MINORSAVEVERSION)>=0){
     printf("Version:  game:(%s)  save file:(%s) >= %s  ... OK\n",version,versionfile,MINORSAVEVERSION);
   }
@@ -573,7 +581,7 @@ int ExecLoad(char *nom){
   listheadobjs.n=0;
   ship_c=NULL;
   cv=NULL;
-  
+
   /* 
    *    Del all the lists 
    */
@@ -593,21 +601,19 @@ int ExecLoad(char *nom){
     listheadkplanets[i].list=NULL;
     listheadkplanets[i].n=0;
     
-    ccdata=&ccdatap[i];  
+    ccdata=GetCCData(i);
     DestroyCCPlanetInfo(ccdata);
   }
+
+
+  players=GetPlayers(); 
   
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
     DelIntList(players[i].kplanets);
     players[i].kplanets=NULL;
     DelIntIList(&players[i].ksectors);
   }
-  
-  free(players);
-  MemUsed(MADD,-sizeof(struct Player));
-  players=NULL;
-  
-  
+
   printf("done\n");
   
   /* Loading the number of objects */
@@ -690,45 +696,15 @@ int ExecLoad(char *nom){
   }
   GameParametres(SET,GQUEEN,tmpint);
   
-  players=realloc(players,(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct Player));
-  if(players==NULL){ 
-    fprintf(stderr,"ERROR in realloc Execload(players)\n");
-    exit(-1);
-  } 
+  /* players=realloc(players,(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct Player)); */
+  /* if(players==NULL){  */
+  /*   fprintf(stderr,"ERROR in realloc Execload(players)\n"); */
+  /*   exit(-1); */
+  /* }  */
   
-  ccdatap=realloc(ccdatap,(GameParametres(GET,GNPLAYERS,0)+2)*sizeof(struct CCDATA));
-  if(ccdatap==NULL){ 
-    fprintf(stderr,"ERROR in realloc Execload(ccdatap)\n");
-    exit(-1);
-  } 
-  
-  for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    ccdatap[i].player=i;
-    ccdatap[i].planetinfo=NULL;
-    ccdatap[i].nkplanets=0;
-    ccdatap[i].nplanets=0;
-    ccdatap[i].time=0;
-    ccdatap[i].ninexplore=0;
-    ccdatap[i].nenemy=0;
-    
-    ccdatap[i].nexplorer=0;
-    ccdatap[i].nfighter=0;
-    ccdatap[i].ntower=0;
-    ccdatap[i].ncargo=0;
-    ccdatap[i].npilot=0;
-    ccdatap[i].pilot=NULL;
-    
-    ccdatap[i].sw=0;
-    ccdatap[i].war=0;
-    ccdatap[i].p2a_strength=0;
-    
-    ccdatap[i].planethighresource=NULL;
-    ccdatap[i].planetweak=NULL;
-    ccdatap[i].planethighlevel=NULL;
-    ccdatap[i].planet2meet=NULL;
-    ccdatap[i].planet2attack=NULL;
-  }
-  
+  players=InitPlayers(); 
+
+  CreateCCData();
   planet2meetid=malloc((GameParametres(GET,GNPLAYERS,0)+2)*sizeof(int));
   if(planet2meetid==NULL){ 
     fprintf(stderr,"ERROR in malloc Execload(planet2meetid)\n");
@@ -760,7 +736,7 @@ int ExecLoad(char *nom){
     listheadcontainer[i].list=NULL;
     listheadcontainer[i].n=0;
   }
-  
+
   if(fscanf(fp,"%d%d%d%d%d%d%d%d",
 	    &ulx,&uly,
 	    &actual_player0,&record,&nav_mode,&gtime,
@@ -836,8 +812,9 @@ int ExecLoad(char *nom){
     printf("actplayer: %d actplayer0: %d glocal: %d\n",actual_player,actual_player0,glocal.actual_player);
     actual_player=actual_player0=glocal.actual_player;
   }
-  
+
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
+    printf("loading player %d\n",i);
     if(fscanf(fp,"%128s%hd%d%d%hd%hd%hd%hd%hd%hd%hd%d%d%d%d%d%f%d%d%d%d%d%d%f%d%d",
     	      players[i].playername,
 	      &players[i].id,
@@ -874,14 +851,12 @@ int ExecLoad(char *nom){
     /* building known sectors and known planets list */
     
     players[i].kplanets=NULL;
-    
     players[i].ksectors.n=0;
     players[i].ksectors.n0=0;
     players[i].ksectors.list=NULL;
     for(j=0;j<NINDEXILIST;j++){
       players[i].ksectors.index[j]=NULL;
     }
-    
     if(nkp!=0){
       players[i].nplanets=0;
       for(j=0;j<nkp;j++){
@@ -908,16 +883,17 @@ int ExecLoad(char *nom){
 	  perror("fscanf");
 	  exit(-1);
 	}
-	if(GameParametres(GET,GKPLANETS,0)==FALSE)
-	  Add2IntIList(&(players[i].ksectors),id);
+	if(GameParametres(GET,GKPLANETS,0)==FALSE){
+	  /* printf("\t a s %d/%d\n",j,nks); */
+	   Add2IntIList(&(players[i].ksectors),id); 
+	}
       }
     }
     
     /* --building known sectors and known planets list */
     
-    
+    printf("\tloaded player %d\n",i);
   }  /* for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++) */
-  
   
   printf("done\n");
   
@@ -984,10 +960,8 @@ int ExecLoad(char *nom){
       exit(-1);
     } 
 
-    nobj->cargo.mass=0; 
     nobj->cargo.n=0; 
     nobj->cargo.hlist=NULL;
- 
 
   }  /*for(i=0;i<num_objs;i++){    */
 
@@ -1001,17 +975,30 @@ int ExecLoad(char *nom){
 	perror("fscanf");
 	exit(-1);
       }  
-      obj0=SelectObj(&listheadobjs,id);
 
-      for(j=0;j<n;j++){
-	if(fscanf(fp,"%d",&id)!=1){
-	  perror("fscanf");
-	  exit(-1);
+
+      if(n>0){
+	int cargomass=0;
+	obj0=SelectObj(&listheadobjs,id);
+	cargomass=obj0->cargo.mass;
+	obj0->cargo.mass=0; 
+	obj0->cargo.n=0; 
+	obj0->cargo.hlist=NULL;
+	
+	for(j=0;j<n;j++){
+	  
+	  if(fscanf(fp,"%d",&id)!=1){
+	    perror("fscanf");
+	    exit(-1);
+	  }
+	  obj1=SelectObj(&listheadobjs,id);
+	  /* TODO add obj1 to obj0 list */
+#if TEST
+	  printf("cargoadd %d:\n",obj0->cargo.n);
+#endif
+	  CargoAdd(obj0,obj1);
 	}
-	obj1=SelectObj(&listheadobjs,id);
-	/* TODO add obj1 to obj0 list */
-	printf("cargoadd %d:\n",obj0->cargo.n);
-	CargoAdd(obj0,obj1);
+	obj0->cargo.mass=cargomass;
       }
     }
   }
@@ -1024,7 +1011,7 @@ int ExecLoad(char *nom){
   /* load ccdata*/
   
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-    ccdata=&ccdatap[i];
+    ccdata=GetCCData(i);
     FscanfCCData(fp,ccdata);
   }
   
@@ -1140,7 +1127,7 @@ int ExecLoad(char *nom){
   if(GameParametres(GET,GMODE,0)==CLIENT){
     global=&gremote;
   }
-  
+
   /*  habitat.type=habitat_type; */
   habitat.obj=NULL;
   /*  habitat.planet=NULL; */
@@ -1177,7 +1164,7 @@ int ExecLoad(char *nom){
   /* HERE not same state that before saving */
   for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
     if(players[i].control==COMPUTER && GetProc()==players[i].proc){
-      ccdata=&ccdatap[i];  
+      ccdata=GetCCData(i);
       CalcCCInfo(&listheadobjs,&listheadkplanets[players[i].id],players[i].id,ccdata);
       CalcCCPlanetStrength(players[i].id,ccdata);
     }
@@ -1197,9 +1184,9 @@ int ExecLoad(char *nom){
   planet2meetid=NULL;
   free(planet2attackid);
   planet2attackid=NULL;
-  
   return(0);
 } /* --ExecLoad() */
+
 
 int FprintfObj(FILE *fp,Object *obj){
   /*
@@ -1214,9 +1201,9 @@ int FprintfObj(FILE *fp,Object *obj){
   ttl=0;
   /* positions saved normalized */
   
-  fprintf(fp,"%d %d %s %hd %hd %hd %hd %g %d %d %d %d %d %d %d %d %g %d %hd %hd %hd %hd %hd ",
-	  obj->id,obj->pid,obj->name,obj->player,obj->type,
-	  obj->subtype,obj->level,obj->experience,obj->kills,
+  fprintf(fp,"%d %d %d %d %s %hd %hd %hd %hd %g %d %d %d %d %d %d %d %d %d %g %d %hd %hd %hd %hd %hd ",
+	  obj->id,obj->pid,obj->oriid,obj->destid,obj->name,obj->player,obj->type,
+	  obj->subtype,obj->level,obj->experience,obj->kills,obj->ntravels,
 	  obj->durable,obj->visible,obj->radar,obj->mass,
 	  obj->items,obj->cargo.capacity,obj->radio,obj->cost,obj->damage,
 	  obj->ai,modified,ttl,obj->habitat,obj->mode);
@@ -1347,12 +1334,12 @@ int FscanfObj(FILE *fp,Object *obj,struct ObjTable *tbl){
   int in,dest,parent,weapon;
   short modified;  
   
-  if(fscanf(fp,"%d%d%16s%hd%hd%hd%hd%f%d%d%d%d%d%d%d%d%f%d%hd%hd%hd%hd%hd",
-	    &obj->id,&obj->pid,obj->name,&obj->player,&obj->type,
-	    &obj->subtype,&obj->level,&obj->experience,&obj->kills,
+  if(fscanf(fp,"%d%d%d%d%16s%hd%hd%hd%hd%f%d%d%d%d%d%d%d%d%d%f%d%hd%hd%hd%hd%hd",
+	    &obj->id,&obj->pid,&obj->oriid,&obj->destid,obj->name,&obj->player,&obj->type,
+	    &obj->subtype,&obj->level,&obj->experience,&obj->kills,&obj->ntravels,
 	    &obj->durable,&obj->visible,&obj->radar,&obj->mass,
 	    &obj->items,&obj->cargo.capacity,&obj->radio,&obj->cost,&obj->damage,
-	    &obj->ai,&modified,&obj->ttl,&obj->habitat,&obj->mode)!=23){
+	    &obj->ai,&modified,&obj->ttl,&obj->habitat,&obj->mode)!=26){
     perror("fscanf");
     exit(-1);
   }
@@ -1555,7 +1542,7 @@ int FprintfOrders(FILE *fp,Object *obj){
   */
   
   int i;
-  struct ListOrder *lo;
+  struct OrderList *lo;
   struct Order *ord;
   int n,m;
   
@@ -1924,154 +1911,14 @@ void PrintParamOptions(struct Parametres *par){
 } 
 
 
-void SaveUserKeys(char *file,struct Keys *keys){
-  
-  FILE *fp;
-  
-  if((fp=fopen(file,"wt"))==NULL){
-    fprintf(stdout,"Can't open the file: %s",file);
-    exit(-1);
-  }
-  printf("saving keymap to file: %s\n",file);
-  fprintf(fp,"%s\n",version);
-  fprintf(fp,"fire %ud\n",
-	  keys->fire.value);
-  fprintf(fp,"turnleft %ud\n",
-	  keys->turnleft.value);
-  fprintf(fp,"turnright %ud\n",
-	  keys->turnright.value);
-  fprintf(fp,"accel %ud\n",
-	  keys->accel.value);
-  fprintf(fp,"automode %ud\n",
-	  keys->automode.value);
-  fprintf(fp,"manualmode %ud\n",
-	  keys->manualmode.value);
-  fprintf(fp,"map %ud\n",
-	  keys->map.value);
-  fprintf(fp,"order %ud\n",
-	  keys->order.value);
-  
-  fclose(fp);
-} 
-
-int LoadUserKeys(char *keyfile,struct Keys *keys){
-  FILE *fp;
-  char cad[MAXTEXTLEN];
-  
-  if((fp=fopen(keyfile,"rt"))==NULL){
-    printf("file does not exist\n");
-    
-    /* if doesn't exist, create with default values */
-    SaveUserKeys(keyfile,keys);
-    
-  }
-  else{
-    fclose(fp);
-  }
-  
-  /* Read keys  */
-  
-  if((fp=fopen(keyfile,"rt"))==NULL){
-    fprintf(stdout,"I can't open the file: %s", keyfile);
-    exit(-1);
-  }
-  
-  if(fscanf(fp,"%128s",cad)!=1){ /* HERE check version */
-    perror("fscanf");
-    exit(-1);
-  }
-  
-  if(strcmp(cad,MINOROPTIONSVERSION)>=0){
-    printf("Version:  game:(%s)  keymap file:(%s) >= %s  ... OK\n",
-	   version,cad,MINOROPTIONSVERSION);
-  }
-  else if(strcmp(cad,MINOROPTIONSVERSION)<0){
-    fprintf(stderr,"Error: incompatible versions.\n");
-    printf("Version:  game:(%s)  keymap file:(%s) < %s\n",
-	   version,cad,MINOROPTIONSVERSION);
-    fclose(fp);
-    return(1);
-  }
-  
-  if(fscanf(fp,"%128s",cad)!=1){ 
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%ud",&keys->fire.value)!=1){
-    perror("fscanf");
-    exit(-1);
-  }
-  
-  if(fscanf(fp,"%128s",cad)!=1){ 
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%ud",&keys->turnleft.value)!=1){
-    perror("fscanf");
-    exit(-1);
-  }
-  
-  if(fscanf(fp,"%128s",cad)!=1){ 
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%ud",&keys->turnright.value)!=1){
-    perror("fscanf");
-    exit(-1);
-  }
-  
-  if(fscanf(fp,"%128s",cad)!=1){ 
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%ud",&keys->accel.value)!=1){
-    perror("fscanf");
-    exit(-1);
-  }
-  
-  if(fscanf(fp,"%128s",cad)!=1){ 
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%ud",&keys->automode.value)!=1){
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%128s",cad)!=1){ 
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%ud",&keys->manualmode.value)!=1){
-    perror("fscanf");
-    exit(-1);
-  }
-  
-  if(fscanf(fp,"%128s",cad)!=1){ 
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%ud",&keys->map.value)!=1){
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%128s",cad)!=1){ 
-    perror("fscanf");
-    exit(-1);
-  }
-  if(fscanf(fp,"%ud",&keys->order.value)!=1){
-    perror("fscanf");
-    exit(-1);
-  }
-  
-  fclose(fp);
-  return(0);
-}
 
 
 void SaveRecord(char *file,struct Player *players,int record){
   int i,j;
   FILE *fp;
-  
+
+
+  if(players==NULL)return;  
   j=-1;
   for(i=0;i<GameParametres(GET,GNPLAYERS,0);i++){
     if(players[i].points>=record){
@@ -2088,4 +1935,3 @@ void SaveRecord(char *file,struct Player *players,int record){
     fclose(fp);
   }
 }
-

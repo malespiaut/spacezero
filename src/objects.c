@@ -24,22 +24,21 @@
 **************************************************************/
 
 #include <sys/time.h>
+#include "objects.h"
 #include "general.h"
 #include "functions.h"
 #include "spacecomm.h"
-#include "objects.h"
 #include "ai.h"
 #include "data.h"
 #include "sound.h"
 #include "sectors.h"
 #include "locales.h"
-
+#include "players.h"
 
 #define DL (2*RADAR_RANGE)
 /* #define DL 3000 */
 
 struct ObjTree *treeobjs=NULL;
-extern struct Player *players;
 struct HeadObjList listheadobjs;       /* List of all objs */
 extern struct HeadObjList *listheadkplanets;  /* lists of planets known by players */
 extern struct HeadObjList listheadplayer;     /* list of objects of each player */
@@ -69,8 +68,10 @@ Object *NewObj(int type,int stype,
   */
   Object *obj;
   Weapon *weapon;
+  struct Player *players;
   int i;  
-  
+
+  players=GetPlayers();  
   if(player<0||player>GameParametres(GET,GNPLAYERS,0)+1){
     fprintf(stderr, "ERROR in NewObj(): invalid player id %d\n", player);
     fprintf(stderr, "\ttype :%d stype: %d\n", type,stype);
@@ -95,6 +96,8 @@ Object *NewObj(int type,int stype,
   }
   
   strcpy(obj->name,"x");
+  obj->oriid=0;
+  obj->destid=0;
   obj->durable=FALSE;
   obj->visible=TRUE;
   obj->selected=FALSE;
@@ -105,6 +108,7 @@ Object *NewObj(int type,int stype,
   obj->ttl=0;
   obj->level=0;
   obj->kills=0;
+  obj->ntravels=0;
   obj->habitat=H_SPACE;
   obj->mode=NAV;
   obj->damage=1;
@@ -262,7 +266,7 @@ Object *NewObj(int type,int stype,
       break;
     case EXPLOSION:
       obj->durable=TRUE;
-      obj->life=150;
+      obj->life=LIFEEXPLOSION;
       obj->damage=obj->parent->damage/16;
       obj->parent=NULL;
       obj->mass=5;
@@ -281,7 +285,7 @@ Object *NewObj(int type,int stype,
     
   case ASTEROID:
     obj->durable=TRUE;
-    obj->life=9000+4000.0*rand()/RAND_MAX;
+    obj->life=LIFEASTEROID+LIFEASTEROID*rand()/RAND_MAX/2.0;
     obj->state=10;
     obj->a=0;
     obj->ang_v=(2.0*Random(-1)-1.0)/5.0;
@@ -338,7 +342,7 @@ Object *NewObj(int type,int stype,
     break;
   case TRACE:
     obj->durable=TRUE;
-    obj->life=500;
+    obj->life=LIFETRACE;
     obj->gas=0;
     if(obj->parent!=NULL){
       obj->habitat=obj->parent->habitat;
@@ -573,7 +577,7 @@ void NewWeapon(Weapon *weapon,int type){
     break;
   case SHOT1:
     weapon->projectile.durable=TRUE;
-    weapon->projectile.life=30;
+    weapon->projectile.life=LIFESHOT1;
     weapon->projectile.damage=15*DAMAGEFACTOR;
     weapon->projectile.max_vel=VELMAX*.75;
     weapon->projectile.mass=1;
@@ -582,7 +586,7 @@ void NewWeapon(Weapon *weapon,int type){
     break;
   case SHOT2:
     weapon->projectile.durable=TRUE;
-    weapon->projectile.life=50;
+    weapon->projectile.life=LIFESHOT2;
     weapon->projectile.damage=25*DAMAGEFACTOR;
     weapon->projectile.max_vel=VELMAX*.85;
     weapon->projectile.mass=2;
@@ -591,7 +595,7 @@ void NewWeapon(Weapon *weapon,int type){
     break;
   case MISSILE:/* SHOT3:  missile  */
     weapon->projectile.durable=TRUE;
-    weapon->projectile.life=200;
+    weapon->projectile.life=LIFESHOT3;
     weapon->projectile.damage=75*DAMAGEFACTOR;
     weapon->projectile.max_vel=VELMAX*.85;
     weapon->projectile.mass=15;
@@ -600,7 +604,7 @@ void NewWeapon(Weapon *weapon,int type){
     break;
   case LASER:/* SHOT4:  laser */
     weapon->projectile.durable=TRUE;
-    weapon->projectile.life=5;
+    weapon->projectile.life=LIFESHOT4;
     weapon->projectile.damage=50*DAMAGEFACTOR;
     weapon->projectile.max_vel=2*VELMAX;
     weapon->projectile.mass=0;
@@ -692,12 +696,22 @@ void NewEngine(Engine *eng,int type){
   case ENGINE5:
     eng->a=55;
     eng->a_max=1200;
-    eng->v_max=25;/* VELMAX; 30; */
+    eng->v_max=24;/* VELMAX; 30; */
     eng->ang_a=0.04;
     eng->ang_a_max=.2;
     eng->ang_v_max=0.3;
     eng->gascost=.16;
     eng->mass=60;
+    break;
+  case ENGINE6:
+    eng->a=55;
+    eng->a_max=1400;
+    eng->v_max=20;/* VELMAX; 30; */
+    eng->ang_a=0.04;
+    eng->ang_a_max=.2;
+    eng->ang_v_max=0.3;
+    eng->gascost=.18;
+    eng->mass=80;
     break;
     
   default:
@@ -806,7 +820,7 @@ int CountModObjs(struct HeadObjList *lh,int type){
 }
 
 
-Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p){
+Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0){
   /* 
      version 0.3
      Remove all dead objects from the list lhobjs.
@@ -823,12 +837,13 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
   int swdead=0;
   int swx=0;
   int gnet;
+  struct Player *players;
   
   ret=cv0;
   gnet=GameParametres(GET,GNET,0);
+  players=GetPlayers();
   
   ls=lhobjs->list;
-  
   while(ls!=NULL){
     freels=NULL;
     swdead=0;
@@ -900,18 +915,20 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0,struct Player *p
     
     if(freels!=NULL){
       if(freels->obj->type < TRACKPOINT) {
-	p[freels->obj->player].status=PLAYERMODIFIED;
+	players[freels->obj->player].status=PLAYERMODIFIED;
       }
       if(freels->obj->type==SHIP){
 	switch(freels->obj->subtype){
 	case EXPLORER:
 	case FIGHTER:
 	case QUEEN:
+	case FREIGHTER:
 	case TOWER:
 	case PILOT:
-	  p[freels->obj->player].ndeaths++;
+	  players[freels->obj->player].ndeaths++;
 	  break;
 	case SATELLITE:
+	case GOODS:
 	  break;
 	default:
 	  fprintf(stderr,"ERROR in RemoveDeadObjs(): Unknown subtype: %d\n",
@@ -1017,6 +1034,8 @@ void RemoveObj(struct HeadObjList *lhobjs,Object *obj2remove){
     fprintf(stderr,"ERROR en removeobj()\n");
     exit(-1);
   }
+
+
   return;
 }
 
@@ -1218,20 +1237,20 @@ int GetLandedZone(Segment *segment,struct Planet *planet){
 }
 
 
-int GetSegment(Segment *segment,Object *obj){
+int GetSegment(Segment *segment,struct Planet *planet,float x,float y){
   /*
     returns the segment below the ship
   */
   Segment *s;
   
-  if(obj==NULL)return(0);
-  if(obj->habitat!=H_PLANET)return(0);
+  if(planet==NULL)return(0);
+  /* if(obj->habitat!=H_PLANET)return(0); */
   
-  s=obj->in->planet->segment;
+  s=planet->segment;
   
   while(s!=NULL){  
     
-    if(obj->x > s->x0 && obj->x < s->x1){
+    if(x > s->x0 && x < s->x1){
       segment->x0=s->x0;
       segment->x1=s->x1;
       segment->y0=s->y0;
@@ -1332,7 +1351,7 @@ void Explosion(struct HeadObjList *lh,Object *cv,Object *obj,int type){
 }
 
 
-int CountPlayerPlanets(struct HeadObjList *lh,struct Player player,int *cont){
+int CountPlayerPlanets(struct HeadObjList *lh,struct Player *player,int *cont){
   /*
     version 0.1
     Count the known planets of the player player.
@@ -1345,11 +1364,11 @@ int CountPlayerPlanets(struct HeadObjList *lh,struct Player player,int *cont){
   ls=lh->list;
   while(ls!=NULL){
     if(ls->obj->type==PLANET){
-      if(IsInIntList((player.kplanets),ls->obj->id)){
+      if(IsInIntList((player->kplanets),ls->obj->id)){
 	
 	if(ls->obj->player==0)cont[0]++;	 /* INEXPLORE */
 	else{
-	  if(ls->obj->player==player.id)cont[1]++; /* ALLY */
+	  if(ls->obj->player==player->id)cont[1]++; /* ALLY */
 	  else{
 	    cont[2]++;                             /* ENEMY */
 	  }
@@ -1796,7 +1815,9 @@ Object *ObjNearThan(struct HeadObjList *lh,int player,int x,int y,float d2){
   float dmin2;
   Object *obj=NULL;
   Object *retobj=NULL;
+  struct Player *players;
   
+  players=GetPlayers();
   dmin2=d2;
   
   ls=lh->list;
@@ -1830,7 +1851,7 @@ Object *ObjNearThan(struct HeadObjList *lh,int player,int x,int y,float d2){
 
 Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int stype,int pstate,float *d2){
   /*
-    Return a pointer to the nearest object of obj in state pstate.
+    Return a pointer to the nearest object to obj in state pstate.
     pstate can be own, ally, enemy or inexplore. 
     in d2 returns the distance^2.  
   */
@@ -1845,7 +1866,10 @@ Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int stype,int pst
   int pheight2=0;
   int swp=0;
   int sw=0;
+  struct Player *players;
   
+  players=GetPlayers();
+    
   
   /*   if(!PLANETSKNOWN) */
   /*     if(IsInIntList((players[player].kplanets),ls->obj->id)==0)break; */
@@ -1857,11 +1881,11 @@ Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int stype,int pst
   r2min=-1;
   obj->dest_r2=-1;
   
-  if(obj->habitat==H_SPACE){
-    pheight2=GameParametres(GET,GHEIGHT,0);
+  if(obj->habitat==H_PLANET){
+    pheight2=(0.7)*GameParametres(GET,GHEIGHT,0);
     pheight2*=pheight2;
   }
-  
+
   ls=lh->list;
   while(ls!=NULL){
     obj2=ls->obj;
@@ -1944,6 +1968,7 @@ Object *NearestObj(struct HeadObjList *lh,Object *obj,int type,int stype,int pst
   return(robj);
 }
 
+
 void NearestObjAll(struct HeadObjList *lhc,Object *obj,struct NearObject *objs){
   /*
     version 03
@@ -1966,6 +1991,9 @@ void NearestObjAll(struct HeadObjList *lhc,Object *obj,struct NearObject *objs){
   int nlist;
   int pheight2=0;
   int swp=0;
+  struct Player *players;
+  
+
   
   for(i=0;i<4;i++){
     objs[i].obj=NULL;
@@ -1974,16 +2002,16 @@ void NearestObjAll(struct HeadObjList *lhc,Object *obj,struct NearObject *objs){
   
   if(obj==NULL)return;
   if(obj->habitat!=H_SPACE && obj->habitat!=H_PLANET)return;
-  
+
+  players=GetPlayers();  
   player=obj->player;
-  
   radar2=obj->radar*obj->radar;
   
   if(obj->habitat==H_PLANET){
-    pheight2=GameParametres(GET,GHEIGHT,0);
+    pheight2=(0.7)*GameParametres(GET,GHEIGHT,0);
     pheight2*=pheight2;
   }
-  
+
   /* among free space and planets */
   nlist=3;
   if(obj->habitat==H_SPACE){
@@ -2318,8 +2346,9 @@ int UpdateSectors(struct HeadObjList lh){
   int time;
   int proc=0;
   float maxx,maxy;
-  
-  
+  struct Player *players;
+
+  players=GetPlayers();  
   proc=GetProc();
   time=GetTime();
   
@@ -2450,7 +2479,7 @@ int GetPrice(Object *obj,int stype,int eng,int weapon){
     the price of the object obj
     if obj is NULL the price given for the other parametres.
   */
-  static int ship_price[]={PRICESHIP0,PRICESHIP1,PRICESHIP2,PRICESHIP3,PRICESHIP4,PRICESHIP5,PRICESHIP6,PRICESHIP7};
+  static int ship_price[]={PRICESHIP0,PRICESHIP1,PRICESHIP2,PRICESHIP3,PRICESHIP4,PRICESHIP5,PRICESHIP6,PRICESHIP7,PRICESHIP8};
   static int engine_price[]={PRICEENGINE0,PRICEENGINE1,PRICEENGINE2,PRICEENGINE3,PRICEENGINE4,PRICEENGINE5};
   static int weapon_price[NUMWEAPONS]={PRICECANNON0,PRICECANNON1,PRICECANNON2,PRICECANNON3,PRICECANNON4,PRICECANNON5,PRICECANNON6,PRICECANNON7,PRICECANNON8,PRICECANNON9};
   int price=0;
@@ -2497,7 +2526,7 @@ int GetPrice(Object *obj,int stype,int eng,int weapon){
   return(price);
 }
 
-int BuyShip(struct Player player,Object *obj,int stype){
+int BuyShip(struct Player *player,Object *obj,int stype){
   /*
     buy and create an SHIP of subtype stype
     returns:
@@ -2521,7 +2550,7 @@ int BuyShip(struct Player player,Object *obj,int stype){
   if(obj==NULL)return(SZ_OBJNULL);
   if(obj->mode!=LANDED)return(SZ_OBJNOTLANDED);
   if(obj->player!=obj->in->player && stype==TOWER){
-    printf("Warning: Buyship() player: %d planet: %d. Not owned.\n",player.id,obj->in->player);
+    printf("Warning: Buyship() player: %d planet: %d. Not owned.\n",player->id,obj->in->player);
     return(SZ_NOTOWNPLANET);
   }
   
@@ -2540,12 +2569,22 @@ int BuyShip(struct Player player,Object *obj,int stype){
   case TOWER:
     price=GetPrice(NULL,TOWER,ENGINE1,CANNON4);
     break;
+  case FREIGHTER:
+    price=GetPrice(NULL,FREIGHTER,ENGINE6,CANNON0);
+    break;
   case SATELLITE:
     if(obj->cargo.mass + MASSSATELLITE > obj->cargo.capacity){
       return(SZ_NOTENOUGHROOM);
     }
-      price=GetPrice(NULL,SATELLITE,ENGINE1,CANNON3);
+    price=GetPrice(NULL,SATELLITE,ENGINE1,CANNON3);
     break;
+  case GOODS:
+    if(obj->cargo.mass + MASSGOODS > obj->cargo.capacity){
+      return(SZ_NOTENOUGHROOM);
+    }
+    price=GetPrice(NULL,GOODS,ENGINE0,CANNON0);
+    break;
+
   default:
     fprintf(stderr,"WARNING in Buyship() ship stype %d not implemented\n",stype);
     return(SZ_NOTIMPLEMENTED);
@@ -2553,7 +2592,7 @@ int BuyShip(struct Player player,Object *obj,int stype){
     
   }
   if(price<0)return(SZ_UNKNOWNERROR);
-  if(players[obj->player].gold < price)return(SZ_NOTENOUGHGOLD);
+  if(player->gold < price)return(SZ_NOTENOUGHGOLD);
   
   
   if(obj->type==SHIP && obj->subtype==PILOT){ /* pilot buy a ship */
@@ -2575,7 +2614,7 @@ int BuyShip(struct Player player,Object *obj,int stype){
     if(GameParametres(GET,GNET,0)==TRUE){
       SetModified(obj,SENDOBJALL);
     }
-    players[obj->player].gold -=price;
+    player->gold -=price;
     return(SZ_OK);
   }
   
@@ -2604,6 +2643,13 @@ int BuyShip(struct Player player,Object *obj,int stype){
 		 0,0,
 		 CANNON4,ENGINE1,obj->player,NULL,obj->in);
     break;
+  case FREIGHTER:
+    obj_b=NewObj(SHIP,FREIGHTER,
+		 obj->x,s->y0,
+		 0,0,
+		 CANNON0,ENGINE6,obj->player,NULL,obj->in);
+    break;
+    
   case SATELLITE:
     obj_b=NULL;
 
@@ -2613,6 +2659,16 @@ int BuyShip(struct Player player,Object *obj,int stype){
 		 CANNON3,ENGINE1,obj->player,NULL,obj->in);
 
     break;
+  case GOODS:
+    obj_b=NULL;
+
+    obj_b=NewObj(SHIP,GOODS,
+		 obj->x,s->y0,
+		 0,0,
+		 CANNON0,ENGINE0,obj->player,NULL,obj->in);
+
+    break;
+
   default:
     obj_b=NULL;
     fprintf(stderr,"ERROR in Buyship() ship stype %d not implemented\n",stype);
@@ -2620,9 +2676,11 @@ int BuyShip(struct Player player,Object *obj,int stype){
     break;
     
   }
+
+
   if(obj_b!=NULL){
-    players[obj->player].gold -=price;
-    players[obj->player].goldships+=price;
+    player->gold -=price;
+    player->goldships+=price;
     /* obj_b->y+=obj_b->radio+1; */
     r=s->x1-s->x0-2*obj_b->radio;
     
@@ -2637,7 +2695,6 @@ int BuyShip(struct Player player,Object *obj,int stype){
 
     if(stype==SATELLITE){
       if(CargoAdd(obj,obj_b)){
-	obj_b->ai=1;
 	obj_b->weapon->n=obj_b->weapon->max_n;
 	obj_b->gas=obj_b->gas_max;
 	obj_b->state=100;
@@ -2645,15 +2702,22 @@ int BuyShip(struct Player player,Object *obj,int stype){
 	obj_b->in=obj;
       }
     }
+    if(stype==GOODS){
+      if(CargoAdd(obj,obj_b)){
+	obj_b->state=100;
+	obj_b->habitat=H_SHIP;
+	obj_b->in=obj;
+      }
+    }
     
-    players[obj_b->player].nbuildships++;
+    player->nbuildships++;
     
     Add2ObjList(&listheadobjs,obj_b);
     if(GameParametres(GET,GNET,0)==TRUE){
       SetModified(obj,SENDOBJNEW);
     }
 #if TEST
-    printf("BuyShip(): player: %d ship: %d %d\n",player.id,obj_b->type,obj_b->subtype);
+    printf("BuyShip(): player: %d ship: %d %d\n",player->id,obj_b->type,obj_b->subtype);
 #endif
   }
   else{
@@ -3011,9 +3075,11 @@ int CreatePlayerList(struct HeadObjList hlist1,struct HeadObjList *hlist2,int pl
   int id1,id2;
   int n=0;
   long memused=0;
-  
-  
-  if(hlist2->list!=NULL){
+  struct Player *players;
+
+  players=GetPlayers();  
+
+    if(hlist2->list!=NULL){
     fprintf(stderr,"WARNING CPL not NULL %p %d\n",(void *)hlist2->list,hlist2->n);
   }
   
@@ -3036,6 +3102,7 @@ int CreatePlayerList(struct HeadObjList hlist1,struct HeadObjList *hlist2,int pl
     }
     
     if(ls1->obj->subtype==SATELLITE)continue;
+    if(ls1->obj->subtype==GOODS)continue;
     if(ls1->obj->state<=0)continue;
     
     
@@ -3136,8 +3203,10 @@ int CreateContainerLists(struct HeadObjList *lh,struct HeadObjList *hcontainer){
   int proc;
   int value0;
   int gulx,guly;
-  
-  
+  struct Player *players;
+
+  players=GetPlayers();  
+
   for(i=0;i<GameParametres(GET,GNPLANETS,0)+1;i++){
     if(hcontainer[i].list!=NULL){ 
       fprintf(stderr,"WARNING: CCL() not NULL\n"); 
@@ -3248,8 +3317,11 @@ int CreatekplanetsLists(struct HeadObjList *lh,struct HeadObjList *hkplanets){
   struct ObjList *ls;
   int gnplayers;
   int i;
+  int n=0;
   int proc;
-  
+  struct Player *players;
+
+  players=GetPlayers();  
   proc=GetProc();
   gnplayers=GameParametres(GET,GNPLAYERS,0);
   
@@ -3262,21 +3334,21 @@ int CreatekplanetsLists(struct HeadObjList *lh,struct HeadObjList *hkplanets){
   
   ls=lh->list;
   while(ls!=NULL){
-    
     if(ls->obj->type!=PLANET){ls=ls->next;continue;}
     
     for(i=0;i<gnplayers+2;i++){
       if(proc==players[i].proc){
 	if(IsInIntList(players[i].kplanets,ls->obj->id)){
 	  Add2ObjList(&hkplanets[i],ls->obj);
+	  n++;
 	}
       }
     }
     ls=ls->next;
   }
-  
-  return(0);
+  return(n);
 }
+
 
 int CreatePlanetList(struct HeadObjList lheadobjs,struct HeadObjList *lheadplanets){
   /*
@@ -3341,7 +3413,9 @@ void CreateNearObjsList(struct HeadObjList *lh,struct HeadObjList *lhn,int playe
   
   float rx,ry,r2;
   int gnet,proc;
-  
+  struct Player *players;
+
+  players=GetPlayers();  
   gnet=GameParametres(GET,GNET,0);
   proc=GetProc();
   
@@ -3419,12 +3493,15 @@ void Experience(Object *obj,float pts){
   */
   
   float mulshots;
-  
+  struct Player *players;
+
   if(obj->state<=0){
     return;
   }
   if(obj->type!=SHIP)return;
   if(obj->subtype==PILOT)return;
+
+  players=GetPlayers();  
   
   players[obj->player].points+=pts;
   if(players[obj->player].points>=record){
@@ -3433,80 +3510,95 @@ void Experience(Object *obj,float pts){
   
   obj->experience+=pts;
   
-  if(obj->type==SHIP){
-    while(obj->experience>=100*pow(2,obj->level)){
-      obj->experience-=100*pow(2,obj->level);
-      obj->level++;
-      /* HERE      obj->ttl=0; */
-      
-      if(GameParametres(GET,GNET,0)==TRUE){
-	/* if(GetProc()==players[obj->player].proc){ */
-	SetModified(obj,SENDOBJALL);
-	/* } */
-      }
-      obj->state=100;
-      obj->gas=obj->gas_max;
-      obj->shield+=(.9-obj->shield)/3.;
-      obj->engine.gascost-=.01;
-      obj->engine.v_max++;
-      obj->cost*=2.0;
-      
-      mulshots=1+1./(obj->level);
-      
-      if(obj->weapon0.type!=CANNON0){
-	obj->weapon0.max_n+=50;
-	if(obj->weapon0.rate>9){
-	  obj->weapon0.rate--;
-	}
-	if(obj->weapon0.nshots<4){
-	  if(!(obj->level%2)){
-	    obj->weapon0.nshots++;
-	  }
-	}
-	obj->weapon0.projectile.damage*=1.+.2*DAMAGEFACTOR;
-      }
-      
-      if(obj->weapon1.type!=CANNON0){
-	if(obj->weapon1.rate>9){
-	  obj->weapon1.rate--;
-	}
-	if(obj->weapon1.max_n<10){ /* max 11 missiles */
-	  obj->weapon1.max_n+=2;
-	}
-	obj->weapon1.projectile.damage*=1.+.2*DAMAGEFACTOR;
-      }
-      
-      if(obj->weapon2.type!=CANNON0){
-	obj->weapon2.max_n*=mulshots;
-	if(obj->weapon2.rate>9){
-	  obj->weapon2.rate--;
-	}
-	obj->weapon2.projectile.damage*=1.+.2*DAMAGEFACTOR;
-      }
-      
-      if(obj->shield>.9)obj->shield=.9;
-      if(obj->engine.gascost<.01)obj->engine.gascost=.01;
-      if(obj->engine.v_max>VELMAX)obj->engine.v_max=VELMAX;
-      
-      obj->engine.v2_max=obj->engine.v_max*obj->engine.v_max;
-      
-      if(obj->subtype==FIGHTER){
-	switch(obj->level){
-	case 1:
-	  if(obj->weapon1.type==CANNON0){
-	    NewWeapon(&obj->weapon1,CANNON8);
-	  }
-	  break;
-	case 2:
-	  if(obj->weapon2.type==CANNON0){
-	    NewWeapon(&obj->weapon2,CANNON9);
-	  }
-	  break;
-	default:
-	  break;
-	}
-      }
+
+  while(obj->experience>=100*pow(2,obj->level)){
+    obj->experience-=100*pow(2,obj->level);
+    obj->level++;
+    /* HERE      obj->ttl=0; */
+    
+    if(GameParametres(GET,GNET,0)==TRUE){
+      /* if(GetProc()==players[obj->player].proc){ */
+      SetModified(obj,SENDOBJALL);
+      /* } */
     }
+    obj->state=100;
+    obj->gas=obj->gas_max;
+    obj->engine.gascost-=.01;
+    obj->engine.v_max++;
+    obj->cost*=COSTINC*COSTFACTOR;
+    
+    mulshots=1+1./(obj->level);
+    
+    if(obj->weapon0.type!=CANNON0){
+      obj->weapon0.max_n+=50;
+      if(obj->weapon0.rate>9){
+	obj->weapon0.rate--;
+      }
+      if(obj->weapon0.nshots<4){
+	if(!(obj->level%2)){
+	  obj->weapon0.nshots++;
+	}
+      }
+      obj->weapon0.projectile.damage*=1.+.2*DAMAGEFACTOR;
+    }
+    
+    if(obj->weapon1.type!=CANNON0){
+      if(obj->weapon1.rate>9){
+	obj->weapon1.rate--;
+      }
+      if(obj->weapon1.max_n<10){ /* max 11 missiles */
+	obj->weapon1.max_n+=2;
+      }
+      obj->weapon1.projectile.damage*=1.+.2*DAMAGEFACTOR;
+    }
+    
+    if(obj->weapon2.type!=CANNON0){
+      obj->weapon2.max_n*=mulshots;
+      if(obj->weapon2.rate>9){
+	obj->weapon2.rate--;
+      }
+      obj->weapon2.projectile.damage*=1.+.2*DAMAGEFACTOR;
+    }
+    
+    if(obj->engine.gascost<.01)obj->engine.gascost=.01;
+    if(obj->engine.v_max>VELMAX)obj->engine.v_max=VELMAX;
+    
+    obj->engine.v2_max=obj->engine.v_max*obj->engine.v_max;
+    
+    switch(obj->subtype){
+    case FIGHTER:
+
+      switch(obj->level){
+      case 1:
+	if(obj->weapon1.type==CANNON0){
+	  NewWeapon(&obj->weapon1,CANNON8);
+	}
+	break;
+      case 2:
+	if(obj->weapon2.type==CANNON0){
+	  NewWeapon(&obj->weapon2,CANNON9);
+	}
+	break;
+      default:
+	break;
+      }
+      obj->shield+=(.9-obj->shield)/3.;
+      obj->engine.a_max*=1.10;
+      break;
+    case FREIGHTER:
+      obj->cargo.capacity*=1.2;
+      obj->engine.a_max*=1.15;
+      obj->shield+=(.95-obj->shield)/2.;
+      if(obj->shield>.95)obj->shield=.95;
+      break;
+    default:
+      obj->shield+=(.9-obj->shield)/3.;
+      if(obj->shield>.9)obj->shield=.9;
+      break;
+
+    
+    }
+  
   }
 }
 
@@ -3537,6 +3629,9 @@ char Type(Object *obj){
       break;
     case QUEEN:
       mode='Q';
+      break;
+    case FREIGHTER:
+      mode='C';
       break;
     case PILOT:
       mode='A';
@@ -3769,13 +3864,17 @@ int IsPlanetEmpty(Object *planet,Object *obj){
   struct ObjList *ls;
   int gnet;
   int ret=0;
-  
+  struct Player *players;
+
+
+
   /* PRODUCTION remove messages */
   
   if(obj==NULL)return(-1);
   if(planet==NULL)return(-1);
   if(planet->player==0)return(0); /* planet never conquered */ 
-  
+
+  players=GetPlayers();  
   gnet=GameParametres(GET,GNET,0);
   ls=listheadobjs.list;
   while(ls!=NULL){
@@ -3815,7 +3914,9 @@ int UpdateCell(struct HeadObjList *lh,int *cell){
   int i,j;
   int value;
   int gnet;
-  
+  struct Player *players;
+
+  players=GetPlayers();      
   dx=GameParametres(GET,GULX,0)/DL;
   dy=GameParametres(GET,GULY,0)/DL;
   dx2=dx/2;
@@ -3994,11 +4095,26 @@ void ShipProperties(Object *obj,int stype,Object *in){
     obj->damage=25;
     obj->cost=COSTQUEEN*COSTFACTOR;
     break;
+
+  case FREIGHTER: /*  FREIGHTER */
+    obj->oriid=obj->in->id;
+    obj->radar=2*RADAR_RANGE;
+    obj->gas_max=2000;
+    obj->gas=obj->gas_max;
+    obj->shield=0.8;
+    obj->state=90;
+    obj->mass=MASSFREIGHTER;
+    obj->cargo.capacity=200;
+    obj->radio=20;
+    obj->ai=1;
+    obj->damage=25;
+    obj->cost=COSTFREIGHTER*COSTFACTOR;
+    break;
     
   case SATELLITE: /* SATELLITE: */
     obj->radar=3*RADAR_RANGE;
     obj->durable=TRUE;
-    obj->life=2400;
+    obj->life=LIFESATELLITE;
     obj->gas_max=500;
     obj->gas=obj->gas_max;
     obj->shield=0;
@@ -4040,6 +4156,25 @@ void ShipProperties(Object *obj,int stype,Object *in){
     obj->damage=5;
     obj->cost=COSTPILOT*COSTFACTOR;
     break;
+
+  case GOODS: /* GOODS */
+    obj->radar=0;
+    obj->durable=TRUE;
+    obj->life=LIFEGOODS;
+    obj->gas_max=0;
+    obj->gas=obj->gas_max;
+    obj->shield=0;
+    obj->state=99;
+    obj->mass=MASSGOODS;
+    obj->damage=5;
+    obj->cargo.capacity=0;
+    obj->radio=2;
+    obj->ai=0;
+    obj->in=in;
+    obj->planet=NULL;
+    obj->cost=COSTGOODS*COSTFACTOR;
+    break;
+
   default:
     fprintf(stderr,"ERROR ShipProperties(): unknown subtype %d\n",stype);
     exit(-1);
@@ -4088,7 +4223,7 @@ int CreatePilot( Object *obj){
   obj->ang_a=0;
   obj->damage=5;
   obj->durable=TRUE;
-  obj->life=LIVEPILOT;
+  obj->life=LIFEPILOT;
   obj->radio=10;
   
   obj->state=100;
@@ -4164,12 +4299,10 @@ Object *FirstSelected(struct HeadObjList *lh,int player){
 
 float Distance2(Object *obj1,Object *obj2){
   /*
-    Not USED
     version 0.2
     Calc the distance between 2 objects.
     Returns:
     distance pow 2
-    
   */
   
   float x1,x2,y1,y2,rx,ry,r2;
@@ -4290,6 +4423,10 @@ int CargoAdd(Object *obj1,Object *obj2){
     0 if there are no room, is already in list
     1 if obj2 is added
   */
+
+  struct Player *players;
+
+  players=GetPlayers();      
 
   if(obj1==NULL || obj2==NULL){
     return(0);
@@ -4445,6 +4582,10 @@ void CargoCheck(struct HeadObjList *hol,Object *cvobj){
   int sw=0;
   int gnet;
   int proc=0;  
+  struct Player *players;
+
+  players=GetPlayers();      
+
   ls=hol->list;
   gnet=GameParametres(GET,GNET,0);
   proc=GetProc();
@@ -4568,6 +4709,7 @@ int CargoEjectObjs(Object *obj,int type,int subtype){
   
   if(obj==NULL)return(0);
   if(obj->cargo.hlist==NULL)return(0);
+  
 
   if(type!=-1 && subtype !=-1)sw=1;  /* eject all */
   gnet=GameParametres(GET,GNET,0);
@@ -4743,7 +4885,7 @@ int CargoIsObj(Object *obj,Object *obj2){
 	    obj2->type,obj2->subtype,
 	    obj2->state);
   }
-  ls=obj->cargo.hlist->list; /* HEREBUG segfault */
+  ls=obj->cargo.hlist->list; 
 
   while(ls!=NULL){
     if(ls->obj==obj2)return(1);
@@ -4782,6 +4924,31 @@ int CargoPrint(Object *obj){
   }
   printf("\n");
   return(n);
+}
+
+int CargoGetMass(Object *obj){
+  /*
+    Get the total mass of the objects in cargo. Don't count goods
+    returns:
+    the mass of cargo.
+  */
+  struct ObjList *ls;
+  int mass=0;
+
+  if(obj==NULL){
+    return(0);
+  }
+  if(obj->cargo.hlist==NULL){
+    return(0);
+  }
+
+  ls=obj->cargo.hlist->list;
+
+  while(ls!=NULL){
+    mass+=ls->obj->mass;
+    ls=ls->next;
+  }
+  return(mass);
 }
 
 

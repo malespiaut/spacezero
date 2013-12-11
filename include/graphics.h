@@ -26,10 +26,9 @@
 #ifndef _GRAPHICS_
 #define _GRAPHICS_
 
-#include "help.h" 
-#include "objects.h"
-#include "menu.h"
-#include "statistics.h"
+#include "objects.h" 
+#include "statistics.h" 
+
 
 /* constants used by DrawMessageBox() */
 #define MBOXDEFAULT 0
@@ -45,6 +44,22 @@
 #define DOT 1
 #define LINE 2
 #define CIRCLE 3
+
+/* colors */
+
+#define BLACK 0
+#define WHITE 1
+#define RED 2
+#define LIGHTGREEN 3
+#define GREEN 4
+#define BLUE 5
+#define YELLOW 6
+#define ORANGE 7
+#define VIOLET 8
+#define PINK 9
+#define CYAN 10
+#define SOFTRED 11
+#define GREY 12
 
 
 struct Stars{
@@ -135,8 +150,6 @@ gint Save(GtkWidget *widget,gpointer gdata);
 gint Load(GtkWidget *widget,gpointer gdata);
 gint Options(GtkWidget *widget,gpointer gdata);
 
-void SetDefaultKeyValues(struct Keys *key,int action);
-
 void Shift(int action,int ulx,int cvid,float *z,float *x,float *y);
 
 void MousePos(int order,int *x,int *y);
@@ -154,5 +167,9 @@ void PrintFontNames(int n);
 void PrintFontName(char *fname,int n);
 
 void DrawStatistics(GdkPixmap *pixmap,Rectangle *r,struct Stats *stats,int,int);
+
+
+void InitColors(void);
+GdkGC *GetColor(int);
 
 #endif

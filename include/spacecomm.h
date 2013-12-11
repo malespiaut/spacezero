@@ -28,8 +28,8 @@
 
 
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+/* #include <sys/stat.h> */
+/* #include <fcntl.h> */
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -131,6 +131,8 @@ struct ListNetMess{
   struct NetMess mess;
   struct ListNetMess *next;
 };
+
+
 
 /* Declaracion de funciones */
   

@@ -25,7 +25,8 @@
 
 
 #include "sectors.h"
-
+#include "functions.h"
+#include "objects.h" 
 
 int SelectSector(struct HeadIntIList *hlist,Object *obj,int *a,int *b){
   /*

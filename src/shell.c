@@ -24,16 +24,16 @@
 **************************************************************/
 
 #include <string.h>
-#include "general.h"
-#include "shell.h"
+#include "objects.h" 
+#include "shell.h" 
 #include "ai.h"
-#include "objects.h"
-#include "spacecomm.h"
-#include "functions.h"
+#include "spacecomm.h" 
+#include "functions.h" 
 #include "graphics.h"
-#include "locales.h"
+#include "locales.h" 
+#include "menu.h"
 
-extern struct Player *players;
+
 extern struct Habitat habitat;
 extern struct Keys keys;
 extern struct HeadObjList listheadobjs;       /* list of all objects */
@@ -42,6 +42,7 @@ extern struct Draw gdraw;
 #if DEBUG
 int debugshell=FALSE;
 #endif
+
 
 
 int GetView(void);
@@ -265,9 +266,9 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       /* keyb or mouse order */
       if(key->mright==TRUE  && *pcv!=NULL){
 	int view=GetView();
-	  int x,y,a,b,pid;
-	  Object *nearobj;
-	  
+	int x,y,a,b,pid;
+	Object *nearobj;
+	
 	switch(view){
 	case VIEW_MAP:
 	  MousePos(GET,&x,&y);
@@ -347,10 +348,11 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
 	snprintf(cad,MAXTEXTLEN,"                  2: FIGTHER(%d)",GetPrice(NULL,FIGHTER,ENGINE4,CANNON4));
       }
       else{
-	snprintf(cad,MAXTEXTLEN,"1: EXPLORER(%d)   2: FIGTHER(%d)   3: TOWER(%d)   4: SATELLITE(%d)",
+	snprintf(cad,MAXTEXTLEN,"1: EXPLORER(%d)   2: FIGTHER(%d)   3: TOWER(%d)   4: FREIGHTER(%d)   5: SATELLITE(%d)",
 		 GetPrice(NULL,EXPLORER,ENGINE3,CANNON3),
 		 GetPrice(NULL,FIGHTER,ENGINE4,CANNON4),
 		 GetPrice(NULL,TOWER,ENGINE1,CANNON4),
+		 GetPrice(NULL,FREIGHTER,ENGINE6,CANNON0),
 		 GetPrice(NULL,SATELLITE,ENGINE1,CANNON3));
       }
       level=3;
@@ -399,7 +401,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     switch(order){
     case BUY:
       Keystrokes(LOAD,NULL,par);
-      DelCharFromCad(par,"1234");
+      DelCharFromCad(par,"12345");
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT){
 	DelCharFromCad(par,"2");
       }
@@ -416,6 +418,9 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
 	strcpy(cad,"TOWER"); 
 	break;
       case 4:
+	strcpy(cad,"FREIGHTER"); 
+	break;
+      case 5:
 	strcpy(cad,"SATELLITE"); 
 	break;
       default:
@@ -484,7 +489,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
 	if(ls->obj->selected==TRUE){
 	  if(ls->obj->player!=player){ls=ls->next;continue;}
 	  obj=ls->obj;
-	  obj0=ExecOrder(lhead,obj,obj->player,order,par);
+	  obj0=ExecOrder(lhead,obj,ps,order,par);
 	  if(sw==0){
 	    if(obj0!=NULL){
 	      firstselobj=obj0;
@@ -497,7 +502,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       }
     }
     else{
-      obj0=ExecOrder(lhead,*pcv,player,order,par);
+      obj0=ExecOrder(lhead,*pcv,ps,order,par);
       if(sw==0){
 	if(obj0!=NULL){
 	  firstselobj=obj0;
@@ -549,7 +554,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
 }
 
 
-Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,char *par){
+Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int order,char *par){
   /*
     version 01 18March11
     Add the order given in the shell to ships orders list
@@ -572,7 +577,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   int nargs;
   char arg1[MAXTEXTLEN],arg2[MAXTEXTLEN];
   char stmess[MAXTEXTLEN];
-
+  int playerid;
   /* game orders */
   ret=obj;
 
@@ -585,6 +590,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     break;
   }
   /* -- game orders */
+  playerid=ps->id;
 
   /* forbidden orders */
 
@@ -741,7 +747,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       if(obj_dest!=NULL){
 	switch(obj_dest->type){
 	case PLANET: /* if planet is unknown*/
-	  if(IsInIntList((players[obj->player].kplanets),id1)==0){
+	  if(IsInIntList((ps->kplanets),id1)==0){
 	    printf("%s. %d %s.\n",
 		   GetLocale(L_NOTALLOWED),
 		   obj_dest->pid,
@@ -755,6 +761,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	    /* keys.esc=TRUE; */
 	  }
 	  else{
+	    obj->destid=obj_dest->id;
 	    printf("(%c %d) %s %d.\n",
 		   Type(obj),obj->pid,
 		   GetLocale(L_GOINGTOPLANET),
@@ -776,17 +783,18 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  }
 	  else{
 	    if(obj_dest==obj){
-	      printf("(%c %d) %s. %s.\n",
+	      printf("(%c %d)  %s.\n",
 		     Type(obj),obj->pid,
-		     GetLocale(L_NOTALLOWED),
+		     /* GetLocale(L_NOTALLOWED), */
 		     GetLocale(L_DESTINYEQUALORIGIN));
 
-	      snprintf(stmess,MAXTEXTLEN,"(%c %d) %s. %s.",
+	      snprintf(stmess,MAXTEXTLEN,"(%c %d)  %s.",
 		       Type(obj),obj->pid,
-		       GetLocale(L_NOTALLOWED),
+		       /* GetLocale(L_NOTALLOWED), */
 		       GetLocale(L_DESTINYEQUALORIGIN));
 	      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
-	      obj_dest=NULL;
+	      return(obj_dest);
+	      /* obj_dest=NULL; */
 	    }	
 	    else{
 	      printf("(%c %d) %s %d.\n",
@@ -940,14 +948,20 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 
 	id1=strtol(arg1,NULL,10);
 	if(id1!=0){
-	  obj_dest=SelectpObj(lhead,id1,player);
+	  obj_dest=SelectpObj(lhead,id1,playerid);
 	}
 	break;
     }
 
     if(obj_dest!=NULL){
       if(obj_dest->type==PLANET){
-	obj_dest=SelectpObjInObj(lhead,obj_dest->id,player);
+	obj_destb=SelectpObjInObj(lhead,obj_dest->id,playerid);
+	if(obj_destb==NULL){ /* empty planet */
+	  if(obj_dest->player!=playerid)obj_dest=NULL; 
+	}
+	else{
+	  obj_dest=obj_destb;
+	}
       }
       if(obj_dest!=NULL){
 	if(obj!=NULL)obj->selected=FALSE;
@@ -959,6 +973,11 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 		 obj_dest->pid,
 		 GetLocale(L_SELECTED));
 	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      }
+      else{
+	printf("(TODO) Not Allowed\n");
+	/* HERE TODO centrar mapa en el planeta si es conocido*/
+	
       }
     }
     else{
@@ -1067,11 +1086,11 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
   case BUY:
     if(obj!=NULL){
       id1=strtol(arg1,NULL,10);
-      if(id1>=1 && id1<=4){
+      if(id1>=1 && id1<=5){
 	status=SZ_OK;
 	switch(id1){
 	case 1: /* EXPLORER */
-	  status=BuyShip(players[obj->player],obj,EXPLORER);
+	  status=BuyShip(ps,obj,EXPLORER);
 	  if(status==SZ_OK){
 	    printf("%s %s.\n",GetLocale(L_EXPLORER),GetLocale(L_BUYED));
 	    snprintf(stmess,MAXTEXTLEN,"%s %s.",GetLocale(L_EXPLORER),GetLocale(L_BUYED));
@@ -1079,7 +1098,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  }
 	  break;
 	case 2:  /* FIGHTER */
-	  status=BuyShip(players[obj->player],obj,FIGHTER);
+	  status=BuyShip(ps,obj,FIGHTER);
 	  if(status==SZ_OK){
 	    printf("%s %s.\n",GetLocale(L_FIGHTER),GetLocale(L_BUYED));
 	    snprintf(stmess,MAXTEXTLEN,"%s %s.",
@@ -1089,7 +1108,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	  }
 	  break;
 	case 3:  /* TOWER */
-	  status=BuyShip(players[obj->player],obj,TOWER);
+	  status=BuyShip(ps,obj,TOWER);
 	  if(status==SZ_OK){
 	    printf("%s %s.\n",GetLocale(L_TOWER),GetLocale(L_BUYED));
 	    snprintf(stmess,MAXTEXTLEN,"%s %s.",
@@ -1098,8 +1117,22 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
 	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
 	  }
 	  break;
-	case 4:  /* SATELLITE */
-	  status=BuyShip(players[obj->player],obj,SATELLITE);
+	case 4:  /* FREIGHTER */
+	  status=BuyShip(ps,obj,FREIGHTER);
+	  if(status==SZ_OK){
+	    /* here locales */
+	    /* printf("%s %s.\n",GetLocale(L_SATELLITE),GetLocale(L_BUYED)); */
+	    printf("FREIGHTER buyed.\n");
+	    snprintf(stmess,MAXTEXTLEN,"FREIGHTER buyed.");
+	    /* snprintf(stmess,MAXTEXTLEN,"%s %s.", */
+	    /* 	     GetLocale(L_SATELLITE), */
+	    /* 	     GetLocale(L_BUYED)); */
+	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  }
+	  break;
+
+	case 5:  /* SATELLITE */
+	  status=BuyShip(ps,obj,SATELLITE);
 	  if(status==SZ_OK){
 	    printf("%s %s.\n",GetLocale(L_SATELLITE),GetLocale(L_BUYED));
 	    snprintf(stmess,MAXTEXTLEN,"%s %s.",
@@ -1171,7 +1204,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       if(price>0){
 	printf("\tPrice: %d eng: %d weapon: %d\n",
 	       price, obj->engine.type, obj->weapon->type);
-	AddGold(players,obj->player,price);
+	AddPlayerGold(obj->player,price);
 	obj->mode=SOLD;
 	obj->items=0;
 	obj->state=-1;
@@ -1184,12 +1217,12 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     break;
 
   case UPGRADE:
-    if(obj->level+1 < players[obj->player].gmaxlevel){
+    if(obj->level+1 < ps->gmaxlevel){
       price=GetPrice(obj,0,0,0);
       if(price>0){
-	if(players[obj->player].gold>price){
-	  players[obj->player].gold-=price;
-	  players[obj->player].goldupdates+=price;
+	if(ps->gold>price){
+	  ps->gold-=price;
+	  ps->goldupdates+=price;
 	  Experience(obj,(int)(100*pow(2,obj->level) - obj->experience+1));
 	  printf("(%c %d) %s %d.\n",
 		 Type(obj),obj->pid,
@@ -1212,10 +1245,10 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
     else{
       printf("%s %d\n",
 	     GetLocale(L_YOUCANUPGRADE),
-	     players[obj->player].gmaxlevel-1);
+	     ps->gmaxlevel-1);
       snprintf(stmess,MAXTEXTLEN,"%s %d",
 	       GetLocale(L_YOUCANUPGRADE),
-	       players[obj->player].gmaxlevel-1);
+	       ps->gmaxlevel-1);
       ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
       ret=NULL;
     }
@@ -1227,7 +1260,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       char cad[MAXTEXTLEN];
 
       Keystrokes(LOAD,NULL,text);
-      snprintf(cad,MAXTEXTLEN,"%s: %s",players[obj->player].playername,text);      
+      snprintf(cad,MAXTEXTLEN,"%s: %s",ps->playername,text);      
 
       printf("=============\n");
       /* printf("%s\n",cad); */
@@ -1235,7 +1268,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,int player,int order,cha
       if(GameParametres(GET,GNET,0)==TRUE){
 	SendTextMessage(cad);
       }
-      SetDefaultKeyValues(&keys,0);
+      SetDefaultKeyValues(0);
       
     }    break;
   default:

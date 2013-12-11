@@ -41,6 +41,21 @@
 #include "spacecomm.h" 
 #include "functions.h"  
 
+struct ObjTable{
+  int id,parent,dest,in,planet;
+};
+
+
+
+struct Global{
+  int actual_player;
+  int g_objid,g_projid;
+  int ship_c,cv;
+  int habitat_type;
+  int habitat_id;
+  int fobj[4];
+};
+
 
 
 char *CreateOptionsFile(void);
@@ -69,8 +84,7 @@ void FscanfPlanetInfoList(FILE *fp,struct CCDATA *ccdata);
 void FscanfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo);
 
 void SaveParamOptions(char *file,struct Parametres *par);
-void SaveUserKeys(char *file,struct Keys *keys);
-int LoadUserKeys(char *keyfile,struct Keys *keys);
+
 
 int LoadParamOptions(char *file,struct Parametres *par);
 void PrintParamOptions(struct Parametres *par);

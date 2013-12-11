@@ -42,7 +42,7 @@ struct Stats stats[NSTATS];
 extern GdkGC *penGreen;
 extern GdkGC *penBlack;
 extern GdkGC *gcolors[];
-extern struct Player *players;
+
 
 /****************************/
 
@@ -71,10 +71,12 @@ void InitStatistics(void){
 
 void UpdateStatistics(void){
   int i,j,k;
-
+  struct Player *players;
 
   stats_tmp.time=GetTime();
   stats_cont++;
+  
+  players=GetPlayers();
   for(i=0;i<stats_np;i++){
     stats_tmp.level[i]+=players[i].level+players[i].nships;
     stats_tmp.nplanets[i]+=players[i].nplanets;

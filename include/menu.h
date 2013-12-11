@@ -26,10 +26,9 @@
 #ifndef _MENU_
 #define _MENU_
 
-#include "general.h"
-/* #include "functions.h" */
-/* #include "help.h" */
-#include "shell.h" 
+#include "general.h" 
+
+
 
 /* menu item types */
 #define MENUITEMTEXT 0      /* only show text */
@@ -88,6 +87,127 @@
 #define MENUENTER 1
 #define MENUESC 2
 
+enum Arguments{
+  ARG_0,		/* 0*/
+  ARG_h,		/* 1*/
+  ARG_g,		/* 2*/
+  ARG_n,		/* 3*/
+  ARG_p,		/* 4*/
+  ARG_t,		/* 5*/
+  ARG_l,		/* 6*/
+  ARG_s,		/* 7*/
+  ARG_c,		/* 8*/
+  ARG_ip,		/* 9*/
+  ARG_port,		/* 10*/
+  ARG_name,		/* 11*/
+  ARG_sound,		/* 12*/
+  ARG_music,		/* 13*/
+  ARG_soundvol,		/* 14*/
+  ARG_musicvol,		/* 15*/
+  ARG_k,		/* 16*/
+  ARG_cooperative,	/* 17*/
+  ARG_compcooperative,	/* 18*/
+  ARG_queen,		/* 19*/
+  ARG_pirates,		/* 20*/
+  ARG_nopirates,	/* 21*/
+  ARG_enemyknown,	/* 22*/
+  ARG_noenemyknown,	/* 23*/
+  ARG_font,		/* 24*/
+  ARG_geom,		/* 25*/
+  ARG_nomenu,		/* 26*/
+  ARG_fontlist,		/* 27*/
+  ARG_lang,		/* 28*/
+  ARG_NUM
+};
+
+struct Parametres{
+  int ngalaxies;
+  int nplanets;
+  int nplayers;
+  int nteams;
+  int ul;
+  int kplanets;
+  int sound; /* on off */
+  int music; /* on off */ 
+  int soundvol; /* 0..100 */
+  int musicvol; /* 0..100 */
+  int cooperative;
+  int compcooperative;
+  int queen;
+  int pirates;
+  int enemyknown;
+  int menu;
+  int server;
+  int client;
+  char IP[MAXTEXTLEN];
+  int port;
+  int port2;
+  char playername[MAXTEXTLEN];
+  char font[MAXTEXTLEN];
+  char geom[MAXTEXTLEN];
+  int fontlist;
+  char lang[MAXTEXTLEN];
+};
+
+struct Validargum{
+    char cad[MAXTEXTLEN];
+    int id;
+  };
+
+
+
+
+typedef struct{
+  int state;
+  unsigned int value;
+}key;
+
+
+struct Keys{
+  int load,save;
+  int left,right,up,down;  /* move map */
+  int tab;                 /* change to next ship */
+  int may,ctrl,alt,esc;
+  int home;
+  int Pagedown,Pageup;         /* next, previous planet */
+  int f1,f2,f3,f4,f5,f6,f7,f8,f9,f10;   /* choose ship */
+  int centermap;           /* center map */
+  int enter;               /* enter command */
+  int back;                /* delete last letter */ 
+  int trace;               /* trace on/off */ 
+  int mleft;               /* mouse left click*/
+  int mright;              /* mouse right click*/
+  int mdclick;             /* mouse double click*/
+  int b;     /* buy ships */
+  int s;     /* open charge  */
+  int n;     /* change navigation mode, no  */
+  int z;     /* zoom map */
+  int l;     /* labels on/off */
+  int p;     /* pause the game */
+  int number[10]; /* shell */
+  int g;  /* shell */
+  int x;  /* shell */
+  int t;  /* shell */
+  int o;  /* shell */
+  int r;  /* shell */
+  int w;  /* shell */
+  int e;  /* shell */
+  int u;  /* shell */
+  int d;  /* shell */
+  int q;  /* ^Q quit */
+  int y;  /* yes */
+  int plus;
+  int minus;
+  /* user defined keys  */
+  key fire;               /* fire */
+  key turnleft,turnright;
+  key accel;
+  key automode,manualmode;     /* switch to manual-auto control */
+  key map;
+  key order;
+};
+
+
 struct MenuHead{
   char title[MAXTEXTLEN];
   int n;
@@ -113,7 +233,7 @@ int Add2MenuHead(struct MenuHead *mhead,struct MenuItem *item0,char *title);
 char *GetOptionValue(int id);
 char *GetTextEntry(struct MenuItem *item,char *);
 struct MenuHead *CreateMenu(void);
-int  UpdateMenu(struct MenuHead *mhead,struct MenuHead *mactual,struct Keys *);
+int  UpdateMenu(struct MenuHead *mhead,struct MenuHead *mactual);
 void MenuUp(struct MenuHead *mhead);
 void MenuDown(struct MenuHead *mhead);
 int MenuEnter(struct MenuHead *mhead);
@@ -121,5 +241,25 @@ void MenuEsc(struct MenuHead *mhead);
 struct MenuHead *SelectMenu(struct MenuHead *mhead);
 void MenuItemActive(struct MenuHead *mhead,int active);
 void Funct01(struct MenuItem *item,char *);
+
+/******* arguments **********/
+
+int Arguments(int argc,char *argv[],char *optfile);
+void PrintArguments(char *title);
+int CheckArgs(void);
+void SetDefaultParamValues(void);
+int GetGeom(char *geom,int *w,int *h);
+int SearchArg(char *target);
+
+/****keys****/
+
+void SetDefaultUserKeys(void);
+void SaveUserKeys(char *file);
+int LoadUserKeys(char *keyfile);
+void SetDefaultKeyValues(int action);
+struct Keys* GetKeys(void);
+
+
+
 
 #endif

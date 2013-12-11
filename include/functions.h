@@ -26,9 +26,7 @@
 #ifndef _FUNCTIONS_
 #define _FUNCTIONS_ 
 
-#include "objects.h"
-#include "menu.h"
-
+#include "players.h"
 
 #define GET 0
 #define SET 1
@@ -42,9 +40,7 @@
 float Random(int);
 float Sqrt(int n);
 void delay(int time);
-void AddGold(struct Player *,int player,int n);
 int GetControl(struct Player *,int player);
-int GetPlayerProc(struct Player *,int player);
 int GameParametres(int option,int param,int value);
 
 int Proc(int option,int value);

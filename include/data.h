@@ -77,7 +77,6 @@ struct Window{ /* basic window */
   int width,height;
   struct  Scrollbar scrollbar;
   void *data;
-
 };
 
 struct HeadTextList{

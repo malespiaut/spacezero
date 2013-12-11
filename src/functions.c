@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 #include "functions.h"
 #include "general.h"
 #include "sound.h"
@@ -58,13 +59,6 @@ float Random(int a){
   }
   if(n>=1000)n=0;
   return(rtable[n++]); 
-}
-
-void AddGold(struct Player *players,int player,int n){
-  players[player].gold+=n;
-}
-int GetPlayerProc(struct Player *players,int player){
-  return(players[player].proc);
 }
 
 
@@ -126,9 +120,6 @@ int SetNProc(int value){
   return(NProc(GET,0));
 }
 
-int GetControl(struct Player *players,int player){
-  return(players[player].control);
-}
 
 void delay(int time){
   /* 
@@ -454,3 +445,5 @@ int MemUsed(int action,size_t value){
   }
   return(memused);
 }
+
+

@@ -47,13 +47,18 @@ SENDOBJUNMOD0
 
 */
 
+#include <time.h>
+#include <sys/stat.h> 
+#include <fcntl.h>
 #include "spacecomm.h"
 #include "ai.h"
 #include "data.h"
 #include "functions.h"
 #include "clock.h"
 #include "locales.h"
-#include <time.h>
+#include "players.h"
+#include "menu.h"
+#include "save.h"
 
 #define SENDORDERS 1
 #define COMMDEBUG 0
@@ -92,7 +97,7 @@ extern struct Parametres param;
 extern int fobj[4];
 
 extern struct Player *players;
-extern struct Keys keys;
+/* extern struct Keys keys; */
 extern Object *cv;              /* coordenates center */
 
 extern char clientname[MAXTEXTLEN];
@@ -100,7 +105,7 @@ extern char clientname[MAXTEXTLEN];
 struct TextMessage textmen0;  /* send message here */
 struct TextMessage textmen1;  /* recv message here */
 struct Buffer buffer1,buffer2; /* buffers used in comm. */
-struct Global gclient;
+extern struct Global gclient;
 
 
 int OpenComm(int mode,struct Parametres par,struct Sockfd *sockfd){
@@ -654,7 +659,11 @@ void *CommClient(void /*struct Thread_arg*/ *a){
       close(fd);
       
       fprintf(stdout,"...done\n");
-      keys.load=TRUE;
+      {
+	struct Keys *key;
+	key=GetKeys();
+	key->load=TRUE;
+      }
       LoadBuffer(order,&buffer1,CLIENT);
 
       break;
@@ -3678,7 +3687,7 @@ int AddObjOrders2Buffer(struct Buffer *buffer,Object *obj){
     returns:
     the number of bytes writed.
    */
-  struct ListOrder *lo;
+  struct OrderList *lo;
   int norders=0;
   int nbytes,tbytes;
   int i,n,no;

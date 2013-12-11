@@ -26,7 +26,7 @@
 #ifndef _STATISTICS_
 #define _STATISTICS_
 
-
+#include <gdk/gdkx.h>
 #include "general.h"
 
 #define NSTATS 64

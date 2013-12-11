@@ -48,7 +48,7 @@ Version 0.8 (since 10May2011)
 ===========
 
 -!!Reordenar, jerarquizar codigo, ficheros.
--!!Disminuir numero de variables extern (97),58,72,76,92,95,87 grep extern src/*.c include/*h |grep ";" |wc
+-!!Disminuir numero de variables extern (90)78 grep extern src/*.c include/*h |grep ";" |wc
 -!!Disminuir los HERE (74)88,69,83  grep HERE src/*c include/*h|wc
 -!!Damage in collision depends on mass and velocity. Elastic shocks. 
 -!!Change ksectorslist for a three elements list: id,x,y.
@@ -59,7 +59,6 @@ Version 0.8 (since 10May2011)
 -Objects with sons(shots are sons of the ships).
 -nav_mode in every ship, object propierty(?)
 -!change MISSILE to type SHIP
--frames/s when save/load.
 -?Use same struct for planets and known sectors in struct Player.
 
 -!!Merge UpdateShip() y UpdateAsteroid() ??
@@ -78,13 +77,15 @@ Ships:
 -Invisibility. Ships partially visible to radar.
 -new arm for towers: laser beam as in "missile command"
 
+
+
 AI:    
 ===
--!!Fast ship pursuing a slow one: improve ,adjust velocity.
 -!!When an enemy ship is near a planet send only the necessary ships.
 -!! Review buy() and upgrade()
 -!A planet with to many ships, redistribute ships.
 -!!check rules in ally planet. If is empty: conquer.
+-!!AI uses SATELLITES
 -Add a different way to attack planets. 
 -evasion maneuver.
 -Avoid enemy shots.
@@ -121,7 +122,6 @@ Planets:
 Version 0.9
 ===========
 -Dynamic Universe.
--Add transports, comerce.
 -Missions.=> Missions script files. (XML?)
 -Increase planet terrain. As in "Defender"
 -Avoid shocks whith ships.(See ancient ai() version).
@@ -142,12 +142,14 @@ X-!!Save obj->cdata
 X-(160713)Added Orbit order. Orbit in automatic mode(Take off).
 X-(260713)Ships can  carry satelites. Transport objets.
 X-(260713)Artificial defense satellite.
+X-(121113)Added freighters, trading.
+X-(231113)!!AI uses FREIGHTER
+X-(231113)!!Fast ship pursuing a slow one: improve ,adjust velocity.
 
 
 BUGS version 0.84
 =================
 X-(250513)BUG: Pursuing target, waste of fuel.
-
 
 
 
@@ -189,6 +191,7 @@ X-(150113)order REPEAT for PILOTS.
 X-(150113)Save items in the same order.
 X-(120413)RETREAT en allied planet => STOP
 X-(100513)New background music theme (thanks to Yubatake. http://opengameart.org/users/yubatake
+
 
 BUGS version 0.82
 =================

@@ -474,6 +474,8 @@ int Wait2FinishSound(void){
   }
   return(0);
 }
+
+
 int CleanBuffers(void){
   /* free memory of the first unused buffer not used for any source */
 
@@ -570,7 +572,6 @@ int Sound(int mode,int sid){
   int status;
 
   if(Ssoundenabled==FALSE){
-    printf("Sound(): sound disabled\n");
     return(1);
   }
   /* found the buffer attached to the sound sid*/

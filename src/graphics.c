@@ -31,20 +31,19 @@
 #include <gtk/gtk.h>
 
 #include "graphics.h"
-#include "fonts.h"
+#include "sectors.h"
+
 #include "general.h"
-#include "functions.h"
-#include "menu.h"
-#include "shell.h"
-#include "ships.h" 
-#include "sound.h" 
-#include "sectors.h" 
-#include "objects.h"
-#include "spacecomm.h"
-#include "ai.h"
-#include "save.h"
-#include "locales.h"
-#include "statistics.h"
+#include "fonts.h" 
+#include "functions.h" 
+#include "shell.h" 
+#include "ships.h"  
+#include "sound.h"  
+#include "spacecomm.h" 
+#include "ai.h" 
+#include "save.h" 
+#include "locales.h" 
+
 
 #define USEPIXMAPS 0 /* test stuff */
 #define USEPANGO 0
@@ -117,7 +116,7 @@ GdkGC *penCyan=NULL;
 GdkGC *penSoftRed=NULL;
 GdkGC *penGrey=NULL;
 
-struct Keys keys;
+extern struct Keys keys;
 
 GtkWidget *d_a;
 
@@ -613,26 +612,7 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   
   
   /******** colors **********/
-  penBlack= GetPen(NewColor(0,0,0),pixmap);
-  penWhite= GetPen(NewColor(65535,65535,65535),pixmap);  
-  penRed= GetPen(NewColor(65535,0,0),pixmap);
-  penGreen= GetPen(NewColor(0,65535,0),pixmap);
-  penLightGreen= GetPen(NewColor(40000,65535,40000),pixmap);
-  penBlue= GetPen(NewColor(0,29325,65535),pixmap);
-  penYellow= GetPen(NewColor(65535,65535,0),pixmap);
-  penWhite= GetPen(NewColor(65535,65535,65535),pixmap);
-  penBlack= GetPen(NewColor(0,0,0),pixmap);
-  
-  /*255 165   0 */
-  penOrange= GetPen(NewColor(65535,42405,0),pixmap);
-  /*238 130 238 */
-  penViolet= GetPen(NewColor(65535,0,65535),pixmap);
-  /*255 192 203 */
-  penPink= GetPen(NewColor(65535,32766,65535),pixmap);
-  penCyan= GetPen(NewColor(0,65535,65535),pixmap);
-  penSoftRed= GetPen(NewColor(20000,0,0),pixmap);
-  penGrey= GetPen(NewColor(40000,40000,40000),pixmap);
-  
+  InitColors();
   gcolors[0]=penWhite;
   gcolors[1]=penGreen;
   gcolors[2]=penYellow;
@@ -669,6 +649,80 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   
   return(d_a);
 }
+
+
+void InitColors(void){
+
+  penBlack= GetPen(NewColor(0,0,0),pixmap);
+  penWhite= GetPen(NewColor(65535,65535,65535),pixmap);  
+  penRed= GetPen(NewColor(65535,0,0),pixmap);
+  penGreen= GetPen(NewColor(0,65535,0),pixmap);
+  penLightGreen= GetPen(NewColor(40000,65535,40000),pixmap);
+  penBlue= GetPen(NewColor(0,29325,65535),pixmap);
+  penYellow= GetPen(NewColor(65535,65535,0),pixmap);
+
+  /*255 165   0 */
+  penOrange= GetPen(NewColor(65535,42405,0),pixmap);
+  /*238 130 238 */
+  penViolet= GetPen(NewColor(65535,0,65535),pixmap);
+  /*255 192 203 */
+  penPink= GetPen(NewColor(65535,32766,65535),pixmap);
+  penCyan= GetPen(NewColor(0,65535,65535),pixmap);
+  penSoftRed= GetPen(NewColor(20000,0,0),pixmap);
+  penGrey= GetPen(NewColor(40000,40000,40000),pixmap);
+
+}
+
+GdkGC *GetColor(int color){
+  switch(color){
+
+  case BLACK:
+    return penBlack;
+    break;
+  case WHITE:
+    return penWhite;
+    break;
+  case RED:
+    return penRed;
+    break;
+  case LIGHTGREEN:
+    return penLightGreen;
+    break;
+  case GREEN:
+    return penGreen;
+    break;
+  case BLUE:
+    return penBlue;
+    break;
+  case YELLOW:
+    return penYellow;
+    break;
+  case ORANGE:
+    return penOrange;
+    break;
+  case VIOLET:
+    return penViolet;
+    break;
+  case PINK:
+    return penPink;
+    break;
+  case CYAN:
+    return penCyan;
+    break;
+  case SOFTRED:
+    return penSoftRed;
+    break;
+  case GREY:
+    return penGrey;
+    break;
+  default:
+    fprintf(stderr,"ERROR in GetColor(): Undefined color\n");
+    exit(-1);
+    break;
+  }
+  return (penWhite);
+}
+
 
 gint QuitGraphics(GtkWidget *widget,gpointer gdata){
   
@@ -735,7 +789,9 @@ gint expose_event(GtkWidget *widget, GdkEventExpose *event){
 
 gint configure_event(GtkWidget *widget, GdkEventConfigure *event){
   /* The window has been resized */  
+#if TEST
   printf("entering configure_event\n");
+#endif
   gdrawmenu=TRUE;
   if(pixmap){
     gdk_pixmap_unref(pixmap);
@@ -1402,7 +1458,7 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
   int gwidth,gheight;
   float xr,yr;
   float sx,sy;
-  /*  DrawShip(pixmap,gc,x,y,a,r,ls->obj->state,ls->obj->subtype); */
+
   
   float *missile=ship5;   /* MISSILE */
   
@@ -1575,7 +1631,9 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
       case SHIP2:
       case FIGHTER:
       case QUEEN:
+      case FREIGHTER:
       case SATELLITE:
+      case GOODS:
       case TOWER:	
       case PILOT:
 	if(ls->obj->habitat==H_PLANET && ls->obj==cv && ls->obj->selected==TRUE){
@@ -1676,6 +1734,9 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
   case QUEEN:
     s=ship4;
     break;
+  case FREIGHTER:
+    s=ship10;
+    break;
   case TOWER:
     s=ship6;
     break;
@@ -1688,7 +1749,7 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
       }
     }
     break;
-    
+
   default:
     s=ship1;
     break;
@@ -1724,7 +1785,8 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
   case SHIP2:
   case FIGHTER:
   case QUEEN:
-    
+  case FREIGHTER:
+  case GOODS:
     if(s[0]<=1){
       fprintf(stderr,"ERROR in DrawShip()\n");return;
     }
@@ -2134,7 +2196,7 @@ int DrawRadar(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc,int crash){
       case PILOT:
 	{
 	  int interval=20;
-	  if(ls->obj->life<1200){
+	  if(ls->obj->life<LIFEPILOT/4){
 	    interval=10;
 	  }
 	  if(GetTime()%interval < interval/2 ){
@@ -2149,6 +2211,7 @@ int DrawRadar(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc,int crash){
 	}
 	break;
       case SATELLITE:
+      case GOODS:
 	gdk_draw_point(pixmap,gc,x,gheight-y);
 	break;
       default:
@@ -2451,7 +2514,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
       case PILOT:
 	{
 	  int interval=20;
-	  if(ls->obj->life<1200){
+	  if(ls->obj->life<LIFEPILOT/4){
 	    interval=10;
 	  }
 	  if(GetTime()%interval < interval/2 ){
@@ -2472,6 +2535,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 	}
 	break;
       case SATELLITE:
+      case GOODS:
 	gdk_draw_point(pixmap,gc,
 		       x,gheight-y);
 	break;
@@ -2565,7 +2629,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
       case PILOT:
 	{
 	  int interval=20;
-	  if(ls->obj->life<1200){
+	  if(ls->obj->life<LIFEPILOT/4){
 	    interval=10;
 	  }
 	  if(GetTime()%interval < interval/2 ){
@@ -2585,6 +2649,7 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 	}
 	break;
       case SATELLITE:
+      case GOODS:
 	gdk_draw_point(pixmap,gc,
 		       x,gheight-y);
 	break;
@@ -2597,10 +2662,13 @@ void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList hol,Object *cv,int 
 		      x+2,gheight-y);
 	break;
       }
+
       if(players[ls->obj->player].team==players[player].team){
 	if(label&1){
-	  if(ls->obj->type==SHIP && ls->obj->subtype==SATELLITE){
-	  }
+	  if(ls->obj->type==SHIP && 
+	     (ls->obj->subtype==SATELLITE || ls->obj->subtype==GOODS)){
+	       /*	       HERE */
+	     }
 	  else{
 	    snprintf(point,MAXTEXTLEN,"%d",ls->obj->pid);
 	    DrawString(pixmap,gfont,gc,x+5,gheight-y,point);
@@ -3278,7 +3346,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   if(obj->type==SHIP&&obj->subtype==PILOT && obj->mode==LANDED)n=0;
   
   DrawBarBox(pixmap,color,gc,x,y,sx,texth-1,n);
-  snprintf(point,MAXTEXTLEN,"%s (Sh:%.1f)",GetLocale(L_STATE),obj->shield);
+  snprintf(point,MAXTEXTLEN,"%s (Sh:%d)",GetLocale(L_STATE),(int)(100*obj->shield));
   DrawString(pixmap,font,color,x+sx+10,y+texth,point); 
   y+=incy;
 
@@ -3453,6 +3521,10 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   DrawString(pixmap,font,color,x0+x,y+texth,point);
   y+=incy;
   
+  snprintf(point,MAXTEXTLEN,"travels: %d",obj->ntravels);
+  DrawString(pixmap,font,color,x0+x,y+texth,point);
+  y+=incy;
+
   /* order */
   ord=ReadOrder(NULL,obj,MAINORD);
   if(ord!=NULL){
@@ -3528,6 +3600,13 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
     y+=incy;
   }
   
+  /* AUTO FREIGHTER  HERE LOCALE*/
+  if(obj->type==SHIP && obj->subtype==FREIGHTER){
+    snprintf(point,MAXTEXTLEN,"%d->%d",obj->oriid,obj->destid);
+    DrawString(pixmap,font,color,x0+x,y+texth,point);
+    y+=incy;
+  }
+  /* --AUTO FREIGHTER */
   snprintf(point,MAXTEXTLEN,"%s: %.1f %s",
 	   GetLocale(L_DISTANCE),d,
 	   GetLocale(L_SECTORS));
@@ -4254,41 +4333,6 @@ GtkWidget *CreateBarSubMenu(GtkWidget *menu,char *szName){
   
 }
 
-void SetDefaultKeyValues(struct Keys *key,int action){
-  int i;
-  
-  key->load=key->save=FALSE;
-  key->up=key->down=key->right=key->left=key->back=FALSE;
-  key->centermap=key->trace=key->tab=key->enter=FALSE;
-  key->s=key->n=key->l=FALSE;
-  key->e=key->y=key->u=FALSE;
-  key->f1=key->f2=key->f3=key->f4=key->f7=key->f8=key->f9=key->f10=FALSE;
-  key->p=FALSE;
-  key->d=FALSE;
-  key->home=key->Pagedown=key->Pageup=key->may=key->ctrl=FALSE;
-  for(i=0;i<10;i++)key->number[i]=FALSE;
-  key->plus=key->minus=FALSE;
-  
-  key->fire.state=FALSE;
-  key->turnleft.state=FALSE;
-  key->turnright.state=FALSE;
-  key->accel.state=FALSE;
-  key->automode.state=FALSE;
-  key->manualmode.state=FALSE;
-  key->order.state=FALSE;
-  key->map.state=FALSE;
-  
-  /* don't reset this values when load a game */
-  switch(action){
-  case 1:
-    key->map.state=FALSE;
-    key->f5=key->f6=FALSE;
-    break;
-  default:
-    break;
-  }
-}
-
 
 void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object *cvobj,int act){
   /*
@@ -4335,8 +4379,8 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
     sw=1;
   }
   
-  snprintf(titleships,MAXTEXTLEN,"SHIPS: E:%d F:%d T:%d Q:%d",
-	   ships[EXPLORER],ships[FIGHTER],ships[TOWER],ships[QUEEN]);
+  snprintf(titleships,MAXTEXTLEN,"SHIPS: E:%d F:%d T:%d Q:%d C:%d",
+	   ships[EXPLORER],ships[FIGHTER],ships[TOWER],ships[QUEEN],ships[FREIGHTER]);
   
   if(cvobj!=last_cv || act){
     
@@ -4893,7 +4937,6 @@ int DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl){
     free(a);
   }
   return(x-10);
-  
 }
 
 

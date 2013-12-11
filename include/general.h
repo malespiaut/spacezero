@@ -46,7 +46,7 @@
 #define PI 3.14159265
 
 
-#define MINORSAVEVERSION "0.85.08" /* the save file version must be greater than this.*/
+#define MINORSAVEVERSION "0.85.12" /* the save file version must be greater than this.*/
 #define MINOROPTIONSVERSION "0.85.01" /* the options file must be greater than this.*/
 
 #define MAXTEXTLEN 128
@@ -65,9 +65,10 @@
 #define G .1                        /* gravitation constant */
 #define DT .42 /* .35  .42 .35 .42 */
 #define RESOURCEFACTOR 1.2     /* velocity factor for getting resource from planets */
-#define COSTFACTOR 1.0         /* multiplicative factor to ships cost */
-#define DAMAGEFACTOR .7;      /* (0.9) multiplicative factor to weapon damage */
-#define MINLEVELPILOT 1        /* min level of a ship to have a survival pod, (only fighters)*/
+#define COSTFACTOR 1.0       /* multiplicative factor to ships cost */
+#define DAMAGEFACTOR .7      /* (0.9) multiplicative factor to weapon damage */
+#define COSTINC 1.8          /* increment of ships cost when level up */
+#define MINLEVELPILOT 1      /* min level of a ship to have a survival pod, (only fighters)*/
 
 #define PLANETSKNOWN 0
 #define SLOWMACHINE 0
@@ -249,53 +250,6 @@ typedef struct{
   int habitat; /* 0 means free space, >0:  planetid */
 }Space;
 
-typedef struct{
-  int state;
-  unsigned int value;
-}key;
 
-struct Keys{
-  int load,save;
-  int left,right,up,down;  /* move map */
-  int tab;                 /* change to next ship */
-  int may,ctrl,alt,esc;
-  int home;
-  int Pagedown,Pageup;         /* next, previous planet */
-  int f1,f2,f3,f4,f5,f6,f7,f8,f9,f10;   /* choose ship */
-  int centermap;           /* center map */
-  int enter;               /* enter command */
-  int back;                /* delete last letter */ 
-  int trace;               /* trace on/off */ 
-  int mleft;               /* mouse left click*/
-  int mright;              /* mouse right click*/
-  int mdclick;             /* mouse double click*/
-  int b;     /* buy ships */
-  int s;     /* open charge  */
-  int n;     /* change navigation mode, no  */
-  int z;     /* zoom map */
-  int l;     /* labels on/off */
-  int p;     /* pause the game */
-  int number[10]; /* shell */
-  int g;  /* shell */
-  int x;  /* shell */
-  int t;  /* shell */
-  int o;  /* shell */
-  int r;  /* shell */
-  int w;  /* shell */
-  int e;  /* shell */
-  int u;  /* shell */
-  int d;  /* shell */
-  int q;  /* ^Q quit */
-  int y;  /* yes */
-  int plus;
-  int minus;
-  /* user defined keys  */
-  key fire;               /* fire */
-  key turnleft,turnright;
-  key accel;
-  key automode,manualmode;     /* switch to manual-auto control */
-  key map;
-  key order;
-};
 
 #endif

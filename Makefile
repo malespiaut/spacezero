@@ -1,4 +1,6 @@
-CC = gcc 
+CC = /usr/bin/gcc 
+#CC=gcc
+##export LIBRARY_PATH=/usr/lib32
 #CC= i586-mingw32msvc-cc
 BINDIR= ./bin
 DATADIR= ./dat
@@ -43,8 +45,8 @@ SOUND_OBJS= $(SRCPATH)sound.o  $(SRCPATH)streamsound.o
 SOUND_SRCS= $(SRCPATH)sound.c  $(SRCPATH)streamsound.c
 
 
-PROGRAM_OBJS=$(SRCPATH)spacezero.o $(SRCPATH)objects.o $(SRCPATH)ai.o $(SRCPATH)save.o $(SRCPATH)shell.o $(SRCPATH)spacecomm.o $(SRCPATH)help.o $(SRCPATH)comm.o $(SRCPATH)graphics.o  $(SRCPATH)functions.o $(SRCPATH)data.o $(SRCPATH)menu.o $(SRCPATH)sectors.o $(SRCPATH)clock.o  $(SRCPATH)statistics.o $(SRCPATH)randomnamegen.o $(SRCPATH)locales.o $(SOUND_OBJS) 
-PROGRAM_SRCS=$(SRCPATH)spacezero.c $(SRCPATH)objects.c $(SRCPATH)ai.c $(SRCPATH)save.c $(SRCPATH)shell.c $(SRCPATH)spacecomm.c $(SRCPATH)help.c $(SRCPATH)comm.c $(SRCPATH)graphics.c  $(SRCPATH)functions.c $(SRCPATH)data.c $(SRCPATH)menu.c $(SRCPATH)sectors.c $(SRCPATH)clock.c $(SRCPATH)statistics.c $(SRCPATH)randomnamegen.c $(SRCPATH)locales.c $(SOUND_SRCS) 
+PROGRAM_OBJS=$(SRCPATH)spacezero.o $(SRCPATH)objects.o $(SRCPATH)ai.o $(SRCPATH)save.o $(SRCPATH)shell.o $(SRCPATH)spacecomm.o $(SRCPATH)help.o $(SRCPATH)comm.o $(SRCPATH)graphics.o  $(SRCPATH)functions.o $(SRCPATH)data.o $(SRCPATH)menu.o $(SRCPATH)sectors.o $(SRCPATH)clock.o  $(SRCPATH)statistics.o $(SRCPATH)randomnamegen.o $(SRCPATH)locales.o $(SRCPATH)players.o $(SRCPATH)snow.o $(SOUND_OBJS) 
+PROGRAM_SRCS=$(SRCPATH)spacezero.c $(SRCPATH)objects.c $(SRCPATH)ai.c $(SRCPATH)save.c $(SRCPATH)shell.c $(SRCPATH)spacecomm.c $(SRCPATH)help.c $(SRCPATH)comm.c $(SRCPATH)graphics.c  $(SRCPATH)functions.c $(SRCPATH)data.c $(SRCPATH)menu.c $(SRCPATH)sectors.c $(SRCPATH)clock.c $(SRCPATH)statistics.c $(SRCPATH)randomnamegen.c $(SRCPATH)locales.c $(SRCPATH)players.c $(SRCPATH)snow.c $(SOUND_SRCS) 
 
 
 

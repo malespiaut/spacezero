@@ -459,7 +459,7 @@ struct ObjectAll{   /* SENDOBJALL */
   Weapon weapon1;    /* actual weapon */
   Weapon weapon2;    /* actual weapon */
   Engine engine;     /* motor */
-  Cargo cargo;        /* capacity of the dock TODO*/
+  Cargo cargo;        /* capacity of the dock TODO */
 };
 
 struct ObjectNew{   /* SENDOBJNEW */
@@ -682,6 +682,8 @@ Object *CargoGet(Object *obj1,int type,int subtype);
 int CargoIsObj(Object *obj,Object *obj2);
 int CargoPrint(Object *obj);
 int CargoGetMass(Object *obj);
+int CargoBuild(Object *obj);
+
 
 /*************************/
 /*****************************************************************/

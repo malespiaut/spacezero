@@ -1,5 +1,5 @@
-CC = /usr/bin/gcc 
-#CC=gcc
+#CC = /usr/bin/gcc 
+CC=gcc
 ##export LIBRARY_PATH=/usr/lib32
 #CC= i586-mingw32msvc-cc
 BINDIR= ./bin

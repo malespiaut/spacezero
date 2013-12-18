@@ -53,17 +53,17 @@
 #define TESTSAVE FALSE
 #define DEBUGFAST FALSE
 
-
 int TESTSAVESTEP=1000;
 
 #if DEBUG
 int debugcrash=0;
 int debugmouse=0;
-int debuginit=int;
-0 debugmem=0;
+int debuginit=0;
+int debugmem=0;
 #endif
 
-
+extern int g_objid;  /* id of the objects */
+extern struct Global glocal;
 extern GtkWidget *d_a;
 extern GtkWidget *win_main;
 extern GdkFont *gfont;
@@ -88,7 +88,7 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.85.15"};
+char version[64]={"0.85.17"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Dec 2013"};
@@ -1100,7 +1100,7 @@ gint MainLoop(gpointer data){
   if(GameParametres(GET,GNET,0)==TRUE){
     
     if( !(cont%NETSTEP)){  
-      
+      CargoCheck(&listheadobjs,cv);
       CheckModifiedPre(&listheadobjs,proc);
       Setttl0(&listheadobjs);
       
@@ -1191,6 +1191,21 @@ gint MainLoop(gpointer data){
     key->load=FALSE;
     key->save=FALSE;
     
+    {  /* cargo lists */
+      struct ObjList *ls;
+      int cargomass=0;
+      ls=listheadobjs.list;
+      i=0;
+      while(ls!=NULL){
+	if(ls->obj->cargo.n>0){
+	  cargomass=ls->obj->cargo.mass;
+	  CargoBuild(ls->obj);
+	  ls->obj->cargo.mass=cargomass;
+	}
+	ls=ls->next;
+      }
+    }  /* --cargo lists */
+
     CheckGame("Checking game before save...",1);
     printf("done\n");
     
@@ -1997,7 +2012,7 @@ void key_eval(void){
 	
 	if(cv==ship_c){ 
 	  if(ship_c->gas>0 && gdraw.map==FALSE){
-	    if(cv->type==SHIP&&cv->subtype==PILOT){
+	    if(cv->type==SHIP && cv->subtype==PILOT){
 	      key->accel.state=key->turnleft.state=key->turnright.state=key->fire.state=FALSE;
 	    }
 	    if(key->accel.state==TRUE){
@@ -2287,7 +2302,7 @@ void UpdateShip(Object *obj){
   proc=GetProc();
 
   mass=obj->mass+obj->cargo.mass;
-  
+
   if(obj->habitat==H_SHIP){
     if(obj->in!=NULL){
       obj->x=obj->in->x;
@@ -3456,12 +3471,18 @@ void Collision(struct HeadObjList *lh){
 		      objori=SelectObj(&listheadobjs,obj1->oriid);
 		      objdest=SelectObj(&listheadobjs,obj1->destid);
 		      if(objori==NULL||objdest==NULL){
+#if TEST
 			printf("CARGO: %p %p %d %d\n",(void *)objori,(void *)objdest,obj1->oriid,obj1->destid);
+#endif
+			d=5000;
 		      }
-
-		      d=sqrt((objori->x-objdest->x)*(objori->x-objdest->x)+
-			      (objori->y-objdest->y)*(objori->y-objdest->y));
-		      printf("CARGO: %d %d %f\n",obj1->oriid,obj1->destid,d);
+		      else{
+			d=sqrt((objori->x-objdest->x)*(objori->x-objdest->x)+
+			       (objori->y-objdest->y)*(objori->y-objdest->y));
+#if TEST
+			printf("CARGO: %d %d %f\n",obj1->oriid,obj1->destid,d);
+#endif
+		      }
 
 		      if(d>GameParametres(GET,GULX,0)/10){
 			factor=4*d/20000;
@@ -3541,7 +3562,7 @@ void Collision(struct HeadObjList *lh){
 		  default:
 		    break;
 		  }
-		} /***** --else ship has landed *****/
+		} /*****if(crashsw==0) --else ship has landed *****/
 		break;
 	      default:
 		break;
@@ -3610,6 +3631,7 @@ int UpdateObjs(void){
   while(ls!=NULL){
     obj=ls->obj;
     if(obj->type==PLANET){
+
       /* planets create some gold */
       obj->planet->A=obj->planet->reggold;
       if(!(cont%50))obj->level=0; /* reset level */
@@ -3702,7 +3724,6 @@ int UpdateObjs(void){
 	
 	switch(obj->subtype){
 	case EXPLORER:
-	case SHIP2:
 	case FIGHTER:
 	case QUEEN:
 	case FREIGHTER:
@@ -3724,15 +3745,11 @@ int UpdateObjs(void){
 	  if(proc==plyr[obj->player].proc){
 	    ai(&listheadobjs,obj,actual_player);
 	  }
-	  /* if(obj==cv){ */
-	  /*   printf("cargo: %d\n",obj->cargo.mass); */
-	  /* } */
-
 	  UpdateShip(obj);
 	  
 	  break;
 	default:
-	  g_print("ERROR (UpdateObjs 1)\n");
+	  g_print("ERROR (UpdateObjs 1) %d %d \n",obj->type,obj->subtype);
 	  exit(-1);
 	  break;
 	}
@@ -4475,6 +4492,7 @@ int CheckGame(char *cad,int action){
 	  fprintf(stderr,"\tError CheckGame() obj %d in ship and in= NULL\n",obj->id);
 	  sw++;
 	}
+
 	if(obj->in!=NULL){
 	  if(CargoIsObj(obj->in,obj)==0){
 	    
@@ -4709,7 +4727,7 @@ void GetGold(void){
       switch(ls->obj->subtype){
       case TOWER:
 	levelfactor=(1.0+1.0*ls->obj->level);
-	
+
 	if(ls->obj->in->planet->gold>0){
 	  inctower=(.4+0.1*levelfactor)*RESOURCEFACTOR;
 	  if(ls->obj->in->planet->gold>inctower){
@@ -4735,6 +4753,8 @@ void GetGold(void){
 	    ls->obj->in->planet->A=0.0;
 	  }
 	}
+	
+      
 	break;
 	
       default:
@@ -5169,6 +5189,7 @@ void InitGameVars(void){
   
   if(param.client==TRUE){
     GetUniverse();
+    g_objid=glocal.g_objid;
     plyr=GetPlayers();
     
     SetModifiedAll(&listheadobjs,ALLOBJS,SENDOBJUNMOD,TRUE);

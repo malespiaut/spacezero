@@ -181,6 +181,9 @@ int CopyInt2Buffer(struct Buffer *buffer,int *i);
 int ServerProcessBuffer(struct Buffer *buffer);
 int ClientProcessBuffer(struct Buffer *buffer);
 int CopyPlayerMod2Buffer(struct Buffer *buffer,  struct Player *player);
+int AddObjCargo2Buffer(struct Buffer *buffer,Object *obj);
+
+int CopyObjCargofromBuffer(Object *obj0,char *buf0);
 
 
 #endif

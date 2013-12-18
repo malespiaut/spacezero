@@ -352,11 +352,12 @@ int PlaySound(int sid,int mode,float vol){
       data=NULL;
     }
   }/* if(bufferid==-1) */
-  else{
 #if SOUNDDEBUG
+  else{
     printf("PlaySound():Sound id: %d already in buffer %d\n",sid,bufferid);      
-#endif
   }
+#endif
+
 
 
   /* has a source asigned ?*/

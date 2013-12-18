@@ -5624,7 +5624,7 @@ void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct 
 	if(debugexec&&obj==cv)printf("\tExecattack retreat execgoto: 1 \n");
 #endif
 	if(!ExecTurn(obj,c)){ /* turn to enemy */
-	  	    /* return; */
+	  /* return; */ /* HERE FIX PRODUCTION */
 	}
       }
       else{

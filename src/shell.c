@@ -424,7 +424,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
 	strcpy(cad,"SATELLITE"); 
 	break;
       default:
-	fprintf(stderr,"Not implemented. order no.%ld\n",strtol(par,NULL,10));
+	fprintf(stderr,"Shell(). Not implemented. ship type: %ld\n",strtol(par,NULL,10));
 	break;
       }
       break;
@@ -1142,7 +1142,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	  }
 	  break;
 	default:
-	  fprintf(stderr,"Not implemented. order no.%d\n",id1);
+	  fprintf(stderr,"ExecOrder(). Not implemented. ship type: %d\n",id1);
 	  break;
 	}
 

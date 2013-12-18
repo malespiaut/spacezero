@@ -452,31 +452,6 @@ int ExecSave(struct HeadObjList lh,char *nom){
     ls=ls->next;
   }
 
-  /* cargo list*/
-  ls=lh.list; 
-  while(ls!=NULL){ 
-    switch(ls->obj->type){
-    case TRACKPOINT:
-    case TRACE:
-      ls=ls->next;continue;
-      break;
-    default:
-      break;
-    }
-
-    fprintf(fp,"%d %d ",ls->obj->id,ls->obj->cargo.n); 
-    if(ls->obj->cargo.hlist!=NULL){  
-      struct ObjList *ls2;  
-      ls2=ls->obj->cargo.hlist->list;  
-      while(ls2!=NULL){  
- 	fprintf(fp,"%d ",ls2->obj->id);
- 	ls2=ls2->next;  
-      }  
-    } 
-    fprintf(fp,"\n"); 
-    ls=ls->next; 
-  } 
-  /* --cargo list*/
   
   /* ccdata */
   
@@ -960,51 +935,10 @@ int ExecLoad(char *nom){
       exit(-1);
     } 
 
-    nobj->cargo.n=0; 
     nobj->cargo.hlist=NULL;
-
   }  /*for(i=0;i<num_objs;i++){    */
 
 
-  /*HERE TODO cargo list*/
-  {
-    int n;
-    for(i=0;i<num_objs;i++){
-
-      if(fscanf(fp,"%d%d",&id,&n)!=2){
-	perror("fscanf");
-	exit(-1);
-      }  
-
-
-      if(n>0){
-	int cargomass=0;
-	obj0=SelectObj(&listheadobjs,id);
-	cargomass=obj0->cargo.mass;
-	obj0->cargo.mass=0; 
-	obj0->cargo.n=0; 
-	obj0->cargo.hlist=NULL;
-	
-	for(j=0;j<n;j++){
-	  
-	  if(fscanf(fp,"%d",&id)!=1){
-	    perror("fscanf");
-	    exit(-1);
-	  }
-	  obj1=SelectObj(&listheadobjs,id);
-	  /* TODO add obj1 to obj0 list */
-#if TEST
-	  printf("cargoadd %d:\n",obj0->cargo.n);
-#endif
-	  CargoAdd(obj0,obj1);
-	}
-	obj0->cargo.mass=cargomass;
-      }
-    }
-  }
-  /* --cargo list*/
-
-  
   /* --Loading the  objects */
   
   
@@ -1173,6 +1107,19 @@ int ExecLoad(char *nom){
   
   
   /* --building lists and data */
+  /* cargo lists */
+
+  ls=listheadobjs.list;
+  i=0;
+  while(ls!=NULL){
+    if(ls->obj->cargo.n>0){
+      int cargomass=ls->obj->cargo.mass;
+      CargoBuild(ls->obj);
+      ls->obj->cargo.mass=cargomass;
+    }
+    ls=ls->next;
+  }
+    /** --cargo lists */
 #if DEBUG
   if(debugsave){  
     printf("LAST IN execload() gid:%d\n",g_objid);
@@ -1216,6 +1163,11 @@ int FprintfObj(FILE *fp,Object *obj){
 	  obj->fx0,obj->fy0,obj->a,obj->ang_v,
 	  obj->ang_a,obj->accel,obj->gas,obj->gas_max,
 	  obj->life,obj->shield,obj->state);
+
+  if(obj->type==SHIP && obj->subtype==SATELLITE){
+    printf("SATELLITE: %d %d %g\n",obj->id,obj->pid,obj->state);
+  }
+
   
   fprintf(fp,"%g %d %d %d ",
 	  obj->dest_r2,obj->sw,obj->trace,obj->norder);

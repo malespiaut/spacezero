@@ -1628,7 +1628,6 @@ int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *lhc,struct Habitat habitat,Ob
     case SHIP:
       switch(ls->obj->subtype){
       case EXPLORER:
-      case SHIP2:
       case FIGHTER:
       case QUEEN:
       case FREIGHTER:
@@ -1782,7 +1781,6 @@ void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj){
     break;
     
   case EXPLORER:
-  case SHIP2:
   case FIGHTER:
   case QUEEN:
   case FREIGHTER:

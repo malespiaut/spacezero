@@ -171,8 +171,8 @@ Object *NewObj(int type,int stype,
 
   obj->cargo.capacity=0;    /* max. cargo capacity */
   obj->cargo.mass=0;        /* actual mass cargo */
-  obj->cargo.n=0;           /* cargo capacity */
-  obj->cargo.hlist=NULL;    /* cargo capacity */
+  obj->cargo.n=0;           /* number of elements */
+  obj->cargo.hlist=NULL;    /* list to object in cargo */
 
   obj->planet=NULL;
   
@@ -213,7 +213,6 @@ Object *NewObj(int type,int stype,
     g_objid++;
     break;
   }
-  
   switch(obj->type){
 
   case PROJECTILE:
@@ -860,7 +859,6 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0){
     }
 
     if(swdead){
-      
       if(ls->obj->type<TRACKPOINT){
 	int player=ls->obj->player;
 	players[player].status=PLAYERMODIFIED;
@@ -2648,6 +2646,7 @@ int BuyShip(struct Player *player,Object *obj,int stype){
 		 obj->x,s->y0,
 		 0,0,
 		 CANNON0,ENGINE6,obj->player,NULL,obj->in);
+    obj->oriid=obj->in->id;
     break;
     
   case SATELLITE:
@@ -2714,10 +2713,10 @@ int BuyShip(struct Player *player,Object *obj,int stype){
     
     Add2ObjList(&listheadobjs,obj_b);
     if(GameParametres(GET,GNET,0)==TRUE){
-      SetModified(obj,SENDOBJNEW);
+      SetModified(obj,SENDOBJNEW);/* HERE obj or obj_b???*/
     }
 #if TEST
-    printf("BuyShip(): player: %d ship: %d %d\n",player->id,obj_b->type,obj_b->subtype);
+    printf("BuyShip(): player: %d ship: %d %d state:%f\n",player->id,obj_b->type,obj_b->subtype,obj_b->state);
 #endif
   }
   else{
@@ -4062,7 +4061,6 @@ void ShipProperties(Object *obj,int stype,Object *in){
     break;
   case SHIP0: /* not used */
     /* HERE there are SHIP0 */
-  case SHIP2: /* not used */
   case FIGHTER: /*  FIGHTER */
     obj->gas_max=1000;
     obj->gas=obj->gas_max;
@@ -4097,7 +4095,6 @@ void ShipProperties(Object *obj,int stype,Object *in){
     break;
 
   case FREIGHTER: /*  FREIGHTER */
-    obj->oriid=obj->in->id;
     obj->radar=2*RADAR_RANGE;
     obj->gas_max=2000;
     obj->gas=obj->gas_max;
@@ -4418,7 +4415,7 @@ int CheckObjsId(void){
 
 int CargoAdd(Object *obj1,Object *obj2){
   /*
-    Add obj2 to obj1 list 
+    Add obj2 to obj1 cargo list 
     returns:
     0 if there are no room, is already in list
     1 if obj2 is added
@@ -4435,12 +4432,11 @@ int CargoAdd(Object *obj1,Object *obj2){
   if(CargoIsObj(obj1,obj2)){
     printf("CargoAdd: already in list\n");
     return(0);
-  }  
+  }
 
   if(obj1->cargo.capacity==0)return(0);
 
-  if(obj1->cargo.mass + obj2->mass + obj2->cargo.mass 
-     > obj1->cargo.capacity){
+  if(obj1->cargo.mass + obj2->mass + obj2->cargo.mass > obj1->cargo.capacity){
     fprintf(stderr,"No room for %d in %d %d %d\n",
 	    obj2->id,obj1->id,
 	    obj2->mass+obj2->cargo.mass,obj1->cargo.capacity);
@@ -4599,7 +4595,8 @@ void CargoCheck(struct HeadObjList *hol,Object *cvobj){
       if(ls->obj->type==SHIP)printf("CARGOCHECK dead.\n");
 #endif
       sw=1;
-    }    
+    }
+
     if(sw&& (ls->obj->cargo.hlist!=NULL)){
 #if TEST
       printf("CARGOCHECK.\n");
@@ -4618,17 +4615,21 @@ void CargoCheck(struct HeadObjList *hol,Object *cvobj){
 	if(ls->obj->habitat==H_PLANET)
 	  Play(ls->obj,EXPLOSION0,1);
 #endif
+	if(ls->obj->player==actual_player){
+	  printf("%s %d\n",GetLocale(L_EJECTING),ls->obj->pid);
+	}
       }
-      if(ls->obj->player==actual_player){
-	printf("%s %d\n",GetLocale(L_EJECTING),ls->obj->pid);
-      }
+
       DelAllOrder(ls->obj);
       if(gnet==TRUE){
-	ls->obj->modified=SENDOBJALL;
+	ls->obj->modified=SENDOBJALL; 
 	/* SetModified(ls->obj,SENDOBJALL); */
-	if(ls->obj->modified!=SENDOBJALL){
-	  printf("ERROR CheckPilots() (%d)%d mod: %d\n",ls->obj->player,ls->obj->pid,ls->obj->modified);
-	}
+	/* 
+	   if(ls->obj->modified!=SENDOBJALL){
+	   printf("ERROR CheckPilots() (%d)%d mod: %d\n",ls->obj->player,ls->obj->pid,ls->obj->modified);
+	   
+	   }
+	*/
       }
     }
     ls=ls->next;    
@@ -4951,6 +4952,40 @@ int CargoGetMass(Object *obj){
   return(mass);
 }
 
+
+
+int CargoBuild(Object *obj){
+  
+  /*
+    Build the cargo list of object obj
+  */
+  
+  struct ObjList *ls;
+  int n=0;
+  
+  ls=listheadobjs.list;
+  while(ls!=NULL){
+    switch(ls->obj->habitat){
+    case H_PLANET:
+    case H_SPACE:
+      break;
+    case H_SHIP:
+      if(ls->obj->in==obj){
+	CargoAdd(obj,ls->obj);
+	printf("adding ship (%d,%d,%g) to %d (%d)\n",
+	       ls->obj->id,ls->obj->subtype,ls->obj->state,
+	       obj->id,obj->pid);
+      }
+      break;
+    default:
+      exit(-1);
+    }
+    ls=ls->next;
+  }
+
+
+  return(0);
+}
 
 
 /*****************************************************************/

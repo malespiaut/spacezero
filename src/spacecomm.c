@@ -831,7 +831,7 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
 int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
   /*
     version 01 (011210)
-    add object data to buffer
+    add object data to buffer to send
     reallocate if necessary.
     actualize buffer write position (buffer.n)
     return the bytes writed to the buffer
@@ -842,7 +842,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
   char *buf;
   struct MessageHeader *header;
   struct MessageHeader messh;
-  Object *obj;
+  Object *obj=NULL;
   struct Objectpos opos;
   struct Objectdynamic odyn; 
   struct ObjectAll oall; 
@@ -927,7 +927,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     exit(-1);
     break;
   }
-
 
   CopyMessHeader2Buffer(buffer,&messh);
 
@@ -1057,7 +1056,6 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
 
 #if SENDORDERS
     nbytes=AddObjOrders2Buffer(buffer,obj);
-
 #endif 
 
     break;
@@ -1083,6 +1081,9 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     oall.mass=obj->mass;
 
     oall.cargo.capacity=obj->cargo.capacity;
+    oall.cargo.mass=obj->cargo.mass;
+    oall.cargo.n=obj->cargo.n;
+    oall.cargo.hlist=NULL;
     oall.items=obj->items;
     oall.radio=obj->radio;
     oall.cost=obj->cost;
@@ -1149,6 +1150,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     kid=obj->sw; /* id of the killer */
     memcpy(buf+sizeof(int),&kid,nbytes);
     buffer->n+=2*nbytes;
+
     break;
   case SENDOBJPLANET:
     nbytes=2*sizeof(int)+sizeof(float);
@@ -1171,6 +1173,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     exit(-1);
     break;
   }
+
   return(buffer->n-n0);
 }
 
@@ -1178,6 +1181,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
 int ReadObjsfromBuffer(char *buf){
   /* 
      read the modified objs from the buffer and copy them to memory
+     recive data
      returns:
      the number of bytes readed.
    */
@@ -1220,12 +1224,13 @@ int ReadObjsfromBuffer(char *buf){
     buf+=sizeof(struct MessageHeader);
     tbytes+=sizeof(struct MessageHeader);
 #if COMMDEBUG
-    printf("READED FROM BUF: %d \n\t id: %d\n\t nobjs:%d\n\t nbytes:%d\n",
+    printf("READED FROM BUF: %d bytes \n\t id: %d\n\t nobjs:%d\n\t nbytes:%d\n",
 	 buf-buf0,header.id,header.nobjs,header.nbytes);
 #endif
 
     
     nobj=NULL;    
+
     switch(header.id){
     case SENDOBJUNMOD:
     case SENDOBJMOD0: /* only position */
@@ -1233,6 +1238,7 @@ int ReadObjsfromBuffer(char *buf){
       nbytes=sizeof(struct Objectpos);
       nobj=SelectObj(&listheadobjs,((struct Objectpos *)buf)->id);
       if(nobj!=NULL){
+
 	/* aqui	  memcpy(&objpos,(struct Objectpos *)buf,nbytes); */
 	  memcpy(&objpos,buf,nbytes);
 	  nobj->x=objpos.x;
@@ -1242,6 +1248,7 @@ int ReadObjsfromBuffer(char *buf){
 	  nobj->y0=objpos.y;
 	  nobj->ttl=0;
 	  	  /* nobj->a=objpos.a; */
+
       }
       else{   /* New object or object has been killed in client side*/
 	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJMOD0) id: %d  type:%d mod: %d doesn't exists\n",
@@ -1363,7 +1370,8 @@ int ReadObjsfromBuffer(char *buf){
       nobj=SelectObj(&listheadobjs,((struct ObjectAll *)buf)->id);
 
       if(nobj==NULL){    /* the object doesn't exist */
-	fprintf(stderr,"\nERROR en ReadObjsfromBuffer(SENDOBJALL): Object %d doesn't exists\n",((Object *)buf)->id);
+	/* HERE BUG: pilots */
+	fprintf(stderr,"\nERROR in ReadObjsfromBuffer(SENDOBJALL): Object %d (%d,%d) doesn't exists\n",((Object *)buf)->id,((Object *)buf)->type,((Object *)buf)->subtype);
 	buf+=nbytes;
 	tbytes+=nbytes;
 	exit(-1);
@@ -1396,6 +1404,9 @@ int ReadObjsfromBuffer(char *buf){
       nobj->radar=objall.radar;
       nobj->mass=objall.mass;
       nobj->cargo.capacity=objall.cargo.capacity;
+      nobj->cargo.n=objall.cargo.n;
+      nobj->cargo.mass=objall.cargo.mass;
+      nobj->cargo.hlist=NULL;
 
       /* if(nobj->items & ITPILOT){ */
       /* 	if(!(objall.items & ITPILOT)){ */
@@ -1505,10 +1516,10 @@ int ReadObjsfromBuffer(char *buf){
 
 #if SENDORDERS
       nbytes=CopyObjOrdersfromBuffer(nobj,buf);
-
       buf+=nbytes;
       tbytes+=nbytes;
 #endif 
+
 #if DEBUG
       if(debugcomm1){
 	fprintf(stdout,"recv SENDOBJALL: %d %d %d\n",nobj->id,nobj->level,nobj->engine.v2_max);
@@ -1555,7 +1566,7 @@ int ReadObjsfromBuffer(char *buf){
       buf+=nbytes;
       tbytes+=nbytes;
       nobj=SelectObj(&listheadobjs,id);
-      
+
       if(nobj==NULL){
 	fprintf(stderr,"ERROR ReadObjsfromBuffer(SENDOBJKILL) id: %d doesn't exists\n",id);
 	/*exit(-1);*/ /*HERE TODO try to do something with this. LINE must not be reached */
@@ -1680,7 +1691,7 @@ int ReadObjsfromBuffer(char *buf){
       textmen1.time=100;
       strncpy(textmen1.text,buf,header.nbytes);
       strncpy(textmen1.text+header.nbytes,"\0",1);
-      fprintf(stdout,"MEN RECV: %s\n",textmen1.text);
+      fprintf(stdout,"RECV MESS: %s\n",textmen1.text);
 
       if(strncmp(textmen1.text,"Game PAUSED",12)==0){
 	textmen1.time=4;
@@ -2591,19 +2602,21 @@ int CheckModifiedPre(struct HeadObjList *lh,int proc){
     obj=ls->obj;
 
     if(proc!=players[obj->player].proc){
+#if DEBUG
       if(obj->state<=0){
 	if(obj->modified!=SENDOBJNEW && 
 	   obj->modified!=SENDOBJNOTSEND && 
 	   obj->modified!=SENDOBJUNMOD){
-#if DEBUG
+
 	  if(debugcomm1){
 	    fprintf(stderr,"ERROR CheckModifiedPre(): PROC: %d obj %d (%d) player: %d type %d stype %d mod: %d time: %d ... ignoring...\n",
 		 players[obj->player].proc,obj->id,obj->pid,
 		   obj->player,obj->type,obj->subtype,obj->modified, GetTime());
 	  }
-#endif
+
 	}
       }
+#endif
       ls=ls->next;continue;
     
     }
@@ -3304,7 +3317,6 @@ int ServerProcessBuffer(struct Buffer *buffer){
     ReadObjsfromBuffer(buf);
     break;
   case OTSENDSAVE:     /* sendallobjects */
-    fprintf(stdout,"OTSENDSAVE\n");
     nbytes=ReadObjsfromBuffer(buf);
     buf+=nbytes;
 
@@ -3337,7 +3349,9 @@ int ServerProcessBuffer(struct Buffer *buffer){
 	break;
 
       case SENDPLAYER:
+#if TEST
 	fprintf(stdout,"SENDPLAYER\n");
+#endif
 	nbytes=sizeof(struct PlayerAll);
 	memcpy(&playerall,buf,nbytes); 
 	buf+=nbytes;
@@ -3679,7 +3693,6 @@ int CopyInt2Buffer(struct Buffer *buffer,int *i){
 
 }
 
-
 int AddObjOrders2Buffer(struct Buffer *buffer,Object *obj){
   /*
     version01 (021210)
@@ -3850,5 +3863,65 @@ int CopyNetMess2Buffer(struct Buffer *buffer,  struct NetMess *mess0){
   memcpy(buffer->data+buffer->n,&mess,nbytes);
   buffer->n+=nbytes;
   return(nbytes);
+}
+
+
+
+/******* Cargo *********/
+
+int AddObjCargo2Buffer(struct Buffer *buffer,Object *obj){
+  /*
+
+    returns:
+    the number of bytes added
+  */
+
+
+  int n;
+  int nbytes,tbytes;
+  struct ObjList *ls;
+
+  tbytes=0;
+  
+  /*count number of objects */
+  n=0;
+  
+  if(obj->cargo.hlist==NULL){
+    /* nothing to add */
+    nbytes=sizeof(int);
+    CopyInt2Buffer(buffer,&n); 
+    return(tbytes);
+  }
+
+  ls=obj->cargo.hlist->list;
+  while(ls!=NULL){
+    n++;
+  }
+  /* Checking */
+
+  if(n!=obj->cargo.hlist->n){
+    fprintf(stderr,"ERROR AddObjCargo2Buffer(): number of items don't match\n" );
+    fprintf(stderr,"\tn: %d nlist: %d \n",n,obj->cargo.hlist->n);
+    exit(-1);
+  }
+
+  nbytes=sizeof(int); /* number of items */
+  CopyInt2Buffer(buffer,&n);
+  tbytes+=nbytes;
+
+  /* list of item */
+  ls=obj->cargo.hlist->list;
+  while(ls!=NULL){
+    nbytes=sizeof(int);
+    CopyInt2Buffer(buffer,&ls->obj->id); 
+    tbytes+=nbytes;
+    ls=ls->next;
+  }
+  return(tbytes);
+}
+
+int CopyObjCargofromBuffer(Object *obj0,char *buf0){
+
+  return(0);
 }
 

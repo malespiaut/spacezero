@@ -20,7 +20,7 @@
 /*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.84 april 2013
+		version 0.86 December 2013
 **************************************************************/
 
 
@@ -90,7 +90,7 @@ void CreatePlayers(char *clientname,struct Parametres param){
     players[i].profile=PLAYERPROFDEFAULT;
     players[i].strategy=PLAYERSTRATWEAK;
     /* strategy is random weight choosed at WarCCPlanets() */
-    players[i].strategy=(int)(NUMPLAYERSTRAT*Random(-1));
+    /* players[i].strategy=(int)(NUMPLAYERSTRAT*Random(-1)); */
     players[i].gmaxlevel=0;
     players[i].maxlevel=0;
     players[i].cv=0;

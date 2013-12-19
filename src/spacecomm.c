@@ -20,7 +20,7 @@
 /*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.84 april 2013
+		version 0.86 December 2013
 **************************************************************/
 
 /* Comm Perfomance :
@@ -1061,10 +1061,12 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     break;
   case SENDOBJALL:
  
-   nbytes=sizeof(struct ObjectAll);
+    nbytes=sizeof(struct ObjectAll);
 
     oall.id=obj->id;
     oall.pid=obj->pid;
+    oall.oriid=obj->oriid; 
+    oall.destid=obj->destid;
     strncpy(oall.name,obj->name,OBJNAMESMAXLEN);
     oall.player=obj->player;
     oall.type=obj->type;
@@ -1073,7 +1075,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     oall.level=obj->level;
     oall.experience=obj->experience;
     oall.kills=obj->kills;
-
+    oall.ntravels=obj->ntravels; 
     oall.durable=obj->durable;
     oall.visible=obj->visible;
     oall.selected=obj->selected;
@@ -1386,8 +1388,10 @@ int ReadObjsfromBuffer(char *buf){
 
       /***********************/
       /* CopyObject(nobj,obj); */
-      nobj->id=objall.id;
+      nobj->id=objall.id;  
       nobj->pid=objall.pid;
+      nobj->oriid=objall.oriid;  
+      nobj->destid=objall.destid;
       strncpy(nobj->name,objall.name,OBJNAMESMAXLEN);
       nobj->player=objall.player;
       nobj->type=objall.type;
@@ -1397,7 +1401,8 @@ int ReadObjsfromBuffer(char *buf){
       nobj->experience=objall.experience;
       nobj->pexperience=0;
       nobj->kills=objall.kills;
-      
+      nobj->ntravels=objall.ntravels; 
+
       nobj->durable=objall.durable;
       nobj->visible=objall.visible;
       nobj->selected=objall.selected;

@@ -20,7 +20,7 @@
 /*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.84 April 2013
+		version 0.86 December 2013
 ****/
 
 #ifndef _SOUND_

@@ -20,7 +20,7 @@
 /*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.84 april 2013
+		version 0.86 December 2013
 **************************************************************/
 
 #include <stdlib.h>
@@ -88,7 +88,7 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.85.17"};
+char version[64]={"0.85.18"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Dec 2013"};

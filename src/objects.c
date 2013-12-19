@@ -20,7 +20,7 @@
 /*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.84 april 2013
+		version 0.86 December 2013
 **************************************************************/
 
 #include <sys/time.h>
@@ -2646,7 +2646,7 @@ int BuyShip(struct Player *player,Object *obj,int stype){
 		 obj->x,s->y0,
 		 0,0,
 		 CANNON0,ENGINE6,obj->player,NULL,obj->in);
-    obj->oriid=obj->in->id;
+    obj_b->oriid=obj->in->id;
     break;
     
   case SATELLITE:

@@ -20,7 +20,7 @@
 /*************  SpaceZero  M.R.H. 2006-2013 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.84 april 2013
+		version 0.86 December 2013
 **************************************************************/
 
 #ifndef _OBJECTS_
@@ -401,6 +401,7 @@ struct _Object{
 struct ObjectAll{   /* SENDOBJALL */
   int id;           /* global identifier */
   int pid;          /* player identifier */
+  int oriid,destid; /* origin and destination planet id (only FREIGHTER) */
   char name[MAXTEXTLEN];   /* object name */
   short player;
   short type;       /* type: SHIP,PLANET,PROJECTILE,... */
@@ -409,6 +410,7 @@ struct ObjectAll{   /* SENDOBJALL */
   short level;
   float experience;
   int kills;        /*number of enemies killed */
+  int ntravels;     /*number of planets landed. */ 
 
   int durable;
   int visible;      /* not used */

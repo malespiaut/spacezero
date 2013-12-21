@@ -31,11 +31,12 @@ GTKLIBS=`pkg-config --libs gtk+-2.0`
 GTKLIBS12=`gtk-config --cflags`
 GTKFLAGS12=`gtk-config --libs`
 
-
-LDFLAGS=  -lm -lpthread $(SOUNDFLAGS) $(GTKLIBS)
-LDFLAGS12=  -lm -lpthread $(SOUNDFLAGS) $(GTKLIBS12)
 CFLAGS=  -Wall -O3 --pedantic -I./include -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\"
+LDFLAGS=  -lm -lpthread $(SOUNDFLAGS) $(GTKLIBS)
+
 CFLAGS12=  -Wall -O3 -I./include -DGTK12 -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\" 
+LDFLAGS12=  -lm -lpthread $(SOUNDFLAGS) $(GTKLIBS12)
+
 PROGFLAGS=$(CFLAGS) -pg 
 PROFCC=  $(CC) -pg 
 PROGRAM=$(BINDIR)/spacezero

@@ -100,8 +100,8 @@ int GetLocales(char *lan){
     fprintf(stdout,"I can't open the file: %s\n", flocales);
 
     datadir=INSTALL_DATA_DIR;
-    snprintf(flocales,128,"%s/locales/%s",datadir,lan);
-    printf("checking for locales file :%s\n",flocales);
+    snprintf(flocales,128,"%s/locales/%s.txt",datadir,lan);
+    printf("checking for locales file:%s\n",flocales);
     
     if((fp=fopen(flocales,"rt"))==NULL){
       fprintf(stdout,"Can't open the file: %s\n", flocales);

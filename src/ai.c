@@ -3318,7 +3318,7 @@ int OtherProc(struct HeadObjList *lh,int p,Object *obj0){
     check if there are a near ship belonging to another proccessor  
     only look for SHIPS
     return:
-    > 0  if there are an close object that  belongs to another proccessor.
+    > 0  if there are a close object that  belongs to another proccessor.
       0 if there are no near enemies.
       1 if its closer than 4 radar range
       2 if its closer than 2 radar range
@@ -3331,7 +3331,6 @@ int OtherProc(struct HeadObjList *lh,int p,Object *obj0){
   float rx,ry,r2;
   float x0,y0,x1,y1,d2;
   Object *obj1=NULL;
-  Object *objtmp;
   int ret=0;
   int swpilot=0;
 
@@ -3366,6 +3365,8 @@ int OtherProc(struct HeadObjList *lh,int p,Object *obj0){
 
     if(obj1->type!=SHIP && obj1->type!=ASTEROID){ls=ls->next;continue;}
 
+    if(obj1->habitat==H_SHIP){ls=ls->next;continue;} 
+
     if(obj1->type==SHIP && obj1->subtype==PILOT && obj1->mode==LANDED){
       if(obj1->in==obj0->in){
 	swpilot=1; /* there is a pilot in the same planet */
@@ -3373,13 +3374,6 @@ int OtherProc(struct HeadObjList *lh,int p,Object *obj0){
       }
     }
 
-    objtmp=obj1;
-    
-    if(obj1->habitat==H_SHIP){
-      objtmp=obj1;
-      obj1=obj1->in;  /* BUG obj1->in can be undefined or NULL  */
-    }
-    
     switch(obj1->habitat){
     case H_PLANET:
       x1=obj1->in->x;  /* HERE segfault */
@@ -3392,8 +3386,7 @@ int OtherProc(struct HeadObjList *lh,int p,Object *obj0){
     case H_SHIP:
     default:
       fprintf(stderr,"ERROR in OtherProc() habitat %d unknown sh: (%d) %d\n",obj1->habitat,obj1->player,obj1->pid);
-      fprintf(stderr,"obj anterior: habitat %d unknown sh: (%d) %d\n",objtmp->habitat,objtmp->player,objtmp->pid);
-      return(4);
+      ls=ls->next;continue;
       break;
     }
 
@@ -3417,7 +3410,6 @@ int OtherProc(struct HeadObjList *lh,int p,Object *obj0){
       if(ret<3){ret=3;}
       ls=ls->next;continue;
     }
-
     return(4);
   }
 

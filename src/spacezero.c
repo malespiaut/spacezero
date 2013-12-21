@@ -88,7 +88,7 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.85.18"};
+char version[64]={"0.85.19"};
 char copyleft[]="";
 char TITLE[64]="SpaceZero  ";
 char last_revision[]={"Dec 2013"};
@@ -2313,8 +2313,10 @@ void UpdateShip(Object *obj){
       obj->vy=obj->in->vy;
     }
     else{
-      fprintf(stderr,"ERROR UpdateShip(): habitat=H_SHIP in = NULL id: %d (pid:%d) t:%d st: %d player: %d\n",obj->id,obj->pid, obj->type,obj->subtype,obj->player);
-      exit(-1);
+      if(GameParametres(GET,GNET,0)==FALSE){
+	fprintf(stderr,"ERROR UpdateShip(): habitat=H_SHIP in = NULL id: %d (pid:%d) t:%d st: %d player: %d\n",obj->id,obj->pid, obj->type,obj->subtype,obj->player);
+	exit(-1);
+      }
     }
     return;
   }

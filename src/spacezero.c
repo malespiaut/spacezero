@@ -50,10 +50,7 @@
 #include "sectors.h"
 #include "snow.h"
 
-#define TESTSAVE FALSE
 #define DEBUGFAST FALSE
-
-int TESTSAVESTEP=1000;
 
 #if DEBUG
 int debugcrash=0;
@@ -88,10 +85,9 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.85.19"};
-char copyleft[]="";
-char TITLE[64]="SpaceZero  ";
-char last_revision[]={"Dec 2013"};
+char version[64]={"0.87.01"};
+char TITLE[64]="SpaceZero";
+char last_revision[]={"Jan 2014"};
 
 
 Object *ship_c; /* ship controled by keyboard */
@@ -267,9 +263,6 @@ int main(int argc,char *argv[]){
   optionsfile=CreateOptionsFile();
   recordfile=CreateRecordFile();
   keyboardfile=CreateKeyboardFile();
-#if TESTSAVE
-  strcat(savefiletmp,"/tmp/tmpsavespacezero");
-#endif
   
   /*********** read options file and checking command line options *************/
   state=Arguments(argc,argv,optionsfile);
@@ -457,7 +450,7 @@ int main(int argc,char *argv[]){
       printf("\ntotal points: %d record: %d\n",player[1].points,record);
     }
     printf("******************************************************\n");
-    printf("%sversion %s  %s\n",TITLE,version,last_revision);
+    printf("%s  version %s  %s\n",TITLE,version,last_revision);
     printf("Please, send bugs and suggestions to: mrevenga at users dot sourceforge dot net\n");
     printf("Homepage:  http://spacezero.sourceforge.net/\n");
     
@@ -534,7 +527,7 @@ gint MenuLoop(gpointer data){
   x=width/8;
   y=(1.0/3)*height;
   
-  XPrintMenuHead(pixmap,fontmenu,actualmenu,x,y);
+  DrawMenuHead(pixmap,fontmenu,actualmenu,x,y);
   /* show window */
   
   update_rect.x=0;
@@ -1125,26 +1118,6 @@ gint MainLoop(gpointer data){
 
   key=GetKeys();
   
-#if TESTSAVE
-  {
-    static int testsavesw=0; 
-    
-    if(testsavesw){
-      if (!((cont-10)%TESTSAVESTEP)){
-	key->load=TRUE;
-	key->save=FALSE;
-	printf("LOAD %d\n",cont);
-      }
-    }
-    if (!(cont%TESTSAVESTEP)){
-      key->save=TRUE;
-      key->load=FALSE;
-      printf("SAVE %d\n",cont);
-      testsavesw=1;
-    }
-  }
-#endif
-
   if(key->load==TRUE && swcomm==TRUE){
     key->load=FALSE;
     key->save=FALSE;
@@ -2297,6 +2270,7 @@ void UpdateShip(Object *obj){
   float bx,by;
   int mass;  
   struct Player *plyr;  
+
   plyr=GetPlayers();
 
   proc=GetProc();
@@ -5067,15 +5041,20 @@ void SetGameParametres(struct Parametres param){
   
 }
 
+
 void MakeTitle(struct Parametres param, char *title){
-  strncat(title,TITLE,64-strlen(title));
-  if(param.server==TRUE)
-    strcat(title,"(server)  ");
-  if(param.client==TRUE)
-    strcat(title,"(client)  ");
-  strncat(title,version,64-strlen(title));
-  strcat(title,"  ");
-  strncat(title,copyleft,64-strlen(title));
+
+  if(param.server==TRUE){
+    snprintf(title,64,"%s(server)  %s",TITLE,version);
+  }
+  else{
+    if(param.client==TRUE){
+      snprintf(title,64,"%s(client)  %s",TITLE,version);
+    }
+    else{
+      snprintf(title,64,"%s  %s",TITLE,version);
+    }
+  }
 }
 
 

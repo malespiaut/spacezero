@@ -1416,14 +1416,14 @@ int CountShipsInPlanet(struct HeadObjList *lh,int objid,int player,int type,int 
     ls=listheadobjs.list;
   }
   while(ls!=NULL){
+    if(ls->obj->player!=player){ls=ls->next;continue;}    
     if(type!=-1){
-      if(ls->obj->state<=0){ls=ls->next;continue;}
       if(ls->obj->type!=type){ls=ls->next;continue;}
       if(stype!=-1){
 	if(ls->obj->subtype!=stype){ls=ls->next;continue;}
       }
     }
-    if(ls->obj->player!=player){ls=ls->next;continue;}    
+    if(ls->obj->state<=0){ls=ls->next;continue;}
     
     if(ls->obj->in!=NULL){
       if(ls->obj->in->id==objid)n++;
@@ -1433,7 +1433,6 @@ int CountShipsInPlanet(struct HeadObjList *lh,int objid,int player,int type,int 
       if(objid==0)n++;
       if(max>0 && n>=max)return(max);
     }
-    
     ls=ls->next;
   }
   return(n);

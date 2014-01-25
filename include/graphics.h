@@ -135,7 +135,7 @@ int DrawEnemyShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *,int,
 int DrawPlanetInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *planet,int player,int x0,int y0);
 void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *,Object *,int);
 
-int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct HeadTextList *head,int x0,int y0,int width,int height);
+int DrawTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct HeadTextList *head,int x0,int y0,int width,int height);
 void DrawString(GdkDrawable *pixmap,GdkFont *font,GdkGC *gc,gint x,gint y,const gchar *string);
 void DrawMessageBox(GdkPixmap *pixmap,GdkFont *font,char *cad,int x0,int y0,int type);
 
@@ -161,7 +161,7 @@ void Window2Real(Object *,int view,int wx,int wy,int *rx,int *ry);
 void Window2Sector(Object *cv,int *x,int *y);
 void W2R(Object *cv,int *x,int *y);
 
-int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,int y0);
+int DrawMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,int y0);
 
 void PrintFontNames(int n);
 void PrintFontName(char *fname,int n);

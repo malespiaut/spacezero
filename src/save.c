@@ -1164,10 +1164,6 @@ int FprintfObj(FILE *fp,Object *obj){
 	  obj->ang_a,obj->accel,obj->gas,obj->gas_max,
 	  obj->life,obj->shield,obj->state);
 
-  if(obj->type==SHIP && obj->subtype==SATELLITE){
-    printf("SATELLITE: %d %d %g\n",obj->id,obj->pid,obj->state);
-  }
-
   
   fprintf(fp,"%g %d %d %d ",
 	  obj->dest_r2,obj->sw,obj->trace,obj->norder);

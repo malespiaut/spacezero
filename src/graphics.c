@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
+#include <X11/Xlib.h>
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 
@@ -293,57 +294,48 @@ GtkWidget *InitGraphics(char *title,char *optfile,int w,int h,struct Parametres 
   
   gtk_menu_bar_append(GTK_MENU_BAR(menubar),menuitemhelp);
   
-  
-  strcpy(labelhelp,"");
-  
-  /* snprintf(labelhelp,150,"\t SpaceZero %s\t Jun 2011\t\n",version); */
-  /* snprintf(labelhelp,64,"\t SpaceZero %s \t\n\n",version); */
-  /* strcat(labelhelp,"=====================================\n"); */
-  strcat(labelhelp,"Manual:  http://spacezero.sourceforge.net/   ");
-  strcat(labelhelp,"\n\nKeyboard Controls:\n");
-  /* strcat(labelhelp,"----------------------------\n"); */
-  strcat(labelhelp,"up/down arrows manual/automatic mode.\n");
-  strcat(labelhelp,"o\t\t\tenter in order menu.\n");
-  strcat(labelhelp,"Esc\t\t\tcancel actual order.\n\t\t\tclose info windows.\n");
-  strcat(labelhelp,"up arrow\t\taccelerate/manual mode.\n");
-  strcat(labelhelp,"left/right arrows\tturn left/right.\n");
-  strcat(labelhelp,"space\t\tfire.\n");
-  strcat(labelhelp,"tab\t\t\tchange to next ship.\n");
-  strcat(labelhelp,"Ctrl-tab\t\tchange to previous ship.\n");
-  strcat(labelhelp,"PageUp\t\tchange to next planet.\n");
-  strcat(labelhelp,"PageDown\tchange to previous planet.\n");
-  strcat(labelhelp,"Home\t\tchange to first ship in outer space.\n");
-  strcat(labelhelp,"1 2 3\t\tchoose weapon.\n");
-  strcat(labelhelp,"Ctrl-[f1f2f3f4]\tmark a ship to be selected.\n");
-  strcat(labelhelp,"f1 f2 f3 f4\t\tselect a previous marked ship.\n");
-  strcat(labelhelp,"f5\t\t\tshow a ship list.\n");
-  strcat(labelhelp,"f6\t\t\tshow game statistics.\n");
-  strcat(labelhelp,"f7\t\t\tshow game messages log.\n");
-  strcat(labelhelp,"m\t\t\tshow space map.\n");
-  strcat(labelhelp,"Ctrl-w\t\twrite a message to other players.\n");
-  strcat(labelhelp,"Ctrl +/-\t\tvolume up/down.\n");
-  strcat(labelhelp,"Ctrl-n\t\twindow, ship mode view.\n");
-  strcat(labelhelp,"Ctrl-p\t\tpause game\n");
-  strcat(labelhelp,"Ctrl-s\t\tsave the game.\n");
-  strcat(labelhelp,"Ctrl-l\t\t\tload the saved game.\n");
-  strcat(labelhelp,"Ctrl-q\t\tquit game.\n");
-  
-  strcat(labelhelp,"\nIn map view:\n");
-  /*  strcat(labelhelp,"-------------------\n"); */
-  strcat(labelhelp,"z Z\t\t\tzoom in out.\n");
-  strcat(labelhelp,"arrow keys\tmove map.\n");
-  strcat(labelhelp,"space\t\tcenter map on current ship.\n");
-  strcat(labelhelp,"mouse pointer\tshow coordinates.\n");
-  strcat(labelhelp,"l\t\t\tshow-hide labels.\n");
-  strcat(labelhelp, 
-	 "left mouse \t Select the nearest ship.\nbutton\n");
-  strcat(labelhelp, 
-	 "right mouse \t Send the selected ships to that point.\nbutton");
-  
+  snprintf(labelhelp,1088,"%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
+	   "Manual:  http://spacezero.sourceforge.net/",
+	   "\n\nKeyboard Controls:\n",
+	   "up/down arrows manual/automatic mode.\n",
+	   "o\t\t\tenter in order menu.\n",
+	   "Esc\t\t\tcancel actual order.\n\t\t\tclose info windows.\n",
+	   "up arrow\t\taccelerate/manual mode.\n",
+	   "left/right arrows\tturn left/right.\n",
+	   "space\t\tfire.\n",
+	   "tab\t\t\tchange to next ship.\n",
+	   "Ctrl-tab\t\tchange to previous ship.\n",
+	   "PageUp\t\tchange to next planet.\n",
+	   "PageDown\tchange to previous planet.\n",
+	   "Home\t\tchange to first ship in outer space.\n",
+	   "1 2 3\t\tchoose weapon.\n",
+	   "Ctrl-[f1f2f3f4]\tmark a ship to be selected.\n",
+	   "f1 f2 f3 f4\t\tselect a previous marked ship.\n",
+	   "f5\t\t\tshow a ship list.\n",
+	   "f6\t\t\tshow game statistics.\n",
+	   "f7\t\t\tshow game messages log.\n",
+	   "m\t\t\tshow space map.\n",
+	   "Ctrl-w\t\twrite a message to other players.\n",
+	   "Ctrl +/-\t\tvolume up/down.\n",
+	   "Ctrl-n\t\twindow, ship mode view.\n",
+	   "Ctrl-p\t\tpause game\n",
+	   "Ctrl-s\t\tsave the game.\n",
+	   "Ctrl-l\t\t\tload the saved game.\n",
+	   "Ctrl-q\t\tquit game.\n",
+	   "\nIn map view:\n",
+	   "z Z\t\t\tzoom in out.\n",
+	   "arrow keys\tmove map.\n",
+	   "space\t\tcenter map on current ship.\n",
+	   "mouse pointer\tshow coordinates.\n",
+	   "l\t\t\tshow-hide labels.\n",
+	   "left mouse \t Select the nearest ship.\nbutton\n",
+	   "right mouse \t Send the selected ships to that point.\nbutton");
+
 #if TEST
-  printf("label help size: %d (<1088)\n  ",(int)strlen(labelhelp)); 
+  printf("label help size: %d (<1088)OK\n  ",(int)strlen(labelhelp)); 
 #endif
-  if(strlen(labelhelp)>1088){
+
+  if(strlen(labelhelp)>1087){
     fprintf(stderr,"ERROR InitGraphics(): cad labelhelp too long.\n");
     exit(-1);
   }
@@ -3623,7 +3615,7 @@ int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0
   return(y+texth);
 }
 
-int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct HeadTextList *head,int x0,int y0,int width,int height){
+int DrawTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct HeadTextList *head,int x0,int y0,int width,int height){
   /* 
      print the text list head in pixmap at the position x0, y0.
   */
@@ -3714,7 +3706,7 @@ int XPrintTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct HeadTextLi
 }
 
 
-int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,int y0){
+int DrawMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,int y0){
   /* 
      print the text list head in pixmap at the position x0, y0.
   */
@@ -3792,7 +3784,7 @@ int XPrintMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,
       }
       break;
     default:
-      fprintf(stderr,"ERROR XPrintMenuHead(): type %d not implemented\n",item->type);
+      fprintf(stderr,"ERROR DrawMenuHead(): type %d not implemented\n",item->type);
       break;
     }
     DrawString(pixmap,font,gc,x,y-scroll*incy,point);
@@ -4497,9 +4489,9 @@ void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *hlp,Object 
     }
   }  /* if(cvobj!=last_cv || act){ */
   
-  XPrintTextList(pixmap,gfont,titleships,&hshiplist,10,15,textsw+charw+10,GameParametres(GET,GHEIGHT,0)-50); 
+  DrawTextList(pixmap,gfont,titleships,&hshiplist,10,15,textsw+charw+10,GameParametres(GET,GHEIGHT,0)-50); 
   
-  XPrintTextList(pixmap,gfont,"PLANETS:",&hplanetlist,GameParametres(GET,GWIDTH,0)-textpw-20,15,textpw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
+  DrawTextList(pixmap,gfont,"PLANETS:",&hplanetlist,GameParametres(GET,GWIDTH,0)-textpw-20,15,textpw+charw+10,GameParametres(GET,GHEIGHT,0)-50);
   
   return;
 }

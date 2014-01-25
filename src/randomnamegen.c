@@ -69,7 +69,7 @@ void loadFrequencyTable(char *filename){
   token = strtok(dataBuffer, "\n");
   
   for ( i = 0 ; i < 26 ; i++){
-    sscanf(token, "%s", letterFrequency[i]);
+    sscanf(token, "%299s", letterFrequency[i]);
     token = strtok(NULL, "\n");
   }
   

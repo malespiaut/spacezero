@@ -120,7 +120,7 @@ void aimissile(struct HeadObjList *lhobjs,Object *obj){
     y2=ship_enemy->y + (ship_enemy->vy)*t1;
 
     b=atan2(y2 - obj->y,x2 - obj->x);
-    break;	
+    break;
 
   default:
     d2=(ship_enemy->x - obj->x)*(ship_enemy->x - obj->x) +
@@ -732,6 +732,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       }      
 
       if(obj->habitat==H_PLANET){
+	/*HERE FREIGHTER new planet destination TODO*/
 	if(ship_enemy==NULL){
 	  obj->dest=obj->in;
 	}
@@ -1314,7 +1315,7 @@ int CCBuy(struct HeadObjList *lhobjs,struct CCDATA *ccdata,struct Player *player
     return(TOWER);
   }
 
-  /* buy freighterer */
+  /* buy freighter */
 #if TEST
   time=GetTime();
   if(!(time%100)){
@@ -1408,7 +1409,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
   int no;
   int price;
   int swgoto;
-
+  int swcheckenemy=0;
   float d2;
   Object *niplanet=NULL;
   Object *naplanet=NULL;
@@ -1450,7 +1451,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 
   if(ccdata->time<=0){ /* Rebuild all */
     ccdata->time=200+player->id;
-
+    swcheckenemy++;
     /* 
        number of ships in every planet,
        build the ccdata list 
@@ -1512,8 +1513,9 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
   }
   /*** --Sell ships ***/
 
-  /* Send ships to inexplore or enemy planet*/  
-
+  /*                                         */
+  /* Send ships to inexplore or enemy planet */  
+  /*                                         */
   m=4;  
   for(i=0;i<m+1;i++){
     nobjs[i].obj=NULL;
@@ -1524,6 +1526,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
   ls=lhobjs->list;
   while(ls!=NULL && ordersw==0){
     obj=ls->obj;
+
     if(obj->player != player->id){ls=ls->next;continue;}
     if(obj->type != SHIP){ls=ls->next;continue;}
     if(obj->engine.type <= ENGINE1){ls=ls->next;continue;}
@@ -1540,7 +1543,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
       }
     }
     /*--Getting info from enemy planet */
-    
+
     actord=ReadOrder(NULL,obj,MAINORD);
 
     if(actord==NULL){
@@ -1585,6 +1588,116 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
       }
     }
     /* --RETREAT */
+
+
+    if(cv==obj)printf("mode: %d order: %d\n",obj->mode,actord->id);
+
+
+    /* FREIGHTERS */
+    if(obj->subtype==FREIGHTER){
+      Object *planetdest;
+      int planetid;      
+
+      switch(actord->id){
+      case NOTHING:
+	/* Choose dest planet */
+	switch(obj->mode){
+	case LANDED:
+	  if(obj->cargo.mass==obj->cargo.capacity){
+	    /* choose planet */
+	    
+	    if(obj->destid==0||obj->destid==obj->oriid){
+	      planetid=gnplanets*Random(-1);
+	      planetdest=SelectObj(lhobjs,planetid);
+	      /* TODO if distance is short-> change dest planet */
+	      if(planetdest!=NULL){
+		if((player->team==players[planetdest->player].team) ) {
+		  obj->destid=planetid;
+		}
+		/* ADD order GOTO */
+		ord.priority=1;
+		ord.id=GOTO;
+		ord.time=0;
+		ord.g_time=time;
+		ord.a=planetdest->x;
+		ord.b=planetdest->y;
+		ord.c=planetdest->id;
+		ord.d=planetdest->type;
+		ord.e=planetdest->pid;
+		ord.f=ord.g=ord.h=0;
+		ord.i=ord.j=ord.k=ord.l=0;
+		
+		DelAllOrder(obj);
+		AddOrder(obj,&ord);
+	      }
+	    }
+	  }
+	  break;
+	case NAV:
+	  /* choose nearest planet */
+	  /*TODO check this only every 10 seconds */
+	  if(swcheckenemy){
+	    planetdest=NearestObj(lhobjs,obj,PLANET,SHIP0,PINEXPLORE|PALLY,&d2);
+	    if(planetdest!=NULL){
+	      if((player->team==players[planetdest->player].team) ) {
+		obj->destid=planetdest->id;
+		/* ADD order GOTO */
+		ord.priority=1;
+		ord.id=GOTO;
+		ord.time=0;
+		ord.g_time=time;
+		ord.a=planetdest->x;
+		ord.b=planetdest->y;
+		ord.c=planetdest->id;
+		ord.d=planetdest->type;
+		ord.e=planetdest->pid;
+		ord.f=ord.g=ord.h=0;
+		ord.i=ord.j=ord.k=ord.l=0;
+		
+		DelAllOrder(obj);
+		AddOrder(obj,&ord);
+	      }
+	    }
+	  }
+	  break;
+	case SOLD:
+	  break;
+	default:
+	  break;
+	}
+	break;
+      case GOTO:
+	/* check if dest planet belongs to enemy */
+	if(obj->destid>0){
+	  planetdest=SelectObj(lhobjs,obj->destid);
+	  if(planetdest!=NULL){
+	    if((player->team!=players[planetdest->player].team) ) {
+	      obj->destid=0;
+	      /* add order NOTHING */
+	      ord.priority=1;
+	      ord.id=NOTHING;
+	      ord.time=0;
+	      ord.g_time=time;
+	      ord.a=0;
+	      ord.b=0;
+	      ord.c=-1;
+	      ord.d=0;
+	      ord.e=ord.f=ord.g=0;
+	      ord.h=1;
+	      ord.i=ord.j=ord.k=ord.l=0;
+	      DelAllOrder(obj);
+	      AddOrder(obj,&ord);
+	    }
+	  }
+	}
+	break;
+      default:
+	break;
+      }
+    }
+    /*--FREIGHTERS*/
+
+
 
     switch(actord->id){
     case NOTHING:
@@ -1692,22 +1805,26 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 	  }
 	}
 
-	/* FREIGHTERS */
-	if(obj->type==SHIP && obj->subtype==FREIGHTER){
-	  if(obj->destid==0||obj->destid==obj->oriid){
-	    int planetid;
+	if(0){
+	  /* FREIGHTERS order:NOTHING and mode:LANDED */
+	  
+	  if(obj->subtype==FREIGHTER){
 	    Object *planetdest;
-	    planetid=gnplanets*Random(-1);
-	    planetdest=SelectObj(lhobjs,planetid);
-	    /* TODO if distance is short-> change dest planet */
-	    if(planetdest!=NULL){
-	      if((player->team==players[planetdest->player].team) ) {
-		obj->destid=planetid;
+	    int planetid;
+	    /* Choose dest planet */
+	    if(obj->destid==0||obj->destid==obj->oriid){
+	      planetid=gnplanets*Random(-1);
+	      planetdest=SelectObj(lhobjs,planetid);
+	      /* TODO if distance is short-> change dest planet */
+	      if(planetdest!=NULL){
+		if((player->team==players[planetdest->player].team) ) {
+		  obj->destid=planetid;
+		}
 	      }
 	    }
 	  }
+	  /* --FREIGHTERS */
 	}
-	/* --FREIGHTERS */
 	break;
       case NAV:/* actual order=NOTHING */
 
@@ -1763,7 +1880,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 	    ordersw++;
 	  }
 	}
-	
+
 	break;
       case SOLD:
 	ls=ls->next;continue;
@@ -1887,7 +2004,9 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
   if(ordersw>0){
     ccdata->time=0;
   }
+
   free(shipsinplanet);
+
   return;
 } /* --ControlCenter() */
 

@@ -123,7 +123,7 @@
 105 Tower
 106 Spaceship must be landed
 107 You have not enough gold
-108 buyed
+108 bought
 109 selected
 110 Spaceships selected
 111 Destiny is equal than origin
@@ -151,3 +151,4 @@
 130 Cancel
 131 Satellite
 132 There is no room
+133 Cloak Device

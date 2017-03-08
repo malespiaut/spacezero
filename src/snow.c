@@ -34,7 +34,7 @@
 #include "general.h"
 #include "functions.h"
 #include "objects.h"
-
+#include "graphics.h"
 
 #define NFLAKES 1000
 
@@ -106,7 +106,7 @@ void UpdateFlakes(struct Planet *planet){
 
 
 
-void DrawFlakes(GdkPixmap *pixmap,GdkGC *pen,int w,int h){
+void DrawFlakes(GdkGC *pen,int w,int h){
   int i;
   float gwidth,gheight,sx,sy;
 
@@ -116,6 +116,6 @@ void DrawFlakes(GdkPixmap *pixmap,GdkGC *pen,int w,int h){
   sy=(float)gheight/LYFACTOR;
 
   for(i=0;i<NFLAKES;i++){
-    gdk_draw_point(pixmap,pen,flakes[i].x*sx,gheight-flakes[i].y*sy); 
+    DrawPoint(pen,flakes[i].x*sx,gheight-flakes[i].y*sy); 
   }
 }

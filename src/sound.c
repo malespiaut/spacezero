@@ -46,7 +46,8 @@ char *soundnames[NUM_SOUNDS]={
   "bfire.ogg",
   "explos.ogg",
   "thrust.ogg",
-  "crash.ogg"};
+  "crash.ogg",
+  "sd_0.ogg"};
 
 ALuint sources[NUM_SOURCES];
 ALuint buffers[NUM_BUFFERS];

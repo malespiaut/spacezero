@@ -59,6 +59,8 @@ SENDOBJUNMOD0
 #include "players.h"
 #include "menu.h"
 #include "save.h"
+#include "objects.h"
+#include "shell.h"
 
 #define SENDORDERS 1
 #define COMMDEBUG 0
@@ -72,40 +74,18 @@ struct timespec latency;
 int debugcomm1=1;
 #endif
 
-int debugpilot=0;
+int debugpilot=1;
 
-extern struct HeadObjList listheadobjs;
 struct TextMessageList listheadtext;
-extern struct CharListHead gameloglist;          /* list of all game messages */
-extern struct Window windowgamelog;
-extern struct Habitat habitat;
-extern char *savefile;
-extern sem_t sem_barrier;
-extern sem_t sem_barrier1;
 
-extern int order2thread;
-
-extern int actual_player,actual_player0;
-extern Object *ship_c;
-extern int g_objid;
-extern int g_projid;
-extern int g_nobjsend;
-extern int g_nshotsend;
-extern int g_nobjtype[6];
-extern struct Parametres param;
-
-extern int fobj[4];
-
-extern struct Player *players;
-/* extern struct Keys keys; */
-extern Object *cv;              /* coordenates center */
-
-extern char clientname[MAXTEXTLEN];
+int order2thread;
+struct Buffer buffer1,buffer2; /* buffers used in comm. */
+sem_t sem_barrier,sem_barrier1;
 
 struct TextMessage textmen0;  /* send message here */
 struct TextMessage textmen1;  /* recv message here */
-struct Buffer buffer1,buffer2; /* buffers used in comm. */
-extern struct Global gclient;
+
+char clientname[MAXTEXTLEN];
 
 
 int OpenComm(int mode,struct Parametres par,struct Sockfd *sockfd){
@@ -732,12 +712,13 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
   int i;
   struct MessageHeader messh;
   struct NetMess mess;
-  
+  struct Player *ps;
 
+  ps=GetPlayers();
   proc=GetProc();
   ls=hl.list;
   while(ls!=NULL ){
-    if(proc!=players[ls->obj->player].proc){
+    if(proc!=ps[ls->obj->player].proc){
       ls=ls->next;continue;
     }
 
@@ -793,7 +774,7 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
 
     /* HERE continue here       */
     for(i=1;i<GameParametres(GET,GNPLAYERS,0)+2;i++){ 
-      if(proc==players[i].proc && players[i].modified==SENDPLAYERMOD){
+      if(proc==ps[i].proc && ps[i].modified==SENDPLAYERMOD){
 #if DEBUG
 	if(debugcomm1){
 	  fprintf(stdout,"send. SENDPLAYERMOD: %d %d\n",i,GetTime());/* copy 2 buffer TODO*/ 
@@ -803,10 +784,10 @@ int CopyObjs2Buffer(struct Buffer *buffer,struct HeadObjList hl){
 	messh.nobjs=1;
 	messh.nbytes=0;
 	CopyMessHeader2Buffer(buffer,&messh);
-	CopyPlayerMod2Buffer(buffer,&players[i]);
+	CopyPlayerMod2Buffer(buffer,&ps[i]);
 
-	players[i].ttl=2000+i;
-	players[i].modified=SENDOBJUNMOD;
+	ps[i].ttl=2000+i;
+	ps[i].modified=SENDOBJUNMOD;
       } 
     } 
   }
@@ -1080,6 +1061,7 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     oall.visible=obj->visible;
     oall.selected=obj->selected;
     oall.radar=obj->radar;
+    oall.cloak=obj->cloak;
     oall.mass=obj->mass;
 
     oall.cargo.capacity=obj->cargo.capacity;
@@ -1134,6 +1116,9 @@ int CopyObj2Buffer(struct Buffer *buffer,void *object,int modtype){
     memcpy(&oall.weapon1,&obj->weapon1,sizeof(Weapon));
     memcpy(&oall.weapon2,&obj->weapon2,sizeof(Weapon));
     memcpy(&oall.engine,&obj->engine,sizeof(Engine));
+
+    printf("BUG: sending: type: %d stype: %d habitat: %d state: %f\n",
+	   oall.type,oall.subtype,oall.habitat,oall.state);
 
     /* aqui    memcpy((struct ObjectAAll *)buf,&oall,nbytes); */
     memcpy(buf,&oall,nbytes);
@@ -1194,8 +1179,9 @@ int ReadObjsfromBuffer(char *buf){
   struct Objectdynamic objdyn;
   struct ObjectAll objall;
   struct ObjectAAll objaall;
-
   struct ObjectNew objnew;
+
+  struct Player *ps;
   int gnplayers;
   int id,projid,idkiller;
   int inid;
@@ -1208,7 +1194,7 @@ int ReadObjsfromBuffer(char *buf){
   buf0=buf;
 #endif
 
-
+  ps=GetPlayers();
   header.id=-1;
   tbytes=0;
 
@@ -1407,6 +1393,7 @@ int ReadObjsfromBuffer(char *buf){
       nobj->visible=objall.visible;
       nobj->selected=objall.selected;
       nobj->radar=objall.radar;
+      nobj->cloak=objall.cloak;
       nobj->mass=objall.mass;
       nobj->cargo.capacity=objall.cargo.capacity;
       nobj->cargo.n=objall.cargo.n;
@@ -1487,26 +1474,32 @@ int ReadObjsfromBuffer(char *buf){
       
       objt=NULL;
 
+
       nobj->dest=SelectObj(&listheadobjs,(objall.dest)); /* HERE one function for all the pointers */
       /* nobj->parent=SelectObj(&listheadobjs,(int)(obj->parent)); */
       nobj->in=SelectObj(&listheadobjs,objall.inid);
 
-
       if(nobj->in!=NULL){
+	printf("BUG: received: type: %d stype: %d habitat: %d in: %d (%d)\n",
+	       nobj->type,nobj->subtype,nobj->habitat,nobj->in->id,objall.inid);
 
 	nobj->planet=NULL;
 
 	if(nobj->in->type==PLANET){
 	  nobj->planet=nobj->in->planet;
 	}
-	/* if(nobj->in->type==SHIP){ */
-	/*   nobj->in->items=nobj->in->items| ITPILOT; */
-	/* } */
+	 if(nobj->in->type==SHIP){ 
+	   printf("BUG: PILOT\n");
+	   CargoAdd(nobj->in,nobj);
+	   /*	   nobj->in->items=nobj->in->items| ITPILOT; */
+	 } 
       }
       else{
 	if(debugpilot&&nobj->type==SHIP && nobj->subtype==PILOT){
 	  fprintf(stdout,"%d pilot received(%d): player:%d id: %d pid: %d in=NULL objallin:%d\n",
 		 GetTime(),header.id,nobj->player,nobj->id,nobj->pid,objall.inid);
+	  printf("\tcargo: %p\n",(void *)nobj->cargo.hlist);
+	  /* CargoEjectObjs(nobj,-1,-1); */
 	}
 
 	if(objall.inid!=0){
@@ -1552,9 +1545,9 @@ int ReadObjsfromBuffer(char *buf){
       /**** check if I a have that information 
        received ally conquered planets ****/
 
-      if(players[nobj->player].team==players[actual_player].team){
-	if(IsInIntList((players[actual_player].kplanets),nobj->id)==0){
-	  players[actual_player].kplanets=Add2IntList((players[actual_player].kplanets),nobj->id);
+      if(ps[nobj->player].team==ps[actual_player].team){
+	if(IsInIntList((ps[actual_player].kplanets),nobj->id)==0){
+	  ps[actual_player].kplanets=Add2IntList((ps[actual_player].kplanets),nobj->id);
 	}
       }
       
@@ -1593,7 +1586,7 @@ int ReadObjsfromBuffer(char *buf){
 
       nobj=SelectObj(&listheadobjs,objnew.id);
       if(nobj!=NULL){    /* the object exist */
-	fprintf(stderr,"\nERROR in ReadObjsfromBuffer(SENDOBJNEW): Object %d exists type:%d stype:%d proc:%d\n",nobj->id,nobj->type,nobj->subtype,players[nobj->player].proc);
+	fprintf(stderr,"\nERROR in ReadObjsfromBuffer(SENDOBJNEW): Object %d exists type:%d stype:%d proc:%d\n",nobj->id,nobj->type,nobj->subtype,ps[nobj->player].proc);
 	buf+=sizeof(struct ObjectNew);
 	tbytes+=nbytes;
 	exit(-1); /*HERE TODO try to do something with this. LINE must not be reached */
@@ -1720,12 +1713,12 @@ int ReadObjsfromBuffer(char *buf){
 	nbytes=sizeof(struct PlayerAll);
 	memcpy(&playerall,buf,nbytes); 
 
-	/* DelIntIList(&(players[playerall.id].ksectors)); */
-	kp=players[playerall.id].kplanets;
+	/* DelIntIList(&(ps[playerall.id].ksectors)); */
+	kp=ps[playerall.id].kplanets;
 
-	memcpy(&ks,&players[playerall.id].ksectors,sizeof(struct HeadIntIList));
+	memcpy(&ks,&ps[playerall.id].ksectors,sizeof(struct HeadIntIList));
 	/****/
-	player=&players[playerall.id];
+	player=&ps[playerall.id];
 
 	strncpy(player->playername,playerall.playername,MAXTEXTLEN);
 
@@ -1756,11 +1749,11 @@ int ReadObjsfromBuffer(char *buf){
 	/****/
 
 
-	players[playerall.id].kplanets=kp;
-	memcpy(&players[playerall.id].ksectors,&ks,sizeof(struct HeadIntIList));
+	ps[playerall.id].kplanets=kp;
+	memcpy(&ps[playerall.id].ksectors,&ks,sizeof(struct HeadIntIList));
 
-	players[playerall.id].ttl=2000;
-	players[playerall.id].modified=SENDOBJUNMOD;
+	ps[playerall.id].ttl=2000;
+	ps[playerall.id].modified=SENDOBJUNMOD;
 	
 
 	buf+=nbytes;
@@ -1781,17 +1774,17 @@ int ReadObjsfromBuffer(char *buf){
 	  fprintf(stdout,"recv. SENDPLAYERMOD %d %d %d\n",pid,pmod.gmaxlevel,GetTime());
 	}
 #endif
-	players[pid].gmaxlevel=pmod.gmaxlevel;
-	players[pid].maxlevel=pmod.maxlevel;
-	players[pid].nplanets=pmod.nplanets;
-	players[pid].nships=pmod.nships;
-	players[pid].nbuildships=pmod.nbuildships;
-	players[pid].gold=pmod.gold;
-	players[pid].ndeaths=pmod.ndeaths;
-	players[pid].nkills=pmod.nkills;
-	players[pid].points=pmod.points;
-	players[pid].ttl=2000;
-	players[pid].modified=SENDOBJUNMOD;
+	ps[pid].gmaxlevel=pmod.gmaxlevel;
+	ps[pid].maxlevel=pmod.maxlevel;
+	ps[pid].nplanets=pmod.nplanets;
+	ps[pid].nships=pmod.nships;
+	ps[pid].nbuildships=pmod.nbuildships;
+	ps[pid].gold=pmod.gold;
+	ps[pid].ndeaths=pmod.ndeaths;
+	ps[pid].nkills=pmod.nkills;
+	ps[pid].points=pmod.points;
+	ps[pid].ttl=2000;
+	ps[pid].modified=SENDOBJUNMOD;
 
 	buf+=nbytes;
 	tbytes+=nbytes;
@@ -1818,12 +1811,12 @@ int ReadObjsfromBuffer(char *buf){
 	    
 	    if(obj!=NULL && pnt!=NULL){
 	      for(i=0;i<=gnplayers+1;i++){
-		if( (i!=obj->player) && ((players[obj->player].team==players[i].team) || GameParametres(GET,GENEMYKNOWN,0)) ){
-		  if(GetProc()==players[i].proc){
-		    if(IsInIntList((players[i].kplanets),pnt->id)==0){
-		      players[i].kplanets=Add2IntList((players[i].kplanets),pnt->id);
+		if( (i!=obj->player) && ((ps[obj->player].team==ps[i].team) || GameParametres(GET,GENEMYKNOWN,0)) ){
+		  if(GetProc()==ps[i].proc){
+		    if(IsInIntList((ps[i].kplanets),pnt->id)==0){
+		      ps[i].kplanets=Add2IntList((ps[i].kplanets),pnt->id);
 		      snprintf(text,MAXTEXTLEN,"(%s) %s %d %s",
-			       players[obj->player].playername,
+			       ps[obj->player].playername,
 			       GetLocale(L_PLANET),
 			       pnt->id,
 			       GetLocale(L_DISCOVERED));
@@ -1845,7 +1838,7 @@ int ReadObjsfromBuffer(char *buf){
 	case NMPLANETLOST:
 	  {
 	    char text[MAXTEXTLEN];
-	    if(GetProc()==players[mess.a].proc){
+	    if(GetProc()==ps[mess.a].proc){
 	      snprintf(text,MAXTEXTLEN,"%s %d %s",
 		       GetLocale(L_PLANET),
 		       mess.b,
@@ -1878,7 +1871,7 @@ int ReadObjsfromBuffer(char *buf){
 	nobj->accel=0;
       }
 
-      if(proc!=players[nobj->player].proc){
+      if(proc!=ps[nobj->player].proc){
 	nobj->ttl=0;
       }
       
@@ -2016,6 +2009,9 @@ int SetModified(Object *obj,int mode){
    */
   int sw=0;
   int swmod=0;
+  struct Player *ps;
+  ps=GetPlayers();
+
 
 /* object modify types, used in transmission buffer */
 
@@ -2037,7 +2033,7 @@ int SetModified(Object *obj,int mode){
   if(mode==obj->modified)return(0);
 
 #if DEBUG
-  if(GetProc()!=players[obj->player].proc){
+  if(GetProc()!=ps[obj->player].proc){
     if(obj->type==ASTEROID){
       if(debugcomm1){
 	fprintf(stdout,"SetModified():PROC ASTEROID Debug Warning :different proc, trying to change mode (%d) %d to %d\n",
@@ -2047,7 +2043,7 @@ int SetModified(Object *obj,int mode){
   }
 #endif
 
-  if(GetProc()!=players[obj->player].proc){
+  if(GetProc()!=ps[obj->player].proc){
     /* mode allowed for different processes */
     switch(mode){
     default:
@@ -2056,7 +2052,7 @@ int SetModified(Object *obj,int mode){
 #if DEBUG    
     if(debugcomm1){
       fprintf(stdout,"SetModified():Debug Warning. different proc PROC: %d, trying to change mode (%d) %d to %d time: %d\n",
-	     players[obj->player].proc,obj->id,
+	     ps[obj->player].proc,obj->id,
 	     obj->modified,mode,GetTime());
       swmod=1;
     }
@@ -2558,6 +2554,7 @@ int SetModified(Object *obj,int mode){
   return(sw);
 }
 
+
 int SetModifiedAll(struct HeadObjList *lh,int type,int mode,int force){
   /*
     Reset the modified variable on all objects of type type to mode mode
@@ -2565,14 +2562,16 @@ int SetModifiedAll(struct HeadObjList *lh,int type,int mode,int force){
   */
 
   struct ObjList *ls;
+  struct Player *ps;
   int n=0;
   int proc=0;
 
+  ps=GetPlayers();
 
   proc=GetProc();
   ls=lh->list;
   while(ls!=NULL){
-    if(proc!=players[ls->obj->player].proc){ls=ls->next;continue;}
+    if(proc!=ps[ls->obj->player].proc){ls=ls->next;continue;}
 
     if(ls->obj->type==type || type==ALLOBJS){
       if(force==TRUE){
@@ -2600,13 +2599,16 @@ int CheckModifiedPre(struct HeadObjList *lh,int proc){
   Object *obj;
   int n=0;
 
+  struct Player *ps;
+  ps=GetPlayers();
+
   
   ls=lh->list;
   /*  printf("======\n"); */
   while(ls!=NULL){
     obj=ls->obj;
 
-    if(proc!=players[obj->player].proc){
+    if(proc!=ps[obj->player].proc){
 #if DEBUG
       if(obj->state<=0){
 	if(obj->modified!=SENDOBJNEW && 
@@ -2615,7 +2617,7 @@ int CheckModifiedPre(struct HeadObjList *lh,int proc){
 
 	  if(debugcomm1){
 	    fprintf(stderr,"ERROR CheckModifiedPre(): PROC: %d obj %d (%d) player: %d type %d stype %d mod: %d time: %d ... ignoring...\n",
-		 players[obj->player].proc,obj->id,obj->pid,
+		 ps[obj->player].proc,obj->id,obj->pid,
 		   obj->player,obj->type,obj->subtype,obj->modified, GetTime());
 	  }
 
@@ -2713,7 +2715,8 @@ int CheckModifiedPost(struct HeadObjList *lh,int proc){
   struct ObjList *ls;
   Object *obj;
   int n=0;
-
+  struct Player *ps;
+  ps=GetPlayers();
 
   ls=lh->list;
   /*  printf("======\n"); */
@@ -2729,7 +2732,7 @@ int CheckModifiedPost(struct HeadObjList *lh,int proc){
       }
     }
 
-    if(proc!=players[obj->player].proc){
+    if(proc!=ps[obj->player].proc){
       if(obj->type==PROJECTILE){ /* HERE not neccesary */
 	if(obj->state<=0){
 	  SetModified(obj,SENDOBJDEAD);
@@ -2838,6 +2841,8 @@ void Setttl0(struct HeadObjList *lh){
   Object *obj=NULL;
   int proc,gmode,gcooperative,otherproc, genemyknown;
   int sw;
+  struct Player *ps;
+  ps=GetPlayers();
 
   proc=GetProc();
   gmode=GameParametres(GET,GMODE,0);
@@ -2846,7 +2851,7 @@ void Setttl0(struct HeadObjList *lh){
 
   ls=lh->list;
   while(ls!=NULL){
-    if(proc!=players[ls->obj->player].proc){
+    if(proc!=ps[ls->obj->player].proc){
       ls=ls->next;continue;
     }
     obj=ls->obj;
@@ -2874,7 +2879,7 @@ void Setttl0(struct HeadObjList *lh){
 	if(obj->ttl<=0){ /* objects ready to send */
 	  sw=1;
 
-	  if(gcooperative==TRUE && players[obj->player].control==HUMAN){
+	  if(gcooperative==TRUE && ps[obj->player].control==HUMAN){
 	    /* send human controled ships periodically */
 	    if(obj->habitat==H_SPACE){
 	      SetModified(obj,SENDOBJMOD0);
@@ -2977,7 +2982,7 @@ void Setttl0(struct HeadObjList *lh){
       break;
     case SENDOBJSEND: /* just sended HERE must not happen BUG[96] ignoring*/      
       fprintf(stderr,"ERROR 2 :setttl0() mode %d unknown, obj type: %d player: %d id: %d pid: %d proc: %d\n",
-	      obj->modified,obj->type,obj->player,obj->id,obj->pid,players[obj->player].proc);
+	      obj->modified,obj->type,obj->player,obj->id,obj->pid,ps[obj->player].proc);
       break;
       /* Send this now */
     case SENDOBJALL:
@@ -2994,7 +2999,7 @@ void Setttl0(struct HeadObjList *lh){
     default:
       /* PRODUCTION Quitar el exit ignorar?? */
       fprintf(stderr,"ERROR 3 :setttl0() mode %d unknown, obj type: %d player: %d id: %d pid: %d proc: %d\n",
-	      obj->modified,obj->type,obj->player,obj->id,obj->pid,players[obj->player].proc);
+	      obj->modified,obj->type,obj->player,obj->id,obj->pid,ps[obj->player].proc);
       exit(-1);
       break;
     }
@@ -3002,7 +3007,6 @@ void Setttl0(struct HeadObjList *lh){
   }
   return;
 }
-
 
 void Setttl(struct HeadObjList *lh,int n){
   /*
@@ -3032,6 +3036,9 @@ void Setttl(struct HeadObjList *lh,int n){
   int gcooperative;
   int genemyknown;
 
+  struct Player *ps;
+  ps=GetPlayers();
+
   proc=GetProc();
   gcooperative=GameParametres(GET,GCOOPERATIVE,0);
   genemyknown=GameParametres(GET,GENEMYKNOWN,0);
@@ -3039,7 +3046,7 @@ void Setttl(struct HeadObjList *lh,int n){
   if(n>=0){ /* all objects are set to ttl=n */
     ls=lh->list;
     while(ls!=NULL){
-      if(proc!=players[ls->obj->player].proc){
+      if(proc!=ps[ls->obj->player].proc){
 	ls=ls->next;continue;
       }
       ls->obj->ttl=n;
@@ -3052,7 +3059,7 @@ void Setttl(struct HeadObjList *lh,int n){
   ls=lh->list;
   while(ls!=NULL){
       
-    if(proc!=players[ls->obj->player].proc){
+    if(proc!=ps[ls->obj->player].proc){
       ls=ls->next;continue;
     }
     obj=ls->obj;
@@ -3070,7 +3077,7 @@ void Setttl(struct HeadObjList *lh,int n){
       case SHIP:
 
 	/* only calc ttl for computer controled ships */
-	if((gcooperative==TRUE && players[obj->player].control==HUMAN)||  genemyknown){
+	if((gcooperative==TRUE && ps[obj->player].control==HUMAN)||  genemyknown){
 	
 	  otherproc=OtherProc(lh,proc,obj);
 	  switch(otherproc){ /*  */
@@ -3134,6 +3141,8 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
   int proc;
   struct IntList *list;
   int fd;
+  struct Player *ps;
+  ps=GetPlayers();
 
   if(buffer==NULL)return;
 
@@ -3211,7 +3220,7 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
 
       /* Loading buffer with known sectors and planets */
       for(i=0;i<GameParametres(GET,GNPLAYERS,0)+2;i++){
-	if(proc!=players[i].proc)continue;
+	if(proc!=ps[i].proc)continue;
 
 
 	/* player */
@@ -3222,12 +3231,12 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
 
 	CopyMessHeader2Buffer(buffer,&messh);
 
-	CopyPlayer2Buffer(buffer,&players[i]);
+	CopyPlayer2Buffer(buffer,&ps[i]);
 
 	/* list of planets */
 
 	/* header */
-	nkp=CountIntList(players[i].kplanets);
+	nkp=CountIntList(ps[i].kplanets);
 	messh.id=SENDPLANETLIST;
 	messh.nobjs=nkp;
 	messh.nbytes=0;
@@ -3236,7 +3245,7 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
 	CopyInt2Buffer(buffer,&i);
 
 	if(nkp>0){
-	  list=players[i].kplanets;
+	  list=ps[i].kplanets;
 
 	  /* planets id */
 	  while(list!=NULL){
@@ -3248,15 +3257,15 @@ void LoadBuffer(int order,struct Buffer *buffer,int mode){
 	/* list of sectors */
 	/* header */
 	messh.id=SENDSECTORLIST;
-	messh.nobjs=players[i].ksectors.n;
+	messh.nobjs=ps[i].ksectors.n;
 	messh.nbytes=0;
 
 	CopyMessHeader2Buffer(buffer,&messh);
 
 	CopyInt2Buffer(buffer,&i);
 
-	if(players[i].ksectors.n>0){
-	  list=players[i].ksectors.list;
+	if(ps[i].ksectors.n>0){
+	  list=ps[i].ksectors.list;
 	  while(list!=NULL){
 	    CopyInt2Buffer(buffer,&(list->id));
 	    list=list->next;
@@ -3305,6 +3314,9 @@ int ServerProcessBuffer(struct Buffer *buffer){
   int gkplanets;
   struct IntList *kp;
   struct HeadIntIList ks;
+  struct Player *ps;
+
+  ps=GetPlayers();
 
   gkplanets=GameParametres(GET,GKPLANETS,0);
 
@@ -3360,9 +3372,9 @@ int ServerProcessBuffer(struct Buffer *buffer){
 	nbytes=sizeof(struct PlayerAll);
 	memcpy(&playerall,buf,nbytes); 
 	buf+=nbytes;
-	player=&players[playerall.id];
+	player=&ps[playerall.id];
 
-	/* DelIntIList(&(players[playerall.id].ksectors)); */
+	/* DelIntIList(&(ps[playerall.id].ksectors)); */
 	kp=player->kplanets;
 	memcpy(&ks,&player->ksectors,sizeof(struct HeadIntIList));
 
@@ -3392,8 +3404,8 @@ int ServerProcessBuffer(struct Buffer *buffer){
 	player->ttl=playerall.ttl;
 
 
-	players[playerall.id].kplanets=kp;
-	memcpy(&players[playerall.id].ksectors,&ks,sizeof(struct HeadIntIList));
+	ps[playerall.id].kplanets=kp;
+	memcpy(&ps[playerall.id].ksectors,&ks,sizeof(struct HeadIntIList));
 
 	break;
 
@@ -3405,13 +3417,13 @@ int ServerProcessBuffer(struct Buffer *buffer){
 
 	fprintf(stdout,"\trecv PLAYER: %d\n",playerid);
 
-	DelIntList((players[playerid].kplanets));
-	players[playerid].kplanets=NULL;/*kp; */
+	DelIntList((ps[playerid].kplanets));
+	ps[playerid].kplanets=NULL;/*kp; */
 
 	for(i=0;i<nkp;i++){
 	  memcpy(&id,buf,sizeof(int));
 	  buf+=sizeof(int);
-	  players[playerid].kplanets=Add2IntList((players[playerid].kplanets),id);
+	  ps[playerid].kplanets=Add2IntList((ps[playerid].kplanets),id);
 	}
 	break;
 
@@ -3422,18 +3434,18 @@ int ServerProcessBuffer(struct Buffer *buffer){
  	memcpy(&playerid,buf,sizeof(int)); 
  	buf+=sizeof(int); 
 
-	players[playerid].ksectors.n=0;
-	players[playerid].ksectors.n0=0;
-	players[playerid].ksectors.list=NULL;
+	ps[playerid].ksectors.n=0;
+	ps[playerid].ksectors.n0=0;
+	ps[playerid].ksectors.list=NULL;
 	for(i=0;i<NINDEXILIST;i++){
-	  players[playerid].ksectors.index[i]=NULL;
+	  ps[playerid].ksectors.index[i]=NULL;
 	}
 
 	for(i=0;i<nks;i++){
 	  memcpy(&id,buf,sizeof(int));
 	  buf+=sizeof(int);
 	  if(gkplanets==FALSE){
-	    Add2IntIList(&(players[playerid].ksectors),id);
+	    Add2IntIList(&(ps[playerid].ksectors),id);
 	  }
 	}
 	break;

@@ -40,7 +40,7 @@
 #define SLOOP 1
 
 /* sound */
-#define NUM_SOUNDS 5
+#define NUM_SOUNDS 6
 #define NUM_SOURCES 5
 #define NUM_BUFFERS 10
 
@@ -50,6 +50,7 @@
 #define EXPLOSION0 2
 #define THRUST 3
 #define CRASH 4
+#define BELL 5
 
 
 #define SSTOP 0

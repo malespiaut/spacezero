@@ -34,27 +34,33 @@
 #include "sectors.h"
 #include "locales.h"
 #include "players.h"
+#include "general.h"
 
 #define DL (2*RADAR_RANGE)
 /* #define DL 3000 */
 
 struct ObjTree *treeobjs=NULL;
-struct HeadObjList listheadobjs;       /* List of all objs */
-extern struct HeadObjList *listheadkplanets;  /* lists of planets known by players */
-extern struct HeadObjList listheadplayer;     /* list of objects of each player */
-extern struct TextMessageList listheadtext;
-extern struct CharListHead gameloglist;       /* list of all game messages */
-extern struct Window windowgamelog;
-extern int actual_player,actual_player0;
-extern int record;
-extern int gameover;
-extern int *cell;
 
+struct HeadObjList listheadobjs;    /* list of all objects */
+struct HeadObjList listheadplanets;        /* list of all planets */
+struct HeadObjList *listheadcontainer;     /* lists of objects that contain objects: free space and planets*/
+struct HeadObjList *listheadkplanets;      /* lists of planets known by players */
+struct HeadObjList listheadplayer;         /* list of objects of each player */
+
+
+struct Habitat habitat;
+int *cell;
 
 int g_objid=1;  /* id of the objects */
 int g_projid=-2; /* id of the projectiles */
 
+int g_nobjsend=0;
+int g_nshotsend=0;
+int g_nobjmaxsend=0;
+int g_nobjtype[6]={0,0,0,0,0,0};
 
+Object *ship_c; /* ship controled by keyboard */
+Object *cv;     /* coordinates center */
 
 Object *NewObj(int type,int stype,
 	       int x,int y,float vx,float vy,
@@ -102,6 +108,7 @@ Object *NewObj(int type,int stype,
   obj->visible=TRUE;
   obj->selected=FALSE;
   obj->radar=RADAR_RANGE;
+  obj->cloak=0;
   obj->experience=0;
   obj->pexperience=0;
   obj->modified=SENDOBJNEW;
@@ -225,6 +232,7 @@ Object *NewObj(int type,int stype,
       fprintf(stderr,"\tplayer: %d\n",obj->player);
       fprintf(stderr,"\ttype: %d\n",obj->type);
       fprintf(stderr,"\tstype: %d\n",obj->subtype);
+      free(obj);
       return(NULL); 
     } 
     
@@ -253,11 +261,21 @@ Object *NewObj(int type,int stype,
       obj->damage=weapon->projectile.damage;
       obj->mass=weapon->projectile.mass;
       break;
-    case LASER: /*  shot4 */
+    case LASER: /*  shot4 */  //HERELANDED
       obj->state=1;
       obj->gas_max=0;
       obj->radio=50;
       weapon=&obj->parent->weapon2;
+      obj->durable=weapon->projectile.durable;
+      obj->life=weapon->projectile.life;
+      obj->damage=weapon->projectile.damage;
+      obj->mass=weapon->projectile.mass;
+      break;
+    case LASERBEAM: /*  shot5 */
+      obj->state=1;
+      obj->gas_max=0;
+      obj->radio=10;
+      weapon=&obj->parent->weapon0;
       obj->durable=weapon->projectile.durable;
       obj->life=weapon->projectile.life;
       obj->damage=weapon->projectile.damage;
@@ -381,7 +399,8 @@ int Add2ObjList(struct HeadObjList *lhead,Object *obj){
   /* 
      add obj to the list lhead 
   */
-  
+
+  if(obj==NULL)return(1);
   switch(obj->type){
     
   case SHIP:
@@ -400,6 +419,7 @@ int Add2ObjList(struct HeadObjList *lhead,Object *obj){
     exit(-1);
     break;
   }
+  return(0);
 }
 
 
@@ -558,6 +578,15 @@ void NewWeapon(Weapon *weapon,int type){
     weapon->max_n=25;
     
     break;
+  case CANNON10:
+    weapon->projectile.type=LASERBEAM;/* SHOT5 */
+    weapon->rate=40;
+    weapon->nshots=1;
+    weapon->cont1=weapon->rate;
+    weapon->mass=0;
+    weapon->n=0;
+    weapon->max_n=4;
+    break;
   default: 
     printf("error (NewWeapon) type: %d\n",type);
     exit(-1);
@@ -609,6 +638,15 @@ void NewWeapon(Weapon *weapon,int type){
     weapon->projectile.mass=0;
     weapon->projectile.gascost=30;
     weapon->projectile.unitcost=2;
+    break;
+  case LASERBEAM:/* SHOT5:  laserbeam  */
+    weapon->projectile.durable=TRUE;
+    weapon->projectile.life=LIFESHOT5;
+    weapon->projectile.damage=50*DAMAGEFACTOR;
+    weapon->projectile.max_vel=VELMAX*.4;
+    weapon->projectile.mass=0;
+    weapon->projectile.gascost=10;
+    weapon->projectile.unitcost=50;
     break;
   default:
     break;
@@ -887,7 +925,7 @@ Object *RemoveDeadObjs(struct HeadObjList *lhobjs , Object *cv0){
 	  else{ /* ship crashed */
 	    float price,factor;
 	    factor=0.01*ls->obj->state*0.25;
-	    if(factor<.1)factor=.1;  /* at least an 10 percent*/
+	    if(factor<.2)factor=.2;  /* at least an 20 percent*/
 	    price=factor*GetPrice(ls->obj,0,0,0);
 	    ls->obj->in->planet->gold+=price;
 	  }
@@ -1315,8 +1353,8 @@ void Explosion(struct HeadObjList *lh,Object *cv,Object *obj,int type){
     for(i=0;i<nexplosion;i++){   /* 16 */
       a=2.*PI*(Random(-1));
       v=1.0*VELMAX*(Random(-1)); 
-      vx=v*cos(a) + obj->vx;
-      vy=v*sin(a) + obj->vy;
+      vx=v*Cos(a) + obj->vx;
+      vy=v*Sin(a) + obj->vy;
       nobj=NewObj(PROJECTILE,EXPLOSION,obj->x,obj->y,vx,vy,
 		  CANNON0,ENGINE0,obj->player,obj,obj->in);
       if(nobj!=NULL){
@@ -1331,8 +1369,8 @@ void Explosion(struct HeadObjList *lh,Object *cv,Object *obj,int type){
     for(i=0;i<4;i++){
       a=2.*PI*(Random(-1));
       v=0.5*VELMAX*(Random(-1)); 
-      vx=v*cos(a) + obj->vx;
-      vy=v*sin(a) + obj->vy;
+      vx=v*Cos(a) + obj->vx;
+      vy=v*Sin(a) + obj->vy;
       nobj=NewObj(PROJECTILE,EXPLOSION,obj->x,obj->y,vx,vy,
 		  CANNON0,ENGINE0,obj->player,obj,obj->in);
       if(nobj!=NULL){
@@ -1607,7 +1645,7 @@ Object *SelectOneShip(struct HeadObjList *lh,Space reg,Object *cv,int ctrl){
   
   rect.x=reg.rect.x;
   rect.y=reg.rect.y;
-  
+
   ls=lh->list;
   while(ls!=NULL){
     if(ls->obj->player!=actual_player){ls=ls->next;continue;}
@@ -2079,7 +2117,7 @@ void NearestObjAll(struct HeadObjList *lhc,Object *obj,struct NearObject *objs){
       
       switch(obj2->type){
       case SHIP:
-	if(r2>radar2){ls=ls->next;continue;}
+	if(r2*(1+obj2->cloak)>radar2){ls=ls->next;continue;}
       case ASTEROID:
 	if(r2>25*radar2){ls=ls->next;continue;}
 	
@@ -2406,7 +2444,7 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
      dest: the destination player. -1 : for all players
      mid: is a message indentifier.
      time: the duration of the message in centiseconds.
-     priority: priority.
+     priority: priority. (0 lower, 2 higher)
      returns:
      0 if the message is added to the list
      1 if not, because is already added.
@@ -2465,6 +2503,7 @@ int Add2TextMessageList(struct TextMessageList *listhead,char *cad,
   
   listhead->info.n++;
   /*   gdk_beep(); */
+
   return (0);
 }
 
@@ -2476,7 +2515,7 @@ int GetPrice(Object *obj,int stype,int eng,int weapon){
     the price of the object obj
     if obj is NULL the price given for the other parametres.
   */
-  static int ship_price[]={PRICESHIP0,PRICESHIP1,PRICESHIP2,PRICESHIP3,PRICESHIP4,PRICESHIP5,PRICESHIP6,PRICESHIP7,PRICESHIP8};
+  static int ship_price[]={PRICESHIP0,PRICESHIP1,PRICESHIP2,PRICESHIP3,PRICESHIP4,PRICESHIP5,PRICESHIP6,PRICESHIP7,PRICESHIP8,PRICESHIP9,PRICESHIP10};
   static int engine_price[]={PRICEENGINE0,PRICEENGINE1,PRICEENGINE2,PRICEENGINE3,PRICEENGINE4,PRICEENGINE5};
   static int weapon_price[NUMWEAPONS]={PRICECANNON0,PRICECANNON1,PRICECANNON2,PRICECANNON3,PRICECANNON4,PRICECANNON5,PRICECANNON6,PRICECANNON7,PRICECANNON8,PRICECANNON9};
   int price=0;
@@ -2525,7 +2564,7 @@ int GetPrice(Object *obj,int stype,int eng,int weapon){
 
 int BuyShip(struct Player *player,Object *obj,int stype){
   /*
-    buy and create an SHIP of subtype stype
+    buy and create a SHIP of subtype stype
     returns:
     an error code:
     0 ok 
@@ -2581,7 +2620,9 @@ int BuyShip(struct Player *player,Object *obj,int stype){
     }
     price=GetPrice(NULL,GOODS,ENGINE0,CANNON0);
     break;
-
+  case CLOAKDEVICE:
+    price=GetPrice(NULL,CLOAKDEVICE,ENGINE0,CANNON0);
+    break;
   default:
     fprintf(stderr,"WARNING in Buyship() ship stype %d not implemented\n",stype);
     return(SZ_NOTIMPLEMENTED);
@@ -2614,6 +2655,24 @@ int BuyShip(struct Player *player,Object *obj,int stype){
     player->gold -=price;
     return(SZ_OK);
   }
+
+  if(obj->type==SHIP && stype==CLOAKDEVICE){ /* ship buys a cloaking device */
+    if(obj->subtype==EXPLORER||
+       obj->subtype==FIGHTER||
+       obj->subtype==QUEEN||
+       obj->subtype==FREIGHTER){
+      printf("cloaking device bought\n");
+      if(obj->cloak<CLOAKMAXVALUE){
+	obj->cloak=CLOAKMAXVALUE;
+	if(GameParametres(GET,GNET,0)==TRUE){
+	  SetModified(obj,SENDOBJALL);
+	}
+	player->gold -=price;
+      }
+      return(SZ_OK);
+    }
+  }
+
   
   s=LandZone(obj->in->planet);
   if(s==NULL){
@@ -2639,6 +2698,7 @@ int BuyShip(struct Player *player,Object *obj,int stype){
 		 obj->x,s->y0,
 		 0,0,
 		 CANNON4,ENGINE1,obj->player,NULL,obj->in);
+
     break;
   case FREIGHTER:
     obj_b=NewObj(SHIP,FREIGHTER,
@@ -3472,7 +3532,7 @@ void CreateNearObjsList(struct HeadObjList *lh,struct HeadObjList *lhn,int playe
 
       r2=rx*rx+ry*ry;
       
-      if(r2 < obj2->radar*obj2->radar){
+      if(r2*(1+obj1->cloak) < obj2->radar*obj2->radar){
 	Add2ObjList(lhn,obj1);
 	break;
       }
@@ -3542,7 +3602,7 @@ void Experience(Object *obj,float pts){
     
     if(obj->weapon1.type!=CANNON0){
       if(obj->weapon1.rate>9){
-	obj->weapon1.rate--;
+	obj->weapon1.rate-=4;
       }
       if(obj->weapon1.max_n<10){ /* max 11 missiles */
 	obj->weapon1.max_n+=2;
@@ -3564,6 +3624,20 @@ void Experience(Object *obj,float pts){
     obj->engine.v2_max=obj->engine.v_max*obj->engine.v_max;
     
     switch(obj->subtype){
+    case TOWER:
+      switch(obj->level){
+      case 1:
+	if(obj->weapon1.type==CANNON0){
+	  NewWeapon(&obj->weapon1,CANNON10);
+	}
+	break;
+      case 2:
+	break;
+      }
+
+      obj->shield+=(.9-obj->shield)/3.;
+      if(obj->shield>.9)obj->shield=.9;
+      break;
     case FIGHTER:
 
       switch(obj->level){
@@ -3601,8 +3675,20 @@ void Experience(Object *obj,float pts){
 }
 
 void PrintObj(Object *obj){
-  printf("obj id:%d pid: %d type: %d stype: %d\n",
-	 obj->id,obj->pid,obj->type,obj->subtype);
+  int n;
+  n=CountOrders(obj);
+  printf("obj id:%d pid: %d type: %d stype: %d\n state: %f player: %d norders: %d\n",
+	 obj->id,obj->pid,obj->type,obj->subtype,
+	 obj->state,obj->player,n);
+}
+
+
+void FPrintObj(FILE *f,Object *obj){
+  int n;
+  n=CountOrders(obj);
+  fprintf(f,"obj id:%d pid: %d type: %d stype: %d\n state: %f player: %d norders: %d\n",
+	 obj->id,obj->pid,obj->type,obj->subtype,
+	 obj->state,obj->player,n);
 }
 
 char Type(Object *obj){
@@ -4047,6 +4133,7 @@ void ShipProperties(Object *obj,int stype,Object *in){
   switch(stype){
   case EXPLORER: /* EXPLORER */
     obj->radar=2*RADAR_RANGE;
+    obj->cloak=0;
     obj->gas_max=1000;
     obj->gas=obj->gas_max;
     obj->shield=0;
@@ -4061,6 +4148,8 @@ void ShipProperties(Object *obj,int stype,Object *in){
   case SHIP0: /* not used */
     /* HERE there are SHIP0 */
   case FIGHTER: /*  FIGHTER */
+    obj->radar=RADAR_RANGE;
+    obj->cloak=0;
     obj->gas_max=1000;
     obj->gas=obj->gas_max;
     obj->shield=0;
@@ -4081,6 +4170,7 @@ void ShipProperties(Object *obj,int stype,Object *in){
     break;
   case QUEEN: /*  cargo queen ship */
     obj->radar=3*RADAR_RANGE;
+    obj->cloak=0;
     obj->gas_max=2000;
     obj->gas=obj->gas_max;
     obj->shield=0.9;
@@ -4095,6 +4185,7 @@ void ShipProperties(Object *obj,int stype,Object *in){
 
   case FREIGHTER: /*  FREIGHTER */
     obj->radar=2*RADAR_RANGE;
+    obj->cloak=0;
     obj->gas_max=2000;
     obj->gas=obj->gas_max;
     obj->shield=0.8;
@@ -4109,6 +4200,7 @@ void ShipProperties(Object *obj,int stype,Object *in){
     
   case SATELLITE: /* SATELLITE: */
     obj->radar=3*RADAR_RANGE;
+    obj->cloak=0;
     obj->durable=TRUE;
     obj->life=LIFESATELLITE;
     obj->gas_max=500;
@@ -4126,6 +4218,7 @@ void ShipProperties(Object *obj,int stype,Object *in){
     break;
   case TOWER: /* TOWER: */
     /*       obj->radar=8*RADAR_RANGE; */
+    obj->cloak=0;
     obj->gas_max=1000;
     obj->gas=obj->gas_max;
     obj->shield=0.5;
@@ -4139,6 +4232,7 @@ void ShipProperties(Object *obj,int stype,Object *in){
     obj->cost=COSTTOWER*COSTFACTOR;
     break;
   case PILOT: /* PILOT */
+    obj->cloak=0;
     obj->gas_max=0;
     obj->gas=obj->gas_max;
     /* obj->shield=0; keep shield */
@@ -4155,6 +4249,7 @@ void ShipProperties(Object *obj,int stype,Object *in){
 
   case GOODS: /* GOODS */
     obj->radar=0;
+    obj->cloak=0;
     obj->durable=TRUE;
     obj->life=LIFEGOODS;
     obj->gas_max=0;
@@ -4587,12 +4682,15 @@ void CargoCheck(struct HeadObjList *hol,Object *cvobj){
   
   while(ls!=NULL){
     sw=0;
-    if(proc!=players[ls->obj->player].proc){ls=ls->next;continue;}
-    
+
     if(ls->obj->state<=0){
 #if TEST
       if(ls->obj->type==SHIP)printf("CARGOCHECK dead.\n");
 #endif
+      sw=1;
+    }
+    /* pilot eject objects */
+    if(ls->obj->cargo.hlist!=NULL && ls->obj->type==SHIP && ls->obj->subtype==PILOT){
       sw=1;
     }
 
@@ -4603,6 +4701,8 @@ void CargoCheck(struct HeadObjList *hol,Object *cvobj){
       CargoEjectObjs(ls->obj,-1,-1);
       /* ls->obj->items=(ls->obj->items)&(~ITPILOT); */
     }
+
+    if(proc!=players[ls->obj->player].proc){ls=ls->next;continue;}
     
     /***** ship destroyed Create Pilot****/
     if(sw && (ls->obj->items & ITSURVIVAL)){
@@ -4956,11 +5056,10 @@ int CargoGetMass(Object *obj){
 int CargoBuild(Object *obj){
   
   /*
-    Build the cargo list of object obj
+    Build the cargo list of object obj.
   */
   
   struct ObjList *ls;
-  int n=0;
   
   ls=listheadobjs.list;
   while(ls!=NULL){
@@ -4977,12 +5076,11 @@ int CargoBuild(Object *obj){
       }
       break;
     default:
+      fprintf(stderr,"ERROR CargoBuild(): habitat %d unknown\n",ls->obj->habitat);
       exit(-1);
     }
     ls=ls->next;
   }
-
-
   return(0);
 }
 

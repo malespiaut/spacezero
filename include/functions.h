@@ -26,7 +26,7 @@
 #ifndef _FUNCTIONS_
 #define _FUNCTIONS_ 
 
-#include "players.h"
+#include <stdio.h>
 
 #define GET 0
 #define SET 1
@@ -36,11 +36,15 @@
 #define MADD 2
 #define MGET 3
 
+extern int actual_player,actual_player0;
+
+/* #define abs(x) ((x)<0 ? -(x) : (x)) */
 
 float Random(int);
 float Sqrt(int n);
+float Sin(float x);
+float Cos(float x);
 void delay(int time);
-int GetControl(struct Player *,int player);
 int GameParametres(int option,int param,int value);
 
 int Proc(int option,int value);

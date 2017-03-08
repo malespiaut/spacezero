@@ -151,3 +151,4 @@
 130 Cancelar
 131 Satélite
 132 La bodega está llena.
+133 Cloak Device

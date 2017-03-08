@@ -29,6 +29,13 @@
 #include "objects.h" 
 #include "statistics.h" 
 
+extern GdkFont *gfont;
+
+extern GtkWidget *d_a;
+extern GtkWidget *win_main;
+
+extern struct Draw gdraw;
+extern int gdrawmenu;
 
 /* constants used by DrawMessageBox() */
 #define MBOXDEFAULT 0
@@ -83,6 +90,7 @@ struct Draw{
 
 
 GtkWidget *InitGraphics(char *title,char *optfile,int,int,struct Parametres param);
+void CreatePixmap();
 GdkFont *InitFonts(char *fontname);
 GdkFont *InitFontsMenu(char *fname);
 gint QuitGraphics(GtkWidget *widget,gpointer gdata);
@@ -116,32 +124,43 @@ int CountKey(int mode);
 GdkColor *NewColor(int red,int green,int blue);
 GdkGC *GetPen(GdkColor *c,GdkPixmap *pixmap);
 
-int DrawObjs(GdkPixmap *pixmap,struct HeadObjList *,struct Habitat habitat,Object *cv,Vector r_rel);
-void DrawShip(GdkPixmap *pixmap,GdkGC *gc,int x,int y,Object *obj);
-void DrawPlanet(GdkPixmap *pixmap,int x,int y, int r);
-void DrawStars(GdkPixmap *pixmap,int,float,float);
-void DrawPlanetSurface(GdkPixmap *pixmap,struct Planet *planet,  GdkGC *color);
-void DrawAsteroid(GdkPixmap *pixmap,int x,int y,Object *obj);
-int DrawRadar(GdkPixmap *pixmap,Object *,struct HeadObjList *,int crash);
-void DrawMap(GdkPixmap *pixmap,int player,struct HeadObjList,Object *cv,int ulx);
-void DrawSpaceShip(GdkPixmap *pixmap,Object *obj,struct HeadObjList *lhc);
+void DrawPoint(GdkGC *gc,int x,int y);
+void DrawLine(GdkGC *gc,int x1,int y1,int x2,int y2);
+void DrawRectangle(GdkGC *gc,int fill,int x,int y,int w,int h);
+void DrawText(GdkFont *font,GdkGC *gc,gint x,gint y,const gchar *string);
 
-int DrawGameStatistics(GdkPixmap *pixmap,struct Player *pl);
 
-void DrawInfo(GdkPixmap *pixmap,Object *,struct Draw *,struct HeadObjList *,struct TextMessageList *);
-int DrawPlayerInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct Player *player,int x0,int y0);
-int DrawShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *obj,int x0,int y0);
-int DrawEnemyShipInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *,int,int);
-int DrawPlanetInfo(GdkPixmap *pixmap,GdkFont *font,GdkGC *color,Object *planet,int player,int x0,int y0);
-void DrawPlayerList(GdkPixmap *pixmap,int player,struct HeadObjList *,Object *,int);
 
-int DrawTextList(GdkPixmap *pixmap,GdkFont *font,char *title,struct HeadTextList *head,int x0,int y0,int width,int height);
-void DrawString(GdkDrawable *pixmap,GdkFont *font,GdkGC *gc,gint x,gint y,const gchar *string);
-void DrawMessageBox(GdkPixmap *pixmap,GdkFont *font,char *cad,int x0,int y0,int type);
+int DrawObjs(struct HeadObjList *,struct Habitat habitat,Object *cv,Vector r_rel);
+void DrawShip(GdkGC *gc,int x,int y,Object *obj);
+void DrawPlanet(int x,int y, int r);
+void DrawStars(int,float,float);
+void DrawPlanetSurface(Object *);
+void DrawAsteroid(int x,int y,Object *obj);
+int DrawRadar(Object *,struct HeadObjList *,int crash);
+void DrawMap(int player,struct HeadObjList,Object *cv,int ulx);
+void DrawSpaceShip(Object *obj,struct HeadObjList *lhc);
 
-void DrawCharList (GdkPixmap *pixmap,GdkFont *font,GdkGC *color,struct CharListHead *hlist,int x0,int y0);
-void DrawWindow (GdkPixmap *pixmap,GdkFont *font,GdkGC *color,int x0,int y0,int type,struct Window *W);
-void DrawBarBox (GdkPixmap *pixmap,GdkGC *border,GdkGC *color,int x0,int y0,int w,int h,float value);
+int DrawGameStatistics(struct Player *pl);
+
+void DrawInfo(Object *,struct Draw *,struct HeadObjList *,struct TextMessageList *);
+int DrawPlayerInfo(GdkFont *font,GdkGC *color,struct Player *player,int x0,int y0);
+int DrawShipInfo(GdkFont *font,GdkGC *color,Object *obj,int x0,int y0);
+int DrawEnemyShipInfo(GdkFont *font,GdkGC *color,Object *,int,int);
+int DrawPlanetInfo(GdkFont *font,GdkGC *color,Object *planet,int player,int x0,int y0);
+void DrawPlayerList(int player,struct HeadObjList *,Object *,int);
+
+int DrawTextList(GdkFont *font,char *title,struct HeadTextList *head,int x0,int y0,int width,int height);
+void DrawString(GdkFont *font,GdkGC *gc,gint x,gint y,const gchar *string);
+void DrawMessageBox(GdkFont *font,char *cad,int x0,int y0,int type);
+
+void DrawCharList (GdkFont *font,GdkGC *color,struct CharListHead *hlist,int x0,int y0);
+void DrawWindow (GdkFont *font,GdkGC *color,int x0,int y0,int type,struct Window *W);
+void DrawBarBox (GdkGC *border,GdkGC *color,int x0,int y0,int w,int h,float value);
+void DrawSelectionBox(GdkGC *color,int view,Space reg,Object *cv);
+int DrawMenuHead(GdkFont *font,struct MenuHead *head,int x0,int y0);
+
+
 int WindowFocus(struct Window *w);
 int ActWindow(struct Window *w);
 
@@ -154,22 +173,19 @@ void Shift(int action,int ulx,int cvid,float *z,float *x,float *y);
 
 void MousePos(int order,int *x,int *y);
 
-void DrawSelectionBox(GdkPixmap *pixmap,GdkGC *color,int view,Space reg,Object *cv);
+void PrintFontNames(int n);
+void PrintFontName(char *fname,int n);
+
+void DrawStatistics(Rectangle *r,struct Stats *stats,int,int);
+
+void InitColors(void);
+GdkGC *GetColor(int);
+
 void Real2Window(Object *,int view,int rx,int ry,int *wx,int *wy);
 void Real2Sector(int x,int y,int *a,int *b);
 void Window2Real(Object *,int view,int wx,int wy,int *rx,int *ry);
 void Window2Sector(Object *cv,int *x,int *y);
 void W2R(Object *cv,int *x,int *y);
 
-int DrawMenuHead(GdkPixmap *pixmap,GdkFont *font,struct MenuHead *head,int x0,int y0);
-
-void PrintFontNames(int n);
-void PrintFontName(char *fname,int n);
-
-void DrawStatistics(GdkPixmap *pixmap,Rectangle *r,struct Stats *stats,int,int);
-
-
-void InitColors(void);
-GdkGC *GetColor(int);
 
 #endif

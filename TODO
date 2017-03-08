@@ -12,11 +12,10 @@ libopenal_dev
 libvorbis-dev
 
 
-bugs:(last:122)
+bugs:(last:127)
 ====
 
 
--[54] (021110) (in human play)if send to someplace, dont wait to good state. save04
 -[65] (071210) Debug Warning 2 SetModified()PLANET:trying to change mode (3) 42 to 40
       	       ERROR :setttl0() mode 42 unknown, obj type: 3
 -[72](271210)Debug Warning 2 SetModified()PLANET:trying to change mode (1) 43 to 41
@@ -24,7 +23,6 @@ bugs:(last:122)
 	     Debug Warning 2 SetModified()PLANET:trying to change mode (1) 43 to 34
 	     ERROR :setttl0() mode 43 unknown, obj type: 3
 -[75](220111) setttl0(): ERROR 2:setttl0() mode 43 unknown, obj type: 3
--[94](120411)despues de vender todo sigue dando mensajes de las naves ¿en red?
 -[95](130411)Checking game after load...done
              ERROR ReadObjsfromBuffer(SENDOBJKILL) id: 2176 doesnt exists (saven1)client
 -[96](150411)ERROR 2 :setttl0() mode 43 unknown, obj type: 3 player: 1 id: 15 pid: 15
@@ -36,6 +34,38 @@ bugs:(last:122)
 -[115]-geom 1000x-12 check all arguments...
 	    -geom -name hola
 -[117]why dont explore (save08)(the last ship, no unknown planets)
+-[123] towers misplaced. (save42, planet 38)looks inverted. landing zone reaches border. new towers are build in the other side,
+-[124](save43)ERROR in ControlCenter. order unknown 32551
+obj id:5415 pid: 516 type: 1 stype: 8
+ player: 2
+-------------------- exit
+obj id:8726 pid: 754 type: 1 stype: 8
+ player: 2 norders: 1
+---------------------------
+Shell(). Not implemented. ship type: 32
+--------------------------------
+Shell(). Not implemented. ship type: 33
+---------------------------------------
+ERROR in Buyship() ship stype 10 not implemented
+Warning ExecOrder(): (7) Not implemented
+--------------------------------------------
+No room for 11605 in 11481 10 30
+------------------------------exit
+ERROR in ControlCenter 3. order unknown 32644
+obj id:713 pid: 214 type: 1 stype: 8
+ state: 100,000000 player: 2 norders: 1
+---------------------------------------------
+ERROR in ControlCenter 3. order unknown 32606
+obj id:272 pid: 162 type: 1 stype: 8
+ state: 100,000000 player: 2 norders: 1
+---------------------------------------------
+
+
+
+-[125](Se repite multiples veces) Error CheckGame() obj (2)93 (1,3) has no a pilot (2)134 (1,7)  (partida salvada savenpilot)
+(CargoAdd en spacecomm.c:ReadObjsfromBuffer():SENDOBJALL añadir CargoAdd() )
+-[126]pitido al empezar en el servidor
+-[127]laser in planet
 
 
  Version 0.6: (since 0707)
@@ -48,14 +78,17 @@ Version 0.8 (since 10May2011)
 ===========
 
 -!!Reordenar, jerarquizar codigo, ficheros.
--!!Disminuir numero de variables extern (90)78 grep extern src/*.c include/*h |grep ";" |wc
--!!Disminuir los HERE (74)88,69,83  grep HERE src/*c include/*h|wc
+-!!Disminuir numero de variables extern (90)78,80,46,43 grep extern src/*.c include/*h |grep ";" |wc
+-!!Disminuir los HERE (74)88,69,83,100  grep HERE src/*c include/*h|wc
 -!!Damage in collision depends on mass and velocity. Elastic shocks. 
 -!!Change ksectorslist for a three elements list: id,x,y.
 -!!toroidal Universe as option.
+-Explorers avoid combat
+-Move towers on planets
+-Freighters take off with low state.
+-Ships on planets: y-coordenates
 
 
--math function tables.
 -Objects with sons(shots are sons of the ships).
 -nav_mode in every ship, object propierty(?)
 -!change MISSILE to type SHIP
@@ -63,10 +96,13 @@ Version 0.8 (since 10May2011)
 
 -!!Merge UpdateShip() y UpdateAsteroid() ??
 -send drawmissile in DrawObjs() to DrawShip()
+-rescued pilots in line. Freighter do bad way.
 
 
 mouse:
 =====
+-left and right buttons interchange.
+
 
 Ships:
 ======
@@ -74,18 +110,19 @@ Ships:
 -Destroyed ships leave weapon and gold.
 -Interchange of ammunition between ships.
 -Add mining.
--Invisibility. Ships partially visible to radar.
--new arm for towers: laser beam as in "missile command"
+
 
 
 AI:    
 ===
+-Explores avoid fighters
 -!!When an enemy ship is near a planet send only the necessary ships.
 -!! Review buy() and upgrade()
 -!A planet with to many ships, redistribute ships.
 -!!check rules in ally planet. If is empty: conquer.
--!!AI uses SATELLITES
--Add a different way to attack planets. 
+-!!AI uses SATELLITES.
+-!!AI uses cloaking devices.
+-Add a different way to attack planets. (wait close and attack)
 -evasion maneuver.
 -Avoid enemy shots.
 -When parent dies, send orders to object sons.
@@ -100,7 +137,7 @@ AI:
 
 Comm:
 ====
--!!!!Rewrite a server
+-!!!!Write a server
 -!Compress data.
 
 Save
@@ -133,6 +170,20 @@ Version 1.0
 -3D world interaction.
 -Bitmaps, SDL, opengl??
 
+
+
+DONE:Version 0.86 (since Jan 2014)
+====================================
+
+X-Math functions.
+X-AI freighter: change dest if planet is conquered.
+X-Multiplayer: starting bell
+X-(110215)new weapon for towers: laser beam as in "missile command"
+X-(230215)Review ChooseWeapon().
+X-(260215)Invisibility. Ships partially invisible to radar. Added cloaking device.
+X-(100415)locales: bought
+X-(070516) extern only in .h
+X-(170516)increase value of crashed ships in planets.
 
 DONE:Version 0.84 (since 25 May 2013)
 =====================================

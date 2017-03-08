@@ -32,6 +32,18 @@
 #define NINDEXILIST 20  /* number of indexes */
 #define NINDEXCALC 100  /* recalc indexes when this number of items are added */
 
+extern struct Window windowgamelog;
+extern struct CharListHead gameloglist;          /* list of all game messages */
+
+struct _Segment{
+  int x0,y0,x1,y1;
+  int type;
+  struct _Segment *next;
+};
+
+typedef struct _Segment Segment;
+
+
 struct IntTree{
   int id;
   struct IntTree *l;

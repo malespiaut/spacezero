@@ -47,8 +47,6 @@ void fscanfStatistics(FILE *fp);
 
 void PrintStatistics(void);
 
-void Statistics_Draw(GdkPixmap *pixmap,Rectangle *r);
-
-
+void Statistics_Draw(Rectangle *r);
 
 #endif

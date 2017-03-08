@@ -70,7 +70,7 @@ enum LocaleText{
   /* new */
   L_SATELLITE,
   L_NOROOM,
-
+  L_CLOAKDEVICE,
   L_NUM};/* L_NUM contains the amount of entries in the enum. Keep it the last! */
 
 

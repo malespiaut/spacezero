@@ -28,7 +28,8 @@
 
 #include "general.h" 
 
-
+extern struct Parametres param;
+extern struct Keys keys;
 
 /* menu item types */
 #define MENUITEMTEXT 0      /* only show text */
@@ -258,8 +259,5 @@ void SaveUserKeys(char *file);
 int LoadUserKeys(char *keyfile);
 void SetDefaultKeyValues(int action);
 struct Keys* GetKeys(void);
-
-
-
 
 #endif

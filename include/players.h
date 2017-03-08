@@ -31,7 +31,6 @@
 #include "menu.h"
 
 
-
 struct Player{
   char playername[MAXTEXTLEN]; /* name of the player */
   short id;          /* player id */

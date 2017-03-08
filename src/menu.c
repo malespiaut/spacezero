@@ -34,7 +34,6 @@
 
 #define MAXARGLEN 32
 
-extern char version[64];
 struct Parametres param;
 struct Keys keys;
 
@@ -1075,8 +1074,6 @@ void PrintArguments(char *title){
 /**** parameters *****/
 
 
-struct Parametres param;
-
 int Arguments(int argc,char *argv[],char *optfile){
   /*
     version 01
@@ -1606,7 +1603,7 @@ void SetDefaultParamValues(void){
   strcpy(param.playername,PLAYERNAME); /* set default */
   
   strcpy(param.font,"6x13");
-  strcpy(param.geom,"1024x550");
+  snprintf(param.geom,MAXTEXTLEN,"%dx%d",DEFAULTWIDTH,DEFAULTHEIGHT);
   strcpy(param.lang,"en");
 }
 

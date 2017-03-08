@@ -31,26 +31,16 @@
 #include "menu.h"
 #include "save.h"
 #include "players.h"
-
-
-
-extern int actual_player,actual_player0;
-extern int record;
-extern int nav_mode;
-extern int g_objid;
-extern int g_projid;
-extern char version[64];
-extern Object *ship_c; /* ship controled by keyboard */
-extern struct HeadObjList listheadobjs;
-extern struct HeadObjList *listheadcontainer; /* lists of objects that contain objects: free space and planets*/
-extern struct HeadObjList *listheadkplanets; /* list of all planets */
-extern struct Habitat habitat;
-
-extern int fobj[4];
-extern Object *cv;     /* coordenates center */
-extern int *cell;
+#include "objects.h"
+#include "shell.h"
+#include "general.h"
 
 struct Global gclient,gremote,glocal;
+
+char *savefile;
+char *recordfile;
+char *optionsfile;
+char *keyboardfile;
 
 
 #if DEBUG
@@ -87,7 +77,7 @@ char *CreateSaveFile(int server,int client){
   
   file=malloc(MAXTEXTLEN*sizeof(char));
   if(file==NULL){
-    fprintf(stderr,"ERROR in malloc ExecLoad()\n");
+    fprintf(stderr,"ERROR in malloc CreateSaveFile()\n");
     exit(-1);
   }
   
@@ -123,7 +113,7 @@ char *CreateRecordFile(void){
 
   file=malloc(MAXTEXTLEN*sizeof(char));
   if(file==NULL){
-    fprintf(stderr,"ERROR in malloc ExecLoad()\n");
+    fprintf(stderr,"ERROR in malloc CreateRecordFile()\n");
     exit(-1);
   }
   ret=snprintf(file,MAXTEXTLEN,"%s/%s/%s",getenv("HOME"),SAVEDIR,RECORDFILE);
@@ -169,7 +159,7 @@ char *CreateOptionsFile(void){
 
   file=malloc(128*sizeof(char));
   if(file==NULL){
-    fprintf(stderr,"ERROR in malloc ExecLoad()\n");
+    fprintf(stderr,"ERROR in malloc CreateOptionsFile()\n");
     exit(-1);
   }
   
@@ -203,7 +193,7 @@ char *CreateKeyboardFile(void){
   
   file=malloc(128*sizeof(char));
   if(file==NULL){
-    fprintf(stderr,"ERROR in malloc ExecLoad()\n");
+    fprintf(stderr,"ERROR in malloc CreateKeyboardFile()\n");
     exit(-1);
   }
   
@@ -885,7 +875,7 @@ int ExecLoad(char *nom){
 		obj.x,obj.y,obj.vx,obj.vy,
 		CANNON0,ENGINE0,0,NULL,NULL); /* HEREIN */
     if(nobj==NULL){
-      fprintf(stderr,"\nERROR en ExecLoad(): NewObj() devuelve NULL\n");
+      fprintf(stderr,"\nERROR in ExecLoad(): NewObj() returns NULL\n");
       exit(-1);
     }
     g_objid=id;
@@ -1148,10 +1138,10 @@ int FprintfObj(FILE *fp,Object *obj){
   ttl=0;
   /* positions saved normalized */
   
-  fprintf(fp,"%d %d %d %d %s %hd %hd %hd %hd %g %d %d %d %d %d %d %d %d %d %g %d %hd %hd %hd %hd %hd ",
+  fprintf(fp,"%d %d %d %d %s %hd %hd %hd %hd %g %d %d %d %d %d %d %d %d %d %d %g %d %hd %hd %hd %hd %hd ",
 	  obj->id,obj->pid,obj->oriid,obj->destid,obj->name,obj->player,obj->type,
 	  obj->subtype,obj->level,obj->experience,obj->kills,obj->ntravels,
-	  obj->durable,obj->visible,obj->radar,obj->mass,
+	  obj->durable,obj->visible,obj->radar,obj->cloak,obj->mass,
 	  obj->items,obj->cargo.capacity,obj->radio,obj->cost,obj->damage,
 	  obj->ai,modified,ttl,obj->habitat,obj->mode);
   
@@ -1282,12 +1272,12 @@ int FscanfObj(FILE *fp,Object *obj,struct ObjTable *tbl){
   int in,dest,parent,weapon;
   short modified;  
   
-  if(fscanf(fp,"%d%d%d%d%16s%hd%hd%hd%hd%f%d%d%d%d%d%d%d%d%d%f%d%hd%hd%hd%hd%hd",
+  if(fscanf(fp,"%d%d%d%d%16s%hd%hd%hd%hd%f%d%d%d%d%d%d%d%d%d%d%f%d%hd%hd%hd%hd%hd",
 	    &obj->id,&obj->pid,&obj->oriid,&obj->destid,obj->name,&obj->player,&obj->type,
 	    &obj->subtype,&obj->level,&obj->experience,&obj->kills,&obj->ntravels,
-	    &obj->durable,&obj->visible,&obj->radar,&obj->mass,
+	    &obj->durable,&obj->visible,&obj->radar,&obj->cloak,&obj->mass,
 	    &obj->items,&obj->cargo.capacity,&obj->radio,&obj->cost,&obj->damage,
-	    &obj->ai,&modified,&obj->ttl,&obj->habitat,&obj->mode)!=26){
+	    &obj->ai,&modified,&obj->ttl,&obj->habitat,&obj->mode)!=27){
     perror("fscanf");
     exit(-1);
   }

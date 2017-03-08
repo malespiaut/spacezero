@@ -25,8 +25,10 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "general.h"
 #include "functions.h"
+#include "players.h"
 #include "statistics.h"
 #include "graphics.h"
 
@@ -38,10 +40,6 @@ int stats_cont;
 
 struct Stats stats_tmp;
 struct Stats stats[NSTATS];
-
-extern GdkGC *penGreen;
-extern GdkGC *penBlack;
-extern GdkGC *gcolors[];
 
 
 /****************************/
@@ -190,8 +188,8 @@ void fscanfStatistics(FILE *fp){
   }
 }
 
-void Statistics_Draw(GdkPixmap *pixmap,Rectangle *r){
-  DrawStatistics(pixmap,r,stats,stats_n,stats_np);
+void Statistics_Draw(Rectangle *r){
+  DrawStatistics(r,stats,stats_n,stats_np);
 }
 
 

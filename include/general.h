@@ -36,7 +36,7 @@
 /*  compile options: */
 #define SOUND 1  /* compile with sound */
 #define DEBUG 0
-#define TEST 0  /* test stuff */
+#define TEST 1  /* test stuff */
 #define TESTTIMES 0
 #define TESTNET 0 
 #define LATENCY 0  /* 8000000 */
@@ -46,16 +46,16 @@
 #define PI 3.14159265
 
 
-#define MINORSAVEVERSION "0.85.12" /* the save file version must be greater than this.*/
+#define MINORSAVEVERSION "0.87.04" /* the save file version must be greater than this.*/
 #define MINOROPTIONSVERSION "0.85.01" /* the options file must be greater than this.*/
 
 #define MAXTEXTLEN 128
 
 /* window properties */
-#define DEFAULTWIDTH 1024 /* 900 1024  800 1024 1152 */
-#define DEFAULTHEIGHT 550 /* 600  500 550  700  768 */
-#define LXFACTOR 1024  /* normalization factor for surface planets */
-#define LYFACTOR 550   /* normalization factor for surface planets */
+#define DEFAULTWIDTH 1024/*1680 1200 1024  900 1024  800 1024 1152 */
+#define DEFAULTHEIGHT 550/*1050 640 550  600  500 550  700  768 */
+#define LXFACTOR 1200  /*1024   normalization factor for surface planets */
+#define LYFACTOR 640  /*550    normalization factor for surface planets */
 #define PANEL_HEIGHT 20
 
 /* game */
@@ -168,6 +168,14 @@
 #define GQUIT      22       /* 0,1,2 really quit? */
 
 
+
+extern int record;
+extern double fps;
+extern char version[64];
+extern char last_revision[];
+extern int gameover;
+extern int nav_mode;
+
 /*    Error codes for all functions */
 
 enum SZ_Error{
@@ -251,5 +259,7 @@ typedef struct{
 }Space;
 
 
+
+extern struct TextMessageList listheadtext;
 
 #endif

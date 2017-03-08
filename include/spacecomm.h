@@ -48,6 +48,12 @@
 #include "comm.h"
 
 
+extern struct Buffer buffer1,buffer2; /* buffers used in comm. */
+extern sem_t sem_barrier,sem_barrier1;
+
+extern int order2thread;
+
+extern char clientname[MAXTEXTLEN];
 
 #define DEFAULT_IP "127.0.0.1"
 #define DEFAULT_PORT 50100

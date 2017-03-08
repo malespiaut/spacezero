@@ -39,13 +39,13 @@
 #define LOAD 4
 
 
-
+extern int fobj[4];
 
 void initshell(void);
-void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,int x,int y);
-int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *,struct HeadObjList *hl,struct Player *player,struct Keys *,Object **cv,char *cad);
+void ShellTitle(int order,char *mess,GdkGC *color,GdkFont *font,int x,int y);
+int Shell(int command,GdkGC *color,GdkFont *,struct HeadObjList *hl,struct Player *player,struct Keys *,Object **cv,char *cad);
 Object *ExecOrder(struct HeadObjList *hl,Object *obj,struct Player *ps,int order,char *par);
-void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **,int);
+void SelectionBox(GdkGC *color,Object **,int);
 int Keystrokes(int mode,guint *val,char *c);
 char Keyval2Char(guint keyval);
 

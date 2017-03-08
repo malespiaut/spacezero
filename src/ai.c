@@ -34,16 +34,12 @@
 #include "sectors.h" 
 #include "locales.h"
 #include "players.h"
+#include "objects.h"
+#include "data.h"
+#include "general.h"
 
 
-extern struct TextMessageList listheadtext;
-extern struct CharListHead gameloglist;          /* list of all game messages */
-extern struct Window windowgamelog;
-extern Object *cv;     /* coordenates center */
 struct CCDATA *ccdatap; 
-extern struct HeadObjList *listheadcontainer; /* lists of objects that contain objects: free space and planets*/
-extern struct HeadObjList *listheadkplanets;  /* lists of planets known by players */
-
 
 
 #if DEBUG
@@ -171,8 +167,9 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     exit(-1); 
   }
 
-  if(obj->ai==0)return;
-
+  if(obj->ai==0){
+    return;
+  }
 
   d2_enemy=-1;
   mainord=execord=NULL;
@@ -198,7 +195,6 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
     }
 
     NearestObjAll(listheadcontainer,obj,nobjs); 
-
     d2min=obj->radar*obj->radar;
     
     if(nobjs[0].obj!=NULL){
@@ -226,6 +222,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   ship_enemy=obj->cdata->obj[0];
   obj->dest=ship_enemy;
   d2_enemy=obj->cdata->d2[0];
+  obj->dest_r2=d2_enemy;  
 
   planet_enemy=obj->cdata->obj[1];
 
@@ -374,7 +371,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
       }
     }
   }
-  
+ 
   mainordid=mainord!=NULL?mainord->id:-1;
   danger=Risk(lhobjs,obj); /* Checking for danger */
 
@@ -1423,8 +1420,10 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 
   struct CCDATA *ccdata;
   struct PlanetInfo *pinfo1;
-  int *shipsinplanet;
-
+  static int *shipsinplanet=NULL;
+  static int gnplanets0=0;
+  static int contshipsinplanet=0;
+  
   pinfo1=NULL;
   no=0;
   maxx=0.55*GameParametres(GET,GULX,0);
@@ -1436,14 +1435,32 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
   /* gathering information */
   gnplanets=GameParametres(GET,GNPLANETS,0)+1;
 
-  shipsinplanet=malloc(gnplanets*sizeof(int));
   if(shipsinplanet==NULL){
-    fprintf(stderr,"ERROR in malloc ControlCenter()\n");
-    exit(-1);
+    shipsinplanet=malloc(gnplanets*sizeof(int));
+    if(shipsinplanet==NULL){
+      fprintf(stderr,"ERROR in malloc ControlCenter()\n");
+      exit(-1);
+    }
+    gnplanets0=gnplanets;
+    contshipsinplanet=20;
+  }
+  if(gnplanets!=gnplanets0 ){
+    printf("REALLOC PLANETS\n");
+    shipsinplanet=realloc(shipsinplanet,gnplanets*sizeof(int));
+    if(shipsinplanet==NULL){
+      fprintf(stderr,"ERROR in malloc ControlCenter()\n");
+      exit(-1);
+    }
+    gnplanets0=gnplanets;
+    contshipsinplanet=20;
   }
 
-  for(i=0;i<gnplanets;i++){
-    shipsinplanet[i]=-1;
+  contshipsinplanet++;
+  if(contshipsinplanet>20){
+    for(i=0;i<gnplanets;i++){
+      shipsinplanet[i]=-1;
+    }
+    contshipsinplanet=0;
   }
 
   ccdata=&ccdatap[player->id];
@@ -1532,7 +1549,6 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
     if(obj->engine.type <= ENGINE1){ls=ls->next;continue;}
     
     /* Getting info from enemy planet */
-
     if(obj->habitat==H_PLANET){
       if(players[obj->in->player].team!=player->team){
 	struct PlanetInfo *pinfo;
@@ -1588,9 +1604,6 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
       }
     }
     /* --RETREAT */
-
-
-    if(cv==obj)printf("mode: %d order: %d\n",obj->mode,actord->id);
 
 
     /* FREIGHTERS */
@@ -1692,6 +1705,12 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 	}
 	break;
       default:
+	if(actord->id > LASTORDERID){
+	  fprintf(stderr,"ERROR in ControlCenter 1. order unknown %d\n",
+		  actord->id);
+	  FPrintObj(stderr,ls->obj);
+	  exit(-1);
+	}
 	break;
       }
     }
@@ -1707,9 +1726,10 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 	if(shipsinplanet[ls->obj->in->id] == -1){
 	  shipsinplanet[ls->obj->in->id]=CountShipsInPlanet(NULL,ls->obj->in->id,ls->obj->player,SHIP,-1,2);
 	}
+	
 	/* don't send if it is alone */
 	if(shipsinplanet[ls->obj->in->id] < 2)break;
-
+	
 	/* don't send if learning */
 	if(ls->obj->in->level - ls->obj->level > 2){
 	  break;
@@ -1886,11 +1906,16 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 	ls=ls->next;continue;
 	break;
       default:
-	fprintf(stderr,"ERROR in ControlCenter. mode unknown %d (id:%d)\n",obj->mode,obj->id);
+	fprintf(stderr,"ERROR in ControlCenter 2. mode unknown %d (id:%d)\n",obj->mode,obj->id);
+
+#if DEBUG
+	PrintObj(obj);
 	exit(-1);
+#endif
 	break;
-      }
-      break;
+      } /* switch(obj->mode) */
+      
+      break;  /* case NOTHING */
     case STOP:
       if(obj->vx*obj->vx+obj->vy*obj->vy<.1){
 	ord.priority=1;
@@ -1902,7 +1927,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 	DelAllOrder(obj);
 	AddOrder(obj,&ord);
       }
-      
+
       break;
     case GOTO:
     case RETREAT:
@@ -1993,8 +2018,17 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
     case ORBIT:
       break;
     default:
-      fprintf(stderr,"ERROR in ControlCenter. order unknown %d\n",actord->id);
-      exit(-1);
+      if(actord->id > LASTORDERID){
+	fprintf(stderr,"ERROR in ControlCenter 3. order unknown %d\n",
+		actord->id);
+	FPrintObj(stderr,ls->obj);
+	exit(-1);
+      }
+      else{
+	fprintf(stderr,"WARNING in ControlCenter. order unmanaged %d\n",
+		actord->id);
+	FPrintObj(stderr,ls->obj);
+      }
       break;
     }
     
@@ -2004,8 +2038,6 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
   if(ordersw>0){
     ccdata->time=0;
   }
-
-  free(shipsinplanet);
 
   return;
 } /* --ControlCenter() */
@@ -2563,8 +2595,128 @@ Weapon *ChooseWeapon(Object *obj){
   */
 
   int i,j;
-  int max=0;
-  int jmax=-1;
+  int summax=0;
+  int jmax=0;
+  float sum;
+  Weapon *weapon;
+
+  /*             SHOT1 MISSILE LASER */
+  float a[5],b[5];
+
+  weapon=NULL;
+
+  /* shot asteroid only with SHOT */
+  if(obj->cdata!=NULL){
+    if(obj->cdata->obj[0]!=NULL){
+      if(obj->cdata->obj[0]->type==ASTEROID){
+	return(&obj->weapon0);
+      }
+    }
+  }
+
+  for(j=0;j<3;j++){
+    if(j==0)weapon=&obj->weapon0;
+    if(j==1){
+      weapon=&obj->weapon1;
+      if(weapon==&obj->weapon0)continue;
+    }
+    if(j==2){
+      weapon=&obj->weapon2;
+      if(weapon==&obj->weapon0)continue;
+    }
+    switch(weapon->projectile.type){
+    case SHOT0:
+      b[4]=0;
+      break;
+    case SHOT1:
+      a[0]=425000;   /* enemy distance2 */	      
+      a[1]=0.25;     /* avability factor */      
+      a[2]=100;	     /* ship gas  */	      
+      a[3]=1;	     /* cost NOT USED */	      
+      a[4]=1;	     /* number of proyectiles  */
+
+      b[0]=0;        /* r */			 
+      b[1]=0;	     /* n  */			 
+      b[2]=0;	     /* gas */			 
+      b[3]=1;	     /* cost */			 
+      b[4]=1;	     /* multiplicative factor  */
+   break;
+    case MISSILE:/*SHOT3: */
+      a[0]=4000000;
+      a[1]=.5;
+      a[2]=100;
+      a[3]=0;
+      a[4]=1;
+
+      b[0]=0;
+      b[1]=0;
+      b[2]=0;
+      b[3]=1;
+      b[4]=1.1;
+      break;
+    case LASER: /*SHOT4 */
+      a[0]=110000;
+      a[1]=.25;
+      a[2]=200;
+      a[3]=1;
+      a[4]=1;
+
+      b[0]=0;
+      b[1]=0;
+      b[2]=0;
+      b[3]=1;
+      b[4]=1;
+      break;
+    case LASERBEAM:
+      a[0]=120000;
+      a[1]=.25;
+      a[2]=200;
+      a[3]=1;
+      a[4]=1;
+
+      b[0]=0;
+      b[1]=0;
+      b[2]=0;
+      b[3]=1;
+      b[4]=1;
+      break;
+     default:
+      break;
+    }
+    
+    if(obj->dest_r2 < a[0])b[0]=1;
+    if(weapon->n > a[1]*weapon->max_n)b[1]=1;
+    if(obj->gas > a[2])b[2]=1;
+    if(weapon->cont1!=0 )b[4]=0; /* not avalaible temporaly */
+    if(weapon->n==0)b[4]=0;      /* not avalaible, empty */
+    
+    sum=0;
+    for(i=0;i<4;i++){
+      sum+=b[i];
+    }
+    sum*=0.8+(0.2*Random(-1));
+    sum*=b[4];
+    if(sum>summax){summax=sum;jmax=j;}
+  }
+  
+  weapon=&obj->weapon0; /* default */
+  if(jmax==1)weapon=&obj->weapon1;
+  if(jmax==2)weapon=&obj->weapon2;
+  
+  return(weapon);
+}
+
+
+Weapon *ChooseWeapon_0(Object *obj){
+  /*
+    Choose what weapon to use from the available ones.
+    returns:
+    the weapon choosed.
+  */
+
+  int i,j;
+  int summax=0;
+  int jmax=0;
   float sum;
   Weapon *weapon;
 
@@ -2594,9 +2746,14 @@ Weapon *ChooseWeapon(Object *obj){
 
   for(j=0;j<3;j++){
     if(j==0)weapon=&obj->weapon0;
-    if(j==1)weapon=&obj->weapon1;
-    if(j==2)weapon=&obj->weapon2;
-
+    if(j==1){
+      weapon=&obj->weapon1;
+      if(weapon==&obj->weapon0)continue;
+    }
+    if(j==2){
+      weapon=&obj->weapon2;
+      if(weapon==&obj->weapon0)continue;
+    }
     switch(weapon->projectile.type){
     case SHOT0:
       b[4][j]=0;
@@ -2604,11 +2761,12 @@ Weapon *ChooseWeapon(Object *obj){
     case SHOT1:
     case MISSILE:/*SHOT3: */
     case LASER: /*SHOT4 */
+    case LASERBEAM:
       if(obj->dest_r2 < a[0][j])b[0][j]=1;
       if(weapon->n > a[1][j]*weapon->max_n)b[1][j]=1;
       if(obj->gas > a[2][j])b[2][j]=1;
-      if(weapon->cont1!=0 )b[4][j]=0;
-      if(weapon->n==0)b[4][j]=0;
+      if(weapon->cont1!=0 )b[4][j]=0; /* not avalaible temporaly */
+      if(weapon->n==0)b[4][j]=0;      /* not avalaible, empty */
       break;
      default:
       break;
@@ -2619,10 +2777,7 @@ Weapon *ChooseWeapon(Object *obj){
     }
     sum*=0.8+(0.2*Random(-1));
     sum*=b[4][j];
-    if(sum>max){
-      if(sum>max){max=sum;jmax=j;}
-    }
- 
+    if(sum>summax){summax=sum;jmax=j;}
   }
   weapon=&obj->weapon0; /* default */
   if(jmax==1)weapon=&obj->weapon1;
@@ -2725,8 +2880,8 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     ang=obj1->a+ang0+0.04*(0.5*(1-n)+i);
     
     obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
-	       obj1->x+r*cos(ang),obj1->y+r*sin(ang),
-	       vp*cos(ang)+obj1->vx,vp*sin(ang)+obj1->vy,
+	       obj1->x+r*Cos(ang),obj1->y+r*Sin(ang),
+	       vp*Cos(ang)+obj1->vx,vp*Sin(ang)+obj1->vy,
 	       CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
     if(obj!=NULL){
       if(obj1->habitat==H_PLANET){
@@ -2792,8 +2947,8 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     for(i=0;i<n;i++){
       ang=obj1->a+ang0+0.04*(0.5*(1-n)+i);
       obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
-		 obj1->x+r*cos(ang),obj1->y+r*sin(ang),
-		 vp*cos(ang)+obj1->vx,vp*sin(ang)+obj1->vy,
+		 obj1->x+r*Cos(ang),obj1->y+r*Sin(ang),
+		 vp*Cos(ang)+obj1->vx,vp*Sin(ang)+obj1->vy,
 		 CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
 
       if(obj!=NULL){
@@ -2821,8 +2976,8 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     rx=obj2->x-obj1->x;
     ry=obj2->y-obj1->y;
     ang=atan2(ry,rx);
-    vx1=vp*cos(ang); /* shot velocity */
-    vy1=vp*sin(ang);
+    vx1=vp*Cos(ang); /* shot velocity */
+    vy1=vp*Sin(ang);
     
     if((int)vx1!=0){
       x2=obj2->x+obj2->vx*(obj2->x-obj1->x)/vx1;
@@ -2840,14 +2995,14 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     if(ang0>0.25)ang0=0.25;
     if(ang0<-0.25)ang0=-0.25;
 
-    vx1=vp*cos(ang0);
-    vy1=vp*sin(ang0);
+    vx1=vp*Cos(ang0);
+    vy1=vp*Sin(ang0);
 
     for(i=0;i<n;i++){
       ang=obj1->a+ang0+0.04*(0.5*(1-n)+i);
       obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
-	     obj1->x+r*cos(ang),obj1->y+r*sin(ang),
-	     vp*cos(ang),vp*sin(ang),
+	     obj1->x+r*Cos(ang),obj1->y+r*Sin(ang),
+	     vp*Cos(ang),vp*Sin(ang),
 		 CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
       if(obj!=NULL){
 	if(obj1->habitat==H_PLANET){
@@ -2869,8 +3024,8 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
   case CANNON8:  /* missile */
     ang=obj1->a;
     obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
-	     obj1->x+r*cos(ang),obj1->y+r*sin(ang),
-	   vp*cos(ang)+obj1->vx,vp*sin(ang)+obj1->vy,
+	     obj1->x+r*Cos(ang),obj1->y+r*Sin(ang),
+	   vp*Cos(ang)+obj1->vx,vp*Sin(ang)+obj1->vy,
 	       CANNON0,ENGINE2,obj1->player,obj1,obj1->in);
     if(obj!=NULL){
       if(obj1->habitat==H_PLANET){
@@ -2889,10 +3044,12 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     if(obj1->weapon->n<0)obj1->weapon->n=0;
     break;
   case CANNON9: /* laser */
+  case CANNON10:
+
     ang=obj1->a;
     obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
-	       obj1->x+r*cos(ang),obj1->y+r*sin(ang),
-	       vp*cos(ang)+obj1->vx,vp*sin(ang)+obj1->vy,
+	       obj1->x+r*Cos(ang),obj1->y+r*Sin(ang),
+	       vp*Cos(ang)+obj1->vx,vp*Sin(ang)+obj1->vy,
 	       CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
     if(obj!=NULL){
       if(obj1->habitat==H_PLANET){
@@ -2909,6 +3066,11 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
     obj1->weapon->n--;
     obj->a=obj1->a;
     break;
+
+
+
+
+
 
   default:
     fprintf(stderr,"ERROR FireCannon()\n");
@@ -3100,6 +3262,14 @@ struct Order *ReadOrder(struct Order *order0,Object *obj,int mode){
     freelo=NULL;
     return(NULL);
   }
+
+  if(order->id > LASTORDERID || order->id < 0){
+    fprintf(stderr,"ERROR in Read Order\n order readed: %d",
+	    order->id);
+    exit(-1);
+    return(NULL);
+  }
+
   return(order);
 }
 
@@ -3317,7 +3487,7 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0,float lev
     obj->habitat=H_SPACE;
     obj->weapon=&obj->weapon0;
 
-    exp=level*15+level*PIRATESTRENGTH*Random(-1);
+    exp=level*12+level*PIRATESTRENGTH*Random(-1);
     if(exp>750)exp=750;
     incexp=exp<100?exp:100;
     do{
@@ -4913,7 +5083,7 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player *player,struct C
       return(NULL);
     }
 
-    nf2a=2*pinfo2->strength;
+    nf2a=1.6*pinfo2->strength;
     if(nf2a<MINnf2a)nf2a=MINnf2a;
     if(nf2a>MAXnf2a)nf2a=MAXnf2a;
 
@@ -4967,7 +5137,7 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player *player,struct C
       return(NULL);
     }
 
-    nf2a=2*pinfo2->strength;
+    nf2a=1.6*pinfo2->strength;
     if(nf2a<MINnf2a)nf2a=MINnf2a;
     if(nf2a>MAXnf2a)nf2a=MAXnf2a;
 
@@ -5092,12 +5262,7 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player *player,struct CCDATA 
     }
     
     buyupgradesw=0;
-#if TEST
-    time=GetTime();
-    if(!(time%100)){
-      printf("CUT: %d: %f\n",player->id,cut);
-    }
-#endif    
+
     if(Random(-1)>cut){
       buyupgradesw=1; /* buy */
     }
@@ -5784,13 +5949,10 @@ void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct 
     alcance2=.5*obj->weapon->projectile.max_vel*obj->weapon->projectile.life;
     alcance2*=alcance2;
     if(alcance2>rx*rx+ry*ry){
-      /* if(FireCannon(lhobjs,obj,obj->dest)==0){ */
-      /* 	Play(obj,FIRE0,1); */
-      /* } */
       if(FireCannon(lhobjs,obj,obj->dest)==0){
 	Play(obj,FIRE0,1);
+	if(obj->cloak>0)obj->cloak=1;
       }
-
       if(GameParametres(GET,GNET,0)==TRUE){
 	if(GetProc()==players[obj->player].proc){
 	  obj->ttl=0;
@@ -6004,8 +6166,8 @@ int ExecOrbit(Object *obj,Object *planet,struct Order *mainord){
   ry=obj->y - planet->y;
   d2=rx*rx+ry*ry;
   a=atan2(ry,rx);
-  vt=obj->vx*sin(a)-obj->vy*cos(a);
-  vr=obj->vx*cos(a)+obj->vy*sin(a);
+  vt=obj->vx*Sin(a)-obj->vy*Cos(a);
+  vr=obj->vx*Cos(a)+obj->vy*Sin(a);
   v2=obj->vx*obj->vx+obj->vy*obj->vy;
 
   /* h2=3200*(planet->mass/MAXPLANETMASS); */

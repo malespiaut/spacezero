@@ -44,7 +44,7 @@
 #define MAINORD 2
 #define FIRSTORD 3
 
-#define MAXnf2a 40
+#define MAXnf2a 30
 #define MINnf2a 6
 
 
@@ -73,6 +73,7 @@
 #define WRITE 20
 #define PATROL 21
 #define RUNAWAY 22
+#define LASTORDERID 22
 
 /* TODO ai players profiles */
 #define PLAYERPROFDEFAULT 0   /* attack planets default profile*/
@@ -86,7 +87,7 @@
 #define PLAYERSTRATSTRONG 2  /* from strongest to nearest */
 #define PLAYERSTRATWEAK 3  /* attack weakest from nearest */
 
-#define PIRATESTRENGTH 85  /* factor for initial experience for pirates. (0..750)  */
+#define PIRATESTRENGTH 75  /* factor for initial experience for pirates. (0..750)  */
 
 
 struct PlanetInfo{

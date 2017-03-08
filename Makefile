@@ -1,5 +1,5 @@
-#CC = /usr/bin/gcc 
-CC=gcc
+CC = /usr/bin/gcc 
+#CC=gcc
 
 BINDIR= ./bin
 DATADIR= ./dat
@@ -8,6 +8,7 @@ SRCPATH= ./src/
 
 CONFIGDIR=$(HOME)/.spacezero
 RECORDFILE=$(CONFIGDIR)/record
+
 
 # The binary executable will be copied in the next directory.
 INSTALL_DIR=/usr/local/games
@@ -29,31 +30,27 @@ GTKLIBS=`pkg-config --libs gtk+-2.0`
 GTKLIBS12=`gtk-config --cflags`
 GTKFLAGS12=`gtk-config --libs`
 
-CFLAGS=  -Wall -O3 --pedantic -I./include -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\"
+CFLAGS=  -Wall --pedantic -I./include -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\"
 LDFLAGS=  $(SOUNDFLAGS) $(GTKLIBS) -lX11 -lm -lpthread
 
-CFLAGS12=  -Wall -O3 -I./include -DGTK12 -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\" 
+CFLAGS12=  -Wall -I./include -DGTK12 -DDATADIR=\"$(DATADIR)\" -DINSTALL_DATA_DIR=\"$(INSTALL_DATA_DIR)\" 
 LDFLAGS12= $(SOUNDFLAGS) $(GTKLIBS12) -lX11 -lm -lpthread
 
-PROGFLAGS=$(CFLAGS) -pg 
-PROFCC=  $(CC) -pg 
 PROGRAM=$(BINDIR)/spacezero
 
 
 SOUND_OBJS= $(SRCPATH)sound.o  $(SRCPATH)streamsound.o
 SOUND_SRCS= $(SRCPATH)sound.c  $(SRCPATH)streamsound.c
 
-
 PROGRAM_OBJS=$(SRCPATH)spacezero.o $(SRCPATH)objects.o $(SRCPATH)ai.o $(SRCPATH)save.o $(SRCPATH)shell.o $(SRCPATH)spacecomm.o $(SRCPATH)help.o $(SRCPATH)comm.o $(SRCPATH)graphics.o  $(SRCPATH)functions.o $(SRCPATH)data.o $(SRCPATH)menu.o $(SRCPATH)sectors.o $(SRCPATH)clock.o  $(SRCPATH)statistics.o $(SRCPATH)randomnamegen.o $(SRCPATH)locales.o $(SRCPATH)players.o $(SRCPATH)snow.o $(SOUND_OBJS) 
-
 PROGRAM_SRCS=$(SRCPATH)spacezero.c $(SRCPATH)objects.c $(SRCPATH)ai.c $(SRCPATH)save.c $(SRCPATH)shell.c $(SRCPATH)spacecomm.c $(SRCPATH)help.c $(SRCPATH)comm.c $(SRCPATH)graphics.c  $(SRCPATH)functions.c $(SRCPATH)data.c $(SRCPATH)menu.c $(SRCPATH)sectors.c $(SRCPATH)clock.c $(SRCPATH)statistics.c $(SRCPATH)randomnamegen.c $(SRCPATH)locales.c $(SRCPATH)players.c $(SRCPATH)snow.c $(SOUND_SRCS) 
+
 
 
 all: dirs spacezero
 
 spacezero: $(PROGRAM_OBJS) 
 	$(CC) $(PROGRAM_OBJS)  $(LDFLAGS) $(CFLAGS) -g -o $(PROGRAM)
-
 
 gtk12: $(PROGRAM_SRCS) 
 	$(CC) `gtk-config --cflags` $(PROGRAM_SRCS)  $(LDFLAGS12) $(CFLAGS12) -g -o $(PROGRAM) `gtk-config --libs`
@@ -81,10 +78,10 @@ uninstall:
 	-if [ -d $(INSTALL_DATA_DIR) ] ; then rm -r $(INSTALL_DATA_DIR); fi
 
 debug: 	$(PROGRAM_OBJS) 
-	$(CC)  $(PROGRAM_OBJS)  $(LDFLAGS) $(CFLAGS) -g -o $(PROGRAM) 
+	$(CC) $(GTKFLAGS) $(PROGRAM_OBJS)  $(LDFLAGS) $(CFLAGS) -g -o $(PROGRAM) 
 
 prof: $(PROGRAM_OBJS)
-	$(CC) $(PROGRAM_OBJS) $(LDFLAGS) $(CFLAGS) -pg -o $(PROGRAM)
+	$(CC) $(GTKFLAGS) $(PROGRAM_OBJS) $(LDFLAGS) $(CFLAGS) -pg -o $(PROGRAM)
 
 dirs:
 	-if [ ! -d $(BINDIR) ] ; then mkdir $(BINDIR) ; fi
@@ -99,8 +96,8 @@ mrproper: clean
 	rm -f src/*~ include/*~
 
 .c.o:	
-		$(CC) $(CFLAGS) $(GTKFLAGS) -c $< -o  $@ 
+#		$(CC) $(CFLAGS) $(GTKFLAGS) -c $< -o  $@ 
 # add -pg for profile
 #		$(CC) -pg  $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
 # add -g for debug
-#		$(CC) -g $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 
+		$(CC) -g $(CFLAGS)  $(GTKFLAGS) -c $< -o  $@ 

@@ -34,11 +34,8 @@
 #include "menu.h"
 
 
-extern struct Habitat habitat;
-extern struct Keys keys;
-extern struct HeadObjList listheadobjs;       /* list of all objects */
-extern int fobj[4];
-extern struct Draw gdraw;
+int fobj[4];
+
 #if DEBUG
 int debugshell=FALSE;
 #endif
@@ -47,7 +44,7 @@ int debugshell=FALSE;
 
 int GetView(void);
 
-int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadObjList *lhead,struct Player *ps,struct Keys *key,Object **pcv,char *cad){
+int Shell(int command,GdkGC *color,GdkFont *font,struct HeadObjList *lhead,struct Player *ps,struct Keys *key,Object **pcv,char *cad){
   /*
     version 04
   */
@@ -90,7 +87,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     break;
   }
 
-  if(lhead==NULL || pixmap==NULL||color==NULL||ps==NULL||key==NULL){
+  if(lhead==NULL ||color==NULL||ps==NULL||key==NULL){
     level=0;
     return(0);
   }  
@@ -348,12 +345,13 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
 	snprintf(cad,MAXTEXTLEN,"                  2: FIGTHER(%d)",GetPrice(NULL,FIGHTER,ENGINE4,CANNON4));
       }
       else{
-	snprintf(cad,MAXTEXTLEN,"1: EXPLORER(%d)   2: FIGTHER(%d)   3: TOWER(%d)   4: FREIGHTER(%d)   5: SATELLITE(%d)",
+	snprintf(cad,MAXTEXTLEN,"1: EXPLORER(%d)   2: FIGTHER(%d)   3: TOWER(%d)   4: FREIGHTER(%d)   5: SATELLITE(%d)   6: CLOAK(%d)",
 		 GetPrice(NULL,EXPLORER,ENGINE3,CANNON3),
 		 GetPrice(NULL,FIGHTER,ENGINE4,CANNON4),
 		 GetPrice(NULL,TOWER,ENGINE1,CANNON4),
 		 GetPrice(NULL,FREIGHTER,ENGINE6,CANNON0),
-		 GetPrice(NULL,SATELLITE,ENGINE1,CANNON3));
+		 GetPrice(NULL,SATELLITE,ENGINE1,CANNON3),
+		 GetPrice(NULL,CLOAKDEVICE,ENGINE0,CANNON0));
       }
       level=3;
       break;
@@ -401,7 +399,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     switch(order){
     case BUY:
       Keystrokes(LOAD,NULL,par);
-      DelCharFromCad(par,"12345");
+      DelCharFromCad(par,"123456");
       if((*pcv)->type==SHIP && (*pcv)->subtype==PILOT){
 	DelCharFromCad(par,"2");
       }
@@ -422,6 +420,9 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
 	break;
       case 5:
 	strcpy(cad,"SATELLITE"); 
+	break;
+      case 6:
+	strcpy(cad,"CLOAK DEVICE"); 
 	break;
       default:
 	fprintf(stderr,"Shell(). Not implemented. ship type: %ld\n",strtol(par,NULL,10));
@@ -514,7 +515,7 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
       if(firstselobj!=cv && firstselobj!=NULL){
 	*pcv=firstselobj;
 	if(*pcv!=NULL){
-	  SelectionBox(pixmap,color,pcv,2);
+	  SelectionBox(color,pcv,2);
 	  (*pcv)->selected=TRUE;
 	}
       }
@@ -542,14 +543,13 @@ int Shell(int command,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,struct HeadOb
     }
 
     /* delete selectionbox*/
-    SelectionBox(pixmap,color,pcv,1);
+    SelectionBox(color,pcv,1);
   }
 
   if(key->mdclick==TRUE){
     printf("order: dclick\n");
   }
 
-/*   DrawString(pixmap,font,color,10,GameParametres(GET,GHEIGHT,0)+GameParametres(GET,GPANEL,0)/2+4,cad);  */
   return(0);
 }
 
@@ -630,7 +630,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
     if(obj->type==SHIP && obj->subtype==PILOT){
       printf("%s.\n",GetLocale(L_CANTSELLPILOTS));
       snprintf(stmess,MAXTEXTLEN,"%s",GetLocale(L_CANTSELLPILOTS));
-      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      ShellTitle(1,stmess,NULL,NULL,0,0);
       return(NULL);
     }
 /*     if(obj->mode!=LANDED){ */
@@ -645,7 +645,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
     if(obj->mode!=LANDED){
       printf("%s.\n",GetLocale(L_MUSTBELANDED));
       snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_MUSTBELANDED));
-      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      ShellTitle(1,stmess,NULL,NULL,0,0);
       return(NULL);
     }
     break;
@@ -756,7 +756,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 		   GetLocale(L_NOTALLOWED),
 		   obj_dest->pid,
 		   GetLocale(L_PLANETORSPACESHIPUNKNOWN));
-	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	    ShellTitle(1,stmess,NULL,NULL,0,0);
 	    obj_dest=NULL;
 	    /* keys.esc=TRUE; */
 	  }
@@ -770,7 +770,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 		     Type(obj),obj->pid,
 		     GetLocale(L_GOINGTOPLANET),
 		     obj_dest->pid);
-	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	    ShellTitle(1,stmess,NULL,NULL,0,0);
 	  }
 	  break;
 	case SHIP:/* ship belongs to another player*/
@@ -779,7 +779,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	    printf("%s. Destiny is an enemy spaceship.\n",GetLocale(L_NOTALLOWED));
 	    snprintf(stmess,MAXTEXTLEN,"%s. Destiny is an enemy spaceship.",
 		     GetLocale(L_NOTALLOWED));
-	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	    ShellTitle(1,stmess,NULL,NULL,0,0);
 	  }
 	  else{
 	    if(obj_dest==obj){
@@ -792,7 +792,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 		       Type(obj),obj->pid,
 		       /* GetLocale(L_NOTALLOWED), */
 		       GetLocale(L_DESTINYEQUALORIGIN));
-	      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	      ShellTitle(1,stmess,NULL,NULL,0,0);
 	      return(obj_dest);
 	      /* obj_dest=NULL; */
 	    }	
@@ -805,7 +805,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 		       Type(obj),obj->pid,
 		       GetLocale(L_GOINGTOSPACESHIP),
 		       obj_dest->pid);
-	      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	      ShellTitle(1,stmess,NULL,NULL,0,0);
 	    }
 	  }
 	  break;
@@ -847,7 +847,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 		 arg1,
 		 GetLocale(L_PLANETORSPACESHIPUNKNOWN));
 
-	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	ShellTitle(1,stmess,NULL,NULL,0,0);
 	/* keys.esc=TRUE; */
 	ret=NULL;
       }
@@ -884,12 +884,12 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	       GetLocale(L_GOINGTOSECTOR),
 	       (id1-SECTORSIZE/2)/SECTORSIZE,
 	       (id2-SECTORSIZE/2)/SECTORSIZE);
-      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      ShellTitle(1,stmess,NULL,NULL,0,0);
       break;
     default:
       printf("shell() invalid entry\n");
       snprintf(stmess,MAXTEXTLEN,"shell() invalid entry.");
-      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      ShellTitle(1,stmess,NULL,NULL,0,0);
       ret=NULL;
       break;
     }
@@ -917,7 +917,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	     Type(obj),obj->pid,
 	     GetLocale(L_GOINGTOEXPLORE));
 
-    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+    ShellTitle(1,stmess,NULL,NULL,0,0);
     break;
 
   case SELECT:
@@ -972,7 +972,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 		 Type(obj_dest),
 		 obj_dest->pid,
 		 GetLocale(L_SELECTED));
-	ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	ShellTitle(1,stmess,NULL,NULL,0,0);
       }
       else{
 	printf("(TODO) Not Allowed\n");
@@ -991,7 +991,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	       GetLocale(L_NOTALLOWED),
 	       arg1,
 	       GetLocale(L_PLANETORSPACESHIPUNKNOWN));
-      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      ShellTitle(1,stmess,NULL,NULL,0,0);
       /* keys.esc=TRUE; */
       ret=NULL;
     }
@@ -1045,7 +1045,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
       snprintf(stmess,MAXTEXTLEN,"(%c %d) %s.",
 	       Type(obj),obj->pid,
 	       GetLocale(L_TAKINGOFF));
-      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      ShellTitle(1,stmess,NULL,NULL,0,0);
     }
     break;
     
@@ -1079,14 +1079,15 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
       snprintf(stmess,MAXTEXTLEN,"(%c %d) %s.",
 	       Type(obj),obj->pid,
 	       GetLocale(L_TAKINGOFF));
-      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      ShellTitle(1,stmess,NULL,NULL,0,0);
     }
     break;
     
   case BUY:
+    printf("buying\n");
     if(obj!=NULL){
       id1=strtol(arg1,NULL,10);
-      if(id1>=1 && id1<=5){
+      if(id1>=1 && id1<=6){
 	status=SZ_OK;
 	switch(id1){
 	case 1: /* EXPLORER */
@@ -1094,7 +1095,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	  if(status==SZ_OK){
 	    printf("%s %s.\n",GetLocale(L_EXPLORER),GetLocale(L_BUYED));
 	    snprintf(stmess,MAXTEXTLEN,"%s %s.",GetLocale(L_EXPLORER),GetLocale(L_BUYED));
-	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	    ShellTitle(1,stmess,NULL,NULL,0,0);
 	  }
 	  break;
 	case 2:  /* FIGHTER */
@@ -1104,7 +1105,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	    snprintf(stmess,MAXTEXTLEN,"%s %s.",
 		     GetLocale(L_FIGHTER),
 		     GetLocale(L_BUYED));
-	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	    ShellTitle(1,stmess,NULL,NULL,0,0);
 	  }
 	  break;
 	case 3:  /* TOWER */
@@ -1114,7 +1115,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	    snprintf(stmess,MAXTEXTLEN,"%s %s.",
 		     GetLocale(L_TOWER),
 		     GetLocale(L_BUYED));
-	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	    ShellTitle(1,stmess,NULL,NULL,0,0);
 	  }
 	  break;
 	case 4:  /* FREIGHTER */
@@ -1123,11 +1124,11 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	    /* here locales */
 	    /* printf("%s %s.\n",GetLocale(L_SATELLITE),GetLocale(L_BUYED)); */
 	    printf("FREIGHTER buyed.\n");
-	    snprintf(stmess,MAXTEXTLEN,"FREIGHTER buyed.");
+	    snprintf(stmess,MAXTEXTLEN,"FREIGHTER bought.");
 	    /* snprintf(stmess,MAXTEXTLEN,"%s %s.", */
 	    /* 	     GetLocale(L_SATELLITE), */
 	    /* 	     GetLocale(L_BUYED)); */
-	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	    ShellTitle(1,stmess,NULL,NULL,0,0);
 	  }
 	  break;
 
@@ -1138,8 +1139,20 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	    snprintf(stmess,MAXTEXTLEN,"%s %s.",
 		     GetLocale(L_SATELLITE),
 		     GetLocale(L_BUYED));
-	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	    ShellTitle(1,stmess,NULL,NULL,0,0);
 	  }
+	  break;
+	case 6:   /* CLOAK DEVICE */
+	  printf("buying cloaking device\n");
+	  status=BuyShip(ps,obj,CLOAKDEVICE);
+	  if(status==SZ_OK){
+	    printf("%s %s.\n",GetLocale(L_CLOAKDEVICE),GetLocale(L_BUYED));
+	    snprintf(stmess,MAXTEXTLEN,"%s %s.",
+		     GetLocale(L_CLOAKDEVICE),
+		     GetLocale(L_BUYED));
+	    ShellTitle(1,stmess,NULL,NULL,0,0);
+	  }
+
 	  break;
 	default:
 	  fprintf(stderr,"ExecOrder(). Not implemented. ship type: %d\n",id1);
@@ -1156,31 +1169,31 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	case SZ_OBJNOTLANDED:
 	  printf("%s.\n",GetLocale(L_SPACESHIPMUSTBELANDED));
 	  snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_SPACESHIPMUSTBELANDED));
-	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ShellTitle(1,stmess,NULL,NULL,0,0);
 	  ret=NULL;
 	  break;
 	case SZ_NOTOWNPLANET:
 	  printf("You don't own this planet\n");
 	  snprintf(stmess,MAXTEXTLEN,"You don't own this planet.");
-	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ShellTitle(1,stmess,NULL,NULL,0,0);
 	  ret=NULL;
 	  break;
 	case SZ_NOTENOUGHGOLD:
 	  printf("%s\n",GetLocale(L_YOUHAVENOTGOLD));
 	  snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_YOUHAVENOTGOLD));
-	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ShellTitle(1,stmess,NULL,NULL,0,0);
 	  ret=NULL;
 	  break;
 	case SZ_NOTALLOWED:
 	  printf("%s\n",GetLocale(L_NOTALLOWED));
 	  snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_NOTALLOWED));
-	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ShellTitle(1,stmess,NULL,NULL,0,0);
 	  ret=NULL;
 	  break;
 	case SZ_NOTENOUGHROOM:
 	  printf("%s\n",GetLocale(L_NOROOM));
 	  snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_NOROOM));
-	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ShellTitle(1,stmess,NULL,NULL,0,0);
 	  ret=NULL;
 	  break;
 	case SZ_NOTIMPLEMENTED:
@@ -1199,7 +1212,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
       snprintf(stmess,MAXTEXTLEN,"%s: %d",
 	       GetLocale(L_SELLINGSPACESHIP),
 	       obj->pid);
-      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      ShellTitle(1,stmess,NULL,NULL,0,0);
       price=.5*GetPrice(obj,0,0,0);
       if(price>0){
 	printf("\tPrice: %d eng: %d weapon: %d\n",
@@ -1232,12 +1245,12 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 		   Type(obj),obj->pid,
 		   GetLocale(L_UPGRADETOLEVEL),
 		   obj->level);
-	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ShellTitle(1,stmess,NULL,NULL,0,0);
 	}
 	else{
 	  printf("%s\n",GetLocale(L_YOUHAVENOTGOLD));
 	  snprintf(stmess,MAXTEXTLEN,"%s.",GetLocale(L_YOUHAVENOTGOLD));
-	  ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	  ShellTitle(1,stmess,NULL,NULL,0,0);
 	  ret=NULL;
 	}
       }
@@ -1249,7 +1262,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
       snprintf(stmess,MAXTEXTLEN,"%s %d",
 	       GetLocale(L_YOUCANUPGRADE),
 	       ps->gmaxlevel-1);
-      ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+      ShellTitle(1,stmess,NULL,NULL,0,0);
       ret=NULL;
     }
     break;
@@ -1279,7 +1292,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 }
 
 
-void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
+void SelectionBox(GdkGC *color,Object **pcv,int reset){
   /* version 03*/
 
   static int mouserelease=FALSE;
@@ -1350,11 +1363,18 @@ void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
 	    UnmarkObjs(&listheadobjs);
 	  }
 	  cv->selected=TRUE;
-
 	  mouserelease=FALSE;
 
+	  /* if ship is inner a ship change cv to container */
+	  if(cv->habitat==H_SHIP){
+	    if(keys.ctrl==FALSE){
+	      cv->selected=FALSE;
+	    }
+	    cv=cv->in;
+	    cv->selected=TRUE;
+	  }
 	  /***** mouse selection, one click *****/
-
+	  printf("left mouse habitat:%d view:%d\n",cv->habitat,view);
 	  if(view==VIEW_PLANET){
 	    region.rect.y=GameParametres(GET,GHEIGHT,0)-region.rect.y;
 	  }
@@ -1380,7 +1400,7 @@ void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
 	  default:
 	    break;
 	  }
-
+	  printf("region habitat:%d\n",region.habitat);
 	  if(region.habitat>=0){
 	    cv0=SelectOneShip(&listheadobjs,region,cv,keys.ctrl);
 	    if(cv0==NULL)cv0=cv;
@@ -1483,8 +1503,8 @@ void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
 	  }
 	  if(n>0){
 	    snprintf(stmess,MAXTEXTLEN,"%d %s.",n,GetLocale(L_SPACESHIPSSELECTED));
-	    ShellTitle(2,NULL,NULL,NULL,NULL,0,0);
-	    ShellTitle(1,stmess,NULL,NULL,NULL,0,0);
+	    ShellTitle(2,NULL,NULL,NULL,0,0);
+	    ShellTitle(1,stmess,NULL,NULL,0,0);
 	  }
 	}
 	mouserelease=FALSE;
@@ -1523,13 +1543,13 @@ void SelectionBox(GdkPixmap *pixmap,GdkGC *color,Object **pcv,int reset){
       switch(view){
       case VIEW_PLANET:
 	if(region.habitat>0){
-	  DrawSelectionBox(pixmap,color,view,region,cv);
+	  DrawSelectionBox(color,view,region,cv);
 	}
 	break;
       case VIEW_SPACE:
       case VIEW_MAP:
 	if(region.habitat==0){
-	  DrawSelectionBox(pixmap,color,view,region,cv);
+	  DrawSelectionBox(color,view,region,cv);
 	}
 	break;
 
@@ -1764,7 +1784,7 @@ int Get2Args(char *cad,char *arg1,char *arg2){
 }
 
 
-void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkGC *color,GdkFont *font,int x,int y){
+void ShellTitle(int order,char *mess,GdkGC *color,GdkFont *font,int x,int y){
   static char cad0[MAXTEXTLEN]="";
   static char cad1[MAXTEXTLEN]="";
   static int n_mess=0;
@@ -1803,7 +1823,7 @@ void ShellTitle(int order,char *mess,GdkPixmap *pixmap,GdkGC *color,GdkFont *fon
     n_mess=0;
   }
 
-  DrawString(pixmap,font,color,x,y,cad);
+  DrawString(font,color,x,y,cad);
   return;
 }
 

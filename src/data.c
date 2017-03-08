@@ -36,6 +36,8 @@
  *
  */
 
+struct Window windowgamelog;
+struct CharListHead gameloglist;          /* list of all game messages */
 
 
 /* 

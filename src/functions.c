@@ -30,6 +30,9 @@
 #include "general.h"
 #include "sound.h"
 
+int actual_player,actual_player0;
+
+
 float Random(int a){
 /*
   returns a random float between (0,1) from the table rtable 
@@ -59,6 +62,43 @@ float Random(int a){
   }
   if(n>=1000)n=0;
   return(rtable[n++]); 
+}
+
+
+float Sin(float x){
+  static int sw=0;
+  static float table[400];
+  int i;
+  int sgn=1;  
+
+  if(sw==0){
+    for(i=0;i<400;i++){
+      table[i]=sin((float)i*(2*PI)/400.0);
+    }
+    sw=1;
+  }
+
+  if(x<0){
+    sgn=-1;
+    x=-x;
+  }
+  return(sgn*table[(int)(x*400/(2*PI)+0.5)%400]);
+}
+
+float Cos(float x){
+  static int sw=0;
+  static float table[400];
+  int i;
+
+  if(sw==0){
+    for(i=0;i<400;i++){
+      table[i]=cos((float)i*(2*PI)/400.0);
+    }    
+    sw=1;
+  }
+
+  x=x<0?-x:x; 
+  return(table[(int)(x*400/(2*PI)+0.5)%400]);
 }
 
 

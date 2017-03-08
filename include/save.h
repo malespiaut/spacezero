@@ -41,6 +41,14 @@
 #include "spacecomm.h" 
 #include "functions.h"  
 
+
+extern struct Global glocal,gclient,gremote;
+
+extern char *savefile;
+extern char *recordfile;
+extern char *optionsfile;
+extern char *keyboardfile;
+
 struct ObjTable{
   int id,parent,dest,in,planet;
 };

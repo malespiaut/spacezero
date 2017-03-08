@@ -35,6 +35,29 @@
 #include "data.h"
 #include "players.h"
 
+typedef struct _Object Object;
+
+extern int g_objid;  /* id of the objects */
+extern int g_projid; /* id of the projectiles */
+extern int g_nobjsend;
+extern int g_nshotsend;
+extern int g_nobjmaxsend;
+extern int g_nobjtype[];
+
+extern Object *ship_c; /* ship controled by keyboard */
+extern Object *cv;     /* coordinates center */
+
+extern int *cell;
+
+extern struct Habitat habitat;
+
+extern struct HeadObjList listheadobjs;    /* list of all objects */
+extern struct HeadObjList listheadplanets;        /* list of all planets */
+extern struct HeadObjList *listheadcontainer;     /* lists of objects that contain objects: free space and planets*/
+extern struct HeadObjList *listheadkplanets;      /* lists of planets known by players */
+extern struct HeadObjList listheadplayer;         /* list of objects of each player */
+
+
 
 
 #define VELMAX 60
@@ -78,7 +101,8 @@
 #define SHIP7 7
 #define SHIP8 8
 #define SHIP9 9
-#define SHIP_S_MAX SHIP9
+#define SHIP10 10
+#define SHIP_S_MAX SHIP10
 
 /* Asteroid subtypes */
 #define ASTEROID1 1
@@ -96,6 +120,7 @@
 #define PILOT SHIP7
 #define FREIGHTER SHIP8
 #define GOODS SHIP9
+#define CLOAKDEVICE SHIP10
 
 /* cost of the spaceships */
 
@@ -119,6 +144,7 @@
 #define PRICESHIP7 50
 #define PRICESHIP8 5000
 #define PRICESHIP9 0
+#define PRICESHIP10 500
 
 /* mass of ships */
 #define MASSEXPLORER 50
@@ -137,9 +163,11 @@
 #define SHOT2 51
 #define SHOT3 52  /* missile */
 #define SHOT4 53  /* laser */
-#define EXPLOSION 54
+#define SHOT5 54  /* laserbeam*/ /* TODO new tower weapon */
+#define EXPLOSION 55
 #define MISSILE SHOT3
 #define LASER SHOT4
+#define LASERBEAM SHOT5
 
 
 /* objects life */
@@ -154,10 +182,12 @@
 #define LIFESHOT2 50
 #define LIFESHOT3 200 /* MISSILE */
 #define LIFESHOT4 5   /* LASER */
+#define LIFESHOT5 40   /* LASERBEAM */
 
 /* ship items */
 #define ITSURVIVAL 1  /* has a survival pod */ 
-
+#define CLOAKMAXVALUE 25
+#define CLOAKPRICE 500
 
 /* weapons types */
 #define CANNON0 0   /* no weapon */
@@ -170,8 +200,9 @@
 #define CANNON7 7   /* velocity, not used  */
 #define CANNON8 8   /* missile */
 #define CANNON9 9   /* laser */
-#define NUMWEAPONS 10
-#define CANNONMAX CANNON9
+#define CANNON10 10 /* laserbeam */
+#define NUMWEAPONS 11
+#define CANNONMAX CANNON10
 
 #define PRICECANNON0 0
 #define PRICECANNON1 100
@@ -183,6 +214,7 @@
 #define PRICECANNON7 1800   /* velocity  */
 #define PRICECANNON8 2000   /* missile */
 #define PRICECANNON9 2200   /* laser */
+#define PRICECANNON10 2000   /* laserbeam */
 
 /* engine types */
 #define ENGINE0 0 /* no engine */
@@ -223,13 +255,6 @@
 
 #define OBJNAMESMAXLEN 16  /*max size of objs names. */
 
-struct _Segment{
-  int x0,y0,x1,y1;
-  int type;
-  struct _Segment *next;
-};
-
-typedef struct _Segment Segment;
 
 
 struct Planet{
@@ -241,7 +266,7 @@ struct Planet{
   float A,B;         /* local, tmp variables */
 };
 
-typedef struct _Object Object;
+
 
 struct ObjList{ 
   Object *obj; 
@@ -339,12 +364,13 @@ struct _Object{
   float experience; /* experience */
   float pexperience;/* partial experience */
   int kills;        /*number of enemies killed. */
-  int ntravels;        /*number of planets landed. */
+  int ntravels;     /*number of planets landed. */
 
   int durable;
   int visible;      /* not used */
   int selected;     /* if ship is selected for an order */
   int radar;        /* radar range */
+  int cloak;        /* cloaking device 0 totally visible ... 10 invisible in outer space */
   int mass;         /* mass */
 
   int items;        /* survival ship, ...*/
@@ -416,6 +442,7 @@ struct ObjectAll{   /* SENDOBJALL */
   int visible;      /* not used */
   int selected;     /* if ship is selected for an order */
   int radar;        /* radar range */
+  int cloak;        /* cloaking device */
   int mass;         /* mass */
 
   unsigned int items;

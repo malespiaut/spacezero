@@ -86,11 +86,11 @@ Object *NewObj(int type,int stype,
   
   
   obj=malloc(sizeof(Object));
-  MemUsed(MADD,+sizeof(Object));
   if(obj==NULL){
     fprintf(stderr,"ERROR in malloc NewObj()\n");
     exit(-1);
   }
+  MemUsed(MADD,+sizeof(Object));
   
   if(type<TRACKPOINT){
     players[player].status=PLAYERMODIFIED;
@@ -261,7 +261,7 @@ Object *NewObj(int type,int stype,
       obj->damage=weapon->projectile.damage;
       obj->mass=weapon->projectile.mass;
       break;
-    case LASER: /*  shot4 */  //HERELANDED
+    case LASER: /*  shot4 */ 
       obj->state=1;
       obj->gas_max=0;
       obj->radio=50;

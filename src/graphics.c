@@ -929,7 +929,7 @@ void key_press(GtkWidget *widget,GdkEventKey *event,gpointer data){
   
   guint key,keyval;
   
-  g_print("%d, %s, %u\n",event->keyval,event->string,gdk_keyval_to_unicode(event->keyval)); 
+  /* g_print("%d, %s, %u\n",event->keyval,event->string,gdk_keyval_to_unicode(event->keyval));  */
 
   /* g_print("%d, %s, %s, %d\n",event->keyval, */
   /* 	  event->string, */
@@ -1459,9 +1459,9 @@ int DrawObjs(struct HeadObjList *lhc,struct Habitat habitat,Object *cv,Vector r_
   Object *lobj=NULL;
   int x,y,r;
   int i,n=0;
-  float x0,y0,x1,y1,x2,y2;
+  float x0,y0,x1,y1;
   float a;
-  float x_0,y_0,x_1,y_1,x_2,y_2;
+  float x_0,y_0,x_1,y_1;
   float rcosa,rsina;
   
   /* last to draw (cv)*/
@@ -1485,7 +1485,7 @@ int DrawObjs(struct HeadObjList *lhc,struct Habitat habitat,Object *cv,Vector r_
   
   sx=(float)gwidth/LXFACTOR;
   sy=(float)gheight/LYFACTOR;
-  
+
   gc=penWhite;
   gcexp=penRed;
   
@@ -1503,23 +1503,49 @@ int DrawObjs(struct HeadObjList *lhc,struct Habitat habitat,Object *cv,Vector r_
     if(ls->obj->habitat!=habitat.type){ls=ls->next;continue;}
     if(cv->in!=ls->obj->in){ls=ls->next;continue;}
     if(cv->habitat==H_SHIP){ls=ls->next;continue;}
+
     x=ls->obj->x;
     y=ls->obj->y;
+    r=ls->obj->radio;
+
     
     if(ls->obj->habitat==H_PLANET ){
-      x*=sx;
-      //HERELANDED
-      y=ls->obj->y - ls->obj->radio;
-      y*=sy;
-      y+=ls->obj->radio;
+      int y_inc;
+      y_inc=r;
 
+      switch(ls->obj->type){
+      case PROJECTILE:
+	switch(ls->obj->subtype){
+	case SHOT1:
+	case MISSILE:  /*SHOT3: */
+	case LASER:    /*SHOT4: */ 
+	case EXPLOSION:
+	  /* get parent radius */
+	  if(ls->obj->parent!=NULL){ 
+	    y_inc=ls->obj->parent->radio; 
+	  } 
+	  break;
+	case LASERBEAM: 
+	  break;
+	default:
+	  break;
+	}
+	break;
+      default:
+	break;
+      }
+
+      x*=sx;
+      y=ls->obj->y - y_inc;
+      y*=sy;
+      y+=y_inc;
     }
     
     if(ls->obj->habitat==H_SPACE){
       x-=xr;
       y-=yr;
     }
-    r=ls->obj->radio;
+
     
     if(x+r<0 || y+r<0 || x-r>gwidth || y-r>gheight){ 
       ls=ls->next;
@@ -1575,59 +1601,24 @@ int DrawObjs(struct HeadObjList *lhc,struct Habitat habitat,Object *cv,Vector r_
 			x+x_1,gheight-(y+y_1));
 	}
 	
-	/********** engine flares *************/
-	
-	if(ls->obj->accel>0){
-	  x0=-0.8;
-	  y0=.2;
-	  x1=x0;
-	  y1=-.2;
-	  x2=x0-2*ls->obj->accel/(ls->obj->engine.a_max);
-	  y2=0;
-	  
-	  x_0=x0*rcosa-y0*rsina;
-	  y_0=x0*rsina+y0*rcosa;
-	  
-	  x_1=x1*rcosa-y1*rsina;
-	  y_1=x1*rsina+y1*rcosa;
-	  
-	  x_2=x2*rcosa-y2*rsina;
-	  y_2=x2*rsina+y2*rcosa;
-	  
-	  gdk_draw_line(pixmap,penCyan,
-			x+x_0,gheight-(y+y_0),
-			x+x_2,gheight-(y+y_2));
-	  gdk_draw_line(pixmap,penCyan,
-			x+x_1,gheight-(y+y_1),
-			x+x_2,gheight-(y+y_2));
-	  
-	}
-	/********** --engine flares *************/
-	
-	
-	
 	break;
       case LASER:/*SHOT4: */ //HERELANDED
 	rcosa=r*Cos(a);
 	rsina=r*Sin(a);
-	
+
 	x0=x-rcosa;
-	x1=x+rcosa;
 	y0=y-rsina;
-	y1=y+rsina;
+	x1=x0+rcosa;
+	y1=y0+rsina;
 	
 	gdk_draw_line(pixmap,penBlue,
 		      x0,gheight-(y0),
 		      x1,gheight-(y1));
-	/*	printf("%d %f %f %d\n",x,x0,x1,r); */
+	
 	break;
       case LASERBEAM: 
 	rcosa=r*Cos(a);
 	rsina=r*Sin(a);
-
-	/*	if(ls->obj->habitat==H_PLANET){
-	  y+=ls->obj->radio;
-	  }*/
 	x0=x-rcosa;
 	x1=x+rcosa;
 	y0=y-rsina;
@@ -1680,6 +1671,11 @@ int DrawObjs(struct HeadObjList *lhc,struct Habitat habitat,Object *cv,Vector r_
 	  if(ls->obj->cloak>0)gc=penCloak;
 	  if(ls->obj->selected==TRUE && ls->obj!=cv && ls->obj->player==cv->player)gc=penGrey;
 	  DrawShip(gc,x,y,ls->obj);
+
+	  gdk_draw_point(pixmap,penBlue,x,gheight-y);
+	  gdk_draw_point(pixmap,penBlue,x,gheight-y+1);
+	  gdk_draw_point(pixmap,penBlue,x+1,gheight-y);
+	  gdk_draw_point(pixmap,penBlue,x+1,gheight-y+1);
 	}
 	
 	break;
@@ -1789,6 +1785,8 @@ void DrawShip(GdkGC *gc,int x,int y,Object *obj){
     s=ship1;
     break;
   }
+
+
   switch(obj->subtype){
   case PILOT:
     rcosa=obj->radio*Cos(obj->a);

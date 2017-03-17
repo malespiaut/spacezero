@@ -77,9 +77,9 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.87.10"};
+char version[64]={"0.87.12"};
 char TITLE[64]="SpaceZero";
-char last_revision[]={"May 2016"};
+char last_revision[]={"March 2017"};
 
 
 int g_cont;
@@ -2240,7 +2240,7 @@ void UpdateShip(Object *obj){
   float bx,by;
   int mass;  
   struct Player *ps;  
-  int swgravity=0;
+  int swgravity=1;
 
   ps=GetPlayers();
   proc=GetProc();
@@ -2289,7 +2289,7 @@ void UpdateShip(Object *obj){
       by=-b*v*obj->vy;
       fy0=-g*mass*(float)obj->in->mass+by;
       fx0=bx;
-      swgravity=1;
+      swgravity=1; 
     }
     break;
   case H_SHIP:
@@ -3216,13 +3216,10 @@ void Collision(void){
 		  objt1=obj2;
 		  objt2=obj1;
 		}
-		printf("PILOT 0\n");
 		/* objt1 is the pilot */
 		if(proc==ps[objt1->player].proc){
 		  if(objt2->subtype==EXPLORER||objt2->subtype==FIGHTER||objt2->subtype==QUEEN||objt2->subtype==FREIGHTER){
-		    printf("PILOT 1\n");
 		    if(CargoAdd(objt2,objt1)){
-		      printf("PILOT 2\n");
 		      objt1->in=objt2;
 		      objt1->habitat=H_SHIP;
 		      
@@ -3251,7 +3248,6 @@ void Collision(void){
 		}
 	      }
 	      /***** --between ship and pilot same team *****/
-	    printf("PILOT 3\n");
 	      for(i=0;i<2;i++){
 		if(i==0){
 		  objt1=obj1;
@@ -3319,12 +3315,14 @@ void Collision(void){
 			nobj=NewObj(ASTEROID,objt1->subtype+1, 
 				    objt1->x,objt1->y,objt1->vx+10.0*rand()/RAND_MAX-5,objt1->vy+10.0*rand()/RAND_MAX-5, 
 				    CANNON0,ENGINE0,0,NULL,objt1->in); 
-			nobj->a=PI/2;
-			nobj->ai=0;
-			nobj->in=objt1->in;
-			nobj->habitat=objt1->habitat;
-			nobj->mode=NAV;
-			Add2ObjList(&listheadobjs,nobj);
+			if(nobj!=NULL){
+			  nobj->a=PI/2;
+			  nobj->ai=0;
+			  nobj->in=objt1->in;
+			  nobj->habitat=objt1->habitat;
+			  nobj->mode=NAV;
+			  Add2ObjList(&listheadobjs,nobj);
+			}
 		      }
 		    }
 		  }
@@ -3381,7 +3379,7 @@ void Collision(void){
 	  contabilidad[13]++;
 	  if(!GetSegment(&s,obj1->in->planet,obj1->x,obj1->y)){
 	    /* if(obj1->y - obj1->radio +1< s.y0 && obj1->y - obj1->radio +1< s.y1){ */
-	    if(obj1->y-obj1->radio <= s.y0 && obj1->y - obj1->radio <= s.y1){
+	    if(obj1->y-obj1->radio <= s.y0  &&  obj1->y-obj1->radio <= s.y1){
 	      if(obj1->type!=SHIP){ /* destroy object */
 		obj1->state=0;
 		obj1->sw=0;
@@ -3651,12 +3649,11 @@ int UpdateObjs(void){
 		
 		nobj=NewObj(PROJECTILE,SHOT1,obj->x,obj->y,vx,vy,
 			    CANNON0,ENGINE0,obj->player,obj->parent,obj->in);
-		nobj->durable=TRUE;
-		nobj->life=LIFEEXPLOSION;
-		nobj->damage=nobj->parent->damage/16;
-		nobj->mass=25;
-		
 		if(nobj!=NULL){
+		  nobj->durable=TRUE;
+		  nobj->life=LIFEEXPLOSION;
+		  nobj->damage=nobj->parent->damage/16;
+		  nobj->mass=25;
 		  nobj->life*=(.25+Random(-1));
 		  Add2ObjList(&listheadobjs,nobj);
 		}
@@ -3708,7 +3705,9 @@ int UpdateObjs(void){
 			obj->x,obj->y,
 			0,0,
 			CANNON0,ENGINE0,obj->player,obj,objin);
-	    Add2ObjList(&listheadobjs,nobj);
+	    if(nobj!=NULL){
+	      Add2ObjList(&listheadobjs,nobj);
+	    }
 	  }
 	}
 	
@@ -4186,10 +4185,14 @@ void CreateShips(struct HeadObjList *lheadobjs){
     obj=NewObj(SHIP,QUEEN,
 	       0,0,0,0,
 	       CANNON5,ENGINE5,i,NULL,planet);
+    if(obj==NULL){
+      fprintf(stderr,"ERROR creating ships. exiting...\n");
+      exit(-1);
+    }
     
     obj->x=s->x0+(s->x1-s->x0)*(Random(-1));
     
-    obj->y=obj->y0=(s->y0)+obj->radio+1;
+    obj->y=obj->y0=(s->y0)+(obj->radio)+1;
     obj->a=PI/2;
     obj->ai=1;
     obj->habitat=H_PLANET;
@@ -4251,17 +4254,19 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
       obj=NewObj(ASTEROID,ASTEROID1,
 		 0,0,0,0,
 		 CANNON0,ENGINE0,2,NULL,NULL);
-      obj->x=obj->x0=x;
-      obj->y=obj->y0=y;
-      obj->vx=0;
-      obj->vy=0;
-      obj->a=PI/2;
-      obj->ai=0;
-      obj->in=NULL;
-      obj->habitat=H_SPACE;
-      obj->mode=NAV;
-      obj->player=0;
-      Add2ObjList(lheadobjs,obj);
+      if(obj!=NULL){
+	obj->x=obj->x0=x;
+	obj->y=obj->y0=y;
+	obj->vx=0;
+	obj->vy=0;
+	obj->a=PI/2;
+	obj->ai=0;
+	obj->in=NULL;
+	obj->habitat=H_SPACE;
+	obj->mode=NAV;
+	obj->player=0;
+	Add2ObjList(lheadobjs,obj);
+      }
     }  
   }
   
@@ -4273,19 +4278,21 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
       obj=NewObj(SHIP,FIGHTER,
 		 0,0,0,0,
 		 CANNON4,ENGINE3,2,NULL,NULL);
-      obj->x=obj->x0=x;
-      obj->y=obj->y0=y;
-      obj->a=PI/2;
-      obj->player=1;
-      obj->ai=1;
-      obj->in=NULL;
-      obj->habitat=H_SPACE;
-      obj->mode=NAV;
-      Experience(obj,100);
-      if(obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
-	obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
+      if(obj!=NULL){
+	obj->x=obj->x0=x;
+	obj->y=obj->y0=y;
+	obj->a=PI/2;
+	obj->player=1;
+	obj->ai=1;
+	obj->in=NULL;
+	obj->habitat=H_SPACE;
+	obj->mode=NAV;
+	Experience(obj,100);
+	if(obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
+	  obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
+	}
+	Add2ObjList(lheadobjs,obj);
       }
-      Add2ObjList(lheadobjs,obj);
     }  
   }
   if(0){  
@@ -4294,34 +4301,39 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
     obj=NewObj(SHIP,FIGHTER,
 	       0,0,0,0,
 	       CANNON4,ENGINE3,2,NULL,NULL);
-    obj->x=obj->x0=x;
-    obj->y=obj->y0=y;
-    obj->a=PI/2;
-    obj->weapon->n=250;  
-    obj->ai=1;
-    obj->in=NULL;
-    obj->habitat=H_SPACE;
-    obj->mode=NAV;
-    obj->experience=0;  
-    if(obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
-      obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
+    if(obj!=NULL){
+      obj->x=obj->x0=x;
+      obj->y=obj->y0=y;
+      obj->a=PI/2;
+      obj->weapon->n=250;  
+      obj->ai=1;
+      obj->in=NULL;
+      obj->habitat=H_SPACE;
+      obj->mode=NAV;
+      obj->experience=0;  
+      if(obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
+	obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
+      }
+      Add2ObjList(lheadobjs,obj);
     }
-    Add2ObjList(lheadobjs,obj);
+
     x=-400;
     y=100;
     obj=NewObj(SHIP,FIGHTER,
 	       0,0,0,0,
 	       CANNON4,ENGINE3,2,NULL,NULL);
-    obj->x=obj->x0=x;
-    obj->y=obj->y0=y;
-    obj->a=PI/2;
-    obj->weapon->n=250;  
-    obj->ai=1;
-    obj->in=NULL;
-    obj->habitat=H_SPACE;
-    obj->mode=NAV;
-    obj->experience=0;  
-    Add2ObjList(lheadobjs,obj);
+    if(obj!=NULL){
+      obj->x=obj->x0=x;
+      obj->y=obj->y0=y;
+      obj->a=PI/2;
+      obj->weapon->n=250;  
+      obj->ai=1;
+      obj->in=NULL;
+      obj->habitat=H_SPACE;
+      obj->mode=NAV;
+      obj->experience=0;  
+      Add2ObjList(lheadobjs,obj);
+    }
   }
   
   /* player ship */
@@ -4331,26 +4343,28 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
   obj=NewObj(SHIP,FIGHTER,
 	     0,0,0,0,
 	     CANNON4,ENGINE3,1,NULL,NULL);
-  obj->x=obj->x0=x;
-  obj->y=obj->y0=y;
-  obj->vy=0;
-  obj->a=PI/2;
-  obj->ai=0;
-  obj->in=NULL;
-  obj->habitat=H_SPACE;
-  obj->mode=NAV;
-  obj->weapon->n=250;  
-  obj->experience=0;
-  Experience(obj,800);
-  if(obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
-    obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
-  }
-  Add2ObjList(lheadobjs,obj);
-  obj->weapon1.n=10;
-  obj->weapon2.n=30;
-  if(obj->player==actual_player){
-    cv=obj;
-    ship_c=obj;
+  if(obj!=NULL){
+    obj->x=obj->x0=x;
+    obj->y=obj->y0=y;
+    obj->vy=0;
+    obj->a=PI/2;
+    obj->ai=0;
+    obj->in=NULL;
+    obj->habitat=H_SPACE;
+    obj->mode=NAV;
+    obj->weapon->n=250;  
+    obj->experience=0;
+    Experience(obj,800);
+    if(obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
+      obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
+    }
+    Add2ObjList(lheadobjs,obj);
+    obj->weapon1.n=10;
+    obj->weapon2.n=30;
+    if(obj->player==actual_player){
+      cv=obj;
+      ship_c=obj;
+    }
   }
   return;
 }

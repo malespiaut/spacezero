@@ -2803,7 +2803,6 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
   int n;
   struct Player *players;
 
-
   if(obj1==NULL){
     fprintf(stderr,"ERROR in FireCannon()\n");
     exit(-1); 
@@ -2884,19 +2883,19 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
 	       vp*Cos(ang)+obj1->vx,vp*Sin(ang)+obj1->vy,
 	       CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
     if(obj!=NULL){
-      if(obj1->habitat==H_PLANET){
+      if(obj1->habitat==H_PLANET && 0){
 	obj->y+=obj1->radio;
 	obj->y0+=obj1->radio;
       }
+      Add2ObjList(lhobjs,obj);
+      
+      if(enemies==0){  /* if there are no enemies don't send */
+	obj->modified=SENDOBJNOTSEND;
+      }
+      
+      obj1->weapon->n--;
+      if(obj1->weapon->n<0)obj1->weapon->n=0;
     }
-    Add2ObjList(lhobjs,obj);
-    
-    if(enemies==0){  /* if there are no enemies don't send */
-      obj->modified=SENDOBJNOTSEND;
-    }
-    
-    obj1->weapon->n--;
-    if(obj1->weapon->n<0)obj1->weapon->n=0;
   }
   
   break;
@@ -2950,20 +2949,21 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
 		 obj1->x+r*Cos(ang),obj1->y+r*Sin(ang),
 		 vp*Cos(ang)+obj1->vx,vp*Sin(ang)+obj1->vy,
 		 CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
-
+      
       if(obj!=NULL){
-	if(obj1->habitat==H_PLANET){
+	if(obj1->habitat==H_PLANET && 0){
 	  obj->y+=obj1->radio;
 	  obj->y0+=obj1->radio;
 	}
+	
+	Add2ObjList(lhobjs,obj);
+	if(enemies==0){  /* if there are no enemies don't send */
+	  obj->modified=SENDOBJNOTSEND;
+	}
+	
+	obj1->weapon->n--;
+	if(obj1->weapon->n<0)obj1->weapon->n=0;
       }
-      Add2ObjList(lhobjs,obj);
-      if(enemies==0){  /* if there are no enemies don't send */
-	obj->modified=SENDOBJNOTSEND;
-      }
-      
-      obj1->weapon->n--;
-      if(obj1->weapon->n<0)obj1->weapon->n=0;
     }
     
     break;
@@ -3002,22 +3002,22 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
       ang=obj1->a+ang0+0.04*(0.5*(1-n)+i);
       obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
 	     obj1->x+r*Cos(ang),obj1->y+r*Sin(ang),
-	     vp*Cos(ang),vp*Sin(ang),
+		 vp*Cos(ang),vp*Sin(ang),
 		 CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
       if(obj!=NULL){
-	if(obj1->habitat==H_PLANET){
+	if(obj1->habitat==H_PLANET && 0){
 	  obj->y+=obj1->radio;
 	  obj->y0+=obj1->radio;
 	}
+	
+	Add2ObjList(lhobjs,obj);
+	if(enemies==0){  /* if there are no enemies don't send */
+	  obj->modified=SENDOBJNOTSEND;
+	}
+	
+	obj1->weapon->n--;
+	if(obj1->weapon->n<0)obj1->weapon->n=0;
       }
-
-      Add2ObjList(lhobjs,obj);
-      if(enemies==0){  /* if there are no enemies don't send */
-	obj->modified=SENDOBJNOTSEND;
-      }
-
-      obj1->weapon->n--;
-      if(obj1->weapon->n<0)obj1->weapon->n=0;
     }
     
     break;
@@ -3028,47 +3028,43 @@ int FireCannon(struct HeadObjList *lhobjs,Object *obj1,Object *obj2){
 	   vp*Cos(ang)+obj1->vx,vp*Sin(ang)+obj1->vy,
 	       CANNON0,ENGINE2,obj1->player,obj1,obj1->in);
     if(obj!=NULL){
-      if(obj1->habitat==H_PLANET){
+      if(obj1->habitat==H_PLANET && 0){
 	obj->y+=obj1->radio;
 	obj->y0+=obj1->radio;
       }
-    }
 
-    Add2ObjList(lhobjs,obj);
-    if(enemies==0){  /* if there are no enemies don't send */
-      obj->modified=SENDOBJNOTSEND;
-    }
+      Add2ObjList(lhobjs,obj);
+      if(enemies==0){  /* if there are no enemies don't send */
+	obj->modified=SENDOBJNOTSEND;
+      }
 
-    obj->a=obj1->a;
-    obj1->weapon->n--;
-    if(obj1->weapon->n<0)obj1->weapon->n=0;
+      obj->a=obj1->a;
+      obj1->weapon->n--;
+      if(obj1->weapon->n<0)obj1->weapon->n=0;
+    }
     break;
   case CANNON9: /* laser */
   case CANNON10:
 
     ang=obj1->a;
-    obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
-	       obj1->x+r*Cos(ang),obj1->y+r*Sin(ang),
-	       vp*Cos(ang)+obj1->vx,vp*Sin(ang)+obj1->vy,
-	       CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
-    if(obj!=NULL){
-      if(obj1->habitat==H_PLANET){
-	obj->y+=obj1->radio;
-	obj->y0+=obj1->radio;
+    //    r=0; //AQUI
+    if(1){
+      obj=NewObj(PROJECTILE,obj1->weapon->projectile.type,
+		 obj1->x+0.5*r*Cos(ang),obj1->y+0.5*r*Sin(ang),
+		 vp*Cos(ang)+obj1->vx,vp*Sin(ang)+obj1->vy,
+		 CANNON0,ENGINE0,obj1->player,obj1,obj1->in);
+
+      if(obj!=NULL){
+	Add2ObjList(lhobjs,obj);
+	if(enemies==0){  /* if there are no enemies don't send */
+	  obj->modified=SENDOBJNOTSEND;
+	}
+	
+	obj1->weapon->n--;
+	obj->a=obj1->a;
       }
     }
-
-    Add2ObjList(lhobjs,obj);
-    if(enemies==0){  /* if there are no enemies don't send */
-      obj->modified=SENDOBJNOTSEND;
-    }
-
-    obj1->weapon->n--;
-    obj->a=obj1->a;
     break;
-
-
-
 
 
 
@@ -3457,7 +3453,7 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0,float lev
   /*
     Create some pirates
    */
-  Object *obj; 
+  Object *obj=NULL; 
   float x,y;
   int i;
   float exp,incexp;
@@ -3479,37 +3475,38 @@ void CreatePirates(struct HeadObjList *lhobjs,int n, float x0,float y0,float lev
 		 x0+x,y0+y,0,0,
 		 CANNON4,ENGINE4,GameParametres(GET,GNPLAYERS,0)+1,NULL,NULL);
     }
-
-    obj->a=PI/2;
-    obj->player=GameParametres(GET,GNPLAYERS,0)+1;
-    obj->ai=1;
-    obj->planet=NULL;
-    obj->habitat=H_SPACE;
-    obj->weapon=&obj->weapon0;
-
-    exp=level*12+level*PIRATESTRENGTH*Random(-1);
-    if(exp>750)exp=750;
-    incexp=exp<100?exp:100;
-    do{
-      Experience(obj,incexp);
-      exp-=incexp;
-    }while(exp>0);
-
-    if(obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
-      obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
-    }
-
-    obj->weapon0.n=obj->weapon0.max_n;
-    if(obj->subtype==FIGHTER){
-      if(obj->weapon1.type!=CANNON0){
-	obj->weapon1.n=obj->weapon1.max_n;
+    if(obj!=NULL){
+      obj->a=PI/2;
+      obj->player=GameParametres(GET,GNPLAYERS,0)+1;
+      obj->ai=1;
+      obj->planet=NULL;
+      obj->habitat=H_SPACE;
+      obj->weapon=&obj->weapon0;
+      
+      exp=level*12+level*PIRATESTRENGTH*Random(-1);
+      if(exp>750)exp=750;
+      incexp=exp<100?exp:100;
+      do{
+	Experience(obj,incexp);
+	exp-=incexp;
+      }while(exp>0);
+      
+      if(obj->subtype==FIGHTER && obj->level>=MINLEVELPILOT) {
+	obj->items=obj->items|ITSURVIVAL; /* create a survival pod */
       }
-      if(obj->weapon2.type!=CANNON0){
-	obj->weapon2.n=obj->weapon2.max_n;
+      
+      obj->weapon0.n=obj->weapon0.max_n;
+      if(obj->subtype==FIGHTER){
+	if(obj->weapon1.type!=CANNON0){
+	  obj->weapon1.n=obj->weapon1.max_n;
+	}
+	if(obj->weapon2.type!=CANNON0){
+	  obj->weapon2.n=obj->weapon2.max_n;
+	}
       }
+      Add2ObjList(lhobjs,obj);
+      players[obj->player].nbuildships++;
     }
-    Add2ObjList(lhobjs,obj);
-    players[obj->player].nbuildships++;
   }
 }
 
@@ -3530,12 +3527,13 @@ void CreateAsteroids(struct HeadObjList *lhobjs,int n, float x0,float y0){
     obj=NewObj(ASTEROID,size+1,
 	       x0+x,y+y0,vx,vy,
 	       CANNON0,ENGINE0,0,NULL,NULL);
-    
-    obj->ai=0;
-    obj->in=NULL;
-    obj->habitat=H_SPACE;
-    obj->mode=NAV;
-    Add2ObjList(lhobjs,obj);
+    if(obj!=NULL){
+      obj->ai=0;
+      obj->in=NULL;
+      obj->habitat=H_SPACE;
+      obj->mode=NAV;
+      Add2ObjList(lhobjs,obj);
+    }
   }  
   
 }

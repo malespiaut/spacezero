@@ -86,7 +86,7 @@ Version 0.8 (since 10May2011)
 -Explorers avoid combat
 -Move towers on planets
 -Freighters take off with low state.
--Ships on planets: y-coordenates
+
 
 
 -Objects with sons(shots are sons of the ships).
@@ -184,6 +184,9 @@ X-(260215)Invisibility. Ships partially invisible to radar. Added cloaking devic
 X-(100415)locales: bought
 X-(070516) extern only in .h
 X-(170516)increase value of crashed ships in planets.
+X-(170317)Ships on planets: fixed y-coordinates
+
+
 
 DONE:Version 0.84 (since 25 May 2013)
 =====================================

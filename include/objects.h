@@ -624,6 +624,8 @@ int CountPlanets(struct HeadObjList *lh,int type);
 int CountModObjs(struct HeadObjList *lh,int type);
 
 void PrintObj(Object *obj);
+void FPrintObj(FILE *f,Object *obj);
+
 
 Object *SelectObj(struct HeadObjList *lh,int id);
 Object *SelectpObj(struct HeadObjList *lh,int id,int player);

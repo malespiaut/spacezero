@@ -1382,7 +1382,6 @@ int Arguments(int argc,char *argv[],char *optfile){
  	if(i+1<argc){
 	  snprintf(param.geom,MAXTEXTLEN,"%s",argv[i+1]);
 	  strncpy(&param.geom[MAXTEXTLEN-1],"\0",1);
-	  /* HERE check param values. */
 	  i++;
 	}
 	else{
@@ -1719,7 +1718,7 @@ int LoadUserKeys(char *keyfile){
     exit(-1);
   }
   
-  if(fscanf(fp,"%128s",cad)!=1){ /* HERE check version */
+  if(fscanf(fp,"%128s",cad)!=1){
     perror("fscanf");
     exit(-1);
   }

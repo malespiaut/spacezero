@@ -77,7 +77,7 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.87.12"};
+char version[64]={"0.87.13"};
 char TITLE[64]="SpaceZero";
 char last_revision[]={"March 2017"};
 
@@ -391,7 +391,7 @@ int main(int argc,char *argv[]){
   
   gtk_timeout_add((int)(DT*50),MenuLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
 #if DEBUGFAST
-  gtk_timeout_add((int)(DT*5),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
+  gtk_timeout_add((int)(DT*3),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
 #else
   if(0&&GameParametres(GET,GNET,0)){
     gtk_timeout_add((int)(.36*100),MainLoop,(gpointer)drawing_area);  /* 42 DT=0.42 in general.h*/
@@ -893,7 +893,7 @@ gint MainLoop(gpointer data){
   
   /* game paused */
   if(GameParametres(GET,GPAUSED,0)==TRUE){
-    sprintf(pointmess,"PAUSED    (press p to continue)");
+    sprintf(pointmess,"PAUSED    (press p to resume)");
     swmess++;
   }
   
@@ -3201,8 +3201,9 @@ void Collision(void){
 	      /***** 
 		     between ship and pilots, same team
 		     pilot rescued by an allied ship.
+		     Different team capture the pilot
 	      ******/
-	      if((ps[obj1->player].team==ps[obj2->player].team) && 
+	      if(/*( ps[obj1->player].team==ps[obj2->player].team) && */ 
 		 (obj1->type==SHIP && obj2->type==SHIP) && 
 		 (obj1->subtype==PILOT || obj2->subtype==PILOT) && 
 		 (obj1->subtype!=PILOT || obj2->subtype!=PILOT) &&
@@ -3219,10 +3220,18 @@ void Collision(void){
 		/* objt1 is the pilot */
 		if(proc==ps[objt1->player].proc){
 		  if(objt2->subtype==EXPLORER||objt2->subtype==FIGHTER||objt2->subtype==QUEEN||objt2->subtype==FREIGHTER){
+
+		    /* pilot is captured */
+
 		    if(CargoAdd(objt2,objt1)){
 		      objt1->in=objt2;
 		      objt1->habitat=H_SHIP;
-		      
+
+		      if( ps[obj1->player].team!=ps[obj2->player].team){
+			objt1->player=objt2->player;
+			GetNewpid(objt1);
+		      }
+
 		      if(objt1->player==actual_player){
 			printf("%s %d %s %d\n",
 			       GetLocale(L_PILOT),
@@ -3610,6 +3619,12 @@ int UpdateObjs(void){
     obj=ls->obj;
     obj->pexperience=0;    
     
+    /*
+      if(obj==cv){
+      printf("n: %d cargomass: %d\n",obj->cargo.n,obj->cargo.mass);
+      }
+    */
+
     if(obj->durable==TRUE){
       switch(obj->subtype){
       case PILOT:
@@ -4373,7 +4388,7 @@ void CreateTestShips(struct HeadObjList *lheadobjs){
 int CheckGame(char *cad,int action){
   /*
     Check some game consistence.
-    Used every step (!!HERE check this)
+    Used every step in TEST MODE(!!HERE check this)
     Used after load a game.
     action: 
     0 only show messages
@@ -4452,7 +4467,7 @@ int CheckGame(char *cad,int action){
 	  obj->items=obj->items&(~ITSURVIVAL);
 	}
 	
-	if(fabs(obj->cost - COSTFIGHTER*COSTFACTOR*pow(COSTINC,obj->level))>0.01){
+	if(fabs(obj->cost - COSTFIGHTER*COSTFACTOR*pow(COSTINC,obj->level))>0.01){ /* HERE BUG ??*/
 	  printf("Error ship %d (%d-%d) level: %d cost: %f ->  %f \n",
 		 obj->id,obj->player,obj->pid,
 		 obj->level,obj->cost,0.01*COSTFACTOR*pow(COSTINC,obj->level));

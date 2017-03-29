@@ -358,8 +358,8 @@ struct _Object{
   char name[MAXTEXTLEN];   /* object name */
   short player;     /* id of the player */
   short type;       /* type: SHIP,PLANET,PROJECTILE,... */
-
   short subtype;    /* object subtype */
+
   short level;
   float experience; /* experience */
   float pexperience;/* partial experience */
@@ -701,6 +701,8 @@ int CreatePilot( Object *obj);
 float Distance2(Object *obj1,Object *obj2);
 float Distance(Object *cv,float x0,float y0);
 
+void GetNewid(Object *obj);
+void GetNewpid(Object *obj);
 int CheckObjsId(void);
 
 

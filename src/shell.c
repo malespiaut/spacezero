@@ -701,9 +701,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
       case 'n':
       case 'N':
 	/* goto nearest ally planet */
-	
-	obj_dest=NearestObj(lhead,obj,PLANET,SHIP0,PINEXPLORE,&d2);  /* HERE only one function */
-	obj_destb=NearestObj(lhead,obj,PLANET,SHIP0,PALLY,&d2b);
+	obj_dest=NearestObj(lhead,obj,PLANET,SHIP0,PINEXPLORE|PALLY,&d2); 
 	
 	if(obj_dest!=NULL && obj_destb!=NULL ){
 	  if(d2b<d2){
@@ -752,7 +750,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 		   GetLocale(L_NOTALLOWED),
 		   obj_dest->pid,
 		   GetLocale(L_PLANETORSPACESHIPUNKNOWN));
-	    snprintf(stmess,MAXTEXTLEN,"%s. %d %s.\n",
+	    snprintf(stmess,MAXTEXTLEN,"%s. %d %s.",
 		   GetLocale(L_NOTALLOWED),
 		   obj_dest->pid,
 		   GetLocale(L_PLANETORSPACESHIPUNKNOWN));

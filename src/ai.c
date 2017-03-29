@@ -276,7 +276,7 @@ void ai(struct HeadObjList *lhobjs,Object *obj,int act_player){
   if(obj->type==SHIP &&
      obj->subtype==FREIGHTER &&
      ship_enemy==NULL){
-    if(obj->mode==LANDED  && obj->cargo.mass==obj->cargo.capacity){
+    if(obj->mode==LANDED  && obj->cargo.mass==obj->cargo.capacity && obj->state>75){  
       if(obj->destid!=obj->oriid &&
 	 obj->destid!=0 &&
 	 obj->oriid!=0){
@@ -1525,9 +1525,9 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 	  }
 	}
       }
-/*       return; */
     }
   }
+
   /*** --Sell ships ***/
 
   /*                                         */
@@ -1547,6 +1547,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
     if(obj->player != player->id){ls=ls->next;continue;}
     if(obj->type != SHIP){ls=ls->next;continue;}
     if(obj->engine.type <= ENGINE1){ls=ls->next;continue;}
+    if(obj->mode == SOLD){ls=ls->next;continue;}
     
     /* Getting info from enemy planet */
     if(obj->habitat==H_PLANET){
@@ -1674,8 +1675,11 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 	  }
 	  break;
 	case SOLD:
-	  break;
 	default:
+	fprintf(stderr,"ERROR in ControlCenter 4. order unknown %d\n",
+		actord->id);
+	FPrintObj(stderr,ls->obj);
+	exit(-1);
 	  break;
 	}
 	break;
@@ -1903,13 +1907,11 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 
 	break;
       case SOLD:
-	ls=ls->next;continue;
-	break;
       default:
-	fprintf(stderr,"ERROR in ControlCenter 2. mode unknown %d (id:%d)\n",obj->mode,obj->id);
-
+	fprintf(stderr,"ERROR in ControlCenter 2. order unknown %d\n",
+		actord->id);
 #if DEBUG
-	PrintObj(obj);
+	FPrintObj(stderr,ls->obj);
 	exit(-1);
 #endif
 	break;
@@ -2275,7 +2277,7 @@ int Risk_08(struct HeadObjList *lhobjs,Object *obj){
   }
   else{
     action[1]*=0;
-    if(obj->weapon0.n==0){  /* HERETO84*/
+    if(obj->weapon0.n==0){ 
       action[2]*=1.1;
     }
   }
@@ -2479,7 +2481,7 @@ int Risk(struct HeadObjList *lhobjs,Object *obj){
       if(obj->weapon0.type>CANNON0){
 	if(obj->weapon0.n==0){
 	  action[1]*=0;
-	  action[2]*=1.1;   /* HERETO84*/
+	  action[2]*=1.1;
 	}
       }
     }
@@ -2502,7 +2504,7 @@ int Risk(struct HeadObjList *lhobjs,Object *obj){
   else{
     action[1]*=0;
     if(obj->weapon0.type>CANNON0){
-      if(obj->weapon0.n==0){  /* HERETO84*/
+      if(obj->weapon0.n==0){
 	action[2]*=1.1;
       }
     }
@@ -3663,7 +3665,7 @@ int OtherProc(struct HeadObjList *lh,int p,Object *obj0){
 
     switch(obj1->habitat){
     case H_PLANET:
-      x1=obj1->in->x;  /* HERE segfault */
+      x1=obj1->in->x;
       y1=obj1->in->y;
       break;
     case H_SPACE:
@@ -4002,7 +4004,6 @@ void CalcCCPlanetStrength(int player,struct CCDATA *ccdata){
 }
 
 int GetCCPlanetInfo(struct CCDATA *ccdata,int pid,int info){
-  /*HERE not used */
   struct PlanetInfo *pinfo;
 
   pinfo=ccdata->planetinfo;
@@ -5023,6 +5024,7 @@ struct PlanetInfo *War(struct HeadObjList *lhobjs,struct Player *player,struct C
 	}
       }
       /**** --Abort Attack ****/
+
       ccdata->planet2meet=ccdata->planet2attack=NULL;
       ccdata->time=0;
       ccdata->war=0;
@@ -5208,7 +5210,7 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player *player,struct CCDATA 
   int time;
 
   np=(player->nplanets);
-  if(np==0)return(0); /* HERE this doesn't allow to pilots to buy when there are not planets */
+  if(np==0)return(0); /* HERE this doesn't allow pilots to buy when there are no planets */
   nships=ccdata->nfighter+ccdata->ntower;
   buyid=-1;
   cut=.4;
@@ -5855,6 +5857,11 @@ void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct 
     ord->time=0;
     return;
   }
+
+  if(obj->mode==SOLD){
+    return;
+  }
+
   players=GetPlayers();
 
 #if DEBUG
@@ -5934,8 +5941,6 @@ void ExecAttack(struct HeadObjList *lhobjs,Object *obj,struct Order *ord,struct 
     }
     break;
   case SOLD:
-    return;    
-    break;
   default:
     fprintf(stderr,"mode %d unknown in ExecAttack() ship: (%d)%d\n",obj->mode,obj->player,obj->pid);
     exit(-1);

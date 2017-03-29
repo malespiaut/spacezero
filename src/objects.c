@@ -101,29 +101,45 @@ Object *NewObj(int type,int stype,
     exit(-1);
   }
   
-  strcpy(obj->name,"x");
+
   obj->oriid=0;
   obj->destid=0;
+
+  strcpy(obj->name,"x");
+  obj->player=player;
+  obj->type=type;        /* object type  */
+  obj->subtype=stype;    /* object subsubtype */
+
+  obj->level=0;
+  obj->experience=0;
+  obj->pexperience=0;
+  obj->kills=0;
+  obj->ntravels=0;
+
   obj->durable=FALSE;
   obj->visible=TRUE;
   obj->selected=FALSE;
   obj->radar=RADAR_RANGE;
   obj->cloak=0;
-  obj->experience=0;
-  obj->pexperience=0;
+  obj->mass=1;           /* mass */
+
+  obj->items=0;
+  obj->radio=1;          /* radio */
+  obj->damage=1;
+
+  obj->ai=0;             /* 0: by keyboard. [1,10] */
   obj->modified=SENDOBJNEW;
+
   obj->ttl=0;
-  obj->level=0;
-  obj->kills=0;
-  obj->ntravels=0;
   obj->habitat=H_SPACE;
   obj->mode=NAV;
-  obj->damage=1;
+
   obj->x=x;obj->y=y;      /* actual position */
   obj->x0=x;obj->y0=y;    /* speed in the previous time */
   obj->vx=vx,obj->vy=vy;  /* actual speed */
   obj->fx0=obj->fy0=0;    /* force in previous time */
   obj->fx=obj->fy=0;      /* actual force */
+
   obj->a=0;               /* ship angle */
   obj->ang_v=0;           /* angular speed */
   obj->ang_a=0;           /* angular aceleration */
@@ -134,45 +150,8 @@ Object *NewObj(int type,int stype,
   obj->shield=0;          /* shield  (0,1) */
   obj->state=1;           /* ship state (0,1)*/
   
-  switch(type){
-  case PLANET:
-    obj->id=g_objid;                         /* identifier */
-    break;
-  case PROJECTILE:
-    obj->id=GetNProc()*g_projid-GetProc();   /* identifier */
-    break;
-  default:
-    obj->id=GetNProc()*g_objid+GetProc();    /* identifier */
-    break;
-  }
-  
-#if TEST  
-  if(0){
-  if(obj->id>30000){ 
-    fprintf(stderr,"Warning in NewObject(), id too high:%d\n",obj->id); 
-  } 
-  if(obj->id<-30000){ 
-    fprintf(stderr,"Warning in NewObject(), id too low:%d\n",obj->id); 
-  } 
-  }
-#endif  
-
   obj->dest_r2=-1;       /* distance2 of the nearest object */
-  obj->parent=parent;    /* id of the creator obj */
-  obj->dest=NULL;        /* pointer to nearest object */
-  obj->in=in;            /* pointer to container object */
-  obj->mass=1;           /* mass */
-  obj->items=0;
-
-  obj->radio=1;          /* radio */
-  obj->type=type;        /* object type  */
-  obj->subtype=stype;    /* object subsubtype */
-  obj->player=player;
-  
-  obj->ai=0;             /* 0: by keyboard. [1,10] */
   obj->sw=0;
-  obj->lorder=NULL;
-  obj->actorder.id=-1;
   obj->trace=FALSE;
   obj->norder=0;
 
@@ -180,6 +159,28 @@ Object *NewObj(int type,int stype,
   obj->cargo.mass=0;        /* actual mass cargo */
   obj->cargo.n=0;           /* number of elements */
   obj->cargo.hlist=NULL;    /* list to object in cargo */
+
+  GetNewid(obj);
+  GetNewpid(obj);
+  
+#if TEST  
+  if(0){
+    if(obj->id>30000){ 
+      fprintf(stderr,"Warning in NewObject(), id too high:%d\n",obj->id); 
+    } 
+    if(obj->id<-30000){ 
+      fprintf(stderr,"Warning in NewObject(), id too low:%d\n",obj->id); 
+    } 
+  }
+#endif  
+  
+  obj->parent=parent;    /* id of the creator obj */
+  obj->dest=NULL;        /* pointer to nearest object */
+  obj->in=in;            /* pointer to container object */
+  
+
+  obj->lorder=NULL;
+  obj->actorder.id=-1;
 
   obj->planet=NULL;
   
@@ -198,28 +199,23 @@ Object *NewObj(int type,int stype,
   NewEngine(&obj->engine,engtype);
   obj->cdata=NULL;
   
+  /* Assign player id's (pid) */
   switch(obj->type){
   case PLANET:
-    obj->pid=obj->id;
-    g_objid++;
     break;
   case TRACE:
     obj->id=-1;
     obj->modified=SENDOBJNOTSEND;
     break;
   case PROJECTILE:
-    obj->pid=obj->id;
-    g_projid--;
     if(obj->subtype==EXPLOSION){
       obj->modified=SENDOBJNOTSEND;/* don't send explosion */
     }
     break;
   default:
-    obj->pid=players[obj->player].pid;
-    players[obj->player].pid++;
-    g_objid++;
     break;
   }
+
   switch(obj->type){
 
   case PROJECTILE:
@@ -3686,9 +3682,9 @@ void PrintObj(Object *obj){
 void FPrintObj(FILE *f,Object *obj){
   int n;
   n=CountOrders(obj);
-  fprintf(f,"obj id:%d pid: %d type: %d stype: %d\n state: %f player: %d norders: %d\n",
+  fprintf(f,"obj id:%d pid: %d type: %d stype: %d\n state: %f mode:%d player: %d norders: %d\n",
 	 obj->id,obj->pid,obj->type,obj->subtype,
-	 obj->state,obj->player,n);
+	  obj->state,obj->mode,obj->player,n);
 }
 
 char Type(Object *obj){
@@ -4145,8 +4141,7 @@ void ShipProperties(Object *obj,int stype,Object *in){
     obj->damage=25;
     obj->cost=COSTEXPLORER*COSTFACTOR;
     break;
-  case SHIP0: /* not used */
-    /* HERE there are SHIP0 */
+  case SHIP0:   /* TRACE, PLANETS */
   case FIGHTER: /*  FIGHTER */
     obj->radar=RADAR_RANGE;
     obj->cloak=0;
@@ -4515,10 +4510,11 @@ int CargoAdd(Object *obj1,Object *obj2){
     1 if obj2 is added
   */
 
+  /*
   struct Player *players;
-
   players=GetPlayers();      
-
+  */
+ 
   if(obj1==NULL || obj2==NULL){
     return(0);
   }
@@ -4537,14 +4533,15 @@ int CargoAdd(Object *obj1,Object *obj2){
     return(0);
   }
 
-  
-  if(players[obj1->player].team != players[obj2->player].team){
-    fprintf(stderr,"ERROR in CargoAdd()\n");
-    fprintf(stderr,"\t%d %d %d %d, %d %d %d %d\n",
-	    players[obj1->player].team,obj1->player,obj1->type,obj1->subtype,
-	    players[obj2->player].team,obj2->player,obj2->type,obj2->subtype);
-    exit(-1);
-  }
+  /*  
+      if(players[obj1->player].team != players[obj2->player].team){
+      fprintf(stderr,"ERROR in CargoAdd()\n");
+      fprintf(stderr,"\t%d %d %d %d, %d %d %d %d\n",
+      players[obj1->player].team,obj1->player,obj1->type,obj1->subtype,
+      players[obj2->player].team,obj2->player,obj2->type,obj2->subtype);
+      exit(-1);
+      }
+  */
 
   if(obj1->cargo.hlist==NULL){
     obj1->cargo.hlist = malloc(sizeof(struct HeadObjList));
@@ -4731,6 +4728,23 @@ void CargoCheck(struct HeadObjList *hol,Object *cvobj){
 	*/
       }
     }
+    /***** --ship destroyed Create Pilot****/
+
+    /**** if cargo.n=0 cargo.mass must be zero ****/
+    if(ls->obj->cargo.hlist==NULL && (ls->obj->cargo.mass!=0 || ls->obj->cargo.n!=0)){
+      if(ls->obj->type==SHIP && ls->obj->subtype!=FREIGHTER){
+	fprintf(stderr,"ERROR in CargoCheck... \n");
+	FPrintObj(stderr,ls->obj);
+	printf("%p %d %d\n",(void *)ls->obj->cargo.hlist,ls->obj->cargo.n,ls->obj->cargo.mass);
+	ls->obj->cargo.n=0;
+	ls->obj->cargo.mass=0;
+	fprintf(stderr,"ERROR in CargoCheck...fixed \n");
+#if DEBUG
+	exit(-1);
+#endif
+      }
+    }
+    /**** if cargo.n=0 cargo.mass must be zero ****/
     ls=ls->next;    
   }
   return;
@@ -4747,10 +4761,13 @@ int CargoDestroy(Object *obj){
   struct ObjList *ls,*ls0;
   int n=0;
 
+
   if(obj==NULL){
     return(0);
   }
   if(obj->cargo.hlist==NULL){
+    obj->cargo.n=0;
+    obj->cargo.mass=0;
     return(0);
   }
 
@@ -5427,4 +5444,65 @@ void DestroyVerletList(struct VerletList *hvl){
   free(hvl);
   hvl=NULL;
   MemUsed(MADD,-sizeof(struct VerletList));
+}
+
+
+void GetNewid(Object *obj){
+  
+  switch(obj->type){
+  case TRACKPOINT:
+  case TRACE:
+    obj->id=-1;
+    break;
+  case SHIP:
+  case ASTEROID:
+    obj->id=GetNProc()*g_objid+GetProc();    /* identifier */
+    g_objid++;
+    break;
+  case PROJECTILE:
+    obj->id=GetNProc()*g_projid-GetProc();   /* identifier */
+    g_projid--;
+    break;
+  case PLANET:
+    obj->id=g_objid;                         /* identifier */
+    g_objid++;
+    break;
+  default:
+    fprintf(stderr,"ERROR, type unknown: %d\n",obj->type);
+    exit(-1);
+    break;
+  }
+}
+
+void GetNewpid(Object *obj){
+
+  struct Player *players;
+
+  players=GetPlayers();  
+
+  switch(obj->type){
+  case TRACKPOINT:
+  case TRACE:
+    obj->pid=-1;
+    break;
+  case SHIP:
+  case ASTEROID:
+    obj->pid=players[obj->player].pid;
+    players[obj->player].pid++;
+    break;
+  case PROJECTILE:
+    obj->pid=obj->id;
+    break;
+  case PLANET:
+    obj->pid=obj->id;
+    break;
+  default:
+    fprintf(stderr,"ERROR, type unknown: %d\n",obj->type);
+    exit(-1);
+    break;
+  }
+
+
+
+
 }

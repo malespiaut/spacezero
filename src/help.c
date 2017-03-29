@@ -189,7 +189,7 @@ void PrintWarnings(char *version){
   fprintf(stderr,"WARNING: This is the development version of SpaceZero (version %s)\nIt can contain bugs.\nNet and saved games can be incompatible with the official release.\nMaybe SpaceZero doesn't work properly.\n", version);
 
   if(sizeof(int)!=4){
-    fprintf(stderr,"\nWARNING: size of int %d bytes\n, maybe SpaceZero doesn't work properly\n",(int)sizeof(int));/* HERE warning: format '%d' expects type 'int', but argument 3 has type 'long unsigned int' */
+    fprintf(stderr,"\nWARNING: size of int %d bytes\n, maybe SpaceZero doesn't work properly\n",(int)sizeof(int));
   }
   fprintf(stderr,"\nWARNING: Communication between 64 and 32 bits machines not so tested,\nmaybe SpaceZero doesn't work properly.\n");
 

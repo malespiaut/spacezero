@@ -285,14 +285,14 @@ void InvQuadrant(int n,int *x, int *y){
   int i,j;
   int r;
   int d;
-  /*
+
 #if DEBUG
   static int max=0;
   static int min =0;
   if(n>max){max=n;printf("MAX=%d\n",max);}
   if(n<min){min=n;printf("MIN=%d\n",min);}
 #endif
-  */
+
   r=(int)((sqrt(n)+1.0)*0.5);
 
   if(r==0){

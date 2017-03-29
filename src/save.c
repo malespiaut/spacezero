@@ -1730,7 +1730,7 @@ void FscanfPlanetInfoList(FILE *fp,struct CCDATA *ccdata){
 void FscanfPlanetInfo(FILE *fp,struct PlanetInfo *pinfo){
   int objid;
   Object *planet;
-  if(fscanf(fp,"%d%d%d%d%d%d%d%f%f%d",    /* HEREBUG FIXED*/
+  if(fscanf(fp,"%d%d%d%d%d%d%d%f%f%d",
 	    &objid,&pinfo->time,
 	    &pinfo->nexplorer,&pinfo->nfighter,&pinfo->npilot,&pinfo->ntower,&pinfo->ncargo,
 	    &pinfo->strength,&pinfo->strengtha,

@@ -1602,7 +1602,7 @@ int DrawObjs(struct HeadObjList *lhc,struct Habitat habitat,Object *cv,Vector r_
 	}
 	
 	break;
-      case LASER:/*SHOT4: */ //HERELANDED
+      case LASER:/*SHOT4: */ 
 	rcosa=r*Cos(a);
 	rsina=r*Sin(a);
 
@@ -1671,11 +1671,6 @@ int DrawObjs(struct HeadObjList *lhc,struct Habitat habitat,Object *cv,Vector r_
 	  if(ls->obj->cloak>0)gc=penCloak;
 	  if(ls->obj->selected==TRUE && ls->obj!=cv && ls->obj->player==cv->player)gc=penGrey;
 	  DrawShip(gc,x,y,ls->obj);
-
-	  gdk_draw_point(pixmap,penBlue,x,gheight-y);
-	  gdk_draw_point(pixmap,penBlue,x,gheight-y+1);
-	  gdk_draw_point(pixmap,penBlue,x+1,gheight-y);
-	  gdk_draw_point(pixmap,penBlue,x+1,gheight-y+1);
 	}
 	
 	break;
@@ -4654,7 +4649,7 @@ void Window2Real(Object *cv,int view, int wx,int wy,int *rx,int *ry){
     
   case VIEW_MAP:
     Shift(GET,ulx,cv==NULL?0:cv->id,&zoom,&cvx,&cvy);
-    printf("view map cv:%d\n",cv->pid);
+    /*    printf("view map cv:%d\n",cv->pid); */
     x0=0.5*gwidth;
     y0=0.5*gheight;
     

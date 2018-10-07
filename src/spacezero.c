@@ -77,7 +77,7 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.87.13"};
+char version[64]={"0.87.14"};
 char TITLE[64]="SpaceZero";
 char last_revision[]={"March 2017"};
 
@@ -3230,6 +3230,11 @@ void Collision(void){
 		      if( ps[obj1->player].team!=ps[obj2->player].team){
 			objt1->player=objt2->player;
 			GetNewpid(objt1);
+			for(i=0;i<4;i++){
+			  if(fobj[i]==objt1->id){
+			    fobj[i]=0;
+			  }
+			}
 		      }
 
 		      if(objt1->player==actual_player){
@@ -4467,11 +4472,11 @@ int CheckGame(char *cad,int action){
 	  obj->items=obj->items&(~ITSURVIVAL);
 	}
 	
-	if(fabs(obj->cost - COSTFIGHTER*COSTFACTOR*pow(COSTINC,obj->level))>0.01){ /* HERE BUG ??*/
+	if(fabs(obj->cost - COSTFIGHTER*COSTFACTOR*pow(COSTINC,obj->level))>0.01){ /* BUG fixed */
 	  printf("Error ship %d (%d-%d) level: %d cost: %f ->  %f \n",
 		 obj->id,obj->player,obj->pid,
 		 obj->level,obj->cost,0.01*COSTFACTOR*pow(COSTINC,obj->level));
-	  obj->cost=0.01*COSTFACTOR*pow(COSTINC,obj->level);
+	  obj->cost=COSTFIGHTER*COSTFACTOR*pow(COSTINC,obj->level);
 	}
 	
       }
@@ -4707,7 +4712,7 @@ void GetGold(void){
       ps[ls->obj->player].nplanets++;
       break;
     case SHIP:
-      if(ls->obj->subtype!=SATELLITE){
+      if(ls->obj->subtype!=SATELLITE && ls->obj->subtype!=PILOT){
 	ps[ls->obj->player].nships++;
 	ps[ls->obj->player].level+=ls->obj->level;
       }
@@ -4735,7 +4740,7 @@ void GetGold(void){
 	ls=ls->next;continue;
       }
       ps[ls->obj->player].balance-=ls->obj->cost;
-      
+
       switch(ls->obj->subtype){
       case TOWER:
 	levelfactor=(1.0+1.0*ls->obj->level);

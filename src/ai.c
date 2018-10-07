@@ -1413,6 +1413,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
   Object *neplanet=NULL;
   Object *nplanet=NULL;
   struct Order *actord=NULL;
+  
   int sw=0;
   float maxx,maxy;
   int time;
@@ -1563,7 +1564,7 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 
     actord=ReadOrder(NULL,obj,MAINORD);
 
-    if(actord==NULL){
+    if(actord==NULL || actord->id > LASTORDERID){
       ord.priority=1;
       ord.id=NOTHING;
       ord.time=0;
@@ -1578,7 +1579,19 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
       DelAllOrder(obj);
       AddOrder(obj,&ord);
       actord=ReadOrder(NULL,obj,MAINORD);
+
+      if(actord->id > LASTORDERID){
+	fprintf(stderr,"ERROR in ControlCenter 3. order unknown %d\n\
+                      setting order to NOTHING\n",
+		actord->id);
+	FPrintObj(stderr,ls->obj);
+	exit(-1);   //HERE PRODUCTION
+#if DEBUG
+	exit(-1);
+#endif
+      }
     }
+
 
     /* RETREAT */
     if(obj->state<25 && actord->id!=RETREAT){
@@ -1627,22 +1640,23 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
 	      if(planetdest!=NULL){
 		if((player->team==players[planetdest->player].team) ) {
 		  obj->destid=planetid;
-		}
-		/* ADD order GOTO */
-		ord.priority=1;
-		ord.id=GOTO;
-		ord.time=0;
-		ord.g_time=time;
-		ord.a=planetdest->x;
-		ord.b=planetdest->y;
-		ord.c=planetdest->id;
-		ord.d=planetdest->type;
-		ord.e=planetdest->pid;
-		ord.f=ord.g=ord.h=0;
-		ord.i=ord.j=ord.k=ord.l=0;
 		
-		DelAllOrder(obj);
-		AddOrder(obj,&ord);
+		  /* ADD order GOTO */
+		  ord.priority=1;
+		  ord.id=GOTO;
+		  ord.time=0;
+		  ord.g_time=time;
+		  ord.a=planetdest->x;
+		  ord.b=planetdest->y;
+		  ord.c=planetdest->id;
+		  ord.d=planetdest->type;
+		  ord.e=planetdest->pid;
+		  ord.f=ord.g=ord.h=0;
+		  ord.i=ord.j=ord.k=ord.l=0;
+		  
+		  DelAllOrder(obj);
+		  AddOrder(obj,&ord);
+		}
 	      }
 	    }
 	  }
@@ -1719,8 +1733,6 @@ void ControlCenter(struct HeadObjList *lhobjs,struct Player *player){
       }
     }
     /*--FREIGHTERS*/
-
-
 
     switch(actord->id){
     case NOTHING:

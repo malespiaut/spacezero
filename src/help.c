@@ -68,7 +68,7 @@ void Usage(char *ver,char *l_rev){
   (void) fprintf( stdout, 
 		  "-nomenu \t Starts automatically, without menu.\n" );
   (void) fprintf( stdout, 
-		  "-lang [en,es] \t Game language. English(default) and spanish supported.\n" );
+		  "-lang [en,es,it] Game language. English(default), spanish and italian supported.\n" );
   (void) fprintf( stdout, 
 		  "\nGAME OPTIONS:\n" );
   (void) fprintf( stdout, 

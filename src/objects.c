@@ -125,6 +125,7 @@ Object *NewObj(int type,int stype,
 
   obj->items=0;
   obj->radio=1;          /* radio */
+  obj->cost=0;
   obj->damage=1;
 
   obj->ai=0;             /* 0: by keyboard. [1,10] */
@@ -367,8 +368,6 @@ Object *NewObj(int type,int stype,
     exit(-1);
     break;
   }
-  
-  obj->cost*=COSTFACTOR;
   
   /* data base */
   if(obj->type==SHIP){  /* HERE TODO SHIP COMPUTER, only ships */
@@ -1437,6 +1436,7 @@ int CountShipsInPlanet(struct HeadObjList *lh,int objid,int player,int type,int 
     of the player player.
     if type or subtype are equal to -1 count all.
     if lh is NULL use the all objects list.
+    Don't count pilots.
     Returns the number of ships.
   */
   
@@ -1453,6 +1453,7 @@ int CountShipsInPlanet(struct HeadObjList *lh,int objid,int player,int type,int 
     if(ls->obj->player!=player){ls=ls->next;continue;}    
     if(type!=-1){
       if(ls->obj->type!=type){ls=ls->next;continue;}
+      if(ls->obj->subtype==PILOT){ls=ls->next;continue;}
       if(stype!=-1){
 	if(ls->obj->subtype!=stype){ls=ls->next;continue;}
       }
@@ -2517,7 +2518,6 @@ int GetPrice(Object *obj,int stype,int eng,int weapon){
   int price=0;
   int level=0;
   
-  
   if(obj!=NULL){
     if(obj->type!=SHIP){
       fprintf(stdout,"ERROR in GetPrice() obj type:%d\n",obj->type);
@@ -2633,7 +2633,9 @@ int BuyShip(struct Player *player,Object *obj,int stype){
     shield=obj->shield;
     ShipProperties(obj,stype,obj->in);
     obj->shield=shield;
-    obj->cost*=pow(2,obj->level);
+
+    obj->cost=COSTFIGHTER*COSTFACTOR*pow(COSTINC,obj->level);
+    //obj->cost*=pow(COSTINC,obj->level);   //HERE
     obj->subtype=stype;
     obj->a=PI/2;
     obj->ai=1;
@@ -3579,7 +3581,7 @@ void Experience(Object *obj,float pts){
     obj->gas=obj->gas_max;
     obj->engine.gascost-=.01;
     obj->engine.v_max++;
-    obj->cost*=COSTINC*COSTFACTOR;
+    obj->cost*=COSTINC;
     
     mulshots=1+1./(obj->level);
     
@@ -3673,9 +3675,9 @@ void Experience(Object *obj,float pts){
 void PrintObj(Object *obj){
   int n;
   n=CountOrders(obj);
-  printf("obj id:%d pid: %d type: %d stype: %d\n state: %f player: %d norders: %d\n",
+  printf("obj id:%d pid: %d type: %d stype: %d\n state: %f player: %d norders: %d lastid:%d\n",
 	 obj->id,obj->pid,obj->type,obj->subtype,
-	 obj->state,obj->player,n);
+	 obj->state,obj->player,n,g_objid);
 }
 
 
@@ -3749,6 +3751,9 @@ char *TypeCad(Object *obj){
       break;
     case QUEEN:
       strcpy(cad,"QUEEN");
+      break;
+    case FREIGHTER:
+      strcpy(cad,"FREIGHTER");
       break;
     case PILOT:
       strcpy(cad,"PILOT");
@@ -4923,7 +4928,9 @@ int CargoEjectObjs(Object *obj,int type,int subtype){
 	obj1->planet=NULL;
 	obj1->mode=LANDED;
 	obj1->x=s->x0+obj1->radio+r*(Random(-1));
-	obj1->y=obj->y;
+	//	obj1->y=obj->y;
+	obj1->y=s->y0+obj1->radio;
+
 	obj1->x0=obj1->x;
 	obj1->y0=obj1->y;
 	obj1->accel=0;

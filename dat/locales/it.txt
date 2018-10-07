@@ -1,0 +1,154 @@
+/* game menu */
+
+000 OPZIONI
+001 OPZIONI MULTIGIOCATORE
+002 OPZIONI GENERALI
+003 OPZIONI DI GIOCO
+004 Tastiera: INVIO > premere il tasto > INVIO
+005 OPZIONI
+006 Nuovo Gioco
+007 Esci dal Gioco
+008 Opzioni Generali
+009 Opzioni di Gioco
+010 Tastiera
+011 Opzioni Multigiocatore
+012 Ripristino Opzioni Predefinite
+013 Nome:
+014 Volume Effetti Sonori:
+015 Volume Musica:
+016 Geometria Finestra:
+017 Numero Giocatori:
+018 Numero Pianeti:
+019 Numero Galassie:
+020 Dimensione Universo:
+021 Universo Esplorato:
+022 Pirati:
+023 Nemico Visibile:
+024 Modalita' cooperativa:
+025 Modalita' computer-cooperativa:
+026 Modalita' Regina:
+027 Spara:
+028 Gira a sinistra:
+029 Gira a destra:
+030 Accelera:
+031 Modalita' manuale:
+032 Modalita' automatica:
+033 Mappa:
+034 Ordine:
+035 Indirizzo IP:
+036 Porta:
+037 Avvia Server
+038 Collegati a Server
+
+/* windows menu */
+
+039 SALVA
+040 CARICA
+041 Opzioni
+042 About
+043 Aiuto
+
+/* game texts*/
+
+044 ENERGIA
+045 STATO
+046 ESPERIENZA
+047 Mun.
+048 Settore
+049 settori
+050 Uccisioni
+051 Ordine
+052 Distanza
+053 Tempo
+054 Record
+055 GIOCATORE
+056 ORO
+057 PIANETI
+058 NAVI
+059 Perdite
+060 Punti
+061 PIANETA
+062 RISORSE
+063 MASSA
+064 LIVELLO
+065 Statistiche di gioco
+066 pianeti
+067 navi
+068 giocatore
+
+/* orders */
+
+069 VAI A
+070 DECOLLA
+071 ORBITA
+072 NIENTE
+073 FERMA
+074 ESPLORA
+075 RITIRATA
+
+/* messages */
+
+076 NEMICO AVVISTATO
+077 sotto attacco
+078 AVVISTATI ASTEROIDI
+079 ARRIVATO A
+080 Ricevute informazioni dal nemico
+081 AIUTO
+082 NAVE DISTRUTTA
+083 NAVE MADE DISTRUTTA
+084 PERSO
+085 Espulsione pilota dalla nave
+086 salvato nel pianeta
+087 pilota
+088 PIRATI!! AL SETTORE
+089 ASTEROIDI!! al settore
+090 GIOCO SALVATO
+091 gioco salvato su file
+092 recuperato da
+093 scoperto
+
+/*order messages */
+
+094 Non puoi vendere piloti
+095 Devi essere atterrato
+096 Non consentito
+097 Pianeta o nave sconosciuto/a
+098 vado al settore
+099 vado al pianeta
+100 vado alla nave
+101 vado ad esplorare
+102 decollo
+103 Esploratore
+104 Caccia
+105 Torre
+106 La nave spaziale dev'essere atterrata
+107 Non hai abbastanza oro
+108 comprato/a
+109 selezionato
+110 Navi selezionate
+111 Destiny is equal than origin
+112 O: Inserisci comando
+113 Vendo la nave
+114 Puoi aggiornare fino al livello
+115 aggiorna al livello
+
+/* Options window */
+
+116 I cambiamenti saranno effettivi dopo il riavvio di spacezero
+117 (suoni e musica al salvataggio)
+118 Universo Esplorato
+119 Musica OFF
+120 Suoni OFF
+121 Numero Pianeti
+122 Numero Giocatori
+123 Dimensione Universo
+124 Numero Galassie
+125 Modalità cooperativa
+126 Modalità computer-cooperativa
+127 Modalità Regina
+128 Salva
+129 Ripristino Opzioni Predefinite
+130 Annulla
+131 Satellite
+132 Non c'è spazio
+133 Dispositivo di Camuffaggio

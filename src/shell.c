@@ -1372,7 +1372,7 @@ void SelectionBox(GdkGC *color,Object **pcv,int reset){
 	    cv->selected=TRUE;
 	  }
 	  /***** mouse selection, one click *****/
-	  printf("left mouse habitat:%d view:%d\n",cv->habitat,view);
+	  /*	  printf("left mouse habitat:%d view:%d\n",cv->habitat,view); */
 	  if(view==VIEW_PLANET){
 	    region.rect.y=GameParametres(GET,GHEIGHT,0)-region.rect.y;
 	  }
@@ -1398,7 +1398,7 @@ void SelectionBox(GdkGC *color,Object **pcv,int reset){
 	  default:
 	    break;
 	  }
-	  printf("region habitat:%d\n",region.habitat);
+	  /*	  printf("region habitat:%d\n",region.habitat); */
 	  if(region.habitat>=0){
 	    cv0=SelectOneShip(&listheadobjs,region,cv,keys.ctrl);
 	    if(cv0==NULL)cv0=cv;

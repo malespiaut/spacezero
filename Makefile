@@ -21,11 +21,12 @@ INSTALL_DATA_DIR=/usr/local/share/spacezero
 #INSTALL_DIR=/usr/games
 #INSTALL_DATA_DIR=/usr/share/spacezero
 
+PKG_CONFIG ?= pkg-config
+OPENALFLAGS= -lopenal -lalut
+SOUNDFLAGS= $(OPENALFLAGS) -lvorbisfile
 
-SOUNDFLAGS= -lopenal -lalut -lvorbisfile
-
-GTKFLAGS=`pkg-config --cflags gtk+-2.0`
-GTKLIBS=`pkg-config --libs gtk+-2.0`
+GTKFLAGS=`$(PKG_CONFIG) --cflags gtk+-2.0`
+GTKLIBS=`$(PKG_CONFIG) --libs gtk+-2.0`
 
 GTKLIBS12=`gtk-config --cflags`
 GTKFLAGS12=`gtk-config --libs`

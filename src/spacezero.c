@@ -77,9 +77,9 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.87.14"};
+char version[64]={"0.87.16"};
 char TITLE[64]="SpaceZero";
-char last_revision[]={"March 2017"};
+char last_revision[]={"May 2019"};
 
 
 int g_cont;

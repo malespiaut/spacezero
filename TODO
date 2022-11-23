@@ -78,7 +78,7 @@ Version 0.7 (since 060910)
 Version 0.8 (since 10May2011)
 ===========
 
-
+-!!! Cargo dont stop: save_cargo_dont_stop
 -comprobar cargo en CheckGame
 -!!Reordenar, jerarquizar codigo, ficheros.
 -!!Disminuir numero de variables extern (90)78,80,46,43 grep extern src/*.c include/*h |grep ";" |wc

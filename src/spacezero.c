@@ -1,6 +1,6 @@
 /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2013  MRevenga
+ **  Copyright(C) 2006-2022  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2013 ******************
+/*************  SpaceZero  M.R.H. 2006-2022 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.86 December 2013
+		version 0.86 November 2022
 **************************************************************/
 
 #include <stdlib.h>
@@ -48,7 +48,6 @@
 #include "planetnames.h"
 #include "randomnamegen.h"
 #include "sectors.h"
-#include "snow.h"
 #include "menu.h"
 #include "data.h"
 #include "general.h"
@@ -77,9 +76,9 @@ int g_nobjtype[6]={0,0,0,0,0,0};
 int gameover=FALSE;
 int observeenemies=FALSE;
 
-char version[64]={"0.87.16"};
+char version[64]={"0.87.17"};
 char TITLE[64]="SpaceZero";
-char last_revision[]={"May 2019"};
+char last_revision[]={"Nov 2022"};
 
 
 int g_cont;
@@ -3028,7 +3027,7 @@ void Collision(void){
 	    
 	    if(obj1->type==SHIP && obj2->type==SHIP){
 	      if(ps[obj2->player].team!=ps[obj1->player].team){
-		if(obj1->habitat==obj1->habitat){
+		if(obj1->habitat==obj2->habitat){
 		  if(obj1->subtype!=PILOT && obj2->subtype!=PILOT){
 		    int il;
 		    float factor,points;
@@ -3315,8 +3314,10 @@ void Collision(void){
 		case SHIP:
 		  {
 		    int n=0;
+		    // HERE BUG?  ejecting from 186. violacion de segmento 
 		    printf("\tejecting from: %d ",objt1->id);
-		    printf(" %p n: %d\n",(void *)objt1->cargo.hlist,objt1->cargo.n);
+		    printf(" %p ",(void *)objt1->cargo.hlist);
+		    printf("n: %d\n",objt1->cargo.n);
 		    n=CargoEjectObjs(objt1,-1,-1);
 		    printf("\tejected %d\n",n);
 		  }

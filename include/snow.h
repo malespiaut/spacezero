@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright (C) 2006-2013  MRevenga
+ **  Copyright (C) 2006-2022  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,19 +17,18 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2013 ******************
+/*************  SpaceZero  M.R.H. 2006-2022 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.86 December 2013
+		version 0.86 November 2022
 ****/
 
+#ifndef _SNOW_
+#define _SNOW_
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 
 #include "objects.h"
-
-
-struct Flake *flakes;
 
 struct Flake{
   float x,y;
@@ -41,3 +40,4 @@ void UpdateFlakes(struct Planet *planet);
 void CreateSnow(int h,int w);
 void DrawFlakes(GdkGC *pen,int h,int w);
 
+#endif

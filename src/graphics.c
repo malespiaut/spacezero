@@ -1,6 +1,6 @@
 /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2013  MRevenga
+ **  Copyright(C) 2006-2022  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2013 ***1**************
+/*************  SpaceZero  M.R.H. 2006-2022 ***1**************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.86 December 2013
+		version 0.86 November 2022
 **************************************************************/
 
 #include <stdio.h>
@@ -2949,7 +2949,6 @@ void DrawInfo(Object *obj,struct Draw *gdraw,struct HeadObjList *lheadobjs, stru
 #endif
   
   
-  
   y+=incy;
   h=(int)(time/(20*60*60));
   m=(int)(time/(20*60))-h*60;
@@ -3560,11 +3559,12 @@ int DrawShipInfo(GdkFont *font,GdkGC *color,Object *obj,int x0,int y0){
   snprintf(point,MAXTEXTLEN,"%s: %d",GetLocale(L_KILLS),obj->kills);
   DrawString(font,color,x0+x,y+texth,point);
   y+=incy;
+  if(obj->type==SHIP && obj->subtype==FREIGHTER){
+    snprintf(point,MAXTEXTLEN,"travels: %d",obj->ntravels);  // HERE LOCALES
+    DrawString(font,color,x0+x,y+texth,point);
+    y+=incy;
+  }
   
-  snprintf(point,MAXTEXTLEN,"travels: %d",obj->ntravels);
-  DrawString(font,color,x0+x,y+texth,point);
-  y+=incy;
-
   /* order */
   ord=ReadOrder(NULL,obj,MAINORD);
   if(ord!=NULL){

@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2013  MRevenga
+ **  Copyright(C) 2006-2022  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2013 ******************
+/*************  SpaceZero  M.R.H. 2006-2022 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.86 December 2013
+		version 0.86 November 2022
 **************************************************************/
 
 
@@ -38,6 +38,7 @@
 
 #define NFLAKES 1000
 
+struct Flake *flakes;
 
 void CreateSnow(int w,int h){
   int i;
@@ -63,7 +64,7 @@ void UpdateFlakes(struct Planet *planet){
   static float wind=0;
   float bDT;
   static int cont=0;
-  float mxwind=5;
+  float mxwind=2;
   Segment s;
 
   bDT=.01*DT;
@@ -78,8 +79,8 @@ void UpdateFlakes(struct Planet *planet){
   for(i=0;i<NFLAKES;i++){
     v=sqrt(flakes[i].vx*flakes[i].vx+flakes[i].vy*flakes[i].vy);
 
-    flakes[i].x+=flakes[i].vx*DT - bDT*v*flakes[i].vx*flakes[i].s*DT + wind*DT*DT;
-    flakes[i].y+=flakes[i].vy*DT - fy*DT - bDT*v*flakes[i].vy*flakes[i].s*DT;
+    flakes[i].x+=(flakes[i].vx - bDT*v*flakes[i].vx*flakes[i].s + wind)*DT;
+    flakes[i].y+=(flakes[i].vy - fy - bDT*v*flakes[i].vy*flakes[i].s)*DT;
 
     flakes[i].vx+=-bDT*v*flakes[i].vx*flakes[i].s +wind*DT;
     flakes[i].vy+=- fy - bDT*v*flakes[i].vy*flakes[i].s; 
@@ -97,7 +98,7 @@ void UpdateFlakes(struct Planet *planet){
 	
 	if(flakes[i].y <= s.y0 || flakes[i].y <= s.y1){
 	  flakes[i].y+=LYFACTOR;
-	  flakes[i].vy*=.5;
+	  flakes[i].vy=(1.0*rand())/RAND_MAX;
 	}
       }
     }

@@ -1,6 +1,6 @@
  /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2013  MRevenga
+ **  Copyright(C) 2006-2022  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -17,10 +17,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2013 ******************
+/*************  SpaceZero  M.R.H. 2006-2022 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.86 December 2013
+		version 0.86 November 2022
 **************************************************************/
 
 #include <string.h>
@@ -572,7 +572,7 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
   int status;
   int price;
   int time;
-  float d2,d2b;
+  float d2;
   int retreatsw=0;
   int nargs;
   char arg1[MAXTEXTLEN],arg2[MAXTEXTLEN];
@@ -704,7 +704,8 @@ Object *ExecOrder(struct HeadObjList *lhead,Object *obj,struct Player *ps,int or
 	obj_dest=NearestObj(lhead,obj,PLANET,SHIP0,PINEXPLORE|PALLY,&d2); 
 	
 	if(obj_dest!=NULL && obj_destb!=NULL ){
-	  if(d2b<d2){
+
+	  if(Distance2(obj,obj_destb)<d2){
 	    obj_dest=obj_destb;
 	  }
 	}

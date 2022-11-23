@@ -1,7 +1,7 @@
 
 /*****************************************************************************
  **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2013  MRevenga
+ **  Copyright(C) 2006-2022  MRevenga
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
@@ -18,10 +18,10 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-/*************  SpaceZero  M.R.H. 2006-2013 ******************
+/*************  SpaceZero  M.R.H. 2006-2022 ******************
 		Author: MRevenga
 		E-mail: mrevenga at users.sourceforge.net
-		version 0.86 December 2013
+		version 0.86 November 2022
 **************************************************************/
 
 
@@ -1249,8 +1249,9 @@ int CCBuy(struct HeadObjList *lhobjs,struct CCDATA *ccdata,struct Player *player
   int np;
   struct PlanetInfo *pinfo,*pinfo2;
   float resources;
+#if TEST
   int time;
-
+#endif 
 
   if(ccdata==NULL){
     return(-1);
@@ -5219,7 +5220,7 @@ int BuyorUpgrade(struct HeadObjList *lhobjs,struct Player *player,struct CCDATA 
   static int buyupgradesw=0; /*0: nothing , 1: buy, 2: upgrade */
   float cut=.5;
   int nships;
-  int time;
+
 
   np=(player->nplanets);
   if(np==0)return(0); /* HERE this doesn't allow pilots to buy when there are no planets */
@@ -5479,8 +5480,10 @@ int ExecGoto(struct HeadObjList *lhobjs,Object *obj,struct Order *ord){
   int swaccel;
   int ret=0;
   float factor;
+#if TEST
   int time;
-
+#endif
+  
 #if DEBUG
   if(debugexec&&obj==cv)printf("Execgoto %d\n",GetTime());
 #endif

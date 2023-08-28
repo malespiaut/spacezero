@@ -32,9 +32,9 @@
 
 
 struct MessageHeader{
-  uint id;      /* identification of the order */
-  uint nobjs;   /* number of objects to send */
-  uint nbytes; /* number of bytes to send */
+  unsigned int id;      /* identification of the order */
+  unsigned int nobjs;   /* number of objects to send */
+  unsigned int nbytes; /* number of bytes to send */
 };
 
 struct Message{
@@ -44,8 +44,8 @@ struct Message{
 
 struct Buffer{
   char *data;
-  uint n;      /* position of read write  */
-  uint size;   /* size of the buffer */
+  unsigned int n;      /* position of read write  */
+  unsigned int size;   /* size of the buffer */
 };
 
 

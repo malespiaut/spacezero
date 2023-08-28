@@ -4,7 +4,7 @@
  **
  **  This program is free software; you can redistribute it and/or modify
  **  it under the terms of the GNU General Public License (version 3), or
- **  (at your option) any later version, as published by the Free Software 
+ **  (at your option) any later version, as published by the Free Software
  **  Foundation.
  **
  **  This program is distributed in the hope that it will be useful,
@@ -18,43 +18,46 @@
  ******************************************************************************/
 
 /*************  SpaceZero  M.R.H. 2006-2022 ******************
-		Author: MRevenga
-		E-mail: mrevenga at users.sourceforge.net
-		version 0.86 November 2022
+                Author: MRevenga
+                E-mail: mrevenga at users.sourceforge.net
+                version 0.86 November 2022
 **************************************************************/
-
 
 #include "clock.h"
 
-double Clock(int id,int action){
-  /* 
-     ten clocks 
+double
+Clock(int id, int action)
+{
+  /*
+     ten clocks
   */
-  static struct Clock clock[10]; 
+  static struct Clock clock[10];
   struct timeval now;
 
-  if(id>9)return(0);
-  if(id<0)return(0);
+  if (id > 9)
+    return (0);
+  if (id < 0)
+    return (0);
 
-  switch(action){
-  case CL_CLEAR:
-    clock[id].time=0;
-    break;
-  case CL_START:
-    gettimeofday(&clock[id].starttime,NULL);
-    break;
-  case CL_STOP:
-    gettimeofday(&now,NULL);
-    decr_timeval(&now,&clock[id].starttime);
-    clock[id].time+= (double) (now.tv_sec+now.tv_usec/1.0e6);
+  switch (action)
+  {
+    case CL_CLEAR:
+      clock[id].time = 0;
       break;
-  case CL_READ:
-    return(clock[id].time);
-    break;
-  default:
-    return(0);
-    break;
+    case CL_START:
+      gettimeofday(&clock[id].starttime, NULL);
+      break;
+    case CL_STOP:
+      gettimeofday(&now, NULL);
+      decr_timeval(&now, &clock[id].starttime);
+      clock[id].time += (double)(now.tv_sec + now.tv_usec / 1.0e6);
+      break;
+    case CL_READ:
+      return (clock[id].time);
+      break;
+    default:
+      return (0);
+      break;
   }
-  return(0);
+  return (0);
 }
-

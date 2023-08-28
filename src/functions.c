@@ -1,185 +1,215 @@
- /*****************************************************************************
- **  This is part of the SpaceZero program
- **  Copyright(C) 2006-2022  MRevenga
- **
- **  This program is free software; you can redistribute it and/or modify
- **  it under the terms of the GNU General Public License (version 3), or
- **  (at your option) any later version, as published by the Free Software 
- **  Foundation.
- **
- **  This program is distributed in the hope that it will be useful,
- **  but WITHOUT ANY WARRANTY; without even the implied warranty of
- **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- **  GNU General Public License for more details.
- **
- **  You should have received a copy of the GNU General Public License
- **  along with this program; if not, write to the Free Software
- **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- ******************************************************************************/
+/*****************************************************************************
+**  This is part of the SpaceZero program
+**  Copyright(C) 2006-2022  MRevenga
+**
+**  This program is free software; you can redistribute it and/or modify
+**  it under the terms of the GNU General Public License (version 3), or
+**  (at your option) any later version, as published by the Free Software
+**  Foundation.
+**
+**  This program is distributed in the hope that it will be useful,
+**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**  GNU General Public License for more details.
+**
+**  You should have received a copy of the GNU General Public License
+**  along with this program; if not, write to the Free Software
+**  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+******************************************************************************/
 
 /*************  SpaceZero  M.R.H. 2006-2022 ******************
-		Author: MRevenga
-		E-mail: mrevenga at users.sourceforge.net
-		version 0.86 November 2022
+                Author: MRevenga
+                E-mail: mrevenga at users.sourceforge.net
+                version 0.86 November 2022
 **************************************************************/
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-#include <math.h>
 #include "functions.h"
 #include "general.h"
 #include "sound.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
-int actual_player,actual_player0;
+int actual_player, actual_player0;
 
-
-float Random(int a){
-/*
-  returns a random float between (0,1) from the table rtable 
-  if a >= 0 set read index to a
-  if a= -2 return read index
-  if a= -3 recalc random values 
-*/
+float
+Random(int a)
+{
+  /*
+    returns a random float between (0,1) from the table rtable
+    if a >= 0 set read index to a
+    if a= -2 return read index
+    if a= -3 recalc random values
+  */
   static float rtable[1000];
-  static int n=0;
-  static int sw=0;
+  static int n = 0;
+  static int sw = 0;
 
-  if(a>=0){
-    n=a;
-    if(n>=1000){
-      n=n%1000;
+  if (a >= 0)
+  {
+    n = a;
+    if (n >= 1000)
+    {
+      n = n % 1000;
     }
   }
-  if(a==-2)return(n);
-  if(a==-3)sw=0;
-  if(sw==0){ /* create table */
+  if (a == -2)
+    return (n);
+  if (a == -3)
+    sw = 0;
+  if (sw == 0)
+  { /* create table */
     int i;
-    for(i=0;i<1000;i++){
-      rtable[i]=(float)rand()/RAND_MAX;
+    for (i = 0; i < 1000; i++)
+    {
+      rtable[i] = (float)rand() / RAND_MAX;
     }
-    n=0;
-    sw=1;
+    n = 0;
+    sw = 1;
   }
-  if(n>=1000)n=0;
-  return(rtable[n++]); 
+  if (n >= 1000)
+    n = 0;
+  return (rtable[n++]);
 }
 
-
-float Sin(float x){
-  static int sw=0;
+float
+Sin(float x)
+{
+  static int sw = 0;
   static float table[400];
   int i;
-  int sgn=1;  
+  int sgn = 1;
 
-  if(sw==0){
-    for(i=0;i<400;i++){
-      table[i]=sin((float)i*(2*PI)/400.0);
+  if (sw == 0)
+  {
+    for (i = 0; i < 400; i++)
+    {
+      table[i] = sin((float)i * (2 * PI) / 400.0);
     }
-    sw=1;
+    sw = 1;
   }
 
-  if(x<0){
-    sgn=-1;
-    x=-x;
+  if (x < 0)
+  {
+    sgn = -1;
+    x = -x;
   }
-  return(sgn*table[(int)(x*400/(2*PI)+0.5)%400]);
+  return (sgn * table[(int)(x * 400 / (2 * PI) + 0.5) % 400]);
 }
 
-float Cos(float x){
-  static int sw=0;
+float
+Cos(float x)
+{
+  static int sw = 0;
   static float table[400];
   int i;
 
-  if(sw==0){
-    for(i=0;i<400;i++){
-      table[i]=cos((float)i*(2*PI)/400.0);
-    }    
-    sw=1;
+  if (sw == 0)
+  {
+    for (i = 0; i < 400; i++)
+    {
+      table[i] = cos((float)i * (2 * PI) / 400.0);
+    }
+    sw = 1;
   }
 
-  x=x<0?-x:x; 
-  return(table[(int)(x*400/(2*PI)+0.5)%400]);
+  x = x < 0 ? -x : x;
+  return (table[(int)(x * 400 / (2 * PI) + 0.5) % 400]);
 }
 
+int
+Proc(int option, int value)
+{
+  static int proc = 0;
 
-int Proc(int option,int value){
-  static int proc=0;
+  switch (option)
+  {
 
-  switch(option){
-
-  case SET:
-    proc=value;
-    break;
-  case GET:
-    return(proc);
-    break;
-  default:
-    fprintf(stderr,"ERROR in Proc(). Option not valid\n");
-    exit(-1);
-    break;
+    case SET:
+      proc = value;
+      break;
+    case GET:
+      return (proc);
+      break;
+    default:
+      fprintf(stderr, "ERROR in Proc(). Option not valid\n");
+      exit(-1);
+      break;
   }
-  return(proc);
+  return (proc);
 }
 
-int GetProc(void){
-  return(Proc(GET,0));
+int
+GetProc(void)
+{
+  return (Proc(GET, 0));
 }
 
-int SetProc(int value){
-  Proc(SET,value);
-  return(Proc(GET,0));
+int
+SetProc(int value)
+{
+  Proc(SET, value);
+  return (Proc(GET, 0));
 }
 
+int
+NProc(int option, int value)
+{
+  static int nproc = 1;
 
-int NProc(int option,int value){
-  static int nproc=1;
+  switch (option)
+  {
 
-  switch(option){
-
-  case SET:
-    nproc=value;
-    break;
-  case GET:
-    return(nproc);
-    break;
-  default:
-    fprintf(stderr,"ERROR in NProc(). Option not valid\n");
-    exit(-1);
-    break;
+    case SET:
+      nproc = value;
+      break;
+    case GET:
+      return (nproc);
+      break;
+    default:
+      fprintf(stderr, "ERROR in NProc(). Option not valid\n");
+      exit(-1);
+      break;
   }
-  return(nproc);
+  return (nproc);
 }
 
-
-int GetNProc(void){
-  return(NProc(GET,0));
+int
+GetNProc(void)
+{
+  return (NProc(GET, 0));
 }
 
-int SetNProc(int value){
-  NProc(SET,value);
-  return(NProc(GET,0));
+int
+SetNProc(int value)
+{
+  NProc(SET, value);
+  return (NProc(GET, 0));
 }
 
-
-void delay(int time){
-  /* 
-     time are 1/100 of seconds to wait 
+void
+delay(int time)
+{
+  /*
+     time are 1/100 of seconds to wait
    */
 
   struct timespec req;
   int sec;
 
-  if(time<=0)return;
+  if (time <= 0)
+    return;
 
-  sec=(int)((float)time/100);
-  time-=100*sec;
-  req.tv_sec=sec;
-  req.tv_nsec=time*1000000;
-  nanosleep(&req,NULL);
+  sec = (int)((float)time / 100);
+  time -= 100 * sec;
+  req.tv_sec = sec;
+  req.tv_nsec = time * 1000000;
+  nanosleep(&req, NULL);
 }
 
-
-int GameParametres(int option,int param,int value){
+int
+GameParametres(int option, int param, int value)
+{
   /*
     Set or get global game parametres.
     returns:
@@ -191,299 +221,326 @@ int GameParametres(int option,int param,int value){
     -1 if there an error
    */
   static struct Game game;
-  int ret=0;
+  int ret = 0;
 
-  switch(option){
+  switch (option)
+  {
 
-  case SET:
-    switch(param){
-    case GULX:             /* universe size */
-      game.ulx=value;
-      break;
-    case GULY:             /* universe size */
-      game.uly=value;
-      break;
-    case GWIDTH:           /* window size */
-      game.width=value;
-      break;
-    case GHEIGHT:          /* window size */
-      game.height=value;
-      break;
-    case GPANEL:          /* shell size */
-      game.panel_height=value;
-      break;
-    case GNET:             /* TRUE : NET , FALSE : LOCAL */
-      game.net=value;
-      break;
-    case GMODE:            /* LOCAL, SERVER, CLIENT */
-      game.mode=value;
-      break;
-    case GCOOPERATIVE:         
-      game.cooperative=value;
-      break;
-    case GCOMPCOOPERATIVE:         
-      game.compcooperative=value;
-      break;
-    case GQUEEN:            
-      game.queen=value;
-      break;
-    case GPIRATES:
-      game.pirates=value;
-      break;
-    case GENEMYKNOWN:
-      game.enemyknown=value;
-      break;
+    case SET:
+      switch (param)
+      {
+        case GULX: /* universe size */
+          game.ulx = value;
+          break;
+        case GULY: /* universe size */
+          game.uly = value;
+          break;
+        case GWIDTH: /* window size */
+          game.width = value;
+          break;
+        case GHEIGHT: /* window size */
+          game.height = value;
+          break;
+        case GPANEL: /* shell size */
+          game.panel_height = value;
+          break;
+        case GNET: /* TRUE : NET , FALSE : LOCAL */
+          game.net = value;
+          break;
+        case GMODE: /* LOCAL, SERVER, CLIENT */
+          game.mode = value;
+          break;
+        case GCOOPERATIVE:
+          game.cooperative = value;
+          break;
+        case GCOMPCOOPERATIVE:
+          game.compcooperative = value;
+          break;
+        case GQUEEN:
+          game.queen = value;
+          break;
+        case GPIRATES:
+          game.pirates = value;
+          break;
+        case GENEMYKNOWN:
+          game.enemyknown = value;
+          break;
 
-    case GNGALAXIES:       /* number of galaxies */
-      game.ngalaxies=value;
-      break;
-    case GNPLAYERS:        /* number of players */
-      game.nplayers=value;
-      break;
-    case GNPLANETS:        /* number of planets */
-      game.nplanets=value;
-      break;
-    case GKPLANETS:        /* TRUE FALSE planets known or unknown */ 
-      game.kplanets=value;
-      break;
-    case GMUSIC:          /* TRUE FALSE music on/off */
-      game.music=value;
-      if(game.music==0){
-	SetMusicVolume(0,VOLSET);
+        case GNGALAXIES: /* number of galaxies */
+          game.ngalaxies = value;
+          break;
+        case GNPLAYERS: /* number of players */
+          game.nplayers = value;
+          break;
+        case GNPLANETS: /* number of planets */
+          game.nplanets = value;
+          break;
+        case GKPLANETS: /* TRUE FALSE planets known or unknown */
+          game.kplanets = value;
+          break;
+        case GMUSIC: /* TRUE FALSE music on/off */
+          game.music = value;
+          if (game.music == 0)
+          {
+            SetMusicVolume(0, VOLSET);
+          }
+          break;
+        case GSOUND: /* TRUE FALSE sound on/off */
+          game.sound = value;
+          if (game.sound == 0)
+          {
+            SetSoundVolume(0, VOLSET);
+            SetMusicVolume(0, VOLSET);
+          }
+
+          break;
+        case GMUSICVOL: /* 0..100 music volume */
+          game.musicvol = value;
+          break;
+        case GSOUNDVOL: /* 0..100 sound volume */
+          game.soundvol = value;
+          break;
+
+        case GPAUSED: /* TRUE FALSE game paused */
+          game.paused = value;
+          break;
+        case GQUIT: /* 0,1,2 really quit? */
+          game.quit = value;
+          break;
+        case DEFAULT:
+          game.ulx = ULX;
+          game.uly = ULY;
+          game.width = DEFAULTWIDTH;
+          game.height = DEFAULTHEIGHT;
+          game.panel_height = PANEL_HEIGHT;
+          game.net = FALSE;
+          game.mode = LOCAL;
+          game.cooperative = FALSE;
+          game.compcooperative = FALSE;
+          game.queen = FALSE;
+          game.pirates = TRUE;
+          game.enemyknown = FALSE;
+          game.ngalaxies = NUMGALAXIES;
+          game.nplayers = NUMPLAYERS;
+          game.nplanets = NUMPLANETS;
+          game.kplanets = PLANETSKNOWN;
+          game.music = 100;
+          game.sound = 100;
+          game.paused = FALSE;
+          game.quit = 0; /*  possible values 0,1,2 */
+          break;
+        default:
+          ret = -1;
+          break;
       }
       break;
-    case GSOUND:          /* TRUE FALSE sound on/off */
-      game.sound=value;
-      if(game.sound==0){
-	SetSoundVolume(0,VOLSET);
-	SetMusicVolume(0,VOLSET);
+
+    case GET:
+      switch (param)
+      {
+        case GULX: /* universe size */
+          ret = game.ulx;
+          break;
+        case GULY: /* universe size */
+          ret = game.uly;
+          break;
+        case GWIDTH: /* window size */
+          ret = game.width;
+          break;
+        case GHEIGHT: /* window size */
+          ret = game.height;
+          break;
+        case GPANEL: /* shell size */
+          ret = game.panel_height;
+          break;
+        case GNET: /* TRUE : NET , FALSE : LOCAL */
+          ret = game.net;
+          break;
+        case GMODE: /* LOCAL, SERVER, CLIENT */
+          ret = game.mode;
+          break;
+        case GCOOPERATIVE:
+          ret = game.cooperative;
+          break;
+        case GCOMPCOOPERATIVE:
+          ret = game.compcooperative;
+          break;
+        case GQUEEN:
+          ret = game.queen;
+          break;
+        case GPIRATES:
+          ret = game.pirates;
+          break;
+        case GENEMYKNOWN:
+          ret = game.enemyknown;
+          break;
+        case GNGALAXIES: /* number of galaxies */
+          ret = game.ngalaxies;
+          break;
+        case GNPLAYERS: /* number of players */
+          ret = game.nplayers;
+          break;
+        case GNPLANETS: /* number of planets */
+          ret = game.nplanets;
+          break;
+        case GKPLANETS: /* TRUE FALSE planets known or unknown */
+          ret = game.kplanets;
+          break;
+        case GMUSIC: /* TRUE FALSE game paused */
+          ret = game.music;
+          break;
+        case GSOUND: /* TRUE FALSE game paused */
+          ret = game.sound;
+          break;
+        case GMUSICVOL: /* TRUE FALSE game paused */
+          ret = game.musicvol;
+          break;
+        case GSOUNDVOL: /* TRUE FALSE game paused */
+          ret = game.soundvol;
+          break;
+        case GPAUSED: /* TRUE FALSE game paused */
+          ret = game.paused;
+          break;
+        case GQUIT: /* 0,1,2 really quit? */
+          ret = game.quit;
+          break;
+        default:
+          fprintf(stderr, "ERROR: GameParametres(): param %d unknown\n", param);
+          ret = -1;
+          break;
       }
 
       break;
-    case GMUSICVOL:          /* 0..100 music volume */
-      game.musicvol=value;
+    default:
+      ret = -1;
       break;
-    case GSOUNDVOL:          /* 0..100 sound volume */
-      game.soundvol=value;
-      break;
+  }
+  return (ret);
+}
 
+int
+GetTime(void)
+{
+  return (sTime(2, 0));
+}
 
-    case GPAUSED:          /* TRUE FALSE game paused */
-      game.paused=value;
+void
+SetTime(int t)
+{
+  sTime(3, t);
+}
+
+void
+IncTime(void)
+{
+  sTime(1, 0);
+}
+
+int
+sTime(int action, int t)
+{
+  static int time = 0;
+  switch (action)
+  {
+    case 0: /* RESET */
+      time = 0;
       break;
-    case GQUIT:            /* 0,1,2 really quit? */
-      game.quit=value;
+    case 1: /* INCREMENT */
+      time++;
       break;
-    case DEFAULT:
-      game.ulx=ULX;
-      game.uly=ULY;
-      game.width=DEFAULTWIDTH;
-      game.height=DEFAULTHEIGHT;
-      game.panel_height=PANEL_HEIGHT;
-      game.net=FALSE;
-      game.mode=LOCAL;
-      game.cooperative=FALSE;
-      game.compcooperative=FALSE;
-      game.queen=FALSE;
-      game.pirates=TRUE;
-      game.enemyknown=FALSE;
-      game.ngalaxies=NUMGALAXIES;
-      game.nplayers=NUMPLAYERS;
-      game.nplanets=NUMPLANETS;
-      game.kplanets=PLANETSKNOWN;
-      game.music=100;
-      game.sound=100;
-      game.paused=FALSE;
-      game.quit=0; /*  possible values 0,1,2 */
+    case 2: /* RETURN VALUE */
+      return (time);
+      break;
+    case 3: /* SET */
+      time = t;
       break;
     default:
-      ret=-1;
       break;
-    }
-    break;
-
-  case GET:
-    switch(param){
-    case GULX:             /* universe size */
-      ret=game.ulx;
-      break;
-    case GULY:             /* universe size */
-      ret=game.uly;
-      break;
-    case GWIDTH:           /* window size */
-      ret=game.width;
-      break;
-    case GHEIGHT:          /* window size */
-      ret=game.height;
-      break;
-    case GPANEL:          /* shell size */
-      ret=game.panel_height;
-      break;
-    case GNET:             /* TRUE : NET , FALSE : LOCAL */
-      ret=game.net;
-      break;
-    case GMODE:            /* LOCAL, SERVER, CLIENT */
-      ret=game.mode;
-      break;
-    case GCOOPERATIVE:         
-      ret=game.cooperative;
-      break;
-    case GCOMPCOOPERATIVE:         
-      ret=game.compcooperative;
-      break;
-    case GQUEEN:         
-      ret=game.queen;
-      break;
-    case GPIRATES:
-      ret=game.pirates;
-      break;
-    case GENEMYKNOWN:
-      ret=game.enemyknown;
-      break;
-    case GNGALAXIES:       /* number of galaxies */
-      ret=game.ngalaxies;
-      break;
-    case GNPLAYERS:        /* number of players */
-      ret=game.nplayers;
-      break;
-    case GNPLANETS:        /* number of planets */
-      ret=game.nplanets;
-      break;
-    case GKPLANETS:        /* TRUE FALSE planets known or unknown */ 
-      ret=game.kplanets;
-      break;
-    case GMUSIC:          /* TRUE FALSE game paused */
-      ret=game.music;
-      break;
-    case GSOUND:          /* TRUE FALSE game paused */
-      ret=game.sound;
-      break;
-    case GMUSICVOL:          /* TRUE FALSE game paused */
-      ret=game.musicvol;
-      break;
-    case GSOUNDVOL:          /* TRUE FALSE game paused */
-      ret=game.soundvol;
-      break;
-    case GPAUSED:          /* TRUE FALSE game paused */
-      ret=game.paused;
-      break;
-    case GQUIT:            /* 0,1,2 really quit? */
-      ret=game.quit;
-      break;
-    default:
-      fprintf(stderr,"ERROR: GameParametres(): param %d unknown\n",param);
-      ret=-1;
-      break;
-    }
-    
-    break;
-  default:
-    ret=-1;
-    break;
   }
-  return(ret);  
+  return (time);
 }
 
-
-int GetTime(void){
-  return(sTime(2,0));
-}
-
-void SetTime(int t){
-  sTime(3,t);
-}
-
-void IncTime(void){
-  sTime(1,0);
-}
-
-int sTime(int action,int t){
-  static int time=0;
-  switch(action){
-  case 0: /* RESET */
-    time=0;
-    break;
-  case 1: /* INCREMENT */
-    time++;
-    break;
-  case 2: /* RETURN VALUE */
-    return (time);
-    break;
-  case 3: /* SET */
-    time=t;  
-    break;
-  default:
-    break;
-  }
-  return(time);
-}
-
-void DelCharFromCad(char *cad,char *filter){
+void
+DelCharFromCad(char* cad, char* filter)
+{
   /*
     Remove from cad the characters that are not in filter.
 
    */
 
-  int n=0;
-  int m=0;
+  int n = 0;
+  int m = 0;
 
-  while(cad[n]!='\0'){
-    if(n>=MAXTEXTLEN-1)break;
-    if(strchr(filter,cad[n])==NULL){ /* not found */
+  while (cad[n] != '\0')
+  {
+    if (n >= MAXTEXTLEN - 1)
+      break;
+    if (strchr(filter, cad[n]) == NULL)
+    { /* not found */
     }
-    else{  /* found */
-      strncpy(&cad[m],&cad[n],1);
+    else
+    { /* found */
+      strncpy(&cad[m], &cad[n], 1);
       m++;
     }
     n++;
   }
 
-  strncpy(&cad[m],"\0",1);
+  strncpy(&cad[m], "\0", 1);
 }
 
-float Sqrt(int n){
+float
+Sqrt(int n)
+{
   static float rtable[20000];
-  static int sw=0;
+  static int sw = 0;
   float ret;
 
-  if(sw==0){ /* create table */
+  if (sw == 0)
+  { /* create table */
     int i;
-    for(i=0;i<20000;i++){
-      rtable[i]=(float)sqrt(i);
+    for (i = 0; i < 20000; i++)
+    {
+      rtable[i] = (float)sqrt(i);
     }
-    sw=1;
+    sw = 1;
   }
 
-  if(n>=20000){ret=sqrt(n);}
-  else{
-    ret=rtable[n];
+  if (n >= 20000)
+  {
+    ret = sqrt(n);
   }
-  return(ret); 
+  else
+  {
+    ret = rtable[n];
+  }
+  return (ret);
 }
 
-int MemUsed(int action,size_t value){
+int
+MemUsed(int action, size_t value)
+{
 
-  static int memused=0;
+  static int memused = 0;
 
-  switch(action){
-  case MRESET:
-    memused=0;
-    break;
-  case MSET:
-    memused=value;
-    break;
-  case MADD:
-    memused+=value;
-    break;
-  case MGET:
-    return (memused);
-    break;
-  default:
-    fprintf(stderr,"MenUsed(): Not implemented\n");
-    exit(-1);
-    break;
+  switch (action)
+  {
+    case MRESET:
+      memused = 0;
+      break;
+    case MSET:
+      memused = value;
+      break;
+    case MADD:
+      memused += value;
+      break;
+    case MGET:
+      return (memused);
+      break;
+    default:
+      fprintf(stderr, "MenUsed(): Not implemented\n");
+      exit(-1);
+      break;
   }
-  return(memused);
+  return (memused);
 }
-
-

@@ -25,14 +25,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define TRUE 1
 #endif
 
-
-char *createName(int length);
-void loadFrequencyTable(char *filename);
-char *getRandomName();
-char *getRandomName(int length);
-char *getRandomFullName();
-char *getRandomOrkishName();
-
+char* createName(int length);
+void loadFrequencyTable(char* filename);
+char* getRandomName();
+char* getRandomName(int length);
+char* getRandomFullName();
+char* getRandomOrkishName();
 
 /*
 Since there can be multiple version of swearwords (such as shithead and fuckface, etc)

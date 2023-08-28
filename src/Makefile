@@ -10,7 +10,7 @@ SRC_PATH = .
 # Space-separated pkg-config libraries used by this project
 LIBS = gtk+-2.0 x11 freealut vorbisfile
 # General compiler flags
-COMPILE_FLAGS = -Wall -Wextra -Wpedantic -Wshadow -D DATADIR="\"./dat\"" -D INSTALL_DATA_DIR="\"/usr/local/share/spacezero\""
+COMPILE_FLAGS = -Wall -Wextra -Wpedantic -Wshadow -D DATADIR="\"./dat\"" -D INSTALL_DATA_DIR="\"/usr/local/share/spacezero\"" -w
 # Additional release-specific flags
 RCOMPILE_FLAGS = -D NDEBUG -Ofast -g0 -s
 # Additional debug-specific flags
